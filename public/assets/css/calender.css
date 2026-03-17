@@ -1,0 +1,636 @@
+#calendar {
+  max-width: 100%;
+  margin: 0 auto;
+}
+.team-margin{
+  margin-top: .5rem;
+}
+/* Style the FullCalendar buttons */
+.fc-prev-button,
+.fc-next-button,
+.fc-button {
+  background-color: transparent !important;
+  border: none;
+  color: black !important;
+  font-size: 14px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+  border-color: lightgray !important;
+}
+
+/* Hover effect for buttons */
+.fc-prev-button:hover,
+.fc-next-button:hover,
+.fc-button:hover {
+  color: #0056b3;
+  cursor: pointer;
+}
+
+/* Style for the toolbar */
+.fc-header-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fc-button-group {
+  display: flex;
+}
+
+.fc .fc-col-header-cell-cushion {
+  display: inline-block;
+  padding: 2px 4px;
+  /* color: gray; */
+  text-decoration: none;
+}
+
+/* Style for header section */
+.header-controls {
+  display: flex;
+  /* justify-content: space-between; */
+  /* align-items: center; */
+  /* flex-wrap: wrap; */
+  flex-grow: 1 !important;
+}
+
+.filter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-wrapper label {
+  margin-bottom: 0;
+  font-size: 14px;
+}
+ .team-member strong {
+    font-size: 14px;
+  }
+
+.filter-wrapper select {
+  min-width: 150px;
+}
+.fc-timeGridDay-button{
+      font-size: 14px;
+  }
+@media (min-width: 375px) and (max-width: 667px){
+  
+    .legend-item{
+    margin-left: -1px !important;
+    margin-right: 36px !important;
+  }
+ }
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* .fc-header-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    } */
+.legend-label{
+  font-size: 9px !important;
+}
+  .fc-button-group {
+    /* flex-direction: column; */
+    align-items: flex-start;
+  }
+
+  .list-group-item{
+    padding: 0px !important;
+    margin: 0px !important;
+
+  }
+  .team-member strong {
+    font-size: 11px !important;
+  }
+  .team-members h5{
+    font-size: 14px !important;
+  }
+  .header-controls {
+    /* flex-direction: column; */
+    align-items: flex-start;
+  }
+  .fc-button-primary{
+    font-size: 10px !important;
+  }
+.profile-pic{
+margin-right: 5px !important;
+}
+  button.fc-prev-button.fc-button.fc-button-primary {
+    margin-bottom: 5px;
+  }
+
+  button.fc-dayGridMonth-button.fc-button.fc-button-primary.fc-button-active {
+    /* margin-bottom: 4px; */
+    /* margin-top: 6px; */
+    font-size: 10px !important;
+  }
+
+  button.fc-timeGridWeek-button.fc-button.fc-button-primary {
+    /* margin-bottom: 5px; */
+    font-size: 10px !important;
+    margin: 0 7px !important;
+  }
+
+ 
+  .filter-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  button.fc-today-button.fc-button.fc-button-primary {
+    /* margin-left: -1px; */
+    /* margin-top: 4px; */
+    margin: 0 7px !important;
+    padding: 8px !important;
+  }
+}
+
+.fc .fc-toolbar-title {
+  font-size: 20px !important;
+  margin: 0;
+}
+.fc .fc-toolbar{
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
+/* Team Members Section */
+.team-members {
+  background-color: #f5f8fa;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.team-member {
+  display: flex;
+  align-items: center;
+  /* padding: 10px 0; */
+}
+ .fc-timeGridDay-button{
+      font-size: 10px;
+  }
+
+
+/* Scrollable container */
+.scrollable-container {
+  max-height: 550px;
+  /* Adjust height as needed */
+  overflow-y: auto;
+  /* Enables vertical scrollbar when needed */
+  /* border: 1px solid #ddd; Optional: Border for better visibility */
+  padding: 10px;
+  /* Optional: Padding for spacing */
+}
+
+.profile-pic {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 15px;
+  object-fit: cover;
+  border: 2px solid #ddd;
+}
+
+.team-member div {
+  flex: 1;
+}
+
+.team-member strong {
+  font-size: 14px;
+  color: #333;
+}
+
+.team-member p {
+  font-size: 14px;
+  color: #777;
+}
+
+/* Styling for list items */
+.list-group-item {
+  border: none;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+/* Hover effect for team members */
+.list-group-item:hover {
+  background-color: #f1f1f1;
+}
+@media (min-width: 375px) and (max-width: 667px) {
+  /* CSS rules here apply between 576px and 768px */
+  fc-toolbar .fc-button {
+    font-size: 11px !important;
+    text-transform: capitalize !important;
+}
+ 
+
+    #fc-dom-1 {
+        position: absolute !important;
+        /* bottom: 247px !important;
+        right: 140px !important; */
+        font-size: 17px !important;
+    }
+    fc-today-button{
+padding:8px !important;
+}
+ .team-members {
+    padding: 10px;
+    /* margin-bottom: 21px; */
+  }
+.sm-sick-leaves{
+  padding-left: 2px !important;
+}
+.sm-all-leave-top{
+  margin-top: 1px !important;
+}
+ .team-member strong {
+    font-size: 11px !important;
+  }
+}
+ 
+
+/* Responsive Design */
+@media (max-width: 768px) {
+ 
+  .team-members {
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+
+  .team-member {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  
+
+  .team-member div {
+    margin-left: 10px;
+  }
+  .legend-label{
+  font-size: 11px !important;
+}
+}
+
+.input-group {
+  max-width: 300px;
+  /* Limit the width of the search box */
+}
+
+.form-select-sm {
+  min-width: 150px;
+  /* Set a minimum width for the dropdowns */
+}
+
+.d-flex.gap-2>a.btn {
+  white-space: nowrap;
+  /* Prevent the button text from wrapping */
+}
+
+.leave-legend {
+  padding: 15px;
+  /* margin-left: 5px; */
+}
+
+.sm-diplay {
+  display: block;
+  display: inline-block !important;
+  list-style: none;
+  text-decoration: none;
+}
+/* .legend-label{
+  font-size: 14px;
+} */
+.sm-dispalyblock {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .legend-item{
+    margin-left: 1px !important;
+    margin-right: 36px !important;
+  }
+  .scrollable-container {
+    max-height: 160px !important;
+    overflow-y: auto;
+    padding: 10px;
+}
+  .team-members h5{
+    font-size: 11px !important;
+  }
+hr{
+  margin: 0px !important;
+}
+  .fc .fc-toolbar.fc-header-toolbar{
+margin-bottom: 2em !important;
+  }
+.fc-header-toolbar.fc-toolbar.fc-toolbar-ltr {
+    position: relative;
+}
+  .fc-toolbar-chunk {
+    display: flex;
+}
+.profile-pic {
+    width: 25px;
+    height: 25px;
+  }
+
+#fc-dom-1{
+    position: absolute;
+    /* bottom: 273px !important;
+    right: 140px; */
+    transform: translate(-50%, 140%);
+    font-size: 17px !important;
+  }
+  .fc .fc-col-header-cell-cushion {
+    display: inline-block;
+    padding: 0px 0px;
+    /* color: gray; */
+    text-decoration: none;
+    font-size: 11px;
+}
+button.fc-dayGridMonth-button.fc-button.fc-button-primary.fc-button-active {
+     margin-bottom: 0px !important; 
+     margin-top: 0px !important; 
+}
+button.fc-timeGridDay-button.fc-button.fc-button-primary {
+    font-size: 10px !important;
+}
+button.fc-prev-button.fc-button.fc-button-primary {
+    margin-bottom: 0px !important; 
+}
+ 
+.fc-button-group {
+    flex-direction: unset !important; 
+    align-items: unset !important; 
+    height: 33px !important;
+
+}
+ 
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    /* Stack items vertically on smaller screens */
+    gap: 10px;
+    /* Add spacing between stacked elements */
+  }
+
+  .sm-diplay {
+    display: none !important;
+  }
+
+  .sm-dispalyblock {
+    display: block !important;
+    display: inline-block !important;
+    list-style: none !important;
+  }
+
+  .lg-size-leave {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .input-group {
+    width: 100%;
+    /* Make the search input span full width */
+  }
+
+  .btnpdingam {
+    padding: 5.3px !important;
+    font-size: 9px !important;
+    margin: 0px !important;
+  }
+
+  .icon-leave-size {
+    font-size: 10px !important;
+  }
+
+  .d-flex.align-items-center.gap-2 {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .sm-leave-calender {
+    padding: 3px !important;
+    font-size: 12px !important;
+  }
+
+  .fc-col-header-cell {
+    padding: 4px;
+    /* Even less padding for very small screens */
+    font-size: 10px;
+    align-items: center;
+    /* Optional: smaller font size for better fit */
+  }
+
+  .d-flex {
+    flex-direction: row;
+  }
+
+  .form-select {
+    margin-bottom: 10px;
+    /* Ensure dropdowns have space on mobile */
+  }
+
+  .legend-label {
+    font-size: 9px !important;
+  }
+}
+
+thead {
+  background: black;
+}
+
+th div a {
+  color: white;
+  padding: 20px;
+  font-size: 10px !important;
+}
+
+.sm-marginlevae {
+  margin-right: 1.5rem !important;
+  margin-left: 1.5rem !important;
+}
+
+.sm-casualleave {
+  margin-right: 0px !important;
+  margin-left: 0px !important;
+}
+
+.legend-box {
+  display: inline-block;
+  width: 15px !important;
+  height: 15px !important;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+.fc-col-header-cell {
+  padding: 10px !important;
+  background-color: black;
+  /* Example: Set background color */
+  text-align: center !important;
+  /* Example: Center align the header text */
+}
+
+/* Adjust the font size for calendar buttons */
+.fc-toolbar .fc-button {
+  font-size: 14px;
+  text-transform: capitalize !important;
+}
+
+/* Adjust the font size for the calendar title */
+.fc-toolbar .fc-title {
+  font-size: 14px !important;
+}
+
+/* Adjust the font size for the calendar event titles */
+.fc-event-title {
+  font-size: 14px !important;
+}
+
+.fc-toolbar .fc-button:hover {
+  background-color: #dad9d9 !important;
+  /* Light gray */
+  color: #333 !important;
+  /* Text color on hover */
+}
+
+/* Styles for different leave types */
+.sick-leave {
+  background-color: #28a745 !important;
+  /* Green */
+  color: white !important;
+}
+
+.paid-leave {
+  background-color: #ff6347 !important;
+  /* Light Red */
+  color: white !important;
+}
+
+.vacation-leave {
+  background-color: #d3c75e !important;
+  /* Yellow */
+  color: black !important;
+}
+
+.casual-leave {
+  background-color: #17a2b8 !important;
+  /* Info Blue */
+  color: white !important;
+}
+
+/* Optional: Adding icons to event titles */
+.fc-event-title {
+  font-size: 14px;
+  /* Adjust font size */
+}
+
+.fc-event-title:before {
+  margin-right: 5px;
+}
+
+.fc-event-title.sick-leave:before {
+  content: "🤒";
+  /* Sick Leave Emoji */
+}
+
+.fc-event-title.paid-leave:before {
+  content: "💵";
+  /* Paid Leave Emoji */
+}
+
+.fc-event-title.vacation-leave:before {
+  content: "🏖️";
+  /* Vacation Emoji */
+}
+
+.fc-event-title.casual-leave:before {
+  content: "🧑‍💻";
+  /* Casual Leave Emoji */
+}
+
+/* Leave Legend Styles */
+.leave-legend {
+  /* padding: 15px; */
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.leave-legend h5 {
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.legend-box {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+.sick-leave {
+  background-color: #28a745;
+}
+
+.paid-leave {
+  background-color: #ff6347;
+}
+
+.vacation-leave {
+  background-color: #ce7fba;
+}
+
+.casual-leave {
+  background-color: #17a2b8;
+}
+
+.legend-label {
+  font-size: 17px;
+}
+
+.fc-event-main {
+  color: white !important;
+  /* font-size: 5px; */
+}
+
+.fc-h-event {
+  border: none !important;
+}
+
+.fc .fc-daygrid-day-number {
+  position: relative;
+  z-index: 4;
+  padding: 4px;
+  text-decoration: none;
+  color: black;
+}
+@media (min-width: 576px) and (max-width: 768px) {
+  
+}
+
+
+@media (max-width: 400px)  {
+  .leave-legend {
+    padding: 6px 0 !important;
+}
+}
+ 

@@ -1,0 +1,142 @@
+.job-info {
+	background-color: #fff;
+	border: 1px solid #efefef;
+	float: left;
+	margin: 0 0 30px;
+	padding: 30px;
+	position: relative;
+	width: 100%;
+}
+.job-title {
+	color: #585858;
+	font-size: 22px;
+	font-weight: 600;
+	margin-bottom: 5px;
+}
+.job-info .job-dept {
+	color: #737882;
+	display: block;
+	font-size: 16px;
+	font-weight: 500;
+	margin-bottom: 20px;
+}
+.job-post-det {
+	display: inline-block;
+	margin-bottom: 5px;
+	width: 100%;
+	color: #737882;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.job-content li {
+	line-height: 28px;
+}
+.job-post-det li {
+	float: left;
+	list-style: none;
+	margin-bottom: 10px;
+	margin-right: 20px;
+}
+.job-det-info {
+	background-color: #fff;
+	/* margin: 0 0 15px; */
+	padding: 0 0 6px;
+}
+.info-list {
+	color: #444343;
+	padding-top: 20px;
+}
+.info-list span {
+	color: #E66136;
+	float: left;
+	font-size: 20px;
+	line-height: 14px;
+}
+.info-list p {
+	line-height: 1.7;
+	margin: 0 0 0 40px;
+}
+.info-list > h5 {
+	color: #585858;
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: 5px;
+	margin-left: 40px;
+	text-transform: uppercase;
+}
+.app-ends {
+	color: #46cd38;
+	font-size: 13px;
+}
+.job-btn {
+    border: 2px solid #f43b48;
+    color: #f43b48;
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding: 15px;
+    text-transform: uppercase;
+    transition: all 0.3s ease 0s;
+}
+.job-btn:hover {
+	background-color: #f43b48;
+	color: #fff;
+}
+.job-widget {
+	background-color: #fff;
+	border: 1px solid #efefef;
+	float: left;
+	/* margin: 0 0 30px; */
+	padding: 30px;
+	position: relative;
+	width: 100%;
+}
+.job-desc-title h2 {
+	font-size: 20px;
+	margin-bottom: 0;
+}
+.job-widget h4 {
+	color: #585858;
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0 0 20px;
+}
+.job-description > p {
+	color: #727272;
+	line-height: 28px;
+}
+.square-list {
+	list-style: none;
+	padding: 0;
+	margin-bottom: 0;
+}
+.square-list li {
+	color: #727272;
+	line-height: 24px;
+	list-style: none;
+	margin: 10px 0 0 20px;
+	position: relative;
+}
+.square-list li:first-child {
+	margin-top: 0
+}
+.square-list li:before {
+	font-family: fontawesome;
+	margin: 0;
+	position: relative;
+	color: #f43b48;
+	float: left;
+	margin-left: -20px;
+	display: block;
+	content: "\f0c8";
+	font-size: 8px
+}
+.text-blue {
+	color: #009ce7;
+}
+.page-header {
+    margin-bottom: 10px;
+    margin-left: 3px;
+}

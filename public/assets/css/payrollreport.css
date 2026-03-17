@@ -1,0 +1,59 @@
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.bg-dark {
+    background-color: #343a40 !important;
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.filter-section {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.filter-section h5 {
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: #343a40;
+}
+
+.table-container {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container {
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+.datepicker {
+    z-index: 9999 !important;
+}
+select {
+    font-size: 14px !important; /* Default font size for options */
+    padding: 8px;
+}
+
+/* Styling the placeholder option */
+select option[disabled] {
+    color: #999; /* Placeholder color */
+    font-size: 14px; /* Placeholder font size */
+}

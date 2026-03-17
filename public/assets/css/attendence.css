@@ -1,0 +1,29 @@
+.form-control-sm {
+    padding-left: 2.5rem; /* Space for icons */
+}
+
+.position-relative i {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d; /* Muted color for icons */
+}
+
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column; /* Stack items vertically on smaller screens */
+    }
+
+    .d-flex.flex-wrap.gap-3 {
+        justify-content: flex-start; /* Keep left-side items aligned */
+    }
+}
+.form-select {
+    appearance: auto !important; /* Ensure native dropdown arrow is displayed */
+}
+select {
+    -webkit-appearance: menulist !important;
+    -moz-appearance: menulist !important;
+    appearance: menulist !important;
+}

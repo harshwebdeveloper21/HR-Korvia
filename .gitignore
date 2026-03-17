@@ -1,0 +1,6 @@
+writable/debugbar/*
+writable/session/*
+writable/logs/*
+vendor/*
+public/upload/*
+/app/config/*

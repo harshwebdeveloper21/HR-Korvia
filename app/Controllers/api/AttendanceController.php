@@ -1,0 +1,1938 @@
+<?php
+
+namespace App\Controllers\Api;
+
+use App\Controllers\BaseController;
+use App\Models\AttendanceModel;
+use App\Models\LeaveModel;
+use CodeIgniter\HTTP\ResponseInterface;
+use CodeIgniter\RESTful\ResourceController;
+use App\Services\AuthService;
+use App\Models\UserModel;
+use App\Models\CompanyRulesModel;
+use App\Models\HolidayCalendarModel;
+use App\Models\LocationSettingsModel;
+use App\Models\NotificationSettingsModel;
+use App\Services\PushNotificationService;
+
+class AttendanceController extends ResourceController
+{
+    private $attendanceModel;
+    private $leaveModel;
+    private $authService;
+    private $companyRulesModel;
+    private $pushNotificationService;
+    private $userModel;
+    private $holidayCalendarModel;
+    private $locationSettingsModel;
+    private $notificationSettingsModel;
+
+    private function calculateAttendanceStatus( int $workedSeconds, array $companyRule ): string {
+
+        $payrollType = $companyRule['payroll_type'] ?? 'monthly';
+
+        // 🔹 HOURLY PAYROLL → half-day does NOT exist
+        if ($payrollType === 'hourly') {
+            return $workedSeconds > 0 ? 'present' : 'absent';
+        }
+
+        // 🔹 DAILY / MONTHLY
+        $fullDayHours = $companyRule['working_hours_per_day'] ?? 8;
+        $halfDayHours = $companyRule['half_day_hours']
+            ?? ($fullDayHours / 2);
+
+        $fullDaySeconds = $fullDayHours * 3600;
+        $halfDaySeconds = $halfDayHours * 3600;
+
+        if ($workedSeconds >= $fullDaySeconds) {
+            return 'present';
+        }
+
+        // if ($workedSeconds >= $halfDaySeconds) {
+        //     return 'half-day';
+        // }
+
+        return 'absent';
+    }
+
+    private function timeToSeconds(?string $time): int
+    {
+        if (empty($time)) {
+            return 0;
+        }
+
+        $parts = array_map('intval', explode(':', $time));
+
+        $h = $parts[0] ?? 0;
+        $m = $parts[1] ?? 0;
+        $s = $parts[2] ?? 0;
+
+        return ($h * 3600) + ($m * 60) + $s;
+    }
+
+
+    public function __construct()
+    {
+        $this->attendanceModel = new AttendanceModel();
+        $this->companyRulesModel = new CompanyRulesModel();
+        $this->leaveModel = new LeaveModel();
+        $this->authService = new AuthService(service('request'));
+        $this->pushNotificationService = new PushNotificationService();
+        $this->userModel = new UserModel();
+    }
+
+    public function display()
+    {
+        return view('attendence/attendence');
+    }
+
+    public function getStatus()
+    {
+        // Authenticate user
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $date = date('Y-m-d');
+        $userModel = new UserModel();
+        $userData = $userModel->find($user->sub);
+        if (!$userData) {
+            return $this->respond(['status' => 'error', 'message' => 'User not found'], 404);
+        }
+        
+        // Check if user has face photo for biometric attendance
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $userInfo = $userInfoModel->where('user_id', $user->sub)->first();
+        $hasFacePhoto = !empty($userInfo['face_photo']);
+        
+        // Check today's attendance record for the authenticated user
+        $attendanceRecord = $this->attendanceModel
+            ->where('user_id', $user->sub)
+            ->where('date', $date)
+            ->orderBy('id', 'DESC')
+            ->first();
+        $response = [
+            'status' => 'success',
+            'role'   => $userData['role'], // Include user role
+            'has_face_photo' => $hasFacePhoto, // Include face photo status
+        ];
+        if (!$attendanceRecord) {
+            $response['data'] = 'not_checked_in';
+        } elseif ($attendanceRecord['check_in_time'] && !$attendanceRecord['check_out_time']) {
+            $response['data'] = 'checked_in';
+        } else {
+            $response['data'] = 'checked_out';
+        }
+
+        return $this->respond($response);
+    }
+
+    public function checkIn()
+    {
+        date_default_timezone_set('Asia/Kolkata'); // Set server timezone
+
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        if (!in_array($user->role, ['hr', 'employee'])) {
+            return $this->respond(['status' => 'error', 'message' => 'Access denied for this role'], 403);
+        }
+
+        // Always use server's current date and time (Asia/Kolkata timezone)
+        // This ensures the date is always correct regardless of client timezone
+        $date = date('Y-m-d'); // Today's date in server timezone
+        $checkInTime = date('Y-m-d H:i:s'); // Current server time
+        // Extract only the time part for storage (HH:MM:SS format)
+        $timeOnly = date('H:i:s');
+
+        // Check for yesterday's incomplete attendance (check-in without checkout)
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $yesterdayAttendance = $this->attendanceModel
+            ->where('user_id', $user->sub)
+            ->where('date', $yesterday)
+            ->where('check_out_time', null)
+            ->where('check_in_time IS NOT NULL')
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        // If found incomplete yesterday's attendance, update it with checkout time
+        if ($yesterdayAttendance) {
+            // Get company rules to determine standard checkout time
+            $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+            $fullDayHours = $companyRule['working_hours_per_day'] ?? 8;
+            
+            // Calculate standard checkout time based on check-in time + working hours
+            $checkInParts = explode(':', $yesterdayAttendance['check_in_time']);
+            $checkInHour = (int)$checkInParts[0];
+            $checkInMinute = (int)$checkInParts[1];
+            
+            // Add working hours to check-in time to get checkout time
+            $checkoutHour = $checkInHour + $fullDayHours;
+            $checkoutMinute = $checkInMinute;
+            
+            // Handle hour overflow (e.g., if check-in at 10:00 AM + 8 hours = 6:00 PM)
+            if ($checkoutHour >= 24) {
+                $checkoutHour = $checkoutHour - 24;
+            }
+            
+            $yesterdayCheckoutTime = sprintf('%02d:%02d:00', $checkoutHour, $checkoutMinute);
+            
+            // Calculate work hours for yesterday's record
+            $calculation = $this->calculateWorkHours($yesterday, $yesterdayAttendance['meal_break'], $yesterdayAttendance['check_in_time'], $yesterdayCheckoutTime);
+            
+            $updateData = [
+                'check_out_time' => $yesterdayCheckoutTime,
+                'work_hours' => $calculation['work_hours'],
+                'overtime' => $calculation['overtime'],
+                'status' => $calculation['status']
+            ];
+            
+            $this->attendanceModel->update($yesterdayAttendance['id'], $updateData);
+            
+            log_message('info', 'Auto-checkout for user ' . $user->sub . ' on ' . $yesterday . ' at ' . $yesterdayCheckoutTime . ' (Work hours: ' . $calculation['work_hours'] . ')');
+            
+            // Store the auto-checkout info to include in response
+            $autoCheckoutInfo = [
+                'date' => $yesterday,
+                'checkout_time' => $yesterdayCheckoutTime,
+                'work_hours' => $calculation['work_hours'],
+                'status' => $calculation['status']
+            ];
+        } else {
+            $autoCheckoutInfo = null;
+        }
+
+        // Get latest attendance for today
+        $latestAttendance = $this->attendanceModel
+            ->where('user_id', $user->sub)
+            ->where('date', $date)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        // If user is already checked in (has check-in but no check-out), update the check-in time
+        if ($latestAttendance && !$latestAttendance['check_out_time']) {
+            $updateData = [
+                'check_in_time' => $timeOnly, // Store only time (HH:MM:SS)
+            ];
+
+            $this->attendanceModel->update($latestAttendance['id'], $updateData);
+
+            $response = [
+                'status' => 'success',
+                'message' => 'Check-in time updated successfully',
+                'data' => $updateData
+            ];
+            
+            // Include auto-checkout info if applicable
+            if ($autoCheckoutInfo) {
+                $response['auto_checkout'] = $autoCheckoutInfo;
+                $response['message'] .= '. Yesterday\'s attendance was automatically checked out at ' . $autoCheckoutInfo['checkout_time'] . ' (' . $autoCheckoutInfo['work_hours'] . ' hours)';
+            }
+
+            return $this->respond($response);
+        }
+
+        // If user has already checked out or no record exists, create a new check-in record
+        // This allows checking in again after checkout
+        $data = [
+            'user_id' => $user->sub,
+            'date' => $date, // Today's date from server
+            'check_in_time' => $timeOnly, // Current time from server (HH:MM:SS)
+            'status' => 'present'
+        ];
+        
+        // Delete any leave record for today if exists
+        $this->leaveModel
+            ->where('user_id', $user->sub)
+            ->where('start_date', $date)
+            ->where('end_date', $date)
+            ->delete();
+
+        if ($this->attendanceModel->insert($data)) {
+            // Check if attendance notifications are enabled
+            $notificationSettingsModel = new NotificationSettingsModel();
+            if ($notificationSettingsModel->isAttendanceNotificationsEnabled()) {
+                // Send push notification to admins
+                $employee = $this->userModel->find($user->sub);
+                $employeeName = $employee ? $employee['username'] : 'Employee';
+                
+                log_message('info', '📝 Employee check-in: ' . $employeeName . ' at ' . $timeOnly);
+                log_message('info', '📝 Attempting to send push notification to admins...');
+                
+                $pushResult = $this->pushNotificationService->notifyAdmins(
+                    'Employee Check-In',
+                    $employeeName . ' has checked in at ' . $timeOnly,
+                    [
+                        'type' => 'checkin',
+                        'user_id' => $user->sub,
+                        'username' => $employeeName,
+                        'time' => $timeOnly,
+                        'date' => $date,
+                        'url' => base_url('/attendence')
+                    ]
+                );
+                
+                log_message('info', '📝 Push notification result: ' . json_encode($pushResult));
+            } else {
+                log_message('info', '📝 Attendance notifications are disabled - skipping push notification');
+            }
+            
+            $response = [
+                'status' => 'success',
+                'message' => 'Checked in successfully'
+            ];
+            
+            // Include auto-checkout info if applicable
+            if ($autoCheckoutInfo) {
+                $response['auto_checkout'] = $autoCheckoutInfo;
+                $response['message'] .= '. Yesterday\'s attendance was automatically checked out at ' . $autoCheckoutInfo['checkout_time'] . ' (' . $autoCheckoutInfo['work_hours'] . ' hours)';
+            }
+            
+            return $this->respond($response);
+        }
+
+        return $this->respond(['status' => 'error', 'message' => 'Check-in failed'], 500);
+    }    
+
+
+    /**
+     * Calculate work hours from check-in and check-out times
+     * @param string $date Date in Y-m-d format
+     * @param string $checkInTime Time in H:i:s format
+     * @param string $checkOutTime Time in H:i:s format
+     * @return array ['work_hours' => formatted time, 'work_hours_seconds' => seconds, 'status' => status]
+     */
+    private function calculateWorkHours($date, $mealbreakTime, $checkInTime, $checkOutTime)
+    {
+        if (empty($checkInTime) || empty($checkOutTime)) {
+            return [
+                'work_hours' => null,
+                'work_hours_seconds' => 0,
+                'overtime' => '00:00:00',
+                'overtime_seconds' => 0,
+                'status' => 'absent'
+            ];
+        }
+
+        $checkInTimestamp  = strtotime($date . ' ' . $checkInTime);
+        $checkOutTimestamp = strtotime($date . ' ' . $checkOutTime);
+
+        if (!$checkInTimestamp || !$checkOutTimestamp || $checkOutTimestamp <= $checkInTimestamp) {
+            log_message('debug', 'Invalid timestamps or checkout <= checkin');
+            return [
+                'work_hours' => '00:00:00',
+                'work_hours_seconds' => 0,
+                'overtime' => '00:00:00',
+                'overtime_seconds' => 0,
+                'status' => 'absent'
+            ];
+        }
+
+        /* ---------------------------------------------------
+        1. GROSS WORK DURATION (before break)
+        --------------------------------------------------- */
+        $grossWorkSeconds = $checkOutTimestamp - $checkInTimestamp;
+        log_message('debug', 'Gross Duration (seconds): ' . $grossWorkSeconds);
+
+        /* ---------------------------------------------------
+        2. COMPANY RULES
+        --------------------------------------------------- */
+        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+
+        // Check if this is a Saturday half-day
+        $isSaturdayHalfDay = $this->isSaturdayHalfDay($date, $companyRule);
+
+        /* ---------------------------------------------------
+        3. MEAL BREAK (Skip for Saturday half-days)
+        --------------------------------------------------- */
+        $mealBreakSeconds = 0;
+        
+        if (!$isSaturdayHalfDay) {
+            // Normal day - apply meal break
+            $time = new \DateTime($mealbreakTime);
+            $mealBreakSeconds =
+                ($time->format('H') * 3600) +
+                ($time->format('i') * 60) +
+                $time->format('s');
+        } else {
+            log_message('debug', 'Saturday half-day detected - skipping meal break');
+        }
+
+        /* ---------------------------------------------------
+        4. NET WORKING HOURS (after break)
+        --------------------------------------------------- */
+        $workHoursInSeconds = max(0, $grossWorkSeconds - $mealBreakSeconds);
+
+        /* ---------------------------------------------------
+        5. DETERMINE FULL DAY AND HALF DAY HOURS
+        --------------------------------------------------- */
+        $fullDayHours = 8.50;
+        $halfDayHours = 5; // Default 5 hrs = half day (per company policy)
+        $payrollType  = $companyRule['payroll_type'] ?? 'monthly';
+        $graceMinutes = (int)($companyRule['grace_minutes'] ?? 10);
+        $graceSeconds = $graceMinutes * 60;
+
+        if (!empty($companyRule) && (int)$companyRule['enable_payroll'] === 1) {
+            if (!empty($companyRule['working_hours_per_day'])) {
+                $fullDayHours = (float) $companyRule['working_hours_per_day'];
+            }
+            if (isset($companyRule['half_day_hours']) && $companyRule['half_day_hours'] !== '' && $companyRule['half_day_hours'] !== null) {
+                $halfDayHours = (float) $companyRule['half_day_hours'];
+            } else {
+                $halfDayHours = 5; // If 5 hrs then half day
+            }
+        }
+
+        // For Saturday half-days, the expected hours should be half-day hours
+        $expectedHours = $isSaturdayHalfDay ? $halfDayHours : $fullDayHours;
+        $expectedSeconds = $expectedHours * 3600;
+
+        $fullDaySeconds = $fullDayHours * 3600;
+        $halfDaySeconds = $halfDayHours * 3600;
+
+        /* ---------------------------------------------------
+        6. OVERTIME CALCULATION
+        --------------------------------------------------- */
+        $overtimeSeconds = 0;
+
+        if (!empty($companyRule) && (int)($companyRule['enable_overtime'] ?? 0) === 1) {
+            // For Saturday half-days, overtime starts after half-day hours (no meal break added)
+            // For normal days, overtime starts after full-day hours + meal break
+            $overtimeStartSeconds = $isSaturdayHalfDay 
+                ? $halfDaySeconds 
+                : ($fullDaySeconds + $mealBreakSeconds);
+
+            if ($grossWorkSeconds > $overtimeStartSeconds) {
+                $overtimeSeconds = $grossWorkSeconds - $overtimeStartSeconds;
+
+                $minOvertimeSeconds =
+                    ((float)($companyRule['min_overtime_count_in_minutes'] ?? 0)) * 60;
+
+                if ($overtimeSeconds < $minOvertimeSeconds) {
+                    $overtimeSeconds = 0;
+                }
+            }
+        }
+
+        /* ---------------------------------------------------
+        7. ATTENDANCE STATUS
+        --------------------------------------------------- */
+        $status = 'absent';
+
+        $grossSecondsWithGrace = $workHoursInSeconds + $graceSeconds;
+
+        if ($payrollType === 'hourly') {
+            if ($grossWorkSeconds > 0) {
+                $status = 'present';
+            }
+        } else {
+            if ($isSaturdayHalfDay) {
+                $halfhalfDaySeconds = $halfDaySeconds/2;
+                if ($grossSecondsWithGrace >= $halfDaySeconds) {
+                    $status = 'present';
+                } else if ($grossSecondsWithGrace > $halfhalfDaySeconds) {
+                    $status = 'present';
+                } else {
+                    $status = 'half-day';
+                }
+            } else {
+                // Normal day: >= full day = present, >= half day and < full = half-day, < half = absent
+                if ($grossSecondsWithGrace >= $fullDaySeconds) {
+                    $status = 'present';
+                } elseif ($grossSecondsWithGrace >= $halfDaySeconds) {
+                    $status = 'half-day';
+                } else {
+                    $status = 'absent';
+                }
+            }
+        }
+
+        /* ---------------------------------------------------
+        8. FORMAT OUTPUT
+        --------------------------------------------------- */
+        $formattedWorkHours = sprintf(
+            '%02d:%02d:%02d',
+            floor($workHoursInSeconds / 3600),
+            floor(($workHoursInSeconds % 3600) / 60),
+            $workHoursInSeconds % 60
+        );
+
+        $formattedOvertime = sprintf(
+            '%02d:%02d:%02d',
+            floor($overtimeSeconds / 3600),
+            floor(($overtimeSeconds % 3600) / 60),
+            $overtimeSeconds % 60
+        );
+
+        return [
+            'work_hours' => $formattedWorkHours,
+            'work_hours_seconds' => $workHoursInSeconds,
+            'overtime' => $formattedOvertime,
+            'overtime_seconds' => $overtimeSeconds,
+            'status' => $status,
+            'is_saturday_half_day' => $isSaturdayHalfDay // Added for debugging
+        ];
+    }
+
+    /**
+     * Check if a given date is a Saturday half-day based on company rules
+     * @param string $date Date in Y-m-d format
+     * @param array $companyRule Company rules array
+     * @return bool True if it's a Saturday half-day
+     */
+    private function isSaturdayHalfDay($date, $companyRule)
+    {
+        // Check if it's Saturday first
+        $dayOfWeek = date('N', strtotime($date));
+        if ($dayOfWeek != 6) { // Not Saturday
+            return false;
+        }
+
+        // Check if saturday_half_day_pattern is enabled
+        if (empty($companyRule['saturday_half_day_pattern'])) {
+            return false;
+        }
+
+        // Get the pattern (e.g., "1,2" or "1,3,5")
+        $halfDayPattern = explode(',', $companyRule['saturday_half_day_pattern']);
+        
+        // Calculate which Saturday of the month this is
+        $year = date('Y', strtotime($date));
+        $month = date('m', strtotime($date));
+        $saturdayCount = 0;
+        
+        $totalDays = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        for ($day = 1; $day <= $totalDays; $day++) {
+            $checkDate = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($day, 2, '0', STR_PAD_LEFT);
+            $checkTimestamp = strtotime($checkDate);
+            
+            if (date('N', $checkTimestamp) == 6) { // Is Saturday
+                $saturdayCount++;
+                if ($checkDate == $date) {
+                    // Check if this Saturday number is in the half-day pattern
+                    return in_array($saturdayCount, $halfDayPattern);
+                }
+            }
+        }
+        
+        return false;
+    }
+
+
+    public function checkOut()
+    {
+        date_default_timezone_set('Asia/Kolkata');
+
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        if (!in_array($user->role, ['hr', 'employee'])) {
+            return $this->respond(['status' => 'error', 'message' => 'Access denied for this role'], 403);
+        }
+
+        // Always use server's current date and time (Asia/Kolkata timezone)
+        $date = date('Y-m-d'); // Today's date in server timezone
+        $checkOutTimeOnly = date('H:i:s'); // Current server time (HH:MM:SS)
+
+        // Fetch the latest attendance record without checkout
+        $latestAttendance = $this->attendanceModel
+            ->where('user_id', $user->sub)
+            ->where('date', $date)
+            ->where('check_out_time', null)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        if (!$latestAttendance) {
+            return $this->respond(['status' => 'error', 'message' => 'No check-in record found for today'], 400);
+        }
+
+        // Calculate work hours using the helper method
+        $calculation = $this->calculateWorkHours($date, $latestAttendance['meal_break'], $latestAttendance['check_in_time'], $checkOutTimeOnly);
+
+        $data = [
+            'check_out_time' => $checkOutTimeOnly, // Store only time (HH:MM:SS)
+            'work_hours' => $calculation['work_hours'],
+            'overtime' => $calculation['overtime'],
+            'meal_break' => $latestAttendance['meal_break'],
+            'status' => $calculation['status']
+        ];
+
+        if ($this->attendanceModel->update($latestAttendance['id'], $data)) {
+            // Check if attendance notifications are enabled
+            $notificationSettingsModel = new NotificationSettingsModel();
+            if ($notificationSettingsModel->isAttendanceNotificationsEnabled()) {
+                // Send push notification to admins
+                $employee = $this->userModel->find($user->sub);
+                $employeeName = $employee ? $employee['username'] : 'Employee';
+                
+                log_message('info', '📝 Employee check-out: ' . $employeeName . ' at ' . $checkOutTimeOnly);
+                
+                $this->pushNotificationService->notifyAdmins(
+                    'Employee Check-Out',
+                    $employeeName . ' has checked out at ' . $checkOutTimeOnly . ' (Status: ' . $calculation['status'] . ')',
+                    [
+                        'type' => 'checkout',
+                        'user_id' => $user->sub,
+                        'username' => $employeeName,
+                        'time' => $checkOutTimeOnly,
+                        'date' => $date,
+                        'status' => $calculation['status'],
+                        'url' => base_url('/attendence')
+                    ]
+                );
+            } else {
+                log_message('info', '📝 Attendance notifications are disabled - skipping push notification');
+            }
+            
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Checked out successfully (' . $calculation['status'] . ')',
+                'data' => $data
+            ]);
+        }
+
+        return $this->respond(['status' => 'error', 'message' => 'Check-out failed'], 500);
+    }
+
+    public function getAttendanceData()
+    {
+        // Check Authorization
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        }
+
+        // Assuming that HR has role "hr" and employees have role "employee"
+        $userRole = $user->role; // "employee" or "hr"
+
+        // If HR is logged in, they can see all employees' attendance
+        if ($userRole === 'hr' || $userRole === 'admin') {
+            $attendanceData = $this->attendanceModel->orderBy('date', 'DESC')->orderBy('id', 'DESC')->findAll(); // HR sees all attendance records
+        } else {
+            // If an employee is logged in, they can only see their own attendance records
+            $attendanceData = $this->attendanceModel->where('user_id', $user->sub)->orderBy('date', 'DESC')->orderBy('id', 'DESC')->findAll();
+        }
+        $userModel = new UserModel();
+        $userInfoModel = new \App\Models\UserInfoModel();
+
+
+        // Fetch the employee names from the associated User model
+        // Also recalculate work hours for existing records to ensure accuracy
+        foreach ($attendanceData as &$record) {
+            // Assuming attendance has a user_id and you have a relation with User model
+            $employee = $userModel->find($record['user_id']); // Fix the reference to user_id, not record['id']
+            $record['employee_name'] = $employee ? $employee['username'] : 'Unknown'; // Add employee name to the record
+
+            $userInfo = $userInfoModel->where('user_id', $record['user_id'])->first();
+            $record['profile_image'] = $userInfo ? $userInfo['profile_image'] : null;
+
+            // Recalculate work hours if both check-in and check-out times exist
+            // This ensures old records with incorrect calculations are displayed correctly
+            if (!empty($record['check_in_time']) && !empty($record['check_out_time'])) {
+                $calculation = $this->calculateWorkHours($record['date'], $record['meal_break'], $record['check_in_time'], $record['check_out_time']);
+                $record['work_hours'] = $calculation['work_hours'];
+                // Optionally update status as well if needed
+                // $record['status'] = $calculation['status'];
+            }
+        }
+        // Return the attendance data
+        return $this->respond(['status' => 'success', 'data' => $attendanceData]);
+    }
+
+    public function getLeaveDetails($userId, $dateStr = null)
+    {
+        // Check if the user is authorized
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        }
+
+        // Fetch leave details for the specific user
+        $builder = $this->leaveModel->where('user_id', $userId);
+
+        // If a date is provided, filter the leave records by the given date
+        if ($dateStr) {
+            $builder->where('start_date <=', $dateStr)
+                ->where('end_date >=', $dateStr);
+        }
+
+        $leaveData = $builder->findAll();
+
+        if (!$leaveData) {
+            return $this->failNotFound('No leave records found for this employee');
+        }
+
+        // Return the leave data
+        return $this->respond(['status' => 'success', 'data' => $leaveData]);
+    }
+
+    // public function getAttendance($month, $year)
+    // {
+    //     $userModel = new \App\Models\UserModel();
+    //     $userInfoModel = new \App\Models\UserInfoModel();
+    //     $attendanceModel = new AttendanceModel();
+    //     $holidayCalendarModel = new HolidayCalendarModel();
+    //     $companyRulesModel = new CompanyRulesModel();
+
+    //     $authUser = $this->authService->user();
+    //     if (!$authUser) {
+    //         return $this->failUnauthorized('Unauthorized access');
+    //     }
+
+    //     // Get users based on role
+    //     if ($authUser->role === 'admin' || $authUser->role === 'hr') {
+    //         $users = $userModel->where('is_deleted', 0)->whereIn('role', ['employee', 'hr'])->findAll();
+    //     } else {
+    //         $users = $userModel->where('id', $authUser->sub)->findAll();
+    //     }
+
+    //     $userIds = array_column($users, 'id');
+    //     $userInfoList = $userInfoModel->whereIn('user_id', $userIds)->findAll();
+
+    //     $userInfoMap = [];
+    //     foreach ($userInfoList as $info) {
+    //         $userInfoMap[$info['user_id']] = $info;
+    //     }
+
+    //     // Get attendance records
+    //     $attendanceData = $attendanceModel
+    //         ->where('MONTH(date)', $month)
+    //         ->where('YEAR(date)', $year)
+    //         ->findAll();
+
+    //     // Get holidays
+    //     $holidays = $holidayCalendarModel
+    //         ->where('MONTH(holiday_date)', $month)
+    //         ->where('YEAR(holiday_date)', $year)
+    //         ->orderBy('holiday_date', 'ASC')
+    //         ->findAll();
+
+    //     $companyRule = $companyRulesModel->first();
+    //     if ($companyRule['saturday_off_enabled'] == 1) {
+    //         if ($companyRule['saturday_off_type'] == 'all') {
+    //             $saturdayOffIndexes = [1, 2, 3, 4, 5];
+    //         }else if ($companyRule['saturday_off_type'] == 'alternate-even') {
+    //             $saturdayOffIndexes = [2, 4];
+    //         }else if ($companyRule['saturday_off_type'] == 'alternate-odd') {
+    //             $saturdayOffIndexes = [1, 3, 5];
+    //         }else if ($companyRule['saturday_off_type'] == 'custom') {
+    //             $saturdayOffIndexes = explode(',', $companyRule['saturday_off_pattern'] );
+    //         }else {
+    //             $saturdayOffIndexes = [];
+    //         }
+    //     }else{
+    //         // if ($companyRule['saturday_off_type'] == 'all') {
+    //         //     $saturdayOffIndexes = [1, 2, 3, 4, 5];
+    //         // }else if ($companyRule['saturday_off_type'] == 'alternate-even') {
+    //         //     $saturdayOffIndexes = [2, 4];
+    //         // }else if ($companyRule['saturday_off_type'] == 'alternate-odd') {
+    //         //     $saturdayOffIndexes = [1, 3, 5];
+    //         // }else if ($companyRule['saturday_off_type'] == 'custom') {
+    //         //     $saturdayOffIndexes = explode(',', $companyRule['saturday_off_pattern'] );
+    //         // }else {
+    //             $saturdayOffIndexes = [];
+    //         // }
+    //     }
+
+    //     // Calculate Saturday off dates
+    //     $saturdayOffDates = [];
+    //     $totalDays = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+    //     $saturdayCount = 0;
+
+    //     for ($day = 1; $day <= $totalDays; $day++) {
+    //         $date = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($day, 2, '0', STR_PAD_LEFT);
+    //         $timestamp = strtotime($date);
+    //         if (date('N', $timestamp) == 6) { // Saturday
+    //             $saturdayCount++;
+    //             if (in_array($saturdayCount, $saturdayOffIndexes)) {
+    //                 $saturdayOffDates[] = $date;
+    //             }
+    //         }
+    //     }
+
+    //     // Format users with attendance
+    //     $attendanceWithUsers = [];
+    //     foreach ($users as $user) {
+    //         $userId = $user['id'];
+
+    //         $userAttendance = array_filter($attendanceData, function ($attendance) use ($userId) {
+    //             return $attendance['user_id'] == $userId;
+    //         });
+
+    //         // Group attendance by date and prioritize records with check_in_time but no check_out_time
+    //         $attendanceByDate = [];
+    //         foreach ($userAttendance as $record) {
+    //             $date = $record['date'];
+                
+    //             // If no record exists for this date, add it
+    //             if (!isset($attendanceByDate[$date])) {
+    //                 $attendanceByDate[$date] = $record;
+    //             } else {
+    //                 // If current record has check_in_time but no check_out_time (currently working), prioritize it
+    //                 $currentHasWorking = !empty($record['check_in_time']) && empty($record['check_out_time']);
+    //                 $existingHasWorking = !empty($attendanceByDate[$date]['check_in_time']) && empty($attendanceByDate[$date]['check_out_time']);
+                    
+    //                 if ($currentHasWorking && !$existingHasWorking) {
+    //                     // Current record is working, existing is not - use current
+    //                     $attendanceByDate[$date] = $record;
+    //                 } elseif (!$currentHasWorking && !$existingHasWorking) {
+    //                     // Both are checked out - use the most recent one (higher ID)
+    //                     if ($record['id'] > $attendanceByDate[$date]['id']) {
+    //                         $attendanceByDate[$date] = $record;
+    //                     }
+    //                 } elseif ($currentHasWorking && $existingHasWorking) {
+    //                     // Both are working - use the most recent one (higher ID)
+    //                     if ($record['id'] > $attendanceByDate[$date]['id']) {
+    //                         $attendanceByDate[$date] = $record;
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         $formattedAttendance = [];
+    //         foreach ($attendanceByDate as $record) {
+    //             $formattedAttendance[] = [
+    //                 'date' => $record['date'],
+    //                 'check_in_time' => $record['check_in_time'],
+    //                 'check_out_time' => $record['check_out_time'],
+    //                 'status' => $record['status'],
+    //                 'is_late' => $record['is_late'],
+    //                 'late_minutes' => $record['late_minutes'],
+    //                 'overtime' => $record['overtime'] ?? null,
+    //             ];
+    //         }
+
+    //         $profileImage = $userInfoMap[$userId]['profile_image'] ?? null;
+
+    //         $attendanceWithUsers[] = [
+    //             'user_id' => $userId,
+    //             'employee_name' => $user['username'],
+    //             'profile_image' => $profileImage,
+    //             'attendance' => $formattedAttendance,
+    //         ];
+    //     }
+
+    //     return $this->response->setJSON([
+    //         'status' => 'success',
+    //         'data' => [
+    //             'users' => $attendanceWithUsers,
+    //             'holidays' => $holidays,
+    //             'saturdayOffDates' => $saturdayOffDates
+    //         ]
+    //     ]);
+    // }
+    public function getAttendance($month, $year)
+    {
+        $userModel = new \App\Models\UserModel();
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $attendanceModel = new AttendanceModel();
+        $holidayCalendarModel = new HolidayCalendarModel();
+        $companyRulesModel = new CompanyRulesModel();
+
+        $authUser = $this->authService->user();
+        if (!$authUser) {
+            return $this->failUnauthorized('Unauthorized access');
+        }
+
+        // 🔹 Get users
+        if ($authUser->role === 'admin' || $authUser->role === 'hr') {
+            $users = $userModel
+                ->where('is_deleted', 0)
+                ->whereIn('role', ['employee', 'hr'])
+                ->findAll();
+        } else {
+            $users = $userModel->where('id', $authUser->sub)->findAll();
+        }
+
+        $userIds = array_column($users, 'id');
+
+        // 🔹 User info
+        $userInfoList = $userInfoModel->whereIn('user_id', $userIds)->findAll();
+        $userInfoMap = [];
+        foreach ($userInfoList as $info) {
+            $userInfoMap[$info['user_id']] = $info;
+        }
+
+        // 🔹 Attendance data
+        $attendanceData = $attendanceModel
+            ->where('MONTH(date)', $month)
+            ->where('YEAR(date)', $year)
+            ->findAll();
+
+        // 🔹 Holidays
+        $holidays = $holidayCalendarModel
+            ->where('MONTH(holiday_date)', $month)
+            ->where('YEAR(holiday_date)', $year)
+            ->orderBy('holiday_date', 'ASC')
+            ->findAll();
+
+        $holidayDates = array_column($holidays, 'holiday_date');
+        $holidayMap = array_flip($holidayDates);
+
+        // 🔹 Company rules
+        $companyRule = $companyRulesModel->first();
+        $isIncludedHoliday = $companyRule['include_holidays_in_working_days'];
+
+        if ($companyRule && $companyRule['saturday_off_enabled'] == 1) {
+            switch ($companyRule['saturday_off_type']) {
+                case 'all':
+                    $saturdayOffIndexes = [1, 2, 3, 4, 5];
+                    break;
+                case 'alternate-even':
+                    $saturdayOffIndexes = [2, 4];
+                    break;
+                case 'alternate-odd':
+                    $saturdayOffIndexes = [1, 3, 5];
+                    break;
+                case 'custom':
+                    $saturdayOffIndexes = explode(',', $companyRule['saturday_off_pattern']);
+                    break;
+                default:
+                    $saturdayOffIndexes = [];
+            }
+        } else {
+            $saturdayOffIndexes = [];
+        }
+
+        // 🔹 Calculate Saturday off dates
+        $totalDays = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $saturdayOffDates = [];
+        $saturdayCount = 0;
+
+        for ($day = 1; $day <= $totalDays; $day++) {
+            $date = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($day, 2, '0', STR_PAD_LEFT);
+            if (date('N', strtotime($date)) == 6) {
+                $saturdayCount++;
+                if (in_array($saturdayCount, $saturdayOffIndexes)) {
+                    $saturdayOffDates[] = $date;
+                }
+            }
+        }
+
+        $saturdayOffMap = array_flip($saturdayOffDates);
+
+        // 🔹 Final response
+        $attendanceWithUsers = [];
+
+        foreach ($users as $user) {
+            $userId = $user['id'];
+
+            // Filter user attendance
+            $userAttendance = array_filter($attendanceData, function ($row) use ($userId) {
+                return $row['user_id'] == $userId;
+            });
+
+            // Group by date (handle multiple punch-ins)
+            $attendanceByDate = [];
+            foreach ($userAttendance as $record) {
+                $date = $record['date'];
+
+                if (!isset($attendanceByDate[$date])) {
+                    $attendanceByDate[$date] = $record;
+                } else {
+                    if ($record['id'] > $attendanceByDate[$date]['id']) {
+                        $attendanceByDate[$date] = $record;
+                    }
+                }
+            }
+
+            // 🔹 Build full month attendance (THIS FIXES 26 JAN ISSUE)
+            // $formattedAttendance = [];
+
+            // for ($day = 1; $day <= $totalDays; $day++) {
+            //     $date = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($day, 2, '0', STR_PAD_LEFT);
+
+            //     // Holiday
+            //     if (isset($holidayMap[$date])) {
+            //         $formattedAttendance[] = [
+            //             'date' => $date,
+            //             'check_in_time' => null,
+            //             'check_out_time' => null,
+            //             'status' => 'holiday',
+            //             'is_late' => null,
+            //             'late_minutes' => null,
+            //             'overtime' => null,
+            //         ];
+            //         continue;
+            //     }
+
+            //     // Saturday off
+            //     if (isset($saturdayOffMap[$date])) {
+            //         $formattedAttendance[] = [
+            //             'date' => $date,
+            //             'check_in_time' => null,
+            //             'check_out_time' => null,
+            //             'status' => 'week_off',
+            //             'is_late' => null,
+            //             'late_minutes' => null,
+            //             'overtime' => null,
+            //         ];
+            //         continue;
+            //     }
+
+            //     // Attendance exists
+            //     if (isset($attendanceByDate[$date])) {
+            //         $record = $attendanceByDate[$date];
+            //         $formattedAttendance[] = [
+            //             'date' => $date,
+            //             'check_in_time' => $record['check_in_time'],
+            //             'check_out_time' => $record['check_out_time'],
+            //             'status' => $record['status'],
+            //             'is_late' => $record['is_late'],
+            //             'late_minutes' => $record['late_minutes'],
+            //             'overtime' => $record['overtime'] ?? null,
+            //         ];
+            //         continue;
+            //     }
+
+            //     // ABSENT
+            //     $formattedAttendance[] = [
+            //         'date' => $date,
+            //         'check_in_time' => null,
+            //         'check_out_time' => null,
+            //         'status' => 'absent',
+            //         'is_late' => null,
+            //         'late_minutes' => null,
+            //         'overtime' => null,
+            //     ];
+            // }
+            // 🔹 Build full month attendance (THIS FIXES 26 JAN ISSUE)
+            $formattedAttendance = [];
+
+            for ($day = 1; $day <= $totalDays; $day++) {
+                $date = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($day, 2, '0', STR_PAD_LEFT);
+
+                // Holiday
+                if (isset($holidayMap[$date])) {
+                    $formattedAttendance[] = [
+                        'date' => $date,
+                        'check_in_time' => null,
+                        'check_out_time' => null,
+                        'status' => 'holiday',
+                        'is_late' => null,
+                        'late_minutes' => null,
+                        'overtime' => null,
+                    ];
+                    continue;
+                }
+
+                // Sunday off (date('N') returns 7 for Sunday)
+                if (date('N', strtotime($date)) == 7) {
+                    $formattedAttendance[] = [
+                        'date' => $date,
+                        'check_in_time' => null,
+                        'check_out_time' => null,
+                        'status' => 'Week Off',
+                        'is_late' => null,
+                        'late_minutes' => null,
+                        'overtime' => null,
+                    ];
+                    continue;
+                }
+
+                // Saturday off
+                if (isset($saturdayOffMap[$date])) {
+                    $formattedAttendance[] = [
+                        'date' => $date,
+                        'check_in_time' => null,
+                        'check_out_time' => null,
+                        'status' => 'Week Off',
+                        'is_late' => null,
+                        'late_minutes' => null,
+                        'overtime' => null,
+                    ];
+                    continue;
+                }
+
+                // Attendance exists
+                if (isset($attendanceByDate[$date])) {
+                    $record = $attendanceByDate[$date];
+                    $formattedAttendance[] = [
+                        'date' => $date,
+                        'check_in_time' => $record['check_in_time'],
+                        'check_out_time' => $record['check_out_time'],
+                        'status' => $record['status'],
+                        'is_late' => $record['is_late'],
+                        'late_minutes' => $record['late_minutes'],
+                        'overtime' => $record['overtime'] ?? null,
+                    ];
+                    continue;
+                }
+
+                // ABSENT
+                $formattedAttendance[] = [
+                    'date' => $date,
+                    'check_in_time' => null,
+                    'check_out_time' => null,
+                    'status' => 'absent',
+                    'is_late' => null,
+                    'late_minutes' => null,
+                    'overtime' => null,
+                ];
+            }
+
+            $attendanceWithUsers[] = [
+                'user_id' => $userId,
+                'employee_name' => $user['username'],
+                'profile_image' => $userInfoMap[$userId]['profile_image'] ?? null,
+                'attendance' => $formattedAttendance,
+            ];
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data' => [
+                'users' => $attendanceWithUsers,
+                'isIncludedHoliday' => $isIncludedHoliday,
+                'holidays' => $holidays,
+                'saturdayOffDates' => $saturdayOffDates
+            ]
+        ]);
+    }
+
+
+    public function view()
+    {
+        $userModel = new UserModel();
+        $attendanceModel = new AttendanceModel();
+        $user = $this->authService->user(); // Get logged-in user
+        
+        // Check if user is authenticated
+        if (!$user) {
+            return redirect()->to('/login')->with('error', 'Please login to access this page.');
+        }
+        
+        $role = $user->role; // User role
+        $today = date('Y-m-d'); // Get today's date
+        $currentYear = date('Y'); // Get current year
+        $currentMonth = date('m'); // Get current month (numeric)
+        $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
+        // Get Total Employees
+        $totalEmployees = $userModel->where('role', 'employee')->countAllResults();
+        $presentEmployees = $attendanceModel
+            ->select('user_id')
+            ->where('status', 'present')
+            ->where('date', date('Y-m-d')) // Ensure it's for today
+            ->distinct() // Count unique users
+            ->countAllResults();
+
+        $absentEmployees = $userModel
+            ->where('role', 'employee')
+            ->whereNotIn('id', function ($query) use ($today) {
+                $query->select('user_id')
+                    ->from('attendance')
+                    ->where('date', $today);
+            })
+            ->countAllResults();
+        $workingDays = $attendanceModel
+            ->distinct()
+            ->select('date')
+            ->like('date', date('Y-m'))
+            ->countAllResults();
+
+        return view('attendence/view', [
+            'role' => $role,
+            'totalEmployees' => $totalEmployees,
+            'presentEmployees' => $presentEmployees,
+            'absentEmployees' => $absentEmployees,
+            'workingDays' => $workingDays,
+            'totalDaysInMonth' => $totalDaysInMonth, // Total days in current month
+        ]);
+    }
+
+    public function viewCalendar()
+    {
+        $userModel = new UserModel();
+        $attendanceModel = new AttendanceModel();
+        $user = $this->authService->user(); // Get logged-in user
+        
+        // Check if user is authenticated
+        if (!$user) {
+            return redirect()->to('/login')->with('error', 'Please login to access this page.');
+        }
+        
+        $role = $user->role; // User role
+        $today = date('Y-m-d'); // Get today's date
+        $currentYear = date('Y'); // Get current year
+        $currentMonth = date('m'); // Get current month (numeric)
+        $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
+        // Get Total Employees
+        $totalEmployees = $userModel->where('role', 'employee')->countAllResults();
+        $presentEmployees = $attendanceModel
+            ->select('user_id')
+            ->where('status', 'present')
+            ->where('date', date('Y-m-d')) // Ensure it's for today
+            ->distinct() // Count unique users
+            ->countAllResults();
+
+        $absentEmployees = $userModel
+            ->where('role', 'employee')
+            ->whereNotIn('id', function ($query) use ($today) {
+                $query->select('user_id')
+                    ->from('attendance')
+                    ->where('date', $today);
+            })
+            ->countAllResults();
+        $workingDays = $attendanceModel
+            ->distinct()
+            ->select('date')
+            ->like('date', date('Y-m'))
+            ->countAllResults();
+
+        return view('attendence/view_calendar', [
+            'role' => $role,
+            'totalEmployees' => $totalEmployees,
+            'presentEmployees' => $presentEmployees,
+            'absentEmployees' => $absentEmployees,
+            'workingDays' => $workingDays,
+            'totalDaysInMonth' => $totalDaysInMonth, // Total days in current month
+        ]);
+    }
+
+    public function getDashboardStats()
+    {
+        $userModel = new UserModel();
+        $attendanceModel = new AttendanceModel();
+        $user = $this->authService->user(); // Get logged-in user
+        $role = $user->role;
+
+        $today = date('Y-m-d');
+        $currentYear = date('Y');
+        $currentMonth = date('m');
+        $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
+
+        $totalEmployees = $userModel->where('role', 'employee')->countAllResults();
+
+        $presentEmployees = $attendanceModel
+            ->select('user_id')
+            ->where('status', 'present')
+            ->where('date', $today)
+            ->distinct()
+            ->countAllResults();
+
+        $absentEmployees = $userModel
+            ->where('role', 'employee')
+            ->whereNotIn('id', function ($query) use ($today) {
+                $query->select('user_id')
+                    ->from('attendance')
+                    ->where('date', $today);
+            })
+            ->countAllResults();
+
+        $workingDays = $attendanceModel
+            ->distinct()
+            ->select('date')
+            ->like('date', date('Y-m'))
+            ->countAllResults();
+
+        // Return as JSON
+        return $this->response->setJSON([
+            'role' => $role,
+            'totalEmployees' => $totalEmployees,
+            'presentEmployees' => $presentEmployees,
+            'absentEmployees' => $absentEmployees,
+            'workingDays' => $workingDays,
+            'totalDaysInMonth' => $totalDaysInMonth
+        ]);
+    }
+
+    public function getFacePhoto()
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $userInfo = $userInfoModel->where('user_id', $user->sub)->first();
+
+        if (!$userInfo || empty($userInfo['face_photo'])) {
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'No face photo registered. Please contact admin.',
+                'face_photo' => null
+            ]);
+        }
+
+        return $this->respond([
+            'status' => 'success',
+            'face_photo' => base_url('upload/faces/' . $userInfo['face_photo'])
+        ]);
+    }
+
+    public function faceCheckIn()
+    {
+        date_default_timezone_set('Asia/Kolkata');
+
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        if (!in_array($user->role, ['hr', 'employee'])) {
+            return $this->respond(['status' => 'error', 'message' => 'Access denied for this role'], 403);
+        }
+
+        // Get the face image from request (base64)
+        $json = $this->request->getJSON(true);
+        $faceImage = $json['face_image'] ?? null;
+        $checkInTimeInput = $json['check_in_time'] ?? date('Y-m-d H:i:s');
+        $userLatitude = $json['latitude'] ?? null;
+        $userLongitude = $json['longitude'] ?? null;
+        $locationAccuracy = isset($json['location_accuracy']) ? (float)$json['location_accuracy'] : null;
+
+        if (!$faceImage) {
+            return $this->respond(['status' => 'error', 'message' => 'Face image is required'], 400);
+        }
+
+        // Check location if location settings are configured
+        $locationSettingsModel = new LocationSettingsModel();
+        $locationSettings = $locationSettingsModel->getSettings();
+        
+        if ($locationSettings && ($locationSettings['latitude'] != 0 || $locationSettings['longitude'] != 0)) {
+            // Location verification is enabled
+            if ($userLatitude === null || $userLongitude === null) {
+                return $this->respond([
+                    'status' => 'error',
+                    'message' => 'Location permission is required for check-in. Please enable location access.'
+                ], 400);
+            }
+
+            // Ensure coordinates are floats
+            $officeLat = (float)$locationSettings['latitude'];
+            $officeLng = (float)$locationSettings['longitude'];
+            $userLat = (float)$userLatitude;
+            $userLng = (float)$userLongitude;
+
+            // Calculate distance between user location and office location
+            $distance = $this->calculateDistance(
+                $officeLat,
+                $officeLng,
+                $userLat,
+                $userLng
+            );
+
+            $radius = (float)$locationSettings['radius'];
+            
+            // Adjust radius tolerance based on location accuracy (for desktop browsers with poor GPS)
+            // If accuracy is very poor (>1000m, typical for IP-based geolocation), add significant tolerance
+            $effectiveRadius = $radius;
+            if ($locationAccuracy !== null && $locationAccuracy > 1000) {
+                $maxTotalRadius = 15000; // 15km max for desktop
+                $tolerance = min($locationAccuracy * 1.5, $maxTotalRadius - $radius); // 1.5x accuracy for extra buffer
+                $effectiveRadius = $radius + $tolerance;
+                log_message('debug', 'Poor location accuracy detected (' . round($locationAccuracy, 2) . 'm). Adjusted radius tolerance: ' . round($effectiveRadius, 2) . 'm (original radius: ' . $radius . 'm, tolerance: ' . round($tolerance, 2) . 'm)');
+            } else if ($locationAccuracy !== null && $locationAccuracy > 500) {
+                // For moderate accuracy (500-1000m), add smaller tolerance
+                $tolerance = min($locationAccuracy * 0.75, $radius * 1.5);
+                $effectiveRadius = $radius + $tolerance;
+                log_message('debug', 'Moderate location accuracy detected (' . round($locationAccuracy, 2) . 'm). Adjusted radius tolerance: ' . round($effectiveRadius, 2) . 'm');
+            }
+            
+            // Debug info (can be removed later)
+            log_message('debug', 'Location Check - Office: ' . $officeLat . ', ' . $officeLng . ' | User: ' . $userLat . ', ' . $userLng . ' | Distance: ' . $distance . 'm | Radius: ' . $radius . 'm | Effective Radius: ' . round($effectiveRadius, 2) . 'm | Accuracy: ' . ($locationAccuracy !== null ? round($locationAccuracy, 2) . 'm' : 'unknown'));
+            
+            // If radius is 0, check exact location (within 10 meters tolerance)
+            if ($radius == 0) {
+                // For exact location, also consider accuracy
+                $tolerance = 10;
+                if ($locationAccuracy !== null && $locationAccuracy > 100) {
+                    $tolerance = min(50, $locationAccuracy * 0.3); // Max 50m tolerance for exact location
+                }
+                if ($distance > $tolerance) {
+                    return $this->respond([
+                        'status' => 'error',
+                        'message' => 'You are not at the correct location. Please check in from the office location.',
+                        'distance' => round($distance, 2)
+                    ], 400);
+                }
+            } else {
+                // Check if user is within the allowed radius (with tolerance for poor accuracy)
+                if ($distance > $effectiveRadius) {
+                    $message = 'You are outside the allowed check-in radius (' . $radius . ' meters). Current distance: ' . round($distance, 2) . ' meters.';
+                    if ($locationAccuracy !== null && $locationAccuracy > 1000) {
+                        $message .= ' Note: Your location accuracy is low (±' . round($locationAccuracy, 0) . 'm). On desktop, please ensure WiFi is enabled for better location accuracy, or contact admin for assistance.';
+                    } else if ($locationAccuracy !== null && $locationAccuracy > 500) {
+                        $message .= ' Note: Your location accuracy is moderate (±' . round($locationAccuracy, 0) . 'm). Please ensure location services are enabled.';
+                    }
+                    return $this->respond([
+                        'status' => 'error',
+                        'message' => $message,
+                        'distance' => round($distance, 2),
+                        'allowed_radius' => $radius,
+                        'effective_radius' => round($effectiveRadius, 2),
+                        'location_accuracy' => $locationAccuracy !== null ? round($locationAccuracy, 2) : null,
+                        'debug' => [
+                            'office_location' => ['lat' => $officeLat, 'lng' => $officeLng],
+                            'user_location' => ['lat' => $userLat, 'lng' => $userLng]
+                        ]
+                    ], 400);
+                }
+            }
+        }
+
+        // Verify user has face photo registered
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $userInfo = $userInfoModel->where('user_id', $user->sub)->first();
+
+        if (!$userInfo || empty($userInfo['face_photo'])) {
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'No face photo registered. Please contact admin to upload your face photo.'
+            ], 400);
+        }
+
+        // Always use server's current date and time (Asia/Kolkata timezone)
+        // This ensures the date is always correct regardless of client timezone
+        $date = date('Y-m-d'); // Today's date in server timezone
+        $timeOnly = date('H:i:s'); // Current server time (HH:MM:SS)
+
+        // Get latest attendance for today
+        $latestAttendance = $this->attendanceModel
+            ->where('user_id', $user->sub)
+            ->where('date', $date)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        if ($latestAttendance && !$latestAttendance['check_out_time']) {
+            
+            $updateData = [
+                'check_in_time' => $timeOnly, // Store only time (HH:MM:SS)
+                'checkin_method' => 'face_recognition'
+            ];
+
+            $this->attendanceModel->update($latestAttendance['id'], $updateData);
+
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Face verified! Check-in time updated successfully.',
+                'data' => $updateData
+            ]);
+        }
+
+        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+        // Defaults
+        $break = '00:30:00';
+        $isLate = 0;
+        $lateMinutes = 0;
+        // $halfDayHourTime = "02:00:00";
+        if ($companyRule) {
+
+            $break       = $companyRule['lunch_break'] ?? '00:30:00';
+            $startTime   = $companyRule['start_time'];          // e.g. 10:00:00
+            $gracePeriod = (int) $companyRule['grace_period'];  // minutes
+
+            $checkInSeconds = $this->timeToSeconds($timeOnly);
+            $startSeconds   = $this->timeToSeconds($startTime);
+            $graceSeconds   = $gracePeriod * 60;
+
+            if ($checkInSeconds > ($startSeconds + $graceSeconds)) {
+
+                $isLate = 1;
+                $lateSeconds = $checkInSeconds - ($startSeconds + $graceSeconds);
+                $lateMinutes = ceil($lateSeconds / 60);
+
+            }
+        }
+        
+        // Create new attendance record
+        $data = [
+            'user_id' => $user->sub,
+            'date' => $date, // Today's date from server
+            'check_in_time' => $timeOnly, // Current time from server (HH:MM:SS)
+            'meal_break' => $break,
+            'status' => 'present',
+            'checkin_method' => 'face_recognition',
+            'is_late' => $isLate,
+            'late_minutes' => $lateMinutes
+        ];
+
+        // Delete any leave record for today if exists
+        $this->leaveModel
+            ->where('user_id', $user->sub)
+            ->where('start_date', $date)
+            ->where('end_date', $date)
+            ->delete();
+
+        if ($this->attendanceModel->insert($data)) {
+            // Check if attendance notifications are enabled
+            $notificationSettingsModel = new NotificationSettingsModel();
+            if ($notificationSettingsModel->isAttendanceNotificationsEnabled()) {
+                // Send push notification to admins
+                $employee = $this->userModel->find($user->sub);
+                $employeeName = $employee ? $employee['username'] : 'Employee';
+                
+                log_message('info', '📝 Employee face check-in: ' . $employeeName . ' at ' . $timeOnly);
+                
+                $this->pushNotificationService->notifyAdmins(
+                    'Employee Check-In (Face Recognition)',
+                    $employeeName . ' has checked in via face recognition at ' . $timeOnly,
+                    [
+                        'type' => 'checkin',
+                        'user_id' => $user->sub,
+                        'username' => $employeeName,
+                        'time' => $timeOnly,
+                        'date' => $date,
+                        'method' => 'face_recognition',
+                        'url' => base_url('/attendence')
+                    ]
+                );
+            } else {
+                log_message('info', '📝 Attendance notifications are disabled - skipping push notification');
+            }
+            
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Face verified! Checked in successfully via face recognition.'
+            ]);
+        }
+
+        return $this->respond(['status' => 'error', 'message' => 'Face check-in failed. Please try again.'], 500);
+    }
+
+    /**
+     * Calculate distance between two coordinates using Haversine formula
+     * Returns distance in meters
+     * 
+     * @param float $lat1 Latitude of first point
+     * @param float $lon1 Longitude of first point
+     * @param float $lat2 Latitude of second point
+     * @param float $lon2 Longitude of second point
+     * @return float Distance in meters
+     */
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371000; // Earth radius in meters
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Delete today's attendance records for the authenticated user
+     * Or delete all today's records if user is HR/Admin
+     */
+    public function deleteTodayAttendance()
+    {
+        date_default_timezone_set('Asia/Kolkata');
+        
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $today = date('Y-m-d');
+        
+        // If user is HR or Admin, delete all today's attendance records
+        if (in_array($user->role, ['hr', 'admin'])) {
+            $deleted = $this->attendanceModel
+                ->where('date', $today)
+                ->delete();
+            
+            return $this->respond([
+                'status' => 'success',
+                'message' => "Deleted {$deleted} attendance record(s) for today ({$today})",
+                'deleted_count' => $deleted
+            ]);
+        }
+        
+        // If user is employee, delete only their own today's attendance records
+        $deleted = $this->attendanceModel
+            ->where('user_id', $user->sub)
+            ->where('date', $today)
+            ->delete();
+        
+        return $this->respond([
+            'status' => 'success',
+            'message' => "Deleted {$deleted} attendance record(s) for today ({$today})",
+            'deleted_count' => $deleted
+        ]);
+    }
+
+    public function getDayAttendanceRecords()
+    {
+        $user = $this->authService->check();
+        if (!$user || !in_array($user->role, ['hr', 'admin'])) {
+            return $this->failUnauthorized('Access denied');
+        }
+
+        $userId = $this->request->getGet('user_id');
+        $date   = $this->request->getGet('date');
+
+        if (!$userId || !$date) {
+            return $this->fail('Invalid parameters');
+        }
+
+        $records = $this->attendanceModel
+            ->where('user_id', $userId)
+            ->where('date', $date)
+            ->orderBy('updated_at', 'DESC')
+            ->limit(1)
+            ->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'data'   => $records
+        ]);
+    }
+
+    public function updateDayAttendanceRecords()
+    {
+        $user = $this->authService->check();
+        if (!$user || !in_array($user->role, ['hr', 'admin'])) {
+            return $this->failUnauthorized('Access denied');
+        }
+
+        $payload = $this->request->getJSON(true);
+
+        $userId  = $payload['user_id'] ?? null;
+        $date    = $payload['date'] ?? null;
+        $records = $payload['records'] ?? [];
+        $manualStatus = $payload['status'] ?? null; // New: manual status override
+
+        if (!$userId || !$date || empty($records)) {
+            return $this->fail('Invalid data');
+        }
+
+        // Get company rules
+        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+        $mealBreak = $companyRule['lunch_break'] ?? '00:30:00';
+        $startTime = $companyRule['start_time'] ?? '09:00:00';
+        $gracePeriod = (int)($companyRule['grace_period'] ?? 0); // minutes
+
+        // Check if this is a new attendance record (no existing records)
+        $existingRecords = $this->attendanceModel
+            ->where('user_id', $userId)
+            ->where('date', $date)
+            ->findAll();
+
+        $isNewRecord = empty($existingRecords);
+
+        if ($isNewRecord || count($records) === 1) {
+            $record = $records[0];
+            
+            $workHours = '00:00:00';
+            $overTimeHours = '00:00:00';
+            $calculatedStatus = 'absent';
+            
+            if (!empty($record['check_in_time']) && !empty($record['check_out_time'])) {
+                $calculation = $this->calculateWorkHours(
+                    $date, 
+                    $mealBreak, 
+                    $record['check_in_time'], 
+                    $record['check_out_time']
+                );
+                $workHours = $calculation['work_hours'];
+                $overTimeHours = $calculation['overtime'];
+                $workedSeconds = $this->timeToSeconds($workHours);
+
+                $calculatedStatus = $this->calculateAttendanceStatus(
+                    $workedSeconds,
+                    $companyRule
+                );
+
+            }
+            
+            // Calculate late status for check-in time
+            $isLate = 0;
+            $lateMinutes = 0;
+            if (!empty($record['check_in_time'])) {
+                $checkInSeconds = $this->timeToSeconds($record['check_in_time']);
+                $startSeconds = $this->timeToSeconds($startTime);
+                $graceSeconds = $gracePeriod * 60;
+                
+                if ($checkInSeconds > ($startSeconds + $graceSeconds)) {
+                    $isLate = 1;
+                    $lateSeconds = $checkInSeconds - ($startSeconds + $graceSeconds);
+                    $lateMinutes = ceil($lateSeconds / 60);
+                }
+            }
+            
+            // Use manual status if provided, otherwise use calculated status
+            $finalStatus = $manualStatus ?? $calculatedStatus;
+            
+            // If manual status is "absent", force work hours to 0
+            if ($manualStatus === 'absent') {
+                $workHours = '00:00:00';
+            }
+            
+            $attendanceData = [
+                'user_id' => $userId,
+                'date' => $date,
+                'check_in_time' => $record['check_in_time'] ?? null,
+                'check_out_time' => $record['check_out_time'] ?? null,
+                'meal_break' => $mealBreak,
+                'work_hours' => $workHours,
+                'overtime' => !empty($record['check_in_time']) && !empty($record['check_out_time']) ? $calculation['overtime'] : '00:00:00',
+                'status' => $finalStatus,
+                'is_late' => $isLate,
+                'late_minutes' => $lateMinutes
+            ];
+
+            if ($isNewRecord || $record['id'] === 'new') {
+                // Create new attendance record
+                $this->attendanceModel->insert($attendanceData);
+                
+                // Delete any conflicting leave records
+                $this->leaveModel
+                    ->where('user_id', $userId)
+                    ->where('start_date <=', $date)
+                    ->where('end_date >=', $date)
+                    ->delete();
+            } else {
+                // Update existing record
+                $this->attendanceModel->update($record['id'], $attendanceData);
+            }
+
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Attendance updated successfully',
+                'work_hours' => $workHours,
+                'overtime' => !empty($record['check_in_time']) && !empty($record['check_out_time']) ? $calculation['overtime'] : '00:00:00',
+                'final_status' => $finalStatus,
+                'is_late' => $isLate,
+                'late_minutes' => $lateMinutes
+            ]);
+        }
+
+        // Handle multiple records (existing logic)
+        $mb = new \DateTime($mealBreak);
+        $mealSeconds = ($mb->format('H') * 3600)
+                    + ($mb->format('i') * 60)
+                    + $mb->format('s');
+        
+        $totalSeconds = 0;
+        $earliestCheckIn = null;
+        $isLate = 0;
+        $lateMinutes = 0;
+
+        foreach ($records as $row) {
+            // Calculate late status based on the earliest check-in time
+            if (!empty($row['check_in_time'])) {
+                $currentCheckInSeconds = $this->timeToSeconds($row['check_in_time']);
+                
+                if ($earliestCheckIn === null || $currentCheckInSeconds < $earliestCheckIn) {
+                    $earliestCheckIn = $currentCheckInSeconds;
+                    
+                    // Calculate if this earliest check-in is late
+                    $startSeconds = $this->timeToSeconds($startTime);
+                    $graceSeconds = $gracePeriod * 60;
+                    
+                    if ($currentCheckInSeconds > ($startSeconds + $graceSeconds)) {
+                        $isLate = 1;
+                        $lateSeconds = $currentCheckInSeconds - ($startSeconds + $graceSeconds);
+                        $lateMinutes = ceil($lateSeconds / 60);
+                    } else {
+                        $isLate = 0;
+                        $lateMinutes = 0;
+                    }
+                }
+            }
+            
+            // Update individual punch with late information
+            $this->attendanceModel->update($row['id'], [
+                'check_in_time'  => $row['check_in_time'],
+                'check_out_time' => $row['check_out_time'],
+                'is_late' => $isLate,
+                'late_minutes' => $lateMinutes
+            ]);
+            
+            // Calculate duration
+            if (!empty($row['check_in_time']) && !empty($row['check_out_time'])) {
+                $in  = strtotime($date . ' ' . $row['check_in_time']);
+                $out = strtotime($date . ' ' . $row['check_out_time']);
+
+                if ($out > $in) {
+                    $totalSeconds += ($out - $in);
+                }
+            }
+        }
+
+        // Deduct meal break ONCE
+        if ($totalSeconds > $mealSeconds) {
+            $totalSeconds -= $mealSeconds;
+        }
+
+        // Company rules (5 hrs = half day when half_day_hours not set)
+        $requiredSeconds = ($companyRule['working_hours_per_day'] ?? 8) * 3600;
+        $halfDayHours = isset($companyRule['half_day_hours']) && $companyRule['half_day_hours'] !== '' && $companyRule['half_day_hours'] !== null
+            ? (float) $companyRule['half_day_hours'] : 5;
+        $halfDaySeconds = $halfDayHours * 3600;
+
+        // Determine status - use manual status if provided
+        if ($manualStatus) {
+            $status = $manualStatus;
+        } else {
+            $status = 'absent';
+            if ($totalSeconds >= $requiredSeconds) {
+                $status = 'present';
+            } elseif ($totalSeconds >= $halfDaySeconds) {
+                $status = 'half-day';
+            }
+        }
+
+        // If manual status is "absent", force work hours to 0
+        if ($manualStatus === 'absent') {
+            $totalSeconds = 0;
+        }
+
+        $formattedHours = gmdate('H:i:s', $totalSeconds);
+
+        // Update ALL records of that day with final result
+        $this->attendanceModel
+            ->where('user_id', $userId)
+            ->where('date', $date)
+            ->set([
+                'work_hours' => $formattedHours,
+                'status' => $status,
+                'is_late' => $isLate,
+                'late_minutes' => $lateMinutes
+            ])
+            ->update();
+
+        // Delete any conflicting leave records
+        $this->leaveModel
+            ->where('user_id', $userId)
+            ->where('start_date <=', $date)
+            ->where('end_date >=', $date)
+            ->delete();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Attendance updated successfully',
+            'work_hours' => $formattedHours,
+            'final_status' => $status,
+            'is_late' => $isLate,
+            'late_minutes' => $lateMinutes
+        ]);
+    }
+
+    public function bulkUpdateAttendanceRecords()
+    {
+        $user = $this->authService->check();
+        if (!$user || !in_array($user->role, ['hr', 'admin'])) {
+            return $this->failUnauthorized('Access denied');
+        }
+
+        $payload = $this->request->getJSON(true);
+
+        $userId   = $payload['user_id'] ?? null;
+        $fromDate = $payload['from_date'] ?? null;
+        $toDate   = $payload['to_date'] ?? null;
+        $status   = $payload['status'] ?? null;
+
+        $checkIn  = $payload['check_in_time'] ?? null;
+        $checkOut = $payload['check_out_time'] ?? null;
+
+        if (!$userId || !$fromDate || !$toDate || !$status) {
+            return $this->fail('Invalid data');
+        }
+
+        // Company rules
+        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+        $mealBreak   = $companyRule['lunch_break'] ?? '00:30:00';
+        $startTime   = $companyRule['start_time'] ?? '09:00:00';
+        $gracePeriod = (int)($companyRule['grace_period'] ?? 0);
+
+        $start = new \DateTime($fromDate);
+        $end   = new \DateTime($toDate);
+        $end->modify('+1 day');
+
+        foreach (new \DatePeriod($start, new \DateInterval('P1D'), $end) as $dt) {
+
+            $date = $dt->format('Y-m-d');
+
+            if (date('w', strtotime($date)) == 0) {
+                continue;
+            }
+            
+            $holidayCalendarModel = new HolidayCalendarModel();
+            // Skip holidays
+            if ($holidayCalendarModel->where('holiday_date', $date)->first()) {
+                continue;
+            }
+
+            $workHours   = '00:00:00';
+            $overtime    = '00:00:00';
+            $isLate      = 0;
+            $lateMinutes = 0;
+
+            if ($checkIn) {
+                $checkInSec = $this->timeToSeconds($checkIn);
+                $startSec   = $this->timeToSeconds($startTime);
+                $graceSec   = $gracePeriod * 60;
+
+                if ($checkInSec > ($startSec + $graceSec)) {
+                    $isLate = 1;
+                    $lateMinutes = ceil(
+                        ($checkInSec - ($startSec + $graceSec)) / 60
+                    );
+                }
+            }
+
+            if ($status !== 'absent' && $checkIn && $checkOut) {
+
+                $calc = $this->calculateWorkHours(
+                    $date,
+                    $mealBreak,
+                    $checkIn,
+                    $checkOut
+                );
+
+                $workHours = $calc['work_hours'];
+                $overtime  = $calc['overtime'];
+            }
+
+            $attendanceData = [
+                'user_id'        => $userId,
+                'date'           => $date,
+                'check_in_time'  => $status === 'absent' ? null : $checkIn,
+                'check_out_time' => $status === 'absent' ? null : $checkOut,
+                'meal_break'     => $mealBreak,
+                'work_hours'     => $status === 'absent' ? '00:00:00' : $workHours,
+                'overtime'       => $status === 'absent' ? '00:00:00' : $overtime,
+                'status'         => $status,
+                'is_late'        => $isLate,
+                'late_minutes'   => $lateMinutes
+            ];
+
+            $existing = $this->attendanceModel
+                ->where('user_id', $userId)
+                ->where('date', $date)
+                ->first();
+
+            if ($existing) {
+                $this->attendanceModel->update($existing['id'], $attendanceData);
+            } else {
+                $this->attendanceModel->insert($attendanceData);
+            }
+
+            // 🧹 Remove conflicting leave
+            $this->leaveModel
+                ->where('user_id', $userId)
+                ->where('start_date <=', $date)
+                ->where('end_date >=', $date)
+                ->delete();
+        }
+
+        return $this->respond([
+            'status'  => 'success',
+            'message' => 'Bulk attendance updated successfully'
+        ]);
+    }
+
+}
+

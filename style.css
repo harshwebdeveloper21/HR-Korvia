@@ -1,0 +1,18 @@
+.step {
+    display: none;
+}
+
+.active {
+    display: block;
+}
+
+.loader {
+    display: none;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+.progress-bar{
+    background-color: #E66136 !important;
+}
