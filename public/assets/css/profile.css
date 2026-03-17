@@ -1,0 +1,47 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.profile-img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.section-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #555;
+    margin-right: 5px;
+}
+
+.tab-content {
+    padding-top: 20px;
+    background-color: white;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.card-value {
+    font-size: 0.95rem;
+    color: #555;
+}
+
+.nav-tabs .nav-link:hover {
+    background: #E66136;
+    color: white;
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+    background: #E66136;
+    color: white;
+}

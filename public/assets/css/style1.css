@@ -1,0 +1,121 @@
+/* body {
+    background-color: #f8f9fa;
+}
+
+.info-card {
+    padding: 20px;
+    border-radius: 10px;
+    color: black;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.info-card.blue {
+    background-color: white;
+}
+
+.info-card.red {
+    background-color: white;
+}
+
+.info-card.green {
+    background-color: white;
+}
+
+.info-card.purple {
+    background-color: white;
+}
+
+.select-date {
+    margin-bottom: 20px;
+}
+
+.attendance-table {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+} */
+
+/* table {
+    min-width: 1000px;
+    Ensures table has enough width for scrolling
+    width: 100%;
+} */
+
+/* table th,
+table td {
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.9rem;
+    padding: 10px;
+}
+
+table th {
+    background-color: #f1f1f1;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+} */
+/* .table thead th {
+    border-top: 0;
+    border-bottom-width: 1px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    background-color: rgb(233, 231, 231);
+} */
+
+/* .status-present {
+    color: green;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.status-absent {
+    color: red;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.status-empty {
+    color: #6c757d;
+    font-size: 1rem;
+} */
+
+/* Responsive adjustments */
+/* @media (max-width: 768px) {
+    .info-card h4 {
+        font-size: 1.5rem;
+    }
+
+    .info-card {
+        margin-bottom: 18px;
+    }
+
+    .info-card p {
+        font-size: 1rem;
+    }
+
+    table {
+        font-size: 0.8rem;
+    } */
+
+    /* .select-date .input-group {
+        width: 100% !important;
+        margin-left: 10px;
+    }
+
+    .select-date {
+        gap: 10px !important;
+    } */
+/* }
+@media (max-width: 576px) {
+    .d-flex {
+        flex-direction: column;
+    }
+
+    .d-flex > .mb-3 {
+        width: 100%;
+    }
+} */
+

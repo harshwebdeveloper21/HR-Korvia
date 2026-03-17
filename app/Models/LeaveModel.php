@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Models;
+
+use CodeIgniter\Model;
+
+class LeaveModel extends Model
+{
+    protected $table = 'leaves';
+    protected $primaryKey = 'id';
+    protected $allowedFields = [
+       'firstname', 'user_id', 'start_date', 'end_date', 'no_of_day', 'reason','leave_id','created_by','status'
+    ];
+    protected $useTimestamps = true;
+
+    public function getEmployeeReport($employee_id = null, $start_date = null, $end_date = null, $year = null, $month = null, $leave_type = null, $status = null)
+    {
+        $builder = $this->select('users.username, leave_type.leave_type, leaves.start_date, leaves.end_date, leaves.status')
+            ->join('users', 'users.id = leaves.user_id', 'left')
+            ->join('leave_type', 'leave_type.id = leaves.leave_id', 'left')
+            ->whereIn('users.role', ['employee', 'hr']);
+
+        if ($employee_id) {
+            $builder->where('leaves.user_id', $employee_id);
+        }
+        if ($start_date) {
+            $builder->where('leaves.start_date >=', $start_date);
+        }
+        if ($end_date) {
+            $builder->where('leaves.end_date <=', $end_date);
+        }
+        if ($year) {
+            $builder->where('YEAR(leaves.start_date)', $year);
+        }
+        if ($month) {
+            $builder->where('MONTH(leaves.start_date)', $month);
+        }
+        if ($leave_type) {
+            $builder->where('leaves.leave_id', $leave_type);
+        }
+        if ($status) {
+            $builder->where('leaves.status', $status);
+        }
+
+        return $builder->orderBy('leaves.start_date', 'DESC')->get()->getResultArray();
+    }
+
+    public function getLeavesCount($userId, $month)
+    {
+        $startDate = $month . '-01'; // e.g., "2025-06-01"
+        $endDate = date('Y-m-t', strtotime($startDate)); // e.g., "2025-06-30"
+
+        $leaves = $this->where('user_id', $userId)
+                    ->where('status', 'Approved')
+                    ->where('start_date <=', $endDate) // Leave starts before/on month end
+                    ->where('end_date >=', $startDate)  // Leave ends after/on month start
+                    ->findAll();
+
+        $totalDays = 0;
+
+        foreach ($leaves as $leave) {
+            // Get the overlapping days in the selected month
+            $leaveStart = max(strtotime($leave['start_date']), strtotime($startDate));
+            $leaveEnd = min(strtotime($leave['end_date']), strtotime($endDate));
+
+            $days = ($leaveEnd - $leaveStart) / (60 * 60 * 24) + 1; // +1 to include both start & end
+            $totalDays += $days;
+        }
+
+        return $totalDays;
+    }
+
+    
+}

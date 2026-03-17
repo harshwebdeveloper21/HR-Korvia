@@ -1,0 +1,6 @@
+Admin setup completed successfully.
+Admin Username: admin
+Admin Email: admin@gmail.com
+Company Name: Fablead Developer
+Company Logo: logo_68627b52b58559.56284180.jpg
+Installation Time: 2025-06-30 11:56:02

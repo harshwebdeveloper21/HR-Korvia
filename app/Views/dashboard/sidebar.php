@@ -1,0 +1,382 @@
+<?php
+
+use App\Services\AuthService;
+
+$request = \Config\Services::request();
+$authService = new AuthService($request);
+$user = $authService->check();
+
+$role = $user ? $user->role : null;
+?>
+
+<nav class="sidebar sidebar-offcanvas" id="sidebar">
+  <ul class="nav">
+    <li class="nav-item">
+      <a class="nav-link" href="<?= base_url('/dashboard') ?>">
+        <i class="mdi mdi-grid-large menu-icon"></i>
+        <span class="menu-title">Dashboard</span>
+      </a>
+    </li>
+    <li class="nav-item nav-category">Menus</li>
+    <?php if ($role === 'admin' || $role === 'hr') : ?>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#ui-basic" aria-expanded="false" aria-controls="ui-basic">
+          <i class="menu-icon mdi mdi-account-multiple"></i>
+          <span class="menu-title">Employees</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="ui-basic">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/empview">Manage Employee</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/employee">Add Employee</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#form-elements" aria-expanded="false" aria-controls="form-elements">
+          <i class="menu-icon mdi mdi-card-text-outline"></i>
+          <span class="menu-title">Attendance</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="form-elements">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"><a class="nav-link" href="/view-calendar">Manage Attendance </a></li>
+            <li class="nav-item"><a class="nav-link" href="/attendence">Attendance </a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#cha-rts" aria-expanded="false" aria-controls="cha-rts">
+          <i class="menu-icon mdi mdi-calendar"></i>
+          <span class="menu-title">Leaves</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="cha-rts">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/leaveview">Manage Leaves</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/addleave">Add Leaves</a></li>
+          </ul>
+        </div>
+      </li>
+
+     <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#tables" aria-expanded="false" aria-controls="tables">
+          <i class="menu-icon mdi mdi-table"></i>
+          <span class="menu-title lh-base">Recruitment & </br> Onboarding</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="tables">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/jobview">Jobs</a></li>
+
+            <li class="nav-item"> <a class="nav-link" href="/candidateview">Candidates</a></li>
+
+            <li class="nav-item"> <a class="nav-link" href="/addinterview">Interviews</a></li>
+
+            <li class="nav-item"> <a class="nav-link" href="/onboardingview">Employees Onboarding</a></li>
+
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#ico-nsss" aria-expanded="false" aria-controls="ico-nsss">
+          <i class="menu-icon mdi mdi-gauge"></i>
+          <span class="menu-title">Performance</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="ico-nsss">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/performanceview">Manage Performance</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/performance">Add Reviews</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#auth" aria-expanded="false" aria-controls="auth">
+          <i class="menu-icon mdi mdi-account-circle-outline"></i>
+          <span class="menu-title">Training</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="auth">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/trainingview">Manage Training</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/training">Add Training </a></li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#tabs" aria-expanded="false" aria-controls="tabs">
+          <i class="menu-icon mdi mdi-currency-inr"></i>
+          <span class="menu-title">Payroll</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="tabs">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/payrollview">Manage Payroll</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/payroll">Add Payroll</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/account-detail-view">Manage Account Detail</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#task" aria-expanded="false" aria-controls="task">
+          <i class="menu-icon mdi mdi-book-open"></i>
+          <span class="menu-title">Task</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="task">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/taskview">Manage Task</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/task">Add Task</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/all_subtask">SubTask List</a></li>
+          </ul>
+        </div>
+      </li>     
+
+      <!-- PDF Recorder - Available for all users -->
+      <!-- <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/pdf-recorder') ?>">
+          <i class="menu-icon mdi mdi-file-pdf-box"></i>
+          <span class="menu-title">PDF Statement</span>
+        </a>
+      </li> -->
+      
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#HRConfig" aria-expanded="false" aria-controls="HRConfig">
+          <i class="menu-icon mdi mdi-clipboard-text"></i>
+          <span class="menu-title">HR Configuration</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="HRConfig">
+          <ul class="nav flex-column sub-menu">            
+            <li class="nav-item"><a class="nav-link" href="/creates-rules">Company Rules</a></li>
+            <li class="nav-item"><a class="nav-link" href="/holidays">Holidays</a></li>
+            <li class="nav-item"><a class="nav-link" href="/locationview">Job Location</a></li>
+            <li class="nav-item"><a class="nav-link" href="/addressview">Job Addresses</a></li>
+          </ul>
+        </div>
+      </li>
+
+
+       <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#Settings" aria-expanded="false" aria-controls="Settings">
+          <i class="menu-icon mdi mdi-power-settings"></i>
+          <span class="menu-title">Settings</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="Settings">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/cityview">City</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/countryview">Country</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/stateView">State</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/departmentview">Departments</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/designationview">Designations</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/leavetypeview">Leave Types</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/locationview">Job Location</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/addressview">Job Addresses</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/applyjob">Apply Job</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/SMTPemail">SMTP Mail</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/offer-templates-view">Offer Letter Templates</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/emp-month-view">EOM Templates</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/view-rules">Company Rules</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/creates-rules">Company Rules</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/holidays">Holidays</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/notification-settings">Push Notifications</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/offer-templates-view">Templates</a></li>
+          </ul>
+        </div>
+      </li> 
+
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#eomMenu" aria-expanded="false" aria-controls="eomMenu">
+          <i class="menu-icon mdi mdi-star-circle"></i>
+          <span class="menu-title">EOM</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="eomMenu">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item">
+              <a class="nav-link" href="/addemp-month-performance">Select EOM</a>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#eomletter" aria-expanded="false" aria-controls="eomletter">
+        <i class="menu-icon mdi mdi-star-circle"></i>
+          <span class="menu-title">EOM</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="eomletter">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/all-empof-month">All EOM</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/addemp-month-performance">EOM Genrate</a></li>
+          </ul>
+        </div>
+      </li> 
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#exp" aria-expanded="false" aria-controls="exp">
+          <i class="menu-icon mdi mdi-file-account-outline"></i>
+          <span class="menu-title  lh-base">Exprience  </br> Letter</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="exp">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/exprience-templates-view">Exprience Template</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/generate-letter">Generate Letter</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/add-emp-exprience">Genrate Letter</a></li>
+          </ul>
+        </div>
+      </li> 
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#report" aria-expanded="false" aria-controls="report">
+          <i class="menu-icon mdi mdi-image-filter-none"></i>
+          <span class="menu-title">Report</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="report">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/empReport">Employee Report</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/leaveReport">Leave Report</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/salaryReport">Payrolls Report</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/attendanceReport">Attendence Report</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/performReport">Performance Report</a></li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#Masters" aria-expanded="false" aria-controls="Masters">
+          <i class="menu-icon mdi mdi-database"></i>
+          <span class="menu-title">Masters</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="Masters">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"><a class="nav-link" href="/countryview">Country</a></li>
+            <li class="nav-item"><a class="nav-link" href="/stateView">State</a></li>
+            <li class="nav-item"><a class="nav-link" href="/cityview">City</a></li>
+            <li class="nav-item"><a class="nav-link" href="/departmentview">Departments</a></li>
+            <li class="nav-item"><a class="nav-link" href="/designationview">Designations</a></li>
+            <li class="nav-item"><a class="nav-link" href="/leavetypeview">Leave Types</a></li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#Settings" aria-expanded="false" aria-controls="Settings">
+          <i class="menu-icon mdi mdi-cog"></i>
+          <span class="menu-title">System Settings</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="Settings">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"><a class="nav-link" href="/SMTPemail">SMTP Mail</a></li>
+            <li class="nav-item"><a class="nav-link" href="/notification-settings">Push Notifications</a></li>
+          </ul>
+        </div>
+      </li>
+
+      <!-- <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="/chat'" aria-expanded="false" aria-controls="chat">
+        <i class="menu-icon mdi mdi-message"></i>
+          <span class="menu-title">Chat</span>
+           <i class="menu-arrow"></i> 
+        </a>
+      </li> 
+
+       <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/chat') ?>">
+          <i class="menu-icon mdi mdi-message"></i>
+          <span class="menu-title">Chat</span>
+        </a>
+      </li>  -->
+    <?php endif; ?>
+
+    <?php if ($role === 'employee') : ?>
+
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/view-calendar') ?>">
+          <i class="menu-icon mdi mdi-card-text-outline"></i>
+          <span class="menu-title">Attendance</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/leaveview') ?>">
+          <i class="menu-icon mdi mdi-calendar"></i>
+          <span class="menu-title">Leaves</span>
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="/performanceview">
+          <i class="menu-icon mdi mdi-gauge"></i>
+          <span class="menu-title">Performance</span>
+        </a>
+      </li> 
+
+      <li class="nav-item">
+        <a class="nav-link" href="/payrollview">
+          <i class="menu-icon mdi mdi-currency-inr"></i>
+          <span class="menu-title">Payroll</span>
+        </a>
+      </li> 
+      <li class="nav-item">
+        <a class="nav-link" href="/trainingview">
+          <i class="menu-icon mdi mdi-currency-usd"></i>
+          <span class="menu-title">Training</span>
+        </a>
+      </li> 
+
+       <li class="nav-item">
+        <a class="nav-link" href="/taskview">
+          <i class="menu-icon mdi mdi-book-open"></i>
+          <span class="menu-title">Task</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/all_subtask">
+          <i class="menu-icon mdi mdi-format-list-checkbox"></i>
+          <span class="menu-title">SubTask</span>
+        </a>
+      </li> 
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#subtasks" aria-expanded="false" aria-controls="subtasks">
+          <i class="menu-icon mdi mdi-book-open"></i>
+          <span class="menu-title">Task</span>
+          <i class="menu-arrow"></i>
+        </a>
+       
+        <div class="collapse" id="subtasks">
+          <ul class="nav flex-column sub-menu">
+             <li class="nav-item"> <a class="nav-link" href="/taskview">Task</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/all_subtask">SubTask List</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/company-rules') ?>">
+          <i class="menu-icon mdi mdi-file-document"></i>
+          <span class="menu-title">Company Rule</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/company-holidays') ?>">
+          <i class="menu-icon mdi mdi-calendar-star"></i>
+          <span class="menu-title">Company Holidays</span>
+        </a>
+      </li>
+      <!-- PDF Recorder - Available for all users -->
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/pdf-recorder') ?>">
+          <i class="menu-icon mdi mdi-file-pdf-box"></i>
+          <span class="menu-title">PDF Statement</span>
+        </a>
+      </li>
+    <?php endif; ?>
+    
+    
+  </ul>
+</nav>

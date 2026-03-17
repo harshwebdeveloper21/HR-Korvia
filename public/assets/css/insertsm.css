@@ -1,0 +1,67 @@
+.lg-margin {
+    margin-bottom: 10px;
+}
+
+@media (max-width: 767px) {
+    .attendenceall {
+        font-size: 12px !important;
+        padding: 6px !important;
+    }
+
+    /* .iconfontsize {
+        font-size: 11px !important;
+    } */
+
+    .cart-sm-title {
+        font-size: 14px !important;
+        margin-bottom: 5px !important;
+    }
+
+    .dataTables_length {
+        margin-left: 1rem !important;
+        margin-bottom: .5rem !important;
+        font-size: 12px !important;
+        float: left !important;
+    }
+
+    .dataTables_filter {
+        font-size: 0px !important;
+        float: left !important;
+        /* margin-left: -5rem !important;  */
+    }
+
+    .leaveinput {
+        margin-top: 0px !important;
+    }
+
+    .form-group {
+        margin-bottom: 0px !important;
+    }
+
+    .leave-sm-emp {
+        margin-bottom: 0px !important;
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+    }
+
+    .leavetypeaddsm {
+        margin-top: 8px !important;
+        /* margin-bottom: 0px !important; */
+    }
+
+    /* .iconfontsize {
+        font-size: 11px !important;
+    } */
+
+    .leavetypeadd {
+        display: flex;
+        flex-direction: row-reverse;
+    }
+
+    .interviewsmbtn {
+        font-size: 10px !important;
+        padding: 8px !important;
+        margin-top: 10px !important;
+    }
+
+}

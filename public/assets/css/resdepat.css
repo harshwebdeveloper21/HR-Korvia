@@ -1,0 +1,67 @@
+  .main-dec-div{
+        display: flex;
+        justify-content: space-between; 
+        align-items: center;
+    }
+
+    .filtermenu {
+      display: flex;    
+    }
+    .departmrgin{
+        margin-right: 10px !important;
+    }
+   @media (max-width: 767.98px) {
+  .filter-sm-res {
+    flex-wrap: wrap !important;
+  }
+
+  .flex-direction-column {
+    flex-direction: column;
+  }
+
+  .filter-sm-res h4 {
+    flex: 1 1 100%;
+    margin-bottom: 10px;
+  }
+
+  .filter-sm-res > div {
+    flex: 1 1 100%;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-sm-res select {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  .filter-sm-res a {
+    width: 100%;
+  }
+  .btnpdingam{
+    padding: 5px !important;
+    font-size: 10px !important;
+    margin:7px !important;
+  }
+  .filterbtnpadd{
+    padding: 2px !important;
+    
+  }
+  .filtermenu{
+    margin-bottom: 12px !important;
+  }
+  
+  .fontsmfiltertitle{
+    font-size: 13px !important;
+  }
+  .departmrgin{
+    font-size: 11px !important;
+  }
+
+  .footer-font-size-sm{
+    font-size: 7px !important;
+  }
+  /* .iconfontsize {
+      font-size: 11px !important;
+  } */
+}

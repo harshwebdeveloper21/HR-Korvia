@@ -1,0 +1,75 @@
+    .payroll-card {
+        background: #fff;
+        /* border-radius: 20px; */
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        animation: fadeIn 0.6s ease-in-out;
+        padding: 0;
+    }
+
+    .payroll-header {
+        /* background: linear-gradient(to right, #E66136, #FF9472); */
+        color: #4a4a4a;
+        padding: 1rem 2rem;
+        border-radius: 20px 20px 0 0;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+    }
+
+    .nav-tabs {
+        background: #f6f6f6;
+        /* border-radius: 0 0 20px 20px; */
+        border-bottom: none;
+    }
+
+    .nav-tabs .nav-link {
+        color: #E66136;
+        font-weight: 600;
+        border: none;
+        border-radius: 0;
+        transition: all 0.3s;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: #E66136;
+        border-bottom: 3px solid #fff;
+        color: #fff;
+    }
+
+    .tab-content {
+        padding: 2rem;
+    }
+
+    .section-header {
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: #4a4a4a;
+        border-left: 5px solid #E66136;
+        padding-left: 10px;
+    }
+
+    .net-salary-card {
+        /* background: rgba(255, 99, 71, 0.1);
+        border: 1px solid #f08080;
+        backdrop-filter: blur(5px);
+        border-radius: 12px; */
+        padding: 1rem 1.5rem;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #4a4a4a;
+        /* box-shadow: inset 0 0 10px rgba(255, 182, 193, 0.3); */
+        /* margin-top: 2rem; */
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
