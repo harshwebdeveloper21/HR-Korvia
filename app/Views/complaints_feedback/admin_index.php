@@ -1,66 +1,76 @@
 <?= $this->extend('layout'); ?>
 
 <?= $this->section('content'); ?>
+<style>
+    .filterbtn { margin-top: -0.5rem !important; }
+    .bg-light-stripe { background-color: #f2f2f2 !important; }
+    #complaintsAdminTable thead tr { background-color: #000 !important; color: #fff !important; }
+    #complaintsAdminTable thead th { 
+        color: #fff !important; 
+        font-weight: 700 !important; 
+        text-transform: uppercase !important; 
+        font-size: 0.8rem !important;
+        border: none !important;
+        padding: 15px 10px !important;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        width: 321px !important;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 5px 10px;
+        margin-left: 10px;
+    }
+    .dataTables_wrapper .dataTables_length select {
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 3px 5px;
+    }
+    .hr-btnbg {
+        background-color: #E66136 !important;
+        border: 2px solid #F05929 !important;
+        border-radius: 4px !important;
+        color: #fff !important;
+        font-family: Poppins, sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+    }
+</style>
+
 <div class="row">
-    <div class="col-12 grid-margin stretch-card">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center py-4 border-bottom-0">
-                <div>
-                    <h4 class="card-title mb-1 fw-bold">Admin: Manage Complaints & Feedback</h4>
-                    <p class="text-muted small mb-0">Monitor, categorize, and resolve employee feedback and complaints.</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="<?= base_url('complaints/create') ?>" class="btn btn-sm text-white fw-bold" style="background-color: #E66136; border-radius: 4px; padding: 5px 15px;">
-                        + Add Complaint
-                    </a>
-                    <button class="btn btn-sm btn-outline-primary border refresh-table" style="padding: 5px 15px;">
-                        <i class="mdi mdi-refresh"></i> Refresh
-                    </button>
-                </div>
-            </div>
-            
-            <div class="card-body p-0 border-top bg-light bg-opacity-10 py-3">
-                <div class="row px-4 g-3">
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold text-muted">Filter by Status</label>
-                        <select id="filterStatus" class="form-select border-0 shadow-sm py-2">
+    <div class="col-lg-12 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="align-items-center d-md-flex justify-content-between mb-3">
+                    <h4 class="card-title">Manage Complaints & Feedback</h4>
+                    <div class="d-md-flex gap-2">
+                        <select class="form-select shadow-none" id="filterStatus" style="max-width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="Pending">Pending</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Resolved">Resolved</option>
                         </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold text-muted">Filter by Type</label>
-                        <select id="filterType" class="form-select border-0 shadow-sm py-2">
+                        <select class="form-select shadow-none" id="filterType" style="max-width: 130px;">
                             <option value="">All Types</option>
                             <option value="Complaint">Complaint</option>
                             <option value="Feedback">Feedback</option>
                         </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold text-muted">Request Date From</label>
-                        <input type="date" id="filterDateFrom" class="form-control border-0 shadow-sm py-2">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold text-muted">Request Date To</label>
-                        <input type="date" id="filterDateTo" class="form-control border-0 shadow-sm py-2">
+                        <a href="<?= base_url('complaints/create') ?>" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-plus iconfontsize"></i> Add New Request
+                        </a>
                     </div>
                 </div>
-            </div>
 
-            <div class="card-body pt-0 mt-3">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle border-bottom" id="complaintsAdminTable">
-                        <thead style="background-color: #000; color: #fff;">
+                    <table class="table table-striped w-100" id="complaintsAdminTable">
+                        <thead>
                             <tr>
-                                <th class="py-3 ps-4">ID</th>
-                                <th class="py-3">EMPLOYEE INFO</th>
-                                <th class="py-3">TYPE</th>
-                                <th class="py-3">SUBJECT</th>
-                                <th class="py-3 text-center">STATUS</th>
-                                <th class="py-3">SUBMISSION DATE</th>
-                                <th class="py-3 text-end pe-4">ACTION</th>
+                                <th style="display:none;">ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Subject</th>
+                                <th class="text-center">Status</th>
+                                <th>Submitted</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                     </table>
@@ -80,22 +90,17 @@ $(document).ready(function() {
             data: function(d) {
                 d.type = $('#filterType').val();
                 d.status = $('#filterStatus').val();
-                d.date_from = $('#filterDateFrom').val();
-                d.date_to = $('#filterDateTo').val();
             }
         },
         columns: [
-            { 
-                data: 'id',
-                className: 'ps-4 fw-bold'
-            },
+            { data: 'id', visible: false },
             { 
                 data: null,
                 render: function(data) {
                     return `
-                        <div>
-                            <span class="fw-bold d-block text-dark text-uppercase" style="font-size: 0.85rem;">${data.name}</span>
-                            <span class="small text-muted d-block">${data.email}</span>
+                        <div class="py-1">
+                            <span class="fw-bold d-block text-dark">${data.name}</span>
+                            <span class="text-muted small d-block">${data.email}</span>
                         </div>
                     `;
                 }
@@ -103,24 +108,24 @@ $(document).ready(function() {
             { 
                 data: 'type',
                 render: function(data) {
-                    let badgeColor = data === 'Complaint' ? '#fe5e5e' : '#00c8ff';
-                    return `<span class="badge bg-transparent border" style="border-color: ${badgeColor} !important; color: ${badgeColor}; padding: 5px 10px;">${data}</span>`;
+                    let color = data === 'Complaint' ? '#ef4444' : '#0ea5e9';
+                    return `<span class="badge border-0 px-2 py-1 fw-semibold text-white" style="background-color: ${color}; border-radius: 4px; font-size: 0.7rem;">${data.toUpperCase()}</span>`;
                 }
             },
             { 
                 data: 'subject',
                 render: function(data) {
-                    return `<span class="small fw-semibold text-wrap d-inline-block" style="min-width: 150px; color: #555;">${data}</span>`;
+                    return `<span class="text-muted small lh-sm d-inline-block text-wrap" style="max-width: 200px;">${data}</span>`;
                 }
             },
             { 
                 data: 'status',
                 className: 'text-center',
                 render: function(data) {
-                    let statusColor = '#ffbc07';
-                    if (data === 'In Progress') statusColor = '#4B49AC';
-                    if (data === 'Resolved') statusColor = '#28a745';
-                    return `<span style="color: ${statusColor}; font-weight: 600;">${data}</span>`;
+                    let color = '#E66136';
+                    if (data === 'In Progress') color = '#4B49AC';
+                    if (data === 'Resolved') color = '#34B1AA';
+                    return `<span class="fw-bold" style="color: ${color}; font-size: 0.75rem; text-decoration: underline; text-underline-offset: 4px;">${data.toUpperCase()}</span>`;
                 }
             },
             { 
@@ -132,17 +137,13 @@ $(document).ready(function() {
             },
             {
                 data: null,
-                className: 'text-end pe-4',
+                className: 'desktop-only-col',
                 orderable: false,
                 render: function(data) {
                     return `
-                        <div class="d-flex justify-content-end gap-2">
-                            <a href="<?= base_url('complaints/update') ?>/${data.id}" class="text-warning fs-18" title="Edit/Update">
-                                <i class="mdi mdi-pencil"></i>
-                            </a>
-                            <a href="javascript:void(0);" class="text-danger fs-18 delete-btn" data-id="${data.id}" title="Delete">
-                                <i class="mdi mdi-delete"></i>
-                            </a>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <a href="<?= base_url('complaints/update') ?>/${data.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
+                            <a href="#" class="text-danger fs-5 delete-btn" data-id="${data.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
                         </div>
                     `;
                 }
@@ -150,30 +151,29 @@ $(document).ready(function() {
         ],
         order: [[0, 'desc']],
         language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search here...",
+            search: "",
+            searchPlaceholder: "Search",
             lengthMenu: "Show _MENU_ entries"
         }
     });
 
-    $('#filterType, #filterStatus, #filterDateFrom, #filterDateTo').on('change', function() {
-        table.ajax.reload();
-    });
+    $('#filterType, #filterStatus').on('change', function() { table.ajax.reload(); });
 
-    $('.refresh-table').on('click', function() {
-        table.ajax.reload();
-    });
-
-    $('#complaintsAdminTable').on('click', '.delete-btn', function() {
+    $('#complaintsAdminTable').on('click', '.delete-btn', function(e) {
+        e.preventDefault();
         let id = $(this).data('id');
         Swal.fire({
             title: 'Are you sure?',
-            text: "You won't be able to revert this record!",
+            text: 'This action cannot be undone!',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'No, cancel!',
+            buttonsStyling: false,
+            customClass: {
+                confirmButton: 'btn hr-btnbg me-2',
+                cancelButton: 'btn hr-btnbg',
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
@@ -181,10 +181,14 @@ $(document).ready(function() {
                     type: 'POST',
                     success: function(response) {
                         if (response.status === 'success') {
-                            Swal.fire('Deleted!', response.message, 'success');
-                            table.ajax.reload();
-                        } else {
-                            Swal.fire('Error!', response.message, 'error');
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: response.message,
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                buttonsStyling: false,
+                                customClass: { confirmButton: 'btn hr-btnbg' }
+                            }).then(() => { table.ajax.reload(); });
                         }
                     }
                 });
@@ -193,23 +197,4 @@ $(document).ready(function() {
     });
 });
 </script>
-
-<style>
-    #complaintsAdminTable thead th { 
-        background-color: #000 !important; 
-        color: #fff !important; 
-        font-weight: 500; 
-        text-transform: uppercase;
-        font-size: 0.8rem; 
-        padding: 12px 15px;
-        border: none;
-    }
-    #complaintsAdminTable tbody td { 
-        padding: 12px 15px;
-        border-bottom: 1px solid #f3f3f3;
-        font-size: 0.85rem;
-    }
-    .fs-18 { font-size: 1.15rem; }
-    .badge { border-radius: 4px; font-weight: 500; }
-</style>
 <?= $this->endSection(); ?>

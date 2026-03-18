@@ -25,10 +25,8 @@ class ComplaintsController extends ResourceController
         $user = $this->authService->user();
         if (!$user) return redirect()->to('/login');
 
-        // Check if user is Admin/HR - if so, maybe they can see all? 
-        // But user said: "other user only fore view and this complaints feebacked add on"
-        // I'll keep user view to 'own records' as standard.
-        
+        // If Admin/HR, they can see all in adminIndex. 
+        // Regular users see only their own.
         $complaints = $this->complaintModel->where('user_id', $user->sub)
             ->orderBy('created_at', 'DESC')
             ->findAll();
@@ -48,9 +46,16 @@ class ComplaintsController extends ResourceController
         $user = $this->authService->user();
         if (!$user) return redirect()->to('/login');
 
+        $userModel = new \App\Models\UserModel();
+        $users = [];
+        if (in_array($user->role, ['admin', 'hr'])) {
+            $users = $userModel->select('id, username, role')->findAll();
+        }
+
         return view('complaints_feedback/create', [
             'user' => $user,
-            'role' => $user->role
+            'role' => $user->role,
+            'users' => $users
         ]);
     }
 
@@ -83,8 +88,14 @@ class ComplaintsController extends ResourceController
             $file->move(FCPATH . 'uploads/complaints', $fileName);
         }
 
+        // If Admin/HR is creating on behalf of someone else
+        $targetUserId = $user->sub;
+        if (in_array($user->role, ['admin', 'hr']) && $this->request->getPost('user_id')) {
+            $targetUserId = $this->request->getPost('user_id');
+        }
+
         $data = [
-            'user_id' => $user->sub,
+            'user_id' => $targetUserId,
             'name'    => $this->request->getPost('name'),
             'email'   => $this->request->getPost('email'),
             'mobile'  => $this->request->getPost('mobile'),
@@ -92,11 +103,11 @@ class ComplaintsController extends ResourceController
             'subject' => $this->request->getPost('subject'),
             'message' => $this->request->getPost('message'),
             'file'    => $fileName,
-            'status'  => 'Pending'
+            'status'  => $this->request->getPost('status') ?? 'Pending'
         ];
 
         if ($this->complaintModel->insert($data)) {
-            return $this->respond(['status' => 'success', 'message' => 'Your ' . strtolower($data['type']) . ' has been submitted successfully.'], 200);
+            return $this->respond(['status' => 'success', 'message' => 'The ' . strtolower($data['type']) . ' has been submitted successfully.'], 200);
         }
 
         return $this->fail('Failed to submit. Try again.');
@@ -130,10 +141,14 @@ class ComplaintsController extends ResourceController
         $complaint = $this->complaintModel->find($id);
         if (!$complaint) return redirect()->to('/complaints/admin')->with('error', 'Record not found');
 
+        $userModel = new \App\Models\UserModel();
+        $users = $userModel->select('id, username, role')->findAll();
+
         return view('complaints_feedback/update', [
             'complaint' => $complaint,
             'user' => $user,
-            'role' => $user->role
+            'role' => $user->role,
+            'users' => $users
         ]);
     }
 
@@ -148,7 +163,7 @@ class ComplaintsController extends ResourceController
         $date_to = $this->request->getGet('date_to');
 
         $data = $this->complaintModel->getFilteredComplaints($type, $status, $date_from, $date_to);
-        return $this->respond($data);
+        return $this->respond(['data' => $data]);
     }
 
     /**
@@ -157,17 +172,32 @@ class ComplaintsController extends ResourceController
     public function updateComplaint($id = null)
     {
         $user = $this->authService->user();
-        if (!$user || !in_array($user->role, ['admin', 'hr', 'user'])) { // If user can update? User says "only for view" 
-            return $this->failUnauthorized();
-        }
+        if (!$user) return $this->failUnauthorized();
 
         $complaint = $this->complaintModel->find($id);
         if (!$complaint) return $this->failNotFound('Record not found');
+
+        // Check permission: Admin/HR can update any. User can maybe only update their own if it's still pending?
+        // But user says: "Admin and HR are all access"
+        if (!in_array($user->role, ['admin', 'hr']) && $complaint['user_id'] != $user->sub) {
+            return $this->failForbidden('You do not have permission to update this record.');
+        }
 
         $data = [
             'status'       => $this->request->getPost('status'),
             'admin_remark' => $this->request->getPost('admin_remark')
         ];
+
+        // If Admin/HR, allow editing EVERYTHING
+        if (in_array($user->role, ['admin', 'hr'])) {
+            $data['name']    = $this->request->getPost('name');
+            $data['email']   = $this->request->getPost('email');
+            $data['mobile']  = $this->request->getPost('mobile');
+            $data['type']    = $this->request->getPost('type');
+            $data['subject'] = $this->request->getPost('subject');
+            $data['message'] = $this->request->getPost('message');
+            $data['user_id'] = $this->request->getPost('user_id') ?? $complaint['user_id'];
+        }
 
         if ($this->complaintModel->update($id, $data)) {
             return $this->respond(['status' => 'success', 'message' => 'Record updated successfully.']);

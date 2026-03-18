@@ -53,6 +53,7 @@
         <!-- page-body-wrapper ends -->
     </div>
     <?= $this->include('dashboard/footer_link.php'); ?>
+    <?= $this->renderSection('scripts'); ?>
 </body>
 
 </html>
