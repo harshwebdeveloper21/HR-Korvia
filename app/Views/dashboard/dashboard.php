@@ -406,146 +406,277 @@
 
     }
 
-    /* Announcement Modern Section Styling */
-    .announcement-section {
-        background: #f8fafc;
-        padding: 20px 0;
+    /* ==========================================
+       Latest Announcements — Premium Design
+    ========================================== */
+    .ann-section-wrapper {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+        padding: 24px;
+        margin-bottom: 24px;
     }
-    .announcement-header-wrapper {
+    .ann-section-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
     }
-    .announcement-title {
-        font-size: 1.1rem;
+    .ann-section-title {
+        font-size: 1.05rem;
         font-weight: 700;
         color: #1e293b;
         margin: 0;
         display: flex;
         align-items: center;
+        gap: 10px;
     }
-    .announcement-title i {
-        color: #E66136;
-        margin-right: 10px;
-        font-size: 1.4rem;
-    }
-    .announcement-container {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: 20px;
-        padding: 20px 5px;
-        min-height: 250px; /* Fixed height for better alignment */
-        scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
-    }
-    
-    /* Custom Horizontal Scrollbar */
-    .announcement-container::-webkit-scrollbar {
-        height: 6px;
-    }
-    .announcement-container::-webkit-scrollbar-track {
-        background: #f1f5f9;
+    .ann-section-title .ann-icon-wrap {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #E66136, #f59e0b);
         border-radius: 10px;
-    }
-    .announcement-container::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-    }
-    .announcement-container::-webkit-scrollbar-thumb:hover {
-        background: #E66136;
-    }
-    
-    .announcement-item-card {
-        flex: 0 0 350px; /* Fixed width for horizontal layout */
-        height: 180px; /* Fixed height for consistent look */
-        border-radius: 12px;
-        padding: 20px;
-        transition: all 0.3s ease;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        border: none;
-    }
-    
-    /* Specific Color Variants from Image */
-    .variant-info { background-color: #d1f3f9; color: #0891b2; }
-    .variant-urgent { background-color: #ffe4e6; color: #e11d48; }
-    .variant-success { background-color: #dcfce7; color: #166534; }
-    
-    .announcement-item-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-    }
-    
-    .announcement-card-header {
         display: flex;
         align-items: center;
-        margin-bottom: 5px;
+        justify-content: center;
+        flex-shrink: 0;
     }
-    .announcement-card-header i {
-        margin-right: 10px;
+    .ann-section-title .ann-icon-wrap i {
+        color: #fff;
         font-size: 1.1rem;
     }
-    .announcement-card-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        margin-bottom: 0;
-        line-height: 1.4;
-        flex: 1;
-    }
-    .announcement-new-badge {
-        font-size: 11px;
-        font-weight: 600;
-        opacity: 0.6;
-    }
-    .announcement-card-date {
+    .ann-view-all {
+        color: #E66136;
         font-size: 0.85rem;
-        margin-bottom: 15px;
-        opacity: 0.8;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 14px;
+        border: 1.5px solid rgba(230, 97, 54, 0.3);
+        border-radius: 20px;
+        transition: all 0.2s;
     }
-    .announcement-card-desc {
-        font-size: 0.9rem;
-        margin-bottom: 20px;
+    .ann-view-all:hover {
+        background: #E66136;
+        color: #fff;
+        border-color: #E66136;
+    }
+
+    /* Horizontal scroll container */
+    .ann-scroll-track {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+    .ann-scroll-track::-webkit-scrollbar { height: 5px; }
+    .ann-scroll-track::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    .ann-scroll-track::-webkit-scrollbar-thumb { background: #E66136; border-radius: 10px; }
+
+    /* Individual announcement card */
+    .ann-card {
+        flex: 0 0 220px;
+        border-radius: 12px;
+        padding: 14px 16px;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.28s ease, box-shadow 0.28s ease;
+        border: 1.5px solid transparent;
+    }
+    .ann-card::before {
+        content: '';
+        position: absolute;
+        top: -30px;
+        right: -30px;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        opacity: 0.15;
+        transition: opacity 0.3s;
+    }
+    .ann-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+    }
+    .ann-card:hover::before { opacity: 0.25; }
+
+    /* Color variants */
+    .ann-info  { background: linear-gradient(135deg, #e0f2fe, #bae6fd); border-color: #7dd3fc; }
+    .ann-info::before  { background: #0ea5e9; }
+    .ann-info .ann-card-icon  { color: #0284c7; background: rgba(2,132,199,0.12); }
+    .ann-info .ann-card-title { color: #075985; }
+    .ann-info .ann-card-meta  { color: #0369a1; }
+    .ann-info .ann-card-desc  { color: #0c4a6e; }
+    .ann-info .ann-card-badge { background: rgba(2,132,199,0.15); color: #0284c7; }
+
+    .ann-warning { background: linear-gradient(135deg, #fef9c3, #fef08a); border-color: #fde047; }
+    .ann-warning::before { background: #eab308; }
+    .ann-warning .ann-card-icon  { color: #ca8a04; background: rgba(202,138,4,0.12); }
+    .ann-warning .ann-card-title { color: #713f12; }
+    .ann-warning .ann-card-meta  { color: #92400e; }
+    .ann-warning .ann-card-desc  { color: #78350f; }
+    .ann-warning .ann-card-badge { background: rgba(202,138,4,0.15); color: #ca8a04; }
+
+    .ann-success { background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-color: #86efac; }
+    .ann-success::before { background: #16a34a; }
+    .ann-success .ann-card-icon  { color: #15803d; background: rgba(21,128,61,0.12); }
+    .ann-success .ann-card-title { color: #14532d; }
+    .ann-success .ann-card-meta  { color: #166534; }
+    .ann-success .ann-card-desc  { color: #052e16; }
+    .ann-success .ann-card-badge { background: rgba(21,128,61,0.15); color: #15803d; }
+
+    .ann-urgent  { background: linear-gradient(135deg, #ffe4e6, #fecdd3); border-color: #fda4af; }
+    .ann-urgent::before  { background: #e11d48; }
+    .ann-urgent .ann-card-icon  { color: #be123c; background: rgba(190,18,60,0.12); }
+    .ann-urgent .ann-card-title { color: #881337; }
+    .ann-urgent .ann-card-meta  { color: #9f1239; }
+    .ann-urgent .ann-card-desc  { color: #4c0519; }
+    .ann-urgent .ann-card-badge { background: rgba(190,18,60,0.15); color: #be123c; }
+
+    .ann-event  { background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-color: #c4b5fd; }
+    .ann-event::before  { background: #7c3aed; }
+    .ann-event .ann-card-icon  { color: #6d28d9; background: rgba(109,40,217,0.12); }
+    .ann-event .ann-card-title { color: #4c1d95; }
+    .ann-event .ann-card-meta  { color: #5b21b6; }
+    .ann-event .ann-card-desc  { color: #2e1065; }
+    .ann-event .ann-card-badge { background: rgba(109,40,217,0.15); color: #6d28d9; }
+
+    /* Card internals */
+    .ann-card-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    .ann-card-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .ann-card-badge {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 2px 7px;
+        border-radius: 20px;
+        text-transform: uppercase;
+    }
+    .ann-card-new {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 2px 7px;
+        border-radius: 20px;
+        background: #ef4444;
+        color: #fff;
+        animation: pulse-new 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-new {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.55; }
+    }
+    .ann-card-title {
+        font-size: 0.83rem;
+        font-weight: 700;
+        line-height: 1.35;
+        margin-bottom: 5px;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .ann-card-meta {
+        font-size: 0.7rem;
+        opacity: 0.75;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+    .ann-card-desc {
+        font-size: 0.76rem;
+        line-height: 1.45;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        min-height: 2.7em;
+        opacity: 0.82;
     }
-    .announcement-card-footer {
+    .ann-card-footer {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(0,0,0,0.06);
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: center;
-        padding-top: 10px;
-    }
-    .announcement-type-label {
-        font-size: 0.85rem;
+        font-size: 0.72rem;
         font-weight: 600;
     }
-    .read-more-link {
-        font-size: 0.95rem;
-        font-weight: 600;
-        text-decoration: none;
-        color: inherit;
+    .ann-card-footer-read {
         display: flex;
         align-items: center;
+        gap: 4px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
     }
-    .read-more-link i {
-        margin-left: 8px;
-        transition: transform 0.2s;
+    .ann-card:hover .ann-card-footer-read { opacity: 1; }
+
+    /* ── Marquee ticker ── */
+    .ann-marquee-outer {
+        overflow: hidden;          /* clip cards outside viewport */
+        position: relative;
+        width: 100%;
     }
-    .read-more-link:hover i {
-        transform: translateX(5px);
+    /* Subtle fade on right edge */
+    .ann-marquee-outer::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0;
+        width: 80px; height: 100%;
+        background: linear-gradient(to left, #fff 30%, transparent);
+        pointer-events: none;
+        z-index: 3;
     }
-    
+
+    /* ── Announcement Cards Row ── */
+    .ann-marquee-outer {
+        position: relative;
+        width: 100%;
+    }
+    /* Fade right edge when scrollable */
+    .ann-marquee-outer::after {
+        content: '';
+        position: absolute;
+        top: 0; right: 0;
+        width: 80px; height: 100%;
+        background: linear-gradient(to left, #fff 30%, transparent);
+        pointer-events: none;
+        z-index: 3;
+    }
+    /* Scrollable flex row — width:100% so overflow clips clones naturally */
+    .ann-marquee-track {
+        display: flex;
+        gap: 14px;
+        overflow-x: scroll;
+        width: 100%;
+        scroll-behavior: auto;   /* MUST be auto — smooth interferes with JS */
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .ann-marquee-track::-webkit-scrollbar { display: none; }
+
     @media (max-width: 768px) {
-        .announcement-item-card {
-            flex: 1 1 100%;
-        }
+        .ann-card { flex: 0 0 190px; }
     }
 </style>
 
@@ -601,45 +732,57 @@
 
             <div class="tab-content tab-content-basic">
 
-                <!-- Modern Announcements Section -->
+                <!-- Latest Announcements — Premium Section -->
                 <?php if (!empty($activeAnnouncements)): ?>
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="announcement-header-wrapper">
-                            <h3 class="announcement-title">
-                                <i class="mdi mdi-bullhorn-variant"></i> Latest Announcements
-                            </h3>
-                            <a href="/announcements" class="text-decoration-none fw-bold" style="color: #E66136; font-size: 0.9rem;">
-                                View All <i class="mdi mdi-arrow-right"></i>
-                            </a>
-                        </div>
-                        
-                        <div class="announcement-container" id="announcementContainer">
-                            <?php foreach ($activeAnnouncements as $announcement): ?>
-                                    <?php 
-                                        $variantClass = 'variant-info';
-                                        $icon = 'mdi-information';
-                                        $type = strtolower($announcement['type']);
-                                        if (strpos($type, 'event') !== false || strpos($type, 'urgent') !== false) {
-                                            $variantClass = 'variant-urgent';
-                                            $icon = 'mdi-alert-circle';
-                                        } elseif (strpos($type, 'holiday') !== false || strpos($type, 'success') !== false) {
-                                            $variantClass = 'variant-success';
-                                            $icon = 'mdi-check-circle';
-                                        }
-                                    ?>
-                                    <div class="announcement-item-card <?= $variantClass ?>" onclick="showAnnouncement(<?= esc(json_encode($announcement)) ?>)" style="cursor: pointer;">
-                                        <div>
-                                            <div class="announcement-card-header">
-                                                <i class="mdi <?= $icon ?>"></i>
-                                                <h4 class="announcement-card-title"><?= esc($announcement['title']) ?></h4>
-                                                <span class="announcement-new-badge ms-auto">New</span>
-                                            </div>
-                                            <div class="announcement-card-date"><?= date('M d, Y', strtotime($announcement['start_date'])) ?></div>
-                                            <p class="announcement-card-desc" style="margin-bottom: 0;"><?= esc(strip_tags($announcement['description'])) ?></p>
+                <div class="ann-section-wrapper">
+                    <div class="ann-section-header">
+                        <h3 class="ann-section-title">
+                            <span class="ann-icon-wrap">
+                                <i class="mdi mdi-bullhorn-variant"></i>
+                            </span>
+                            Latest Announcements
+                            <span class="badge ms-2" style="background: rgba(230,97,54,0.12); color: #E66136; font-size: 11px; font-weight: 700; border-radius: 20px;">
+                                <?= count($activeAnnouncements) ?>
+                            </span>
+                        </h3>
+                        <a href="/announcements" class="ann-view-all">
+                            View All <i class="mdi mdi-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- Infinite CSS marquee ticker -->
+                    <div class="ann-marquee-outer">
+                        <div class="ann-marquee-track" id="announcementContainer">
+                            <?php foreach ($activeAnnouncements as $ann): ?>
+                                <?php
+                                    $t = strtolower($ann['type'] ?? 'info');
+                                    if ($t === 'warning')     { $cls = 'ann-warning'; $ico = 'mdi-alert-circle-outline';  $label = 'Warning'; }
+                                    elseif ($t === 'success') { $cls = 'ann-success'; $ico = 'mdi-check-circle-outline';  $label = 'Success'; }
+                                    elseif ($t === 'urgent')  { $cls = 'ann-urgent';  $ico = 'mdi-alert-octagon-outline'; $label = 'Urgent'; }
+                                    elseif ($t === 'event')   { $cls = 'ann-event';   $ico = 'mdi-calendar-star-outline'; $label = 'Event'; }
+                                    else                      { $cls = 'ann-info';    $ico = 'mdi-information-outline';   $label = 'Info'; }
+                                    $isNew = !in_array($ann['id'], $readIds ?? []);
+                                ?>
+                                <div class="ann-card <?= $cls ?>" onclick="showAnnouncement(<?= esc(json_encode($ann)) ?>)">
+                                    <div class="ann-card-top">
+                                        <div class="ann-card-icon"><i class="mdi <?= $ico ?> fs-20"></i></div>
+                                        <div class="d-flex flex-column align-items-end gap-1">
+                                            <span class="ann-card-badge"><?= $label ?></span>
+                                            <?php if ($isNew): ?><span class="ann-card-new">NEW</span><?php endif; ?>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
+                                    <div class="ann-card-title"><?= esc($ann['title']) ?></div>
+                                    <div class="ann-card-meta">
+                                        <i class="mdi mdi-calendar-clock-outline"></i>
+                                        <?= date('d M Y', strtotime($ann['start_date'])) ?> &mdash; <?= date('d M Y', strtotime($ann['end_date'])) ?>
+                                    </div>
+                                    <p class="ann-card-desc"><?= esc(strip_tags($ann['description'])) ?></p>
+                                    <div class="ann-card-footer">
+                                        <span class="ann-card-footer-read"><i class="mdi mdi-eye-outline"></i> Click to read</span>
+                                        <i class="mdi mdi-arrow-right"></i>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
@@ -2818,39 +2961,62 @@
         });
     }
 
-    // Auto-scroll logic for Announcements
+    // ================================================
+    // Announcement Cards: infinite left-to-right via scrollLeft
+    // ================================================
     (function() {
-        const container = document.getElementById('announcementContainer');
-        if (!container) return;
+        var track = document.getElementById('announcementContainer');
+        if (!track) return;
 
-        let scrollInterval;
-        const scrollStep = 370; // Card width (350) + gap (20)
-        
-        function startAutoScroll() {
-            scrollInterval = setInterval(() => {
-                const maxScroll = container.scrollWidth - container.clientWidth;
-                if (container.scrollLeft >= maxScroll - 5) {
-                    container.scrollTo({ left: 0, behavior: 'smooth' });
-                } else {
-                    container.scrollBy({ left: scrollStep, behavior: 'smooth' });
+        // Capture real cards before any cloning
+        var realCards = Array.prototype.slice.call(track.querySelectorAll('.ann-card'));
+        if (!realCards.length) return;
+
+        // Wait one frame so widths are computed
+        requestAnimationFrame(function() {
+
+            var containerW = track.offsetWidth;  // visible width of track
+            var cardW      = (realCards[0].offsetWidth || 220) + 14; // card + gap
+            var origW      = realCards.length * cardW;               // total original set width
+
+            // Clone enough sets so total content > 3x container width (ensures seamless snap)
+            var setsNeeded = Math.max(3, Math.ceil((containerW * 3) / origW));
+            for (var s = 0; s < setsNeeded; s++) {
+                realCards.forEach(function(card) {
+                    var clone = card.cloneNode(true);
+                    clone.setAttribute('aria-hidden', 'true');
+                    track.appendChild(clone);
+                });
+            }
+
+            var speed  = 1.2;    // px per frame — tweak for faster/slower
+            var paused = false;
+
+            function tick() {
+                if (!paused) {
+                    track.scrollLeft += speed;
+                    // Seamless snap: when we've scrolled one full original set
+                    if (track.scrollLeft >= origW) {
+                        track.scrollLeft -= origW;
+                    }
                 }
-            }, 5000); // 5 seconds interval
-        }
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
 
-        function stopAutoScroll() {
-            clearInterval(scrollInterval);
-        }
-
-        // Start initial auto-scroll
-        startAutoScroll();
-
-        // Pause on hover
-        container.addEventListener('mouseenter', stopAutoScroll);
-        container.addEventListener('mouseleave', startAutoScroll);
-        
-        // Pause on touch (mobile)
-        container.addEventListener('touchstart', stopAutoScroll);
-        container.addEventListener('touchend', startAutoScroll);
+            // Pause on hover
+            track.addEventListener('mouseenter', function() { paused = true; });
+            track.addEventListener('mouseleave', function() { paused = false; });
+            // Pause on touch, resume after 1 s
+            track.addEventListener('touchstart', function() { paused = true; }, { passive: true });
+            track.addEventListener('touchend',   function() {
+                setTimeout(function() { paused = false; }, 1000);
+            });
+        });
     })();
+
+
+
+
 </script>
 <?= $this->endSection(); ?>
