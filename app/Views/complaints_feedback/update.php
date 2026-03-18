@@ -170,10 +170,23 @@
                                         </div>
                                     </div>
                                     
-                                    <div class="col-12">
+                                    <div class="col-md-12">
                                         <label class="form-label fw-bold text-dark">Official Resolution Remark</label>
                                         <textarea class="form-control py-3 bg-white" name="admin_remark" rows="4" placeholder="Enter resolution details, action taken, etc..." style="border-radius: 10px; border: 1px solid #e2e8f0;"><?= esc($complaint['admin_remark'] ?? '') ?></textarea>
                                         <small class="text-muted d-block mt-2"><i class="mdi mdi-information-outline me-1"></i> Visible to employee upon submission.</small>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold text-dark">Resolution Attachment (Optional)</label>
+                                        <div class="input-group">
+                                            <input type="file" class="form-control" name="resolution_file" accept="image/*,.pdf">
+                                            <?php if (!empty($complaint['resolution_file'])): ?>
+                                                <a href="<?= base_url('uploads/complaints/' . $complaint['resolution_file']) ?>" target="_blank" class="btn btn-outline-info">
+                                                    <i class="mdi mdi-eye"></i> View Current
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                        <small class="text-muted">Upload a screenshot or document of the resolution.</small>
                                     </div>
                                 </div>
                             </div>

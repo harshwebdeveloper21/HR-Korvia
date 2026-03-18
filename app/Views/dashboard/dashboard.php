@@ -479,7 +479,7 @@
 
     /* Individual announcement card */
     .ann-card {
-        flex: 0 0 220px;
+        flex: 0 0 calc((100% - 28px) / 3); /* Display 3 cards exactly (2 gaps of 14px) */
         border-radius: 12px;
         padding: 14px 16px;
         position: relative;
@@ -675,8 +675,11 @@
     }
     .ann-marquee-track::-webkit-scrollbar { display: none; }
 
-    @media (max-width: 768px) {
-        .ann-card { flex: 0 0 190px; }
+    @media (max-width: 991px) {
+        .ann-card { flex: 0 0 calc((100% - 14px) / 2); } /* 2 cards on tablet */
+    }
+    @media (max-width: 575px) {
+        .ann-card { flex: 0 0 100%; } /* 1 card on mobile */
     }
 </style>
 
@@ -1246,6 +1249,22 @@
 
                             </div>
 
+                            <div class="col-xl-4 col-lg-6 d-flex flex-column grid-margin sm-grid-margin stretch-card">
+                                <div class="card card-rounded todaybday">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start align-items-sm-center">
+                                            <h4 class="card-title card-title-dash sm-bar-chart-size mb-0">Latest Complaints & Feedback</h4>
+                                            <a href="/complaints/admin" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
+                                        </div>
+                                        <div id="latestComplaintsListAdmin" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                                            <div class="d-flex align-items-center justify-content-center text-center p-4">
+                                                <h5 class="text-muted txtclr">No complaints and feedback found</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         <?php endif; ?>
 
 
@@ -1452,6 +1471,22 @@
 
                                 </div>
 
+                            </div>
+
+                            <div class="col-xl-4 col-lg-6 col-sm-6 d-flex flex-column grid-margin sm-grid-margin stretch-card">
+                                <div class="card card-rounded shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-0">
+                                            <h4 class="card-title card-title-dash mb-0">My Recent Complaints</h4>
+                                            <a href="/complaints" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
+                                        </div>
+                                        <div id="latestComplaintsListUser" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                                            <div class="d-flex align-items-center justify-content-center text-center p-4">
+                                                <h5 class="text-muted txtclr">No complaints and feedback found</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                         <?php endif; ?>
@@ -2068,56 +2103,84 @@
                 $(".scheduled-count").text(scheduled);
                 $(".total-count").text(total);
 
-                const hasData = total > 0;
+                const hasInterviewData = total > 0;
                 // Toggle blur & no-data messages
-                if (!hasData) {
+                if (!hasInterviewData) {
                     $("#acceptedApplications, #rejectedApplications").addClass("blurred");
                     $(".no-data-overlay").removeClass("d-none");
-                    return;
+                } else {
+                    $(".no-data-overlay").addClass("d-none");
+                    $("#acceptedApplications, #rejectedApplications").removeClass("blurred");
+                    // ProgressBar: Completed
+                    const completedCircle = new ProgressBar.Circle("#acceptedApplications", {
+                        color: "#fff",
+                        trailColor: "#000000",
+                        trailWidth: 15,
+                        duration: 1400,
+                        easing: "easeInOut",
+                        strokeWidth: 15,
+                        from: {
+                            color: "#fff",
+                            width: 15
+                        },
+
+                        to: {
+
+                            color: "#fff",
+
+                            width: 15
+
+                        },
+
+                        step: function(state, circle) {
+
+                            const percentage = Math.round((completed / total) * 100);
+
+                            circle.setText(`<tspan style="font-size: 16px">${percentage}</tspan><tspan style="font-size: 10px">%</tspan>`);
+
+                        },
+
+                    });
+
+                    completedCircle.text.style.fontFamily = '"Arial", sans-serif';
+                    completedCircle.text.style.fontSize = "25px";
+                    completedCircle.text.style.color = "white";
+                    completedCircle.animate(completed / total);
                 }
 
-                $(".no-data-overlay").addClass("d-none");
-                $("#acceptedApplications, #rejectedApplications").removeClass("blurred");
-                // ProgressBar: Completed
-                const completedCircle = new ProgressBar.Circle("#acceptedApplications", {
-                    color: "#fff",
-                    trailColor: "#000000",
-                    trailWidth: 15,
-                    duration: 1400,
-                    easing: "easeInOut",
-                    strokeWidth: 15,
-                    from: {
-                        color: "#fff",
-                        width: 15
-                    },
-
-                    to: {
-
-                        color: "#fff",
-
-                        width: 15
-
-                    },
-
-                    step: function(state, circle) {
-
-                        const percentage = Math.round((completed / total) * 100);
-
-                        circle.setText(`<tspan style="font-size: 16px">${percentage}</tspan><tspan style="font-size: 10px">%</tspan>`);
-
-                    },
-
-                });
-
-
-
-                completedCircle.text.style.fontFamily = '"Arial", sans-serif';
-
-                completedCircle.text.style.fontSize = "25px";
-
-                completedCircle.text.style.color = "white";
-
-                completedCircle.animate(completed / total);
+                // --- Latest Complaints Rendering ---
+                var latestComplaints = response.latestComplaints || [];
+                var complaintsHTML = '';
+                if (latestComplaints.length > 0) {
+                    latestComplaints.forEach(function(item) {
+                        var profileImage = item.profile_image ? `upload/${item.profile_image}` : `${baseImagePath}upload/default-profile.jpg`;
+                        var typeLabel = item.type === 'Complaint' ? '<span class="badge border-0 p-1 px-2 text-white bg-danger x-small" style="font-size: 8px;">COMPLAINT</span>' : '<span class="badge border-0 p-1 px-2 text-white bg-info x-small" style="font-size: 8px;">FEEDBACK</span>';
+                        complaintsHTML += `
+                            <div class="wrapper d-flex align-items-center justify-content-between py-2 border-bottom">
+                                <div class="d-flex">
+                                    <img class="img-sm rounded-circle" src="${profileImage}" alt="profile">
+                                    <div class="wrapper ms-3">
+                                        <p class="mb-0 fw-bold capitalize-text small text-dark">${item.subject}</p>
+                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                            ${typeLabel}
+                                            <small class="text-muted x-small">${item.status.toUpperCase()}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted d-block x-small">${new Date(item.created_at).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    complaintsHTML = `
+                        <div class="d-flex align-items-center justify-content-center text-center p-4" style="min-height: 172px;">
+                            <h5 class="text-muted txtclr small">No complaints and feedback found</h5>
+                        </div>
+                    `;
+                }
+                $('#latestComplaintsListAdmin, #latestComplaintsListUser').html(complaintsHTML);
 
             },
 
@@ -2976,7 +3039,7 @@
         requestAnimationFrame(function() {
 
             var containerW = track.offsetWidth;  // visible width of track
-            var cardW      = (realCards[0].offsetWidth || 220) + 14; // card + gap
+            var cardW      = realCards[0].getBoundingClientRect().width + 14; // card + gap (use getBoundingClientRect for precise fractional width)
             var origW      = realCards.length * cardW;               // total original set width
 
             // Clone enough sets so total content > 3x container width (ensures seamless snap)
