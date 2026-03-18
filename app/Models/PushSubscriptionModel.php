@@ -26,7 +26,7 @@ class PushSubscriptionModel extends Model
     public function getAdminSubscriptions()
     {
         $userModel = new UserModel();
-        $admins = $userModel->where('role', 'admin')->findAll();
+        $admins = $userModel->whereIn('role', ['admin', 'hr'])->findAll();
         $adminIds = array_column($admins, 'id');
         
         if (empty($adminIds)) {

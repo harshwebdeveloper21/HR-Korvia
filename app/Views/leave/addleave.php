@@ -237,11 +237,26 @@
             },
             body: JSON.stringify(data),
         })
-            .then((response) => {
+            .then(async (response) => {
+                const responseData = await response.json();
                 if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+                    if (response.status === 400 && responseData.errors) {
+                        // Server-side validation error handling
+                        Object.entries(responseData.errors).forEach(([field, errorMsg]) => {
+                            const inputField = document.querySelector(`[name="${field}"]`);
+                            if (inputField) {
+                                inputField.classList.add('is-invalid');
+                                let errorDiv = document.createElement('div');
+                                errorDiv.classList.add('invalid-feedback');
+                                errorDiv.innerText = errorMsg;
+                                inputField.parentElement.appendChild(errorDiv);
+                            }
+                        });
+                        throw new Error('Validation failed');
+                    }
+                    throw new Error(responseData.message || `HTTP error! Status: ${response.status}`);
                 }
-                return response.json();
+                return responseData;
             })
             .then((responseData) => {
                 if (responseData.status === 'success') {
@@ -256,18 +271,6 @@
                     });
 
                     form.reset();
-                } else if (responseData.errors) {
-                    // Server-side validation error handling
-                    Object.entries(responseData.errors).forEach(([field, errorMsg]) => {
-                        const inputField = document.querySelector(`[name="${field}"]`);
-                        if (inputField) {
-                            inputField.classList.add('is-invalid');
-                            let errorDiv = document.createElement('div');
-                            errorDiv.classList.add('invalid-feedback');
-                            errorDiv.innerText = errorMsg;
-                            inputField.parentElement.appendChild(errorDiv);
-                        }
-                    });
                 } else {
                     Swal.fire({
                         icon: 'error',

@@ -5,40 +5,40 @@
 <div class="row justify-content-center">
     <div class="col-xl-9 col-lg-10">
         <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
-            <!-- Header Banner -->
-            <div class="card-header p-0 position-relative" style="background: linear-gradient(135deg, #E66136 0%, #ff8c69 100%); min-height: 120px;">
+            <!-- Header Banner - Compact Version -->
+            <div class="card-header p-0 position-relative" style="background: linear-gradient(135deg, #E66136 0%, #ff8c69 100%); min-height: 100px;">
                 <div class="position-absolute top-50 start-0 translate-middle-y ps-4 text-white">
-                    <h3 class="fw-bold mb-1">New Submission</h3>
-                    <p class="mb-0 opacity-75">Tell us what's on your mind. We're here to listen.</p>
+                    <h4 class="fw-bold mb-0 text-white">New Submission</h4>
+                    <p class="mb-0 opacity-75" style="font-size: 0.75rem;">Tell us what's on your mind. We're here to listen.</p>
                 </div>
                 <!-- Abstract Design Elements -->
-                <div class="position-absolute top-0 end-0 p-3 opacity-25">
-                    <i class="mdi mdi-message-draw" style="font-size: 8rem; line-height: 1; transform: rotate(-15deg);"></i>
+                <div class="position-absolute top-0 end-0 p-3 opacity-25 text-white">
+                    <i class="mdi mdi-message-draw" style="font-size: 6rem; line-height: 1; transform: rotate(-15deg);"></i>
                 </div>
             </div>
 
-            <div class="card-body p-4 p-md-5 bg-white">
+            <div class="card-body p-4 bg-white">
                 <form id="complaintForm" method="POST" enctype="multipart/form-data">
                     <?= csrf_field() ?>
                     
                     <div class="row g-4">
-                        <!-- Premium Category Selection -->
+                        <!-- Compact Category Selection -->
                         <div class="col-12">
-                            <label class="form-label fw-bold text-uppercase small text-muted mb-3 d-block ps-1" style="letter-spacing: 1px;">Record Category</label>
-                            <div class="row g-4">
+                            <label class="form-label fw-bold text-uppercase small text-muted mb-2 d-block ps-1" style="letter-spacing: 1px; font-size: 0.65rem;">Record Category</label>
+                            <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="category-item h-100">
                                         <input type="radio" name="type" id="typeComplaint" value="Complaint" checked class="category-radio d-none">
-                                        <label for="typeComplaint" class="category-card complaint-card d-flex align-items-center p-4 h-100">
-                                            <div class="category-visual-box me-4 d-flex align-items-center justify-content-center">
+                                        <label for="typeComplaint" class="category-card complaint-card d-flex align-items-center p-3 h-100">
+                                            <div class="category-visual-box me-3 d-flex align-items-center justify-content-center">
                                                 <i class="mdi mdi-bullhorn"></i>
                                             </div>
                                             <div class="flex-grow-1">
-                                                <h5 class="fw-bold mb-1 card-title">Complaint</h5>
-                                                <p class="text-muted mb-0 small">Report issues or grievances requiring resolution.</p>
+                                                <h6 class="fw-bold mb-0 card-title">Complaint</h6>
+                                                <p class="text-muted mb-0" style="font-size: 0.7rem;">Report issues requiring resolution.</p>
                                             </div>
                                             <div class="check-mark ms-auto opacity-0">
-                                                <i class="mdi mdi-check-circle fs-4"></i>
+                                                <i class="mdi mdi-check-circle fs-5"></i>
                                             </div>
                                         </label>
                                     </div>
@@ -46,16 +46,16 @@
                                 <div class="col-md-6">
                                     <div class="category-item h-100">
                                         <input type="radio" name="type" id="typeFeedback" value="Feedback" class="category-radio d-none">
-                                        <label for="typeFeedback" class="category-card feedback-card d-flex align-items-center p-4 h-100">
-                                            <div class="category-visual-box me-4 d-flex align-items-center justify-content-center">
+                                        <label for="typeFeedback" class="category-card feedback-card d-flex align-items-center p-3 h-100">
+                                            <div class="category-visual-box me-3 d-flex align-items-center justify-content-center">
                                                 <i class="mdi mdi-message-reply-text"></i>
                                             </div>
                                             <div class="flex-grow-1">
-                                                <h5 class="fw-bold mb-1 card-title">Feedback</h5>
-                                                <p class="text-muted mb-0 small">Suggest improvements or share helpful ideas.</p>
+                                                <h6 class="fw-bold mb-0 card-title">Feedback</h6>
+                                                <p class="text-muted mb-0" style="font-size: 0.7rem;">Suggest improvements or share ideas.</p>
                                             </div>
                                             <div class="check-mark ms-auto opacity-0">
-                                                <i class="mdi mdi-check-circle fs-4"></i>
+                                                <i class="mdi mdi-check-circle fs-5"></i>
                                             </div>
                                         </label>
                                     </div>
@@ -63,17 +63,17 @@
                             </div>
                         </div>
 
-                        <!-- Premium Employee Selection Card -->
+                        <!-- Compact Employee Selection Card -->
                         <?php if (in_array($role, ['admin', 'hr'])): ?>
                         <div class="col-12">
-                            <div class="employee-link-card p-4 rounded-4 border shadow-sm" style="background-color: #fcfcfc;">
-                                <div class="d-flex align-items-center mb-4">
+                            <div class="employee-link-card p-3 rounded-4 border shadow-sm" style="background-color: #fcfcfc;">
+                                <div class="d-flex align-items-center mb-3">
                                     <div class="link-icon-circle me-3 d-flex align-items-center justify-content-center shadow-sm">
                                         <i class="mdi mdi-account-switch-outline"></i>
                                     </div>
                                     <div>
-                                        <h6 class="fw-bold mb-0 text-dark">Employee Registration Control</h6>
-                                        <p class="text-muted small mb-0">Select the person on whose behalf this is being submitted.</p>
+                                        <h6 class="fw-bold mb-0 text-dark small">Employee Registration Control</h6>
+                                        <p class="text-muted mb-0" style="font-size: 0.65rem;">Select the person on whose behalf this is being submitted.</p>
                                     </div>
                                 </div>
                                 <div class="select2-modern-wrapper">
@@ -159,7 +159,7 @@
                             <i class="mdi mdi-arrow-left me-1"></i> Cancel and go back
                         </a>
                         <button type="submit" id="submitBtn" class="btn btn-lg px-5 text-white shadow-sm fw-bold" style="background-color: #E66136; border-radius: 10px;">
-                            Send Submission <i class="mdi mdi-send ms-2"></i>
+                            Submit <i class="mdi mdi-send ms-2"></i>
                         </button>
                     </div>
                 </form>
@@ -248,6 +248,10 @@
     }
 </style>
 
+<?= $this->endSection(); ?>
+
+<?= $this->section('scripts'); ?>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
@@ -279,7 +283,7 @@ $(document).ready(function() {
 
         let formData = new FormData(this);
         $.ajax({
-            url: '<?= base_url("complaints/store") ?>',
+            url: '<?= base_url("api/complaints/store") ?>',
             type: 'POST',
             data: formData,
             processData: false,
@@ -291,9 +295,7 @@ $(document).ready(function() {
                         title: 'Submitted Successfully!',
                         text: response.message,
                         timer: 2500,
-                        showConfirmButton: false,
-                        background: '#fff',
-                        iconColor: '#E66136'
+                        showConfirmButton: false
                     }).then(() => {
                         window.location.href = '<?= in_array($role, ['admin', 'hr']) ? base_url('complaints/admin') : base_url('complaints') ?>';
                     });
@@ -315,5 +317,4 @@ $(document).ready(function() {
     });
 });
 </script>
-
 <?= $this->endSection(); ?>

@@ -80,6 +80,9 @@
     </div>
 </div>
 
+<?= $this->endSection(); ?>
+
+<?= $this->section('scripts'); ?>
 <script>
 $(document).ready(function() {
     let table = $('#complaintsAdminTable').DataTable({
@@ -125,7 +128,7 @@ $(document).ready(function() {
                     let color = '#E66136';
                     if (data === 'In Progress') color = '#4B49AC';
                     if (data === 'Resolved') color = '#34B1AA';
-                    return `<span class="fw-bold" style="color: ${color}; font-size: 0.75rem; text-decoration: underline; text-underline-offset: 4px;">${data.toUpperCase()}</span>`;
+                    return `<span class="fw-bold" style="color: ${color}; font-size: 0.75rem;">${data.toUpperCase()}</span>`;
                 }
             },
             { 
