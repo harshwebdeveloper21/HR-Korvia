@@ -22,7 +22,8 @@ class ComplaintModel extends Model
         'message',
         'file',
         'status',
-        'admin_remark'
+        'admin_remark',
+        'resolution_file'
     ];
 
     // Dates

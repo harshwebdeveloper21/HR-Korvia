@@ -493,7 +493,24 @@ class AdminController extends ResourceController
             'hasInterviewData' => $hasInterviewData,
             'totalInterviews' => $totalInterviews,
             'candidates' => $candidates ?? 0,
+            'latestComplaints' => $this->getLatestComplaints($role, $userId),
         ]);
+    }
+
+    private function getLatestComplaints($role, $userId)
+    {
+        $complaintModel = new \App\Models\ComplaintModel();
+        $query = $complaintModel->select('complaints.*, users.username, user_info.profile_image')
+                                ->join('users', 'users.id = complaints.user_id')
+                                ->join('user_info', 'user_info.user_id = users.id', 'left');
+        
+        if ($role !== 'admin' && $role !== 'hr') {
+            $query->where('complaints.user_id', $userId);
+        }
+
+        return $query->orderBy('complaints.created_at', 'DESC')
+                     ->limit(5)
+                     ->findAll();
     }
 
     public function getYearlyPerformanceData()

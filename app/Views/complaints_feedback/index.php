@@ -1,106 +1,79 @@
 <?= $this->extend('layout'); ?>
 
 <?= $this->section('content'); ?>
+<style>
+    .bg-light-stripe { background-color: #f2f2f2 !important; }
+    #userComplaintsTable thead tr { background-color: #000 !important; color: #fff !important; }
+    #userComplaintsTable thead th { 
+        color: #fff !important; 
+        font-weight: 700 !important; 
+        text-transform: uppercase !important; 
+        font-size: 0.8rem !important;
+        border: none !important;
+        padding: 15px 10px !important;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        width: 321px !important;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 6px 12px;
+        margin-left: 10px;
+        outline: none;
+    }
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #E66136;
+        box-shadow: 0 0 0 0.2rem rgba(230, 97, 54, 0.1);
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #E66136 !important;
+        color: white !important;
+        border: 1px solid #E66136 !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: #E66136 !important;
+        color: white !important;
+    }
+    .hr-btnbg {
+        background-color: #E66136 !important;
+        border: 2px solid #F05929 !important;
+        border-radius: 4px !important;
+        color: #fff !important;
+        font-family: Poppins, sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+    }
+</style>
+
 <div class="row">
     <div class="col-12 grid-margin stretch-card">
         <div class="card shadow-sm border-0" style="border-radius: 15px; overflow: hidden;">
             <!-- Premium Header -->
-            <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #4B49AC 0%, #7da2fb 100%);">
+            <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #E66136 0%, #ff8e53 100%);">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="text-white">
                         <h4 class="card-title mb-1 fw-bold text-white">My Complaints & Feedback</h4>
                         <p class="mb-0 opacity-75 small">Track, manage and check status of your submitted requests.</p>
                     </div>
-                    <a href="<?= base_url('complaints/create') ?>" class="btn btn-white text-primary fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px;">
-                        <i class="mdi mdi-plus-circle fs-5"></i> Submit New Request
+                    <a href="<?= base_url('complaints/create') ?>" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px; border: none;">
+                        <i class="mdi mdi-plus-circle fs-5" style="color: #E66136;"></i> Submit New Request
                     </a>
                 </div>
             </div>
             
             <div class="card-body pt-4">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="userComplaintsTable">
-                        <thead class="bg-light text-muted">
+                    <table class="table table-striped w-100" id="userComplaintsTable">
+                        <thead>
                             <tr>
-                                <th class="py-3 border-0 ps-4">ID</th>
-                                <th class="py-3 border-0">SUBJECT & DETAILS</th>
-                                <th class="py-3 border-0 text-center">CATEGORY</th>
-                                <th class="py-3 border-0 text-center">STATUS</th>
-                                <th class="py-3 border-0">DATE SUBMITTED</th>
-                                <th class="py-3 border-0 text-end pe-4">ACTION</th>
+                                <th style="display:none;">ID</th>
+                                <th>Subject & Details</th>
+                                <th class="text-center">Category</th>
+                                <th class="text-center">Status</th>
+                                <th>Submitted</th>
+                                <th class="text-end">Action</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php if (!empty($complaints)): ?>
-                                <?php foreach ($complaints as $complaint): ?>
-                                    <tr>
-                                        <td class="ps-4 fw-bold text-muted">#<?= $complaint['id'] ?></td>
-                                        <td>
-                                            <div class="fw-bold mb-0 text-dark" style="font-size: 0.9rem;"><?= esc($complaint['subject']) ?></div>
-                                            <small class="text-muted d-block" style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                                                <?= esc(substr($complaint['message'], 0, 80)) ?>...
-                                            </small>
-                                        </td>
-                                        <td class="text-center">
-                                            <?php if ($complaint['type'] == 'Complaint'): ?>
-                                                <span class="badge border border-danger text-danger bg-danger bg-opacity-10 px-3 py-2" style="border-radius:60px;">
-                                                    <i class="mdi mdi-alert-circle-outline me-1 small"></i> Complaint
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="badge border border-info text-info bg-info bg-opacity-10 px-3 py-2" style="border-radius:60px;">
-                                                    <i class="mdi mdi-lightbulb-outline me-1 small"></i> Feedback
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <?php
-                                            $statusClass = 'warning';
-                                            $statusIcon = 'clock-outline';
-                                            if ($complaint['status'] == 'In Progress') { $statusClass = 'primary'; $statusIcon = 'progress-clock'; }
-                                            if ($complaint['status'] == 'Resolved') { $statusClass = 'success'; $statusIcon = 'check-circle-outline'; }
-                                            ?>
-                                            <div class="d-inline-flex align-items-center text-<?= $statusClass ?> fw-bold small">
-                                                <i class="mdi mdi-<?= $statusIcon ?> me-1 fs-6"></i> <?= $complaint['status'] ?>
-                                            </div>
-                                        </td>
-                                        <td class="text-muted small">
-                                            <?= date('d M, Y', strtotime($complaint['created_at'])) ?>
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <div class="d-flex justify-content-end gap-2">
-                                                <button type="button" class="btn btn-sm btn-icon border-0 view-details" 
-                                                        data-id="<?= $complaint['id'] ?>"
-                                                        data-subject="<?= esc($complaint['subject']) ?>" 
-                                                        data-message="<?= esc($complaint['message']) ?>"
-                                                        data-remark="<?= esc($complaint['admin_remark'] ?? 'Our HR team will review your submission shortly.') ?>"
-                                                        data-status="<?= $complaint['status'] ?>"
-                                                        data-file="<?= $complaint['file'] ?>"
-                                                        title="View Details"
-                                                        style="background-color: #f0f7ff; color: #4B49AC;">
-                                                    <i class="mdi mdi-eye"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-icon border-0 delete-btn" 
-                                                        data-id="<?= $complaint['id'] ?>" 
-                                                        title="Delete permanently"
-                                                        style="background-color: #fdf2f2; color: #fe5e5e;">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="6" class="text-center py-5">
-                                        <div class="py-4">
-                                            <i class="mdi mdi-card-search-outline text-muted" style="font-size: 4rem;"></i>
-                                            <h5 class="text-muted mt-3">No submissions found yet.</h5>
-                                            <p class="text-muted small">Your submitted complaints and feedback will appear here.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
+                    </table>
                     </table>
                 </div>
             </div>
@@ -139,7 +112,14 @@
                 </div>
                 <div class="mt-4 p-3 border-start border-primary border-4 rounded" style="background-color: #f0f7ff; color: #4B49AC;">
                     <label class="small text-muted d-block mb-1 uppercase fw-bold" style="font-size: 0.7rem;">Official Resolution Remark</label>
-                    <div id="modalRemark" class="fw-bold italic" style="font-style: italic;"></div>
+                    <div id="modalRemark" class="fw-bold italic" style="font-style: italic; margin-bottom: 10px;"></div>
+                    
+                    <div id="resolutionAttachmentArea" style="display:none;">
+                        <label class="small text-muted d-block mb-2 uppercase fw-bold" style="font-size: 0.65rem;">Resolution Proof / Document</label>
+                        <a id="modalResolutionFile" href="#" target="_blank" class="btn btn-sm btn-outline-success py-2 w-100 d-flex align-items-center justify-content-center gap-2" style="border-radius: 8px;">
+                            <i class="mdi mdi-check-circle-outline"></i> Open Resolution Attachment
+                        </a>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer border-top-0">
@@ -150,30 +130,23 @@
 </div>
 
 <style>
-    #userComplaintsTable thead th { 
-        text-transform: uppercase;
-        font-size: 0.75rem; 
-        letter-spacing: 0.5px;
-    }
     #userComplaintsTable tbody td { 
-        padding: 15px;
-        border-bottom: 1px solid #f8fafc;
+        padding: 15px 10px;
         font-size: 0.85rem;
     }
-    .btn-icon {
+    .btn-icon-custom {
         width: 32px;
         height: 32px;
         display: flex;
         align-items:center;
         justify-content:center;
-        border-radius: 8px;
+        border-radius: 6px;
+        transition: all 0.2s;
     }
-    .uppercase { text-transform: uppercase; }
+    .btn-icon-custom:hover {
+        transform: scale(1.1);
+    }
     .fs-14 { font-size: 0.85rem; }
-    
-    .table-hover tbody tr:hover {
-        background-color: #fbfcfe;
-    }
 </style>
 
 <?= $this->endSection(); ?>
@@ -181,7 +154,88 @@
 <?= $this->section('scripts'); ?>
 <script>
 $(document).ready(function() {
-    $('.view-details').on('click', function() {
+    // Initialize DataTable with AJAX
+    let table = $('#userComplaintsTable').DataTable({
+        ajax: {
+            url: '<?= base_url('api/complaints/list') ?>',
+            dataSrc: 'data'
+        },
+        columns: [
+            { data: 'id', visible: false },
+            { 
+                data: null,
+                render: function(data) {
+                    return `
+                        <div>
+                            <span class="fw-bold d-block text-dark small">${data.subject}</span>
+                            <span class="text-muted x-small d-block text-truncate" style="max-width:300px;">${data.message.substring(0, 80)}...</span>
+                        </div>
+                    `;
+                }
+            },
+            { 
+                data: 'type',
+                className: 'text-center',
+                render: function(data) {
+                    let color = data === 'Complaint' ? '#ef4444' : '#0ea5e9';
+                    return `<span class="badge border-0 px-2 py-1 fw-semibold text-white" style="background-color: ${color}; border-radius: 4px; font-size: 0.7rem;">${data.toUpperCase()}</span>`;
+                }
+            },
+            { 
+                data: 'status',
+                className: 'text-center',
+                render: function(data) {
+                    let color = '#E66136';
+                    if (data === 'In Progress') color = '#4B49AC';
+                    if (data === 'Resolved') color = '#34B1AA';
+                    return `<span class="fw-bold" style="color: ${color}; font-size: 0.75rem;">${data.toUpperCase()}</span>`;
+                }
+            },
+            { 
+                data: 'created_at',
+                render: function(data) {
+                    let d = new Date(data);
+                    return `<span class="text-muted small">${d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>`;
+                }
+            },
+            {
+                data: null,
+                className: 'text-end',
+                orderable: false,
+                render: function(data) {
+                    return `
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-sm btn-icon-custom border-0 view-details-btn" 
+                                    data-id="${data.id}"
+                                    data-subject="${data.subject}" 
+                                    data-message="${data.message}"
+                                    data-remark="${data.admin_remark || 'Our HR team will review your submission shortly.'}"
+                                    data-status="${data.status}"
+                                    data-file="${data.file || ''}"
+                                    data-res-file="${data.resolution_file || ''}"
+                                    style="background-color: #f0f7ff; color: #4B49AC;">
+                                <i class="mdi mdi-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-icon-custom border-0 delete-btn" 
+                                    data-id="${data.id}" 
+                                    style="background-color: #fdf2f2; color: #fe5e5e;">
+                                <i class="mdi mdi-delete"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ],
+        order: [[0, 'desc']],
+        language: {
+            search: "",
+            searchPlaceholder: "Search",
+            lengthMenu: "Show _MENU_ entries"
+        }
+    });
+
+    // Delegation for View Details button
+    $('#userComplaintsTable').on('click', '.view-details-btn', function() {
         let btn = $(this);
         $('#modalId').text(btn.data('id'));
         $('#modalSubject').text(btn.data('subject'));
@@ -189,9 +243,9 @@ $(document).ready(function() {
         $('#modalRemark').text(btn.data('remark'));
         
         let status = btn.data('status');
-        let statusColor = '#ffbc07';
+        let statusColor = '#E66136';
         if (status === 'In Progress') statusColor = '#4B49AC';
-        if (status === 'Resolved') statusColor = '#28a745';
+        if (status === 'Resolved') statusColor = '#34B1AA';
         
         $('#modalStatus').text(status).css('color', statusColor);
         
@@ -202,7 +256,14 @@ $(document).ready(function() {
         } else {
             $('#attachmentArea').hide();
         }
-        
+
+        let resFile = btn.data('res-file');
+        if(resFile) {
+            $('#modalResolutionFile').attr('href', '<?= base_url('uploads/complaints') ?>/' + resFile);
+            $('#resolutionAttachmentArea').show();
+        } else {
+            $('#resolutionAttachmentArea').hide();
+        }
         $('#userViewModal').modal('show');
     });
 
@@ -213,9 +274,13 @@ $(document).ready(function() {
             text: "Are you sure you want to delete this case forever?",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#fe5e5e',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'No, cancel!',
+            buttonsStyling: false,
+            customClass: {
+                confirmButton: 'btn hr-btnbg me-2',
+                cancelButton: 'btn hr-btnbg',
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
@@ -223,8 +288,15 @@ $(document).ready(function() {
                     type: 'POST',
                     success: function(response) {
                         if (response.status === 'success') {
-                            Swal.fire('Deleted!', 'Case file has been cleaned up.', 'success').then(() => {
-                                location.reload();
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: 'Case file has been cleaned up.',
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                buttonsStyling: false,
+                                customClass: { confirmButton: 'btn hr-btnbg' }
+                            }).then(() => {
+                                table.ajax.reload();
                             });
                         } else {
                             Swal.fire('Error!', response.message, 'error');

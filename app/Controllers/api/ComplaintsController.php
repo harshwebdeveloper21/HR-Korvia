@@ -188,6 +188,21 @@ class ComplaintsController extends ResourceController
             'admin_remark' => $this->request->getPost('admin_remark')
         ];
 
+        // Handle Resolution File Upload (Admin/HR Only Response)
+        if (in_array($user->role, ['admin', 'hr'])) {
+            $resolutionFile = $this->request->getFile('resolution_file');
+            if ($resolutionFile && $resolutionFile->isValid() && !$resolutionFile->hasMoved()) {
+                // Delete old resolution file if exists
+                if (!empty($complaint['resolution_file'])) {
+                    $oldPath = FCPATH . 'uploads/complaints/' . $complaint['resolution_file'];
+                    if (file_exists($oldPath)) unlink($oldPath);
+                }
+                $newName = $resolutionFile->getRandomName();
+                $resolutionFile->move(FCPATH . 'uploads/complaints', $newName);
+                $data['resolution_file'] = $newName;
+            }
+        }
+
         // If Admin/HR, allow editing EVERYTHING
         if (in_array($user->role, ['admin', 'hr'])) {
             $data['name']    = $this->request->getPost('name');
