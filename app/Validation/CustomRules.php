@@ -4,7 +4,7 @@ namespace App\Validation;
 class CustomRules
 {
     
-    public function check_end_date(string $endDate, string $fields, array $data): bool
+    public function check_end_date($endDate, string $fields, array $data): bool
     {
         if (!isset($data[$fields])) {
             return false; // If start_date is missing, validation fails
@@ -12,7 +12,7 @@ class CustomRules
 
         return strtotime($endDate) >= strtotime($data[$fields]);
     }
-    public function validate_no_of_day(string $noOfDay, string $fields, array $data): bool
+    public function validate_no_of_day($noOfDay, string $fields, array $data): bool
     {
         if (!isset($data['start_date']) || !isset($data['end_date'])) {
             return false; // Both dates are required

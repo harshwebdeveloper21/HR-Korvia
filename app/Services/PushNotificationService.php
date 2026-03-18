@@ -117,7 +117,7 @@ class PushNotificationService
         foreach ($subscriptions as $subscription) {
             $user = $userModel->find($subscription['user_id']);
             
-            if ($user && $user['role'] === 'admin') {
+            if ($user && in_array($user['role'], ['admin', 'hr'])) {
                 $validSubscriptions[] = $subscription;
             } else {
                 // Remove subscription for non-admin or deleted user

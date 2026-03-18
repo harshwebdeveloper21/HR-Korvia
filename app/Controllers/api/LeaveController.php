@@ -178,7 +178,7 @@ class LeaveController extends ResourceController
         if (isset($data['start_date']) && isset($data['end_date'])) {
             $startDate = strtotime($data['start_date']);
             $endDate = strtotime($data['end_date']);
-            $data['no_of_day'] = ($endDate - $startDate) / 86400 + 1;
+            $data['no_of_day'] = (string) (($endDate - $startDate) / 86400 + 1);
         }
 
         // Default status if not set
@@ -194,7 +194,6 @@ class LeaveController extends ResourceController
             'end_date'   => 'required|valid_date[Y-m-d]|check_end_date[start_date]',
             'reason'     => 'required',
             'no_of_day'  => 'required|validate_no_of_day[start_date,end_date]',
-            // 'status'     => 'in_list[Pending,approved,rejected]' // validate the status input
         ];
 
         $validationMessages = [
@@ -214,12 +213,10 @@ class LeaveController extends ResourceController
                 'required' => 'Number of days is required.',
                 'validate_no_of_day' => 'Number of days must be correct.'
             ],
-            // 'status' => [
-            //     'in_list' => 'Status must be Pending, approved, or rejected.'
-            // ]
         ];
 
-        if (!$this->validate($validationRules, $validationMessages)) {
+        if (!$this->validateData($data, $validationRules, $validationMessages)) {
+            log_message('error', 'Leave creation validation failed: ' . json_encode($this->validator->getErrors()));
             return $this->respond([
                 'status' => 'error',
                 'message' => 'Validation failed',
