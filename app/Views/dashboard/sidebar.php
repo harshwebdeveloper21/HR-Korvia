@@ -17,6 +17,47 @@ $role = $user ? $user->role : null;
         <span class="menu-title">Dashboard</span>
       </a>
     </li>
+    <?php if ($role === 'admin' || $role === 'hr') : ?>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#complaintsMenu" aria-expanded="false" aria-controls="complaintsMenu">
+          <i class="menu-icon mdi mdi-message-alert"></i>
+          <span class="menu-title">Complaints & Feedback</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="complaintsMenu">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('complaints/admin') ?>">Manage Complaints</a></li>
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('complaints/create') ?>">Add Complaint</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#announcementsMenu" aria-expanded="false" aria-controls="announcementsMenu">
+          <i class="menu-icon mdi mdi-bullhorn"></i>
+          <span class="menu-title">Announcements</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="announcementsMenu">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('announcements/admin') ?>">Manage Announcements</a></li>
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('announcements/create') ?>">Add Announcement</a></li>
+          </ul>
+        </div>
+      </li>
+    <?php elseif ($role === 'employee'): ?>
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('complaints') ?>">
+          <i class="menu-icon mdi mdi-message-alert"></i>
+          <span class="menu-title">Complaints & Feedback</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('announcements') ?>">
+          <i class="menu-icon mdi mdi-bullhorn"></i>
+          <span class="menu-title">Announcements</span>
+        </a>
+      </li>
+    <?php endif; ?>
     <li class="nav-item nav-category">Menus</li>
     <?php if ($role === 'admin' || $role === 'hr') : ?>
       <li class="nav-item">

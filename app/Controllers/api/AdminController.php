@@ -165,13 +165,18 @@ class AdminController extends ResourceController
             $todayHoursData = $this->calculateTodayHours($user->sub);
         }
 
+        // Fetch active announcements
+        $announcementModel = new \App\Models\AnnouncementModel();
+        $activeAnnouncements = $announcementModel->getActiveAnnouncements($user->sub, $role, 5);
+
         return view('dashboard/dashboard', [
             'role' => $role,
             'employees' => $employees,
             'userInfo' => $userInfo,
             'candidates' => $candidates ?? 0,
             'todayCheckinCheckoutHistory' => $todayCheckinCheckoutHistory,
-            'todayHoursData' => $todayHoursData
+            'todayHoursData' => $todayHoursData,
+            'activeAnnouncements' => $activeAnnouncements
         ]);
     }
 

@@ -406,7 +406,147 @@
 
     }
 
-    @media (min-width: 1024px) and (max-width: 1023px) {}
+    /* Announcement Modern Section Styling */
+    .announcement-section {
+        background: #f8fafc;
+        padding: 20px 0;
+    }
+    .announcement-header-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .announcement-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+    .announcement-title i {
+        color: #E66136;
+        margin-right: 10px;
+        font-size: 1.4rem;
+    }
+    .announcement-container {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 20px;
+        padding: 20px 5px;
+        min-height: 250px; /* Fixed height for better alignment */
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    
+    /* Custom Horizontal Scrollbar */
+    .announcement-container::-webkit-scrollbar {
+        height: 6px;
+    }
+    .announcement-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    .announcement-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .announcement-container::-webkit-scrollbar-thumb:hover {
+        background: #E66136;
+    }
+    
+    .announcement-item-card {
+        flex: 0 0 350px; /* Fixed width for horizontal layout */
+        height: 180px; /* Fixed height for consistent look */
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border: none;
+    }
+    
+    /* Specific Color Variants from Image */
+    .variant-info { background-color: #d1f3f9; color: #0891b2; }
+    .variant-urgent { background-color: #ffe4e6; color: #e11d48; }
+    .variant-success { background-color: #dcfce7; color: #166534; }
+    
+    .announcement-item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    
+    .announcement-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+    .announcement-card-header i {
+        margin-right: 10px;
+        font-size: 1.1rem;
+    }
+    .announcement-card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        line-height: 1.4;
+        flex: 1;
+    }
+    .announcement-new-badge {
+        font-size: 11px;
+        font-weight: 600;
+        opacity: 0.6;
+    }
+    .announcement-card-date {
+        font-size: 0.85rem;
+        margin-bottom: 15px;
+        opacity: 0.8;
+    }
+    .announcement-card-desc {
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.7em;
+    }
+    .announcement-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 10px;
+    }
+    .announcement-type-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .read-more-link {
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        align-items: center;
+    }
+    .read-more-link i {
+        margin-left: 8px;
+        transition: transform 0.2s;
+    }
+    .read-more-link:hover i {
+        transform: translateX(5px);
+    }
+    
+    @media (max-width: 768px) {
+        .announcement-item-card {
+            flex: 1 1 100%;
+        }
+    }
 </style>
 
 <div class="row">
@@ -460,6 +600,50 @@
         <div class="home-tab">
 
             <div class="tab-content tab-content-basic">
+
+                <!-- Modern Announcements Section -->
+                <?php if (!empty($activeAnnouncements)): ?>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="announcement-header-wrapper">
+                            <h3 class="announcement-title">
+                                <i class="mdi mdi-bullhorn-variant"></i> Latest Announcements
+                            </h3>
+                            <a href="/announcements" class="text-decoration-none fw-bold" style="color: #E66136; font-size: 0.9rem;">
+                                View All <i class="mdi mdi-arrow-right"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="announcement-container" id="announcementContainer">
+                            <?php foreach ($activeAnnouncements as $announcement): ?>
+                                    <?php 
+                                        $variantClass = 'variant-info';
+                                        $icon = 'mdi-information';
+                                        $type = strtolower($announcement['type']);
+                                        if (strpos($type, 'event') !== false || strpos($type, 'urgent') !== false) {
+                                            $variantClass = 'variant-urgent';
+                                            $icon = 'mdi-alert-circle';
+                                        } elseif (strpos($type, 'holiday') !== false || strpos($type, 'success') !== false) {
+                                            $variantClass = 'variant-success';
+                                            $icon = 'mdi-check-circle';
+                                        }
+                                    ?>
+                                    <div class="announcement-item-card <?= $variantClass ?>" onclick="showAnnouncement(<?= esc(json_encode($announcement)) ?>)" style="cursor: pointer;">
+                                        <div>
+                                            <div class="announcement-card-header">
+                                                <i class="mdi <?= $icon ?>"></i>
+                                                <h4 class="announcement-card-title"><?= esc($announcement['title']) ?></h4>
+                                                <span class="announcement-new-badge ms-auto">New</span>
+                                            </div>
+                                            <div class="announcement-card-date"><?= date('M d, Y', strtotime($announcement['start_date'])) ?></div>
+                                            <p class="announcement-card-desc" style="margin-bottom: 0;"><?= esc(strip_tags($announcement['description'])) ?></p>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview">
 
@@ -2601,4 +2785,72 @@
     </script>
 <?php endif; ?>
 
+<script>
+    /**
+     * Show Announcement Details in a Bootstrap/Premium Styled Modal
+     */
+    function showAnnouncement(announcement) {
+        Swal.fire({
+            title: '',
+            html: `
+                <div class="text-start">
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <h4 class="mb-0 fw-bold" style="color: #1e293b; font-size: 1.2rem;">Announcement Details</h4>
+                        <button type="button" class="btn-close" onclick="Swal.close()" aria-label="Close"></button>
+                    </div>
+                    <div class="mb-3">
+                        <h5 class="fw-bold mb-1" style="color: #334155;">${announcement.title}</h5>
+                        <p class="text-muted" style="font-size: 0.9rem;">${announcement.description}</p>
+                    </div>
+                    <div class="d-flex justify-content-end mt-4 pt-3">
+                        <button type="button" class="btn btn-info text-white px-4" style="background-color: #00c4ff; border: none; font-weight: 600;" onclick="Swal.close()">Close</button>
+                    </div>
+                </div>
+            `,
+            showConfirmButton: false,
+            width: '500px',
+            padding: '1.5rem',
+            customClass: {
+                popup: 'rounded-3 shadow-lg border-0'
+            },
+            showCloseButton: false,
+            backdrop: `rgba(0,0,0,0.4)`
+        });
+    }
+
+    // Auto-scroll logic for Announcements
+    (function() {
+        const container = document.getElementById('announcementContainer');
+        if (!container) return;
+
+        let scrollInterval;
+        const scrollStep = 370; // Card width (350) + gap (20)
+        
+        function startAutoScroll() {
+            scrollInterval = setInterval(() => {
+                const maxScroll = container.scrollWidth - container.clientWidth;
+                if (container.scrollLeft >= maxScroll - 5) {
+                    container.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    container.scrollBy({ left: scrollStep, behavior: 'smooth' });
+                }
+            }, 5000); // 5 seconds interval
+        }
+
+        function stopAutoScroll() {
+            clearInterval(scrollInterval);
+        }
+
+        // Start initial auto-scroll
+        startAutoScroll();
+
+        // Pause on hover
+        container.addEventListener('mouseenter', stopAutoScroll);
+        container.addEventListener('mouseleave', startAutoScroll);
+        
+        // Pause on touch (mobile)
+        container.addEventListener('touchstart', stopAutoScroll);
+        container.addEventListener('touchend', startAutoScroll);
+    })();
+</script>
 <?= $this->endSection(); ?>
