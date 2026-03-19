@@ -277,7 +277,7 @@ $role = $user ? $user->role : null;
     <div class="navbar-menu-wrapper d-flex align-items-top navbar-all-sm justify-content-end">
         <ul class="navbar-nav">
             <li class="nav-item fw-semibold d-none d-lg-block ms-0">
-                <h1 class="welcome-text">
+                <h1 class="welcome-text" style="color: white;">
                     <?php
                     // Set your timezone here (very important!)
                     date_default_timezone_set('Asia/Kolkata'); // Change this to your correct timezone if needed
