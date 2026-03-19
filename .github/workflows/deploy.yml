@@ -37,14 +37,14 @@ jobs:
       - name: Deploy to cPanel via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_HOST || '145.79.212.228' }}
-          username: ${{ secrets.FTP_USERNAME || 'u378554361.hr-portal.fableadtech.in' }}
-          password: ${{ secrets.FTP_PASSWORD || '!FIw4bGC5yF$2J]d' }}
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           server-dir: /public_html/
           local-dir: ./build_output/
-          protocol: ftps
+          protocol: ftp       # 🔥 switch to ftp first (stable)
           port: 21
-          dangerously-allow-untrusted-ca-certs: true
+          passive: true   
           exclude: |
             **/.git*
             **/vendor/**
