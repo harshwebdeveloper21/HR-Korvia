@@ -8,13 +8,15 @@ use CodeIgniter\RESTful\ResourceController;
 
 class ComplaintsController extends ResourceController
 {
-    protected $complaintModel;
-    protected $authService;
+    protected $userModel;
+    protected $notificationModel;
 
     public function __construct()
     {
         $this->complaintModel = new ComplaintModel();
         $this->authService = new AuthService(\Config\Services::request());
+        $this->userModel = new \App\Models\UserModel();
+        $this->notificationModel = new \App\Models\NotificationModel();
     }
 
     /**
@@ -107,10 +109,44 @@ class ComplaintsController extends ResourceController
         ];
 
         if ($this->complaintModel->insert($data)) {
+            $complaintId = $this->complaintModel->getInsertID();
+            $this->sendComplaintNotifications($data, $complaintId);
             return $this->respond(['status' => 'success', 'message' => 'The ' . strtolower($data['type']) . ' has been submitted successfully.'], 200);
         }
 
         return $this->fail('Failed to submit. Try again.');
+    }
+
+    /**
+     * Helper to send notifications for new complaints/feedback
+     */
+    private function sendComplaintNotifications($complaintData, $complaintId)
+    {
+        $type = $complaintData['type']; // Complaint or Feedback
+        $subject = $complaintData['subject'];
+        $senderName = $complaintData['name'];
+        $senderId = $complaintData['user_id'];
+
+        // Get all Admins and HRs
+        $recipients = $this->userModel->whereIn('role', ['admin', 'hr'])->where('is_deleted', 0)->findAll();
+
+        foreach ($recipients as $recipient) {
+            // Optional: Skip if sender is one of them (e.g., HR complaining/feedback)
+            if ($recipient['id'] == $senderId) continue;
+
+            $this->notificationModel->insert([
+                'sender_id'    => $senderId,
+                'recipient_id' => $recipient['id'],
+                'data'         => json_encode([
+                    'type'         => strtolower($type), // 'complaint' or 'feedback'
+                    'subject'      => $subject,
+                    'message'      => "New $type: $subject",
+                    'username'     => $senderName,
+                    'complaint_id' => $complaintId
+                ]),
+                'is_read' => 0
+            ]);
+        }
     }
 
     /**
