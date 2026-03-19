@@ -471,6 +471,20 @@ $role = $user ? $user->role : null;
                                 message = `Performance reviewed for ${data.employee} by ${data.username}`;
                                 icon = 'mdi-chart-line';
                                 break;
+                            case 'announcement':
+                                message = `New Announcement: ${data.title}`;
+                                icon = 'mdi-bullhorn';
+                                break;
+                            case 'complaint':
+                            case 'Complaint':
+                                message = `<strong>${data.username}</strong> submitted a Complaint: ${data.subject}`;
+                                icon = 'mdi-alert-circle';
+                                break;
+                            case 'feedback':
+                            case 'Feedback':
+                                message = `<strong>${data.username}</strong> submitted a Feedback: ${data.subject}`;
+                                icon = 'mdi-comment-text-outline';
+                                break;
                             default:
                                 message = 'New notification';
                                 icon = 'mdi-bell-ring';
@@ -544,10 +558,17 @@ $role = $user ? $user->role : null;
                     case 'candidate':
                         window.location.href = '<?= base_url('/candidateview') ?>';
                         break;
-                    case 'performance':
-                        window.location.href = '<?= base_url('/performanceview') ?>';
-                        break;
-                    case 'employee':
+                        case 'performance':
+                            window.location.href = '<?= base_url('/performanceview') ?>';
+                            break;
+                        case 'announcement':
+                            window.location.href = '<?= base_url('/announcements') ?>';
+                            break;
+                        case 'complaint':
+                        case 'feedback':
+                            window.location.href = '<?= base_url('/complaints/admin') ?>';
+                            break;
+                        case 'employee':
                         window.location.href = '<?= base_url('/empview') ?>';
                         break;
                     case 'leave':

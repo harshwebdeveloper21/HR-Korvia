@@ -1227,7 +1227,7 @@
 
 
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <h4 class="card-title card-title-dash sm-bar-chart-size"> Today's Birthday (<span id="birthdayCount">0</span>)
+                                            <h4 class="card-title card-title-dash sm-bar-chart-size"> Weekly Birthday (<span id="birthdayCount">0</span>)
                                                 <img src="<?= base_url(env('ImagePath') . '/assets/images/dashboard/cakes.png') ?>" class="bday" alt="Birthday cake">
                                             </h4>
                                             <a href="\empview" class="btn btn-sm rounded border-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
@@ -1451,7 +1451,7 @@
 
 
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <h4 class="card-title card-title-dash sm-bar-chart-size"> Today's Birthday (<span id="birthdayCount">0</span>)
+                                            <h4 class="card-title card-title-dash sm-bar-chart-size"> Weekly Birthday (<span id="birthdayCount">0</span>)
                                                 <img src="<?= base_url(env('ImagePath') . '/assets/images/dashboard/cakes.png') ?>" class="bday" alt="Birthday cake">
                                             </h4>
                                             <!-- <a href="\empview" class="btn btn-sm rounded border-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a> -->
@@ -1972,7 +1972,7 @@
                 } else {
                     birthdayHTML = `
                     <div class="d-flex align-items-center justify-content-center text-center p-4" style="min-height: 172px;">
-                        <h5 class="text-muted txtclr">No birthdays today</h5>
+                        <h5 class="text-muted txtclr">No birthdays this week</h5>
                     </div>
                 `;
                 }

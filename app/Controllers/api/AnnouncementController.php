@@ -14,11 +14,14 @@ class AnnouncementController extends ResourceController
     protected $authService;
     protected $userModel;
 
+    protected $notificationModel;
+
     public function __construct()
     {
         $this->announcementModel = new AnnouncementModel();
         $this->authService = new AuthService(service('request'));
         $this->userModel = new UserModel();
+        $this->notificationModel = new \App\Models\NotificationModel();
     }
 
     /**
@@ -183,10 +186,72 @@ class AnnouncementController extends ResourceController
         }
 
         try {
-            $this->announcementModel->insert($data);
+            $announcementId = $this->announcementModel->insert($data);
+            if ($announcementId) {
+                $this->sendAnnouncementNotifications($data, $announcementId);
+            }
             return $this->response->setJSON(['status' => 'success', 'message' => 'Announcement created successfully']);
         } catch (\Exception $e) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Helper to send notifications for new announcements
+     */
+    private function sendAnnouncementNotifications($announcementData, $announcementId)
+    {
+        $targetAudience = $announcementData['target_audience'];
+        $title = $announcementData['title'];
+        $senderId = $announcementData['created_by'];
+
+        // Get sender's info
+        $sender = $this->userModel->find($senderId);
+        $senderUsername = $sender['username'] ?? 'Admin/HR';
+        $senderRole = $sender ? $sender['role'] : '';
+
+        $recipients = [];
+
+        if ($targetAudience === 'All Users') {
+            $recipients = $this->userModel->where('is_deleted', 0)->findAll();
+        } elseif ($targetAudience === 'Specific Role') {
+            $roles = explode(',', $announcementData['target_roles'] ?? '');
+            if (!empty($roles)) {
+                $recipients = $this->userModel->whereIn('role', $roles)->where('is_deleted', 0)->findAll();
+            }
+        } elseif ($targetAudience === 'Specific Users') {
+            $userIds = explode(',', $announcementData['target_users'] ?? '');
+            if (!empty($userIds)) {
+                $recipients = $this->userModel->whereIn('id', $userIds)->where('is_deleted', 0)->findAll();
+            }
+        }
+
+        foreach ($recipients as $recipient) {
+            // Apply exclusion rules
+            if ($senderRole === 'admin') {
+                // When Admin creates: NOT sent to Admin, but sent to HR and all other employees
+                if ($recipient['role'] === 'admin') {
+                    continue;
+                }
+            } elseif ($senderRole === 'hr') {
+                // When HR creates: NOT sent to the HR who created it. Sent to all others (Admin, other HRs, and employees)
+                if ($recipient['id'] == $senderId) {
+                    continue;
+                }
+            }
+
+            $this->notificationModel->insert([
+                'sender_id'    => $senderId,
+                'recipient_id' => $recipient['id'],
+                'data'         => json_encode([
+                    'type'            => 'announcement',
+                    'title'           => $title,
+                    'message'         => "New Announcement: $title",
+                    'username'        => $senderUsername,
+                    'announcement_id' => $announcementId
+                ]),
+                'is_read' => 0
+            ]);
         }
     }
 

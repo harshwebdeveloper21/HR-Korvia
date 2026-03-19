@@ -395,14 +395,16 @@ class AdminController extends ResourceController
             $departmentLabels[] = $data['department_name'];
             $employeeCounts[] = (int) $data['employee_count'];
         }
-        // Fetch today's date for comparison
-        $today = date('m-d');
+        // Fetch birthdays for the current week (Monday-Sunday)
+        $weekDates = [];
+        for ($i = 0; $i < 7; $i++) {
+            $weekDates[] = date('m-d', strtotime("monday this week +$i days"));
+        }
         
-        // $birthdayUsers = $this->userInfoModel->where('DATE_FORMAT(date_of_birth, "%m-%d")', $today)->findAll();
         $birthdayUsers = $this->userInfoModel->select('user_info.*')
                     ->join('users', 'users.id = user_info.user_id', 'inner')
                     ->where('users.is_deleted', 0)
-                    ->where('DATE_FORMAT(user_info.date_of_birth, "%m-%d")', $today)
+                    ->whereIn('DATE_FORMAT(user_info.date_of_birth, "%m-%d")', $weekDates)
                     ->findAll();
 
         $currentMonth = date('m');
