@@ -37,7 +37,7 @@ jobs:
       - name: Deploy to cPanel via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_HOST || 'hr-portal.fableadtech.in' }}
+          server: ${{ secrets.FTP_HOST || '145.79.212.228' }}
           username: ${{ secrets.FTP_USERNAME || 'u378554361.hr-portal.fableadtech.in' }}
           password: ${{ secrets.FTP_PASSWORD || '!FIw4bGC5yF$2J]d' }}
           server-dir: /public_html/
