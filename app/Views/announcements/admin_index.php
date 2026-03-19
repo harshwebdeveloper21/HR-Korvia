@@ -103,6 +103,10 @@
 $(document).ready(function() {
     $('.delete-btn').on('click', function() {
         var id = $(this).data('id');
+        // Get CSRF from meta tags (defined in header_link)
+        var csrfName = $('meta[name="csrf-token"]').attr('data-name');
+        var csrfHash = $('meta[name="csrf-token"]').attr('content');
+        
         Swal.fire({
             title: 'Are you sure?',
             text: "You won't be able to revert this!",
@@ -115,15 +119,26 @@ $(document).ready(function() {
             if (result.isConfirmed) {
                 $.ajax({
                     url: '/announcements/delete/' + id,
-                    type: 'DELETE',
+                    type: 'POST', // Use POST for wider server compatibility
+                    data: {
+                        _method: 'DELETE', // Method spoofing for CI4
+                        [csrfName]: csrfHash
+                    },
                     success: function(response) {
                         if (response.status === 'success') {
                             Swal.fire('Deleted!', response.message, 'success').then(() => {
                                 location.reload();
                             });
                         } else {
+                            // If CSRF expired or other error, refresh hash for next try
+                            if (response.csrfHash) {
+                                $('meta[name="csrf-token"]').attr('content', response.csrfHash);
+                            }
                             Swal.fire('Error!', response.message, 'error');
                         }
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error!', 'Permission denied or security token expired (403). Please refresh the page.', 'error');
                     }
                 });
             }

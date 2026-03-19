@@ -172,3 +172,33 @@
 </script>
 
 <!-- <script src="https://cdn.jsdelivr.net/npm/progressbar.js/dist/progressbar.min.js"></script> -->
+
+<!-- Global AJAX Security Setup -->
+<script>
+$(document).ready(function() {
+    // Global AJAX setup to include CSRF token in all requests
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    // Handle CSRF token refresh from server responses (for multi-submission pages)
+    $(document)
+    .ajaxComplete(function(event, xhr, settings) {
+        if (xhr.responseJSON && xhr.responseJSON.csrfHash) {
+            $('meta[name="csrf-token"]').attr('content', xhr.responseJSON.csrfHash);
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': xhr.responseJSON.csrfHash
+                }
+            });
+        }
+    })
+    .ajaxError(function(event, xhr, settings) {
+        if (xhr.status === 403) {
+            console.warn('❌ Security token mismatch or expired (403). Refreshing page may be required.');
+        }
+    });
+});
+</script>
