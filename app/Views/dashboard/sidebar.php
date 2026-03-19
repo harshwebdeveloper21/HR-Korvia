@@ -183,7 +183,7 @@ $role = $user ? $user->role : null;
         </a>
       </li> -->
       
-      <li class="nav-item">
+      <!-- <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#HRConfig" aria-expanded="false" aria-controls="HRConfig">
           <i class="menu-icon mdi mdi-clipboard-text"></i>
           <span class="menu-title">HR Configuration</span>
@@ -197,7 +197,7 @@ $role = $user ? $user->role : null;
             <li class="nav-item"><a class="nav-link" href="/addressview">Job Addresses</a></li>
           </ul>
         </div>
-      </li>
+      </li> -->
 
 
        <li class="nav-item">
@@ -305,7 +305,7 @@ $role = $user ? $user->role : null;
           </ul>
         </div>
       </li>
-
+<!-- 
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#Settings" aria-expanded="false" aria-controls="Settings">
           <i class="menu-icon mdi mdi-cog"></i>
@@ -318,7 +318,7 @@ $role = $user ? $user->role : null;
             <li class="nav-item"><a class="nav-link" href="/notification-settings">Push Notifications</a></li>
           </ul>
         </div>
-      </li>
+      </li> -->
 
       <!-- <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="/chat'" aria-expanded="false" aria-controls="chat">
@@ -358,12 +358,13 @@ $role = $user ? $user->role : null;
         </a>
       </li> 
 
-      <li class="nav-item">
+      <!-- <li class="nav-item">
         <a class="nav-link" href="/payrollview">
           <i class="menu-icon mdi mdi-currency-inr"></i>
           <span class="menu-title">Payroll</span>
         </a>
-      </li> 
+      </li>  -->
+
       <li class="nav-item">
         <a class="nav-link" href="/trainingview">
           <i class="menu-icon mdi mdi-currency-usd"></i>
@@ -410,12 +411,12 @@ $role = $user ? $user->role : null;
         </a>
       </li>
       <!-- PDF Recorder - Available for all users -->
-      <li class="nav-item">
+      <!-- <li class="nav-item">
         <a class="nav-link" href="<?= base_url('/pdf-recorder') ?>">
           <i class="menu-icon mdi mdi-file-pdf-box"></i>
           <span class="menu-title">PDF Statement</span>
         </a>
-      </li>
+      </li> -->
     <?php endif; ?>
     
     
