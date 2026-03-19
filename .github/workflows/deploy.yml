@@ -33,23 +33,18 @@ jobs:
           rm -f ./build_output/.gitignore
           rm -f ./build_output/.gitattributes
  
-      - name: Debug secrets (for troubleshooting only, remove in production)
-        run: |
-          echo "Host: ${{ secrets.FTP_HOST }}"
-          echo "Username: ${{ secrets.FTP_USERNAME }}"
-          echo "Password is set: ${{ secrets.FTP_PASSWORD != '' }}"
  
       - name: Deploy to cPanel via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: hr-portal.fableadtech.in
-          username: 'u378554361.hr-portal.fableadtech.in'
-          password: '!FIw4bGC5yF$2J]d'
+          server: ${{ secrets.FTP_HOST || 'hr-portal.fableadtech.in' }}
+          username: ${{ secrets.FTP_USERNAME || 'u378554361.hr-portal.fableadtech.in' }}
+          password: ${{ secrets.FTP_PASSWORD || '!FIw4bGC5yF$2J]d' }}
           server-dir: /public_html/
           local-dir: ./build_output/
-          # timeout: 600000
           protocol: ftps
           port: 21
+          dangerously-allow-untrusted-ca-certs: true
           exclude: |
             **/.git*
             **/vendor/**
