@@ -42,7 +42,7 @@ jobs:
       - name: Deploy to cPanel via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: 145.79.212.228
+          server: hr-portal.fableadtech.in
           username: 'u378554361.hr-portal.fableadtech.in'
           password: '!FIw4bGC5yF$2J]d'
           server-dir: /public_html/
