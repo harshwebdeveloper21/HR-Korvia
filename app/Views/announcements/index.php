@@ -6,14 +6,14 @@
             <h1 class="page-title fw-bold fs-24 mb-1" style="color: #1e293b;">Notice Board</h1>
             <p class="text-muted mb-0">Stay updated with the latest company news and events</p>
         </div>
-        <div class="ms-md-1 ms-0">
+        <!-- <div class="ms-md-1 ms-0">
             <nav>
                 <ol class="breadcrumb mb-0 bg-transparent p-0">
                     <li class="breadcrumb-item"><a href="/dashboard" class="text-primary">Dashboard</a></li>
                     <li class="breadcrumb-item active text-muted" aria-current="page">Announcements</li>
                 </ol>
             </nav>
-        </div>
+        </div> -->
     </div>
 
     <!-- Filter Row -->
@@ -26,7 +26,7 @@
                             <label class="form-label fw-bold text-dark fs-13">Filter by Type</label>
                             <div class="input-group input-filter">
                                 <span class="input-group-text bg-white border-end-0"><i class="mdi mdi-filter-variant text-muted"></i></span>
-                                <select name="type" class="form-select border-start-0 ps-0">
+                                <select name="type" class="form-select border-start-0 p-1">
                                     <option value="">All Categories</option>
                                     <option value="Info" <?= request()->getGet('type') == 'Info' ? 'selected' : '' ?>>ℹ️ Information</option>
                                     <option value="Warning" <?= request()->getGet('type') == 'Warning' ? 'selected' : '' ?>>⚠️ Warning</option>
@@ -40,7 +40,7 @@
                             <label class="form-label fw-bold text-dark fs-13">Filter by Date</label>
                             <div class="input-group input-filter">
                                 <span class="input-group-text bg-white border-end-0"><i class="mdi mdi-calendar-search text-muted"></i></span>
-                                <input type="date" name="date" class="form-control border-start-0 ps-0" value="<?= request()->getGet('date') ?>">
+                                <input type="date" name="date" class="form-control border-start-0 p-1" value="<?= request()->getGet('date') ?>">
                             </div>
                         </div>
                         <div class="col-xl-4 col-lg-2 d-flex gap-2">
@@ -52,6 +52,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Announcements Cards -->
     <div class="row g-4">
@@ -123,6 +124,7 @@
                                 <button class="btn btn-read-more read-more-btn px-3 py-1 fw-bold stretched-link" 
                                         data-title="<?= esc($a['title']) ?>" 
                                         data-desc="<?= esc($a['description']) ?>" 
+                                        data-date="<?= date('M d, Y', strtotime($a['start_date'])) ?>"
                                         data-id="<?= $a['id'] ?>"
                                         data-attachment="<?= $a['attachment'] ? '/uploads/announcements/'.$a['attachment'] : '' ?>"
                                         data-bs-toggle="modal" data-bs-target="#announcementModal">
@@ -139,44 +141,38 @@
 
 <!-- Read More Modal -->
 <div class="modal fade" id="announcementModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header border-0 bg-light p-4">
-                <div class="d-flex align-items-center">
-                    <div class="avatar-md bg-primary-transparent rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
-                        <i class="mdi mdi-bullhorn fs-20 text-primary"></i>
-                    </div>
-                    <h6 class="modal-title fw-bold fs-18 mb-0" id="announcementModalLabel">Announcement Details</h6>
-                </div>
-                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="mb-4">
-                    <h4 id="modalTitle" class="fw-bold text-dark-blue mb-2"></h4>
-                    <span id="modalDate" class="text-muted fs-13"><i class="mdi mdi-calendar-clock-outline me-1"></i> Posted on: <span></span></span>
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-body p-4 text-start">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <h4 class="mb-0 fw-bold" style="color: #1e293b; font-size: 1.2rem;">Announcement Details</h4>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
-                <div class="announcement-content-scroll bg-white p-3 rounded-3 border-light" style="max-height: 400px; overflow-y: auto;">
-                    <div id="modalDescription" class="fs-15 text-muted lh-base" style="white-space: pre-wrap;"></div>
+                <div class="mb-3">
+                    <h5 id="modalTitle" class="fw-bold mb-1" style="color: #334155;"></h5>
+                    <p class="text-muted mb-3" style="font-size: 0.8rem;"><i class="mdi mdi-calendar-blank-outline me-1"></i> Posted on: <span id="modalDate"></span></p>
+                    
+                    <div class="announcement-content-scroll" style="max-height: 400px; overflow-y: auto;">
+                        <div id="modalDescription" class="text-muted" style="font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5;"></div>
+                    </div>
                 </div>
 
-                <div id="modalAttachmentDiv" class="mt-4 p-3 rounded-3 bg-light border-start border-primary border-4" style="display:none;">
+                <div id="modalAttachmentDiv" class="mt-3 p-3 rounded bg-light border-start border-info border-3" style="display:none;">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center">
-                            <i class="mdi mdi-paperclip fs-20 text-primary me-2"></i>
-                            <div>
-                                <p class="fw-bold mb-0 fs-14">Supporting Document</p>
-                                <p class="text-muted mb-0 fs-12">Click the button to download or view</p>
-                            </div>
+                            <i class="mdi mdi-paperclip fs-18 text-info me-2"></i>
+                            <p class="fw-bold mb-0" style="color: #334155; font-size: 0.85rem;">Document Attached</p>
                         </div>
-                        <a id="modalAttachmentLink" href="#" target="_blank" class="btn btn-sm btn-primary px-3 rounded-pill">
-                            <i class="mdi mdi-download me-1"></i> View File
+                        <a id="modalAttachmentLink" href="#" target="_blank" class="btn btn-sm text-white px-3" style="background-color: #00c4ff; font-weight: 500;">
+                            View File
                         </a>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-light px-4 fw-bold rounded-pill" data-bs-dismiss="modal">Close</button>
+
+                <div class="d-flex justify-content-end mt-4 pt-2">
+                    <button type="button" class="btn text-white px-4 rounded" style="background-color: #00c4ff; border: none; font-weight: 600;" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -193,8 +189,19 @@
     .tracking-wider { letter-spacing: 0.05em; }
     .fs-10 { font-size: 0.625rem; }
     
-    .input-filter { border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
-    .input-filter .form-select, .input-filter .form-control { border: none; padding: 10px; }
+    .input-filter { 
+        border-radius: 10px; 
+        border: 1px solid #e2e8f0; 
+        transition: all 0.2s ease;
+    }
+    .input-filter:focus-within {
+        border-color: #E66136;
+        box-shadow: 0 0 0 0.2rem rgba(230, 97, 54, 0.15);
+    }
+    .input-filter .form-select, .input-filter .form-control { 
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
     
     .btn-read-more { color: #E66136; padding: 0; background: transparent; transition: all 0.2s ease; border: none; font-size: 14px; }
     .btn-read-more:hover { color: #c2410c; padding-right: 5px; }
@@ -224,20 +231,24 @@ $(document).ready(function() {
         var id = btn.attr('data-id');
         var title = btn.attr('data-title');
         var desc = btn.attr('data-desc');
+        var dateVal = btn.attr('data-date');
         var attachment = btn.attr('data-attachment');
 
         // Target modal elements
         var $modalTitle = $('#modalTitle');
+        var $modalDateId = $('#modalDate');
         var $modalDesc = $('#modalDescription');
         var $modalAttachDiv = $('#modalAttachmentDiv');
         var $modalAttachLink = $('#modalAttachmentLink');
 
         // Clear previous content
         $modalTitle.text('');
+        $modalDateId.text('');
         $modalDesc.text('');
 
         // Set title and description
         $modalTitle.text(title || 'No Title');
+        $modalDateId.text(dateVal || '');
         $modalDesc.text(desc || 'No Description');
 
         // Handle attachment

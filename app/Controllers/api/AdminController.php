@@ -520,21 +520,16 @@ class AdminController extends ResourceController
         if (in_array($role, ['admin', 'hr'])) {
             $totalThisWeekEmployees = $this->userModel
                 ->where('role', 'employee')
-                ->where('DATE(created_at) >=', $startOfWeek)
-                ->where('DATE(created_at) <=', $today)
                 ->where('is_deleted', 0)
                 ->countAllResults();
             $startOfMonth = date('Y-m-01'); // 1st of current month
             $endOfMonth = date('Y-m-t');    // Last day of current month
             $totalEmployeesThisMonth = $this->userModel
                 ->where('role', 'employee')
-                ->where('DATE(created_at) >=', $startOfMonth)
-                ->where('DATE(created_at) <=', $endOfMonth)
                 ->where('is_deleted', 0)
                 ->countAllResults();
             $totalEmployeesThisYear = $this->userModel
                 ->where('role', 'employee')
-                ->where('YEAR(created_at)', date('Y')) // Filters based on the current year (e.g., 2025)
                 ->where('is_deleted', 0)
                 ->countAllResults();
         }

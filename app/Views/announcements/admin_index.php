@@ -7,10 +7,10 @@
                 <div class="card-header d-flex justify-content-between align-items-center border-bottom-0 p-2">
                     <h5 class="card-title fw-bold mb-0">Manage Announcements</h5>
                     <div class="d-flex gap-2">
-                        <select class="form-select form-select-sm" style="width: auto; border: 1px solid #dee2e6; border-radius: 4px;">
+                        <!-- <select class="form-select form-select-sm" style="width: auto; border: 1px solid #dee2e6; border-radius: 4px;">
                             <option>All Types</option>
-                        </select>
-                        <a href="/announcements/create" class="btn btn-sm text-white fw-bold" style="background-color: #E66136; border-radius: 4px; padding: 5px 15px;">
+                        </select> -->
+                        <a href="/announcements/create" class="btn btn-sm text-white fw-bold" style="background-color: #E66136; border-radius: 4px; padding: 10px 15px;">
                             + Add Announcement
                         </a>
                     </div>

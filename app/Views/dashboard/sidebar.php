@@ -229,7 +229,7 @@ $role = $user ? $user->role : null;
         </div>
       </li> 
 
-    <li class="nav-item">
+    <!-- <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#eomMenu" aria-expanded="false" aria-controls="eomMenu">
           <i class="menu-icon mdi mdi-star-circle"></i>
           <span class="menu-title">EOM</span>
@@ -242,7 +242,7 @@ $role = $user ? $user->role : null;
             </li>
           </ul>
         </div>
-      </li>
+      </li> -->
       
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#eomletter" aria-expanded="false" aria-controls="eomletter">

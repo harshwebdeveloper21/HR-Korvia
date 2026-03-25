@@ -44,7 +44,7 @@
                     <h4 class="card-title">Manage Complaints & Feedback</h4>
                     <div class="d-md-flex gap-2">
                         <select class="form-select shadow-none" id="filterStatus" style="max-width: 150px;">
-                            <option value="">All Statuses</option>
+                            <option value="">All Status</option>
                             <option value="Pending">Pending</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Resolved">Resolved</option>
