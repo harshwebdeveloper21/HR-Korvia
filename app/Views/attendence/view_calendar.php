@@ -383,13 +383,20 @@
     }
     
     .hr-btnbg {
-        background-color: #ff6b35;
-        color: white;
+        background-color: #E66136 !important;
+        color: white !important;
+        border-radius: 8px !important;
+        padding: 10px 24px !important;
+        font-weight: 600 !important;
+        border: none !important;
+        box-shadow: 0 4px 6px -1px rgba(230, 97, 54, 0.2), 0 2px 4px -1px rgba(230, 97, 54, 0.1) !important;
+        transition: all 0.2s ease !important;
     }
     
     .hr-btnbg:hover {
-        background-color: #e55a2b;
-        color: white;
+        background-color: #d45932 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(230, 97, 54, 0.3), 0 4px 6px -2px rgba(230, 97, 54, 0.15) !important;
     }
 
     /* View Toggle Buttons */
@@ -953,8 +960,8 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button class="btn hr-btnbg" data-bs-dismiss="modal">Cancel</button>
+      <div class="modal-footer justify-content-end gap-2">
+        <button class="btn hr-btnbg" data-bs-dismiss="modal">Back</button>
         <button class="btn hr-btnbg" onclick="saveAttendanceEdits()">Save Changes</button>
       </div>
     </div>
@@ -1009,8 +1016,8 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button class="btn hr-btnbg" data-bs-dismiss="modal">Cancel</button>
+      <div class="modal-footer justify-content-end gap-2">
+        <button class="btn hr-btnbg" data-bs-dismiss="modal">Back</button>
         <button class="btn hr-btnbg" onclick="saveBulkAttendance()">Save Changes</button>
       </div>
     </div>

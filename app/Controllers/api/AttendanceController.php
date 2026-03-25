@@ -347,8 +347,7 @@ class AttendanceController extends ResourceController
     3. MEAL BREAK
     --------------------------------------------------- */
     $mealBreakSeconds = 0;
-
-    if (!$isSaturdayHalfDay && !empty($mealbreakTime)) {
+    if (!$isSaturdayHalfDay && !empty($mealbreakTime) && $grossWorkSeconds >= (5 * 3600)) {
         $time = new \DateTime($mealbreakTime);
         $mealBreakSeconds =
             ($time->format('H') * 3600) +
@@ -1816,10 +1815,23 @@ class AttendanceController extends ResourceController
         $startTime   = $companyRule['start_time'] ?? '09:00:00';
         $gracePeriod = (int)($companyRule['grace_period'] ?? 0);
 
-        // Meal break setup
+        // Meal break setup - Only applied if total gross work >= 5 hours
         $mb = new \DateTime($mealBreak);
         $mealSeconds = ($mb->format('H') * 3600) + ($mb->format('i') * 60) + $mb->format('s');
-        $remainingMealBreak = $mealSeconds;
+        
+        // Calculate total gross duration first to decide if break should be applied
+        $totalGrossSeconds = 0;
+        foreach ($records as $record) {
+            if (!empty($record['check_in_time']) && !empty($record['check_out_time'])) {
+                $in = strtotime($date . ' ' . $record['check_in_time']);
+                $out = strtotime($date . ' ' . $record['check_out_time']);
+                if ($out > $in) {
+                    $totalGrossSeconds += ($out - $in);
+                }
+            }
+        }
+
+        $remainingMealBreak = ($totalGrossSeconds >= (5 * 3600)) ? $mealSeconds : 0;
 
         $totalWorkSeconds = 0;
         $totalOvertimeSeconds = 0;

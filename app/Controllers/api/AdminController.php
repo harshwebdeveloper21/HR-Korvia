@@ -1222,13 +1222,20 @@ class AdminController extends ResourceController
                 if ($workHoursSeconds <= 0) {
                     $sessionSeconds = $rawSessionSeconds;
                     
-                    // Only subtract meal break if session is longer than break duration
-                    // For short sessions (less than break time), don't subtract break
-                    if ($sessionSeconds > $mealBreakSeconds) {
+                    // Only subtract meal break if total gross day duration is at least 5 hours
+                    // Calculate total gross duration for all records
+                    $totalGrossDaySeconds = 0;
+                    foreach ($todayAttendanceRecords as $r) {
+                        if (!empty($r['check_in_time']) && !empty($r['check_out_time'])) {
+                            $rCi = explode(':', $r['check_in_time']);
+                            $rCo = explode(':', $r['check_out_time']);
+                            $totalGrossDaySeconds += (($rCo[0] * 3600 + $rCo[1] * 60 + ($rCo[2] ?? 0)) - ($rCi[0] * 3600 + $rCi[1] * 60 + ($rCi[2] ?? 0)));
+                        }
+                    }
+
+                    if ($totalGrossDaySeconds >= (5 * 3600)) {
                         $sessionSeconds = max(0, $sessionSeconds - $mealBreakSeconds);
                     }
-                    // If session is shorter than or equal to break time, use the actual session time
-                    // (This handles cases like quick check-ins/check-outs)
                     
                     $workHoursSeconds = $sessionSeconds;
                 }
