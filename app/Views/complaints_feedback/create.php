@@ -94,7 +94,7 @@
                         <div class="col-md-12">
                             <label class="form-label fw-bold text-dark">Subject</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="mdi mdi-format-title text-muted"></i></span>
+                                <span class="input-group-text text-white border-end-0" style="background-color: #E66136;"><i class="mdi mdi-format-title"></i></span>
                                 <input type="text" class="form-control border-start-0 py-2" name="subject" required placeholder="A brief heading for your request">
                             </div>
                         </div>
@@ -102,7 +102,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">Contact Name</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="mdi mdi-account-outline text-muted"></i></span>
+                                <span class="input-group-text text-white border-end-0" style="background-color: #E66136;"><i class="mdi mdi-account-outline"></i></span>
                                 <input type="text" class="form-control border-start-0 py-2" name="name" required value="<?= esc($user->username ?? '') ?>" placeholder="Full Name">
                             </div>
                         </div>
@@ -110,7 +110,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">Contact Email</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="mdi mdi-email-open-outline text-muted"></i></span>
+                                <span class="input-group-text text-white border-end-0" style="background-color: #E66136;"><i class="mdi mdi-email-open-outline"></i></span>
                                 <input type="email" class="form-control border-start-0 py-2" name="email" required value="<?= esc($user->email ?? '') ?>" placeholder="email@address.com">
                             </div>
                         </div>
@@ -118,7 +118,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">Mobile Number</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="mdi mdi-phone text-muted"></i></span>
+                                <span class="input-group-text text-white border-end-0" style="background-color: #E66136;"><i class="mdi mdi-phone"></i></span>
                                 <input type="text" class="form-control border-start-0 py-2" name="mobile" required placeholder="Phone number">
                             </div>
                         </div>
@@ -126,7 +126,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">Attachment</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="mdi mdi-paperclip text-muted"></i></span>
+                                <span class="input-group-text text-white border-end-0" style="background-color: #E66136;"><i class="mdi mdi-paperclip"></i></span>
                                 <input type="file" class="form-control border-start-0 py-2" name="file">
                             </div>
                         </div>
@@ -141,7 +141,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark">Initial Status</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="mdi mdi-shield-check-outline text-muted"></i></span>
+                                <span class="input-group-text text-white border-end-0" style="background-color: #E66136;"><i class="mdi mdi-shield-check-outline"></i></span>
                                 <select class="form-select border-start-0 py-2" name="status">
                                     <option value="Pending">Pending</option>
                                     <option value="In Progress">In Progress</option>
