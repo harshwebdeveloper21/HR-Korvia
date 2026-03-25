@@ -372,7 +372,7 @@ $role = $user ? $user->role : null;
         </a>
       </li> 
 
-       <li class="nav-item">
+       <!-- <li class="nav-item">
         <a class="nav-link" href="/taskview">
           <i class="menu-icon mdi mdi-book-open"></i>
           <span class="menu-title">Task</span>
@@ -383,7 +383,7 @@ $role = $user ? $user->role : null;
           <i class="menu-icon mdi mdi-format-list-checkbox"></i>
           <span class="menu-title">SubTask</span>
         </a>
-      </li> 
+      </li>  -->
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#subtasks" aria-expanded="false" aria-controls="subtasks">
           <i class="menu-icon mdi mdi-book-open"></i>

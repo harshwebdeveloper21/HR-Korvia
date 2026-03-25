@@ -1391,6 +1391,29 @@
                                                     </div>
                                                 </div>
 
+                                                <!-- Remaining Hours -->
+                                                <div class="mb-4">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span class="text-muted small">Remaining Hours</span>
+                                                        <span class="badge bg-danger" id="remaining-hours-badge">
+                                                            <?= $todayHoursData['remaining_hours'] ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="progress" style="height: 8px;">
+                                                        <?php
+                                                        $remainingPercent = $todayHoursData['standard_hours_seconds'] > 0
+                                                            ? max(0, min(100, ($todayHoursData['remaining_hours_seconds'] / $todayHoursData['standard_hours_seconds']) * 100))
+                                                            : 100;
+                                                        ?>
+                                                        <div class="progress-bar bg-danger" role="progressbar"
+                                                            style="width: <?= $remainingPercent ?>%"
+                                                            id="remaining-hours-progress"
+                                                            aria-valuenow="<?= $remainingPercent ?>"
+                                                            aria-valuemin="0"
+                                                            aria-valuemax="100"></div>
+                                                    </div>
+                                                </div>
+
                                                 <!-- Status Badge -->
                                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                                     <span class="text-muted small">Status</span>
@@ -2686,286 +2709,51 @@
 
 <?php if ($role == 'employee' && isset($todayHoursData) && $todayHoursData && $todayHoursData['is_checked_in']) : ?>
     <script>
-        // Update hours in real-time if employee is checked in
+        // ✅ CLEAN Real-time hours counter — server-anchored, no timezone math
         (function() {
-            'use strict';
-            console.log('🕐 Real-time hours update script initialized');
+            // Server has already computed the correct elapsed seconds in IST timezone
+            const elapsedAtLoad      = <?= (int)($todayHoursData['elapsed_seconds_at_load'] ?? 0) ?>;
+            const completedSeconds   = <?= (int)($todayHoursData['completed_hours_seconds'] ?? 0) ?>;
+            const standardHoursSeconds = <?= (float)($todayHoursData['standard_hours_decimal'] ?? 8.0) ?> * 3600;
 
-            const checkInTime = '<?= $todayHoursData['check_in_time'] ?? '' ?>';
-            const standardHoursDecimal = <?= $todayHoursData['standard_hours_decimal'] ?? 8.0 ?>;
-            const standardHoursSeconds = standardHoursDecimal * 3600;
-            const mealBreakSeconds = <?= $todayHoursData['meal_break_seconds'] ?? (30 * 60) ?>;
-            const completedHoursSeconds = <?= $todayHoursData['completed_hours_seconds'] ?? 0 ?>;
-            const isCheckedOut = <?= ($todayHoursData['is_checked_out'] ?? false) ? 'true' : 'false' ?>;
+            // Start counting from server-verified elapsed time
+            let elapsedSeconds = elapsedAtLoad;
 
-            console.log('📊 Initial values:', {
-                checkInTime: checkInTime,
-                completedHoursSeconds: completedHoursSeconds,
-                completedHoursFormatted: Math.floor(completedHoursSeconds / 3600) + ':' +
-                    Math.floor((completedHoursSeconds % 3600) / 60) + ':' +
-                    (completedHoursSeconds % 60),
-                mealBreakSeconds: mealBreakSeconds,
-                standardHours: standardHoursDecimal,
-                isCheckedOut: isCheckedOut
-            });
-
-            // If already checked out, don't run live updates
-            if (isCheckedOut) {
-                console.log('ℹ️ Employee already checked out, live updates disabled');
-                return;
+            function fmt(totalSecs) {
+                const h = Math.floor(totalSecs / 3600);
+                const m = Math.floor((totalSecs % 3600) / 60);
+                const s = totalSecs % 60;
+                return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
             }
 
-            if (!checkInTime) {
-                console.error('❌ No check-in time found');
-                return;
-            }
+            function tick() {
+                elapsedSeconds++;
 
-            // Parse check-in time
-            const checkInParts = checkInTime.split(':');
-            const checkInHours = parseInt(checkInParts[0]) || 0;
-            const checkInMinutes = parseInt(checkInParts[1]) || 0;
-            const checkInSecs = parseInt(checkInParts[2]) || 0;
+                const totalWorked    = completedSeconds + elapsedSeconds;
+                const totalRemaining = Math.max(0, standardHoursSeconds - totalWorked);
 
-            console.log('⏰ Parsed check-in time:', checkInHours + ':' + checkInMinutes + ':' + checkInSecs);
+                const hoursBadge     = document.getElementById('hours-worked-badge');
+                const remainBadge    = document.getElementById('remaining-hours-badge');
+                const hoursBar       = document.getElementById('hours-worked-progress');
+                const remainBar      = document.getElementById('remaining-hours-progress');
 
-            // 🕒 Timezone-aware calculation using server time offset
-            const serverCurrentTimeUnix = <?= time() ?>; // Server's current Unix timestamp
-            const browserCurrentTimeUnix = Math.floor(Date.now() / 1000);
-            const serverToBrowserOffset = serverCurrentTimeUnix - browserCurrentTimeUnix;
+                if (hoursBadge)  hoursBadge.textContent  = fmt(totalWorked);
+                if (remainBadge) remainBadge.textContent = fmt(totalRemaining);
 
-            console.log('⏰ Timezone sync:', {
-                serverTime: new Date(serverCurrentTimeUnix * 1000).toString(),
-                browserTime: new Date(browserCurrentTimeUnix * 1000).toString(),
-                offsetSeconds: serverToBrowserOffset
-            });
-
-            // Parse check-in time into a Unix timestamp relative to today (server date)
-            const checkInParts = checkInTime.split(':');
-            const checkInH = parseInt(checkInParts[0]) || 0;
-            const checkInM = parseInt(checkInParts[1]) || 0;
-            const checkInS = parseInt(checkInParts[2]) || 0;
-            
-            // Server's start-of-day timestamp
-            const serverToday = new Date(serverCurrentTimeUnix * 1000);
-            const serverCheckInDate = new Date(serverToday.getFullYear(), serverToday.getMonth(), serverToday.getDate(), checkInH, checkInM, checkInS);
-            const checkInTimestamp = Math.floor(serverCheckInDate.getTime() / 1000);
-
-            let baseCompletedHours = completedHoursSeconds;
-
-            function updateHours() {
-                try {
-                    const hoursBadge = document.getElementById('hours-worked-badge');
-                    const hoursProgress = document.getElementById('hours-worked-progress');
-
-                    if (!hoursBadge || !hoursProgress) return;
-
-                    // Calculate "now" in server-time context
-                    const nowBrowserUnix = Math.floor(Date.now() / 1000);
-                    const nowServerUnix = nowBrowserUnix + serverToBrowserOffset;
-
-                    // Absolute difference between check-in and current time
-                    let activeSessionSeconds = nowServerUnix - checkInTimestamp;
-
-                    // Handle potential negative values if server clock is slightly behind
-                    activeSessionSeconds = Math.max(0, activeSessionSeconds);
-                    
-                    // Cap at 24 hours to prevent glitches
-                    activeSessionSeconds = Math.min(activeSessionSeconds, 86400);
-
-                    // For active session (not checked out yet), we add elapsed time to completed historical time
-                    let totalWorkedSeconds = baseCompletedHours + activeSessionSeconds;
-
-                    // Format HH:MM:SS
-                    const h = Math.floor(totalWorkedSeconds / 3600);
-                    const m = Math.floor((totalWorkedSeconds % 3600) / 60);
-                    const s = totalWorkedSeconds % 60;
-                    const formatted = String(h).padStart(2, '0') + ':' +
-                                    String(m).padStart(2, '0') + ':' +
-                                    String(s).padStart(2, '0');
-
-                    hoursBadge.textContent = formatted;
-
-                    // Progress bar
-                    if (hoursProgress && standardHoursSeconds > 0) {
-                        const percent = Math.min(100, (totalWorkedSeconds / standardHoursSeconds) * 100);
-                        hoursProgress.style.width = percent + '%';
-                        hoursProgress.setAttribute('aria-valuenow', percent);
-                    }
-                } catch (e) {
-                    console.error('Update timer error:', e);
+                if (hoursBar && standardHoursSeconds > 0) {
+                    const pct = Math.min(100, (totalWorked / standardHoursSeconds) * 100);
+                    hoursBar.style.width = pct + '%';
                 }
-            }
-                    //         now: now.toLocaleTimeString(),
-                    //         checkInTime: checkInHours + ':' + checkInMinutes + ':' + checkInSecs,
-                    //         activeSessionSeconds: activeSessionSeconds,
-                    //         activeSessionAfterBreak: activeSessionAfterBreak,
-                    //         beforeBreak: activeSessionBeforeBreak,
-                    //         completedHours: baseCompletedHours,
-                    //         completedHoursFormatted: Math.floor(baseCompletedHours / 3600) + ':' + 
-                    //                                 Math.floor((baseCompletedHours % 3600) / 60) + ':' + 
-                    //                                 (baseCompletedHours % 60),
-                    //         totalWorked: workedSeconds,
-                    //         hoursWorkedFormatted: hoursWorkedFormatted,
-                    //         remainingHoursFormatted: remainingHoursFormatted,
-                    //         hoursBadgeExists: !!hoursBadge,
-                    //         remainingBadgeExists: !!remainingBadge
-                    //     });
-                    // }
-
-                    // Update badges - force update with multiple methods
-                    if (hoursBadge) {
-                        hoursBadge.textContent = hoursWorkedFormatted;
-                        hoursBadge.innerHTML = hoursWorkedFormatted;
-                        // Force a reflow to ensure update is visible
-                        void hoursBadge.offsetHeight;
-                    } else {
-                        console.error('❌ hoursBadge element not found!');
-                    }
-
-                    if (remainingBadge) {
-                        remainingBadge.textContent = remainingHoursFormatted;
-                        remainingBadge.innerHTML = remainingHoursFormatted;
-                        // Force a reflow to ensure update is visible
-                        void remainingBadge.offsetHeight;
-                    } else {
-                        console.error('❌ remainingBadge element not found!');
-                    }
-
-                    // Update progress bars
-                    const progressPercent = standardHoursSeconds > 0 ?
-                        Math.min(100, (workedSeconds / standardHoursSeconds) * 100) :
-                        0;
-                    const remainingPercent = standardHoursSeconds > 0 ?
-                        Math.min(100, (remainingSeconds / standardHoursSeconds) * 100) :
-                        0;
-
-                    if (hoursProgress) {
-                        hoursProgress.style.width = progressPercent + '%';
-                        hoursProgress.setAttribute('aria-valuenow', progressPercent);
-                        hoursProgress.style.setProperty('width', progressPercent + '%', 'important');
-                    }
-
-                    if (remainingProgress) {
-                        remainingProgress.style.width = remainingPercent + '%';
-                        remainingProgress.setAttribute('aria-valuenow', remainingPercent);
-                        remainingProgress.style.setProperty('width', remainingPercent + '%', 'important');
-                    }
-
-                    // Update badge color for remaining hours
-                    if (remainingSeconds <= 0) {
-                        remainingBadge.classList.remove('bg-warning');
-                        remainingBadge.classList.add('bg-success');
-                        remainingProgress.classList.remove('bg-warning');
-                        remainingProgress.classList.add('bg-success');
-                    } else {
-                        remainingBadge.classList.remove('bg-success');
-                        remainingBadge.classList.add('bg-warning');
-                        remainingProgress.classList.remove('bg-success');
-                        remainingProgress.classList.add('bg-warning');
-                    }
-                } catch (error) {
-                    console.error('Error updating hours:', error);
+                if (remainBar && standardHoursSeconds > 0) {
+                    const pct = Math.max(0, (totalRemaining / standardHoursSeconds) * 100);
+                    remainBar.style.width = pct + '%';
                 }
             }
 
-            // Function to start the interval
-            function startUpdates() {
-                // Check if elements exist before starting
-                const hoursBadge = document.getElementById('hours-worked-badge');
-                const remainingBadge = document.getElementById('remaining-hours-badge');
-                const hoursProgress = document.getElementById('hours-worked-progress');
-                const remainingProgress = document.getElementById('remaining-hours-progress');
+            // Start ticking every second
+            setInterval(tick, 1000);
 
-                if (!hoursBadge || !remainingBadge || !hoursProgress || !remainingProgress) {
-                    console.warn('⚠️ Elements not found, retrying in 100ms...', {
-                        hoursBadge: !!hoursBadge,
-                        remainingBadge: !!remainingBadge,
-                        hoursProgress: !!hoursProgress,
-                        remainingProgress: !!remainingProgress
-                    });
-                    // Retry up to 50 times (5 seconds)
-                    if (typeof startUpdates.retryCount === 'undefined') {
-                        startUpdates.retryCount = 0;
-                    }
-                    startUpdates.retryCount++;
-                    if (startUpdates.retryCount < 50) {
-                        setTimeout(startUpdates, 100);
-                    } else {
-                        console.error('❌ Failed to find elements after 50 retries');
-                    }
-                    return;
-                }
-
-                console.log('🚀 Starting real-time updates');
-                updateHours(); // Initial update
-
-                // Clear any existing interval
-                if (updateInterval) {
-                    clearInterval(updateInterval);
-                }
-
-                // Update every second for live real-time updates
-                updateInterval = setInterval(function() {
-                    updateHours();
-                }, 1000);
-
-                // Store interval in window for debugging
-                window.hoursUpdateInterval = updateInterval;
-
-                console.log('✅ Real-time update interval started');
-            }
-
-            // Multiple ways to ensure script runs
-            function initScript() {
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', function() {
-                        setTimeout(startUpdates, 200);
-                    });
-                } else if (document.readyState === 'interactive' || document.readyState === 'complete') {
-                    // DOM is already ready or loading
-                    setTimeout(startUpdates, 200);
-                } else {
-                    // Fallback
-                    setTimeout(startUpdates, 500);
-                }
-            }
-
-            // Start immediately
-            initScript();
-
-            // Also try after a short delay as fallback
-            setTimeout(function() {
-                if (!window.hoursUpdateInterval) {
-                    console.log('🔄 Fallback: Retrying to start updates...');
-                    startUpdates();
-                }
-            }, 1000);
-
-            // Stop updating if page becomes hidden (optional optimization)
-            // Resume when page becomes visible again
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) {
-                    if (updateInterval) {
-                        clearInterval(updateInterval);
-                        updateInterval = null;
-                        console.log('⏸️ Updates paused (page hidden)');
-                    }
-                } else {
-                    console.log('▶️ Updates resumed (page visible)');
-                    updateHours(); // Update immediately when page becomes visible
-                    if (!updateInterval) {
-                        updateInterval = setInterval(function() {
-                            updateHours();
-                        }, 1000);
-                    }
-                }
-            });
-
-            // Also update on window focus
-            window.addEventListener('focus', function() {
-                console.log('👁️ Window focused, updating hours');
-                updateHours();
-            });
+            console.log('⏱️ Timer started | elapsedAtLoad=' + elapsedAtLoad + 's | completed=' + completedSeconds + 's | standard=' + standardHoursSeconds + 's');
         })();
     </script>
 <?php endif; ?>
