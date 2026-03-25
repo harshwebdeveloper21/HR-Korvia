@@ -544,7 +544,7 @@ class AdminController extends ResourceController
             ->where('leaves.status', 'approved') // ✅ Fully qualified
             ->findAll();
         $todayAttendanceRaw = $this->attendanceModel
-            ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image')
+            ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')
             ->join('users', 'users.id = attendance.user_id', 'inner')
             ->join('user_info', 'user_info.user_id = users.id', 'left')
             ->where('attendance.date', $todayDate)
@@ -638,7 +638,7 @@ class AdminController extends ResourceController
                 ->where('leaves.status', 'approved') // ✅ Fully qualified
                 ->findAll();
             $todayAttendanceRaw = $this->attendanceModel
-                ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image')
+                ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')
                 ->join('users', 'users.id = attendance.user_id', 'inner')
                 ->join('user_info', 'user_info.user_id = users.id', 'left')
                 ->where('attendance.date', $todayDate)
@@ -1115,8 +1115,6 @@ class AdminController extends ResourceController
      */
     private function calculateTodayHours($userId)
     {
-        date_default_timezone_set('Asia/Kolkata');
-        
         $today = date('Y-m-d');
         
         // Get ALL today's attendance records (not just the latest)
