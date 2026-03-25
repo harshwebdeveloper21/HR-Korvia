@@ -2763,31 +2763,51 @@
      * Show Announcement Details in a Bootstrap/Premium Styled Modal
      */
     function showAnnouncement(announcement) {
+        // Format the date (using start_date as the 'Posted on' date as seen in cards)
+        let postedOn = 'N/A';
+        if (announcement.start_date) {
+            const date = new Date(announcement.start_date);
+            postedOn = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
         Swal.fire({
             title: '',
             html: `
                 <div class="text-start">
-                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                        <h4 class="mb-0 fw-bold" style="color: #1e293b; font-size: 1.2rem;">Announcement Details</h4>
-                        <button type="button" class="btn-close" onclick="Swal.close()" aria-label="Close"></button>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h4 class="mb-0 fw-bold" style="color: #1e293b; font-size: 1.25rem;">Announcement Details</h4>
+                        <div style="cursor: pointer; opacity: 0.5; transition: 0.2s;" onclick="Swal.close()" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">
+                            <i class="mdi mdi-close fs-4"></i>
+                        </div>
                     </div>
+                    <hr class="mt-2 mb-3" style="opacity: 0.1;">
                     <div class="mb-3">
-                        <h5 class="fw-bold mb-1" style="color: #334155;">${announcement.title}</h5>
-                        <p class="text-muted" style="font-size: 0.9rem;">${announcement.description}</p>
+                        <h5 class="fw-bold mb-2" style="color: #1e293b; font-size: 1.15rem; line-height: 1.4;">${announcement.title}</h5>
+                        <div class="d-flex align-items-center text-muted mb-3" style="font-size: 0.85rem;">
+                            <i class="mdi mdi-calendar-outline me-1"></i>
+                            <span>Posted on: ${postedOn}</span>
+                        </div>
+                        <div class="announcement-content" style="font-size: 0.95rem; line-height: 1.6; color: #475569;">
+                            ${announcement.description}
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-end mt-4 pt-3">
-                        <button type="button" class="btn btn-info text-white px-4" style="background-color: #00c4ff; border: none; font-weight: 600;" onclick="Swal.close()">Close</button>
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="button" class="btn text-white px-5 py-2" style="background-color: #E66136; border-radius: 10px; font-weight: 700; font-size: 1rem; border: none; box-shadow: 0 4px 12px rgba(230,97,54,0.2);" onclick="Swal.close()">Close</button>
                     </div>
                 </div>
             `,
             showConfirmButton: false,
-            width: '500px',
+            width: '550px',
             padding: '1.5rem',
             customClass: {
-                popup: 'rounded-3 shadow-lg border-0'
+                popup: 'rounded-4 shadow-lg border-0'
             },
             showCloseButton: false,
-            backdrop: `rgba(0,0,0,0.4)`
+            backdrop: `rgba(0,0,0,0.5)`
         });
     }
 
