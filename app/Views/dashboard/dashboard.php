@@ -1367,7 +1367,7 @@
 
                                         <!-- Content -->
                                         <div class="mt-3">
-                                            <?php if ($todayHoursData && $todayHoursData['is_checked_in']) : ?>
+                                            <?php if ($todayHoursData && ($todayHoursData['is_checked_in'] || $todayHoursData['hours_worked_seconds'] > 0)) : ?>
                                                 <!-- Hours Worked -->
                                                 <div class="mb-4">
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -1379,7 +1379,7 @@
                                                     <div class="progress" style="height: 8px;">
                                                         <?php
                                                         $progressPercent = $todayHoursData['standard_hours_seconds'] > 0
-                                                            ? min(100, ($todayHoursData['hours_worked_seconds'] / ($todayHoursData['standard_hours_decimal'] * 3600)) * 100)
+                                                            ? min(100, ($todayHoursData['hours_worked_seconds'] / $todayHoursData['standard_hours_seconds']) * 100)
                                                             : 0;
                                                         ?>
                                                         <div class="progress-bar bg-info" role="progressbar"
@@ -1391,49 +1391,34 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Remaining Hours -->
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <span class="text-muted small">Remaining Hours</span>
-                                                        <span class="badge <?= $todayHoursData['remaining_hours_seconds'] > 0 ? 'bg-warning' : 'bg-success' ?>" id="remaining-hours-badge">
-                                                            <?= $todayHoursData['remaining_hours'] ?>
-                                                        </span>
-                                                    </div>
-                                                    <div class="progress" style="height: 8px;">
-                                                        <?php
-                                                        $remainingPercent = $todayHoursData['standard_hours_seconds'] > 0
-                                                            ? min(100, ($todayHoursData['remaining_hours_seconds'] / ($todayHoursData['standard_hours_decimal'] * 3600)) * 100)
-                                                            : 0;
-                                                        ?>
-                                                        <div class="progress-bar <?= $todayHoursData['remaining_hours_seconds'] > 0 ? 'bg-warning' : 'bg-success' ?>"
-                                                            role="progressbar"
-                                                            style="width: <?= $remainingPercent ?>%"
-                                                            id="remaining-hours-progress"
-                                                            aria-valuenow="<?= $remainingPercent ?>"
-                                                            aria-valuemin="0"
-                                                            aria-valuemax="100"></div>
-                                                    </div>
+                                                <!-- Status Badge -->
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <span class="text-muted small">Status</span>
+                                                    <?php if ($todayHoursData['is_checked_in']) : ?>
+                                                        <span class="badge bg-success">Currently Working</span>
+                                                    <?php else : ?>
+                                                        <span class="badge bg-secondary">Shift Ended</span>
+                                                    <?php endif; ?>
                                                 </div>
 
-                                                <!-- Standard Hours Info -->
+                                                <!-- Footer Info -->
                                                 <div class="text-center mt-3 pt-3 border-top">
-                                                    <small class="text-muted">
+                                                    <small class="text-muted d-block mb-1">
                                                         Standard Hours: <strong><?= $todayHoursData['standard_hours'] ?></strong>
                                                     </small>
+                                                    <?php if ($todayHoursData['is_checked_in']) : ?>
+                                                        <div class="d-flex align-items-center justify-content-center">
+                                                            <div class="spinner-grow spinner-grow-sm text-info me-2" role="status" style="width: 8px; height: 8px;">
+                                                            </div>
+                                                            <small class="text-info fw-bold">Live Updates</small>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
-
-                                                <?php if (!$todayHoursData['is_checked_out']) : ?>
-                                                    <div class="text-center mt-2">
-                                                        <small class="text-info">
-                                                            <i class="mdi mdi-information"></i> Hours updating in real-time
-                                                        </small>
-                                                    </div>
-                                                <?php endif; ?>
                                             <?php else : ?>
-                                                <div class="text-center text-muted py-4">
-                                                    <i class="mdi mdi-clock-outline fs-3 d-block mb-2"></i>
+                                                <div class="text-center text-muted py-5 mt-4">
+                                                    <i class="mdi mdi-clock-off-outline fs-3 d-block mb-2"></i>
                                                     <p class="mb-0">Not checked in today</p>
-                                                    <small>Check in to start tracking hours</small>
+                                                    <small>Start tracking by checking in</small>
                                                 </div>
                                             <?php endif; ?>
                                         </div>
@@ -1900,6 +1885,23 @@
                         var timerId = 'timer-' + att.username.replace(/\s+/g, '-');
                         var progressId = 'progress-' + att.username.replace(/\s+/g, '-');
 
+                        var isRemote = att.working_location && att.working_location.toLowerCase() === 'remote';
+                        var rightCol = isRemote
+                            ? `<div class="d-flex flex-column align-items-center justify-content-between" style="height:100%;gap:6px;">
+                                   <span style="
+                                       background: #fff;
+                                       color: #E66136;
+                                       font-size: 10px;
+                                       font-weight: 700;
+                                       padding: 3px 10px;
+                                       border-radius: 20px;
+                                       border: 1.5px solid #E66136;
+                                       white-space: nowrap;
+                                   ">&#127968; Work From Home</span>
+                                   <i class="mdi mdi-login fs-4" style="color:#28a745"></i>
+                               </div>`
+                            : `<i class="mdi mdi-login fs-4" style="color:#28a745"></i>`;
+
                         attendanceHTML += `
                             <div class="wrapper d-flex align-items-center justify-content-between py-2 border-bottom">
                                 <div class="d-flex flex-grow-1">
@@ -1911,7 +1913,7 @@
                                         </small>
                                         <br>
                                         <small class="text-success fw-bold" id="${timerId}">
-                                            Working: 00:00:00
+                                            Worked: 00:00:00
                                         </small>
                                         <div class="progress mt-2" style="height: 6px;">
                                             <div class="progress-bar bg-success" id="${progressId}" role="progressbar" 
@@ -1920,7 +1922,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <i class="mdi mdi-login fs-4" style="color:#28a745"></i>
+                                ${rightCol}
                             </div>
                         `;
                     });

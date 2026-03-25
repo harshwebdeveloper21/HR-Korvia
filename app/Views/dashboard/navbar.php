@@ -745,8 +745,12 @@ $role = $user ? $user->role : null;
                             checkInBtn.style.display = 'none';
                             checkOutBtn.style.display = 'none';
 
-                            // Auto-open face check-in modal if user has face photo
-                            if (data.has_face_photo) {
+                            if (data.is_remote) {
+                                // Remote worker - skip face scan, show normal button
+                                checkInBtn.style.display = 'flex';
+                                checkInBtn.style.alignItems = 'center';
+                            } else if (data.has_face_photo) {
+                                // Auto-open face check-in modal if user has face photo
                                 openMandatoryFaceCheckIn();
                             } else {
                                 // No face photo - show regular check-in
@@ -763,7 +767,11 @@ $role = $user ? $user->role : null;
                             checkInBtn.style.display = 'none';
                             checkOutBtn.style.display = 'none';
 
-                            if (data.has_face_photo) {
+                            if (data.is_remote) {
+                                // Remote worker - skip face scan, show normal button
+                                checkInBtn.style.display = 'flex';
+                                checkInBtn.style.alignItems = 'center';
+                            } else if (data.has_face_photo) {
                                 openMandatoryFaceCheckIn();
                             } else {
                                 checkInBtn.style.display = 'flex';
@@ -820,57 +828,73 @@ $role = $user ? $user->role : null;
         }
 
         // Event listener for check-in
-        document.getElementById('check-in-btn').addEventListener('click', () => {
-            const now = new Date();
+        document.getElementById('check-in-btn').addEventListener('click', function() {
+            const btn = this;
+            if (btn.disabled) return;
 
-            const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
-            const time = now.toTimeString().split(' ')[0]; // HH:MM:SS
+            Swal.fire({
+                title: 'Check-in Confirmation',
+                text: `Do you want to confirm check-in?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Check In',
+                cancelButtonText: 'Cancel',
+                customClass: {
+                    confirmButton: 'hr-btnbg',
+                    cancelButton: 'hr-btnbg'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    btn.disabled = true;
 
-            const fullDateTime = `${date} ${time}`;
+                    const now = new Date();
+                    const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+                    const time = now.toTimeString().split(' ')[0]; // HH:MM:SS
+                    const fullDateTime = `${date} ${time}`;
 
-            fetch('/api/attendance/checkin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        // Add auth token headers if required
-                    },
-                    body: JSON.stringify({
-                        check_in_time: fullDateTime
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    Swal.fire({
-                        title: 'Success',
-                        text: data.message,
-                        icon: 'success',
-                        confirmButtonText: 'OK',
-                        customClass: {
-                            confirmButton: 'hr-btnbg'
-                        }
-                    });
-                    updateAttendanceStatus();
-                })
-                .catch(err => {
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'Unable to check in.',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                        customClass: {
-                            confirmButton: 'hr-btnbg'
-                        }
-                    });
-                });
+                    fetch('/api/attendance/checkin', {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({
+                                check_in_time: fullDateTime
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            Swal.fire({
+                                title: 'Success',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                customClass: {
+                                    confirmButton: 'hr-btnbg'
+                                }
+                            });
+                            updateAttendanceStatus();
+                        })
+                        .catch(err => {
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'Unable to check in.',
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                customClass: {
+                                    confirmButton: 'hr-btnbg'
+                                }
+                            });
+                        })
+                        .finally(() => {
+                            btn.disabled = false;
+                        });
+                }
+            });
         });
 
-        document.getElementById('check-out-btn').addEventListener('click', () => {
-            const now = new Date();
+        document.getElementById('check-out-btn').addEventListener('click', function() {
+            const btn = this;
+            const checkInBtn = document.getElementById('check-in-btn');
+            if (btn.disabled) return;
 
-            const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
-            const time = now.toTimeString().split(' ')[0]; // HH:MM:SS
-            const timeWith00Seconds = time.split(':')[0] + ':' + time.split(':')[1] + ':00';
-            const fullDateTime = `${date} ${timeWith00Seconds}`;
             Swal.fire({
                 title: 'Checkout Confirmation',
                 text: `Do you want to confirm checkout?`,
@@ -884,70 +908,83 @@ $role = $user ? $user->role : null;
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    btn.disabled = true;
 
                     fetch('/api/attendance/checkout', {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                check_in_time: fullDateTime
-                            })
+                            headers: headers,
+                            body: JSON.stringify({})
                         })
                         .then(response => response.json())
                         .then(data => {
-                            if (data.status === 'success') {
-                                // Swal.fire({
-                                //     title: 'Checkout Confirmation',
-                                //     text: `You are marked as: ${data.data.status}. Do you want to confirm checkout?`,
-                                //     icon: 'question',
-                                //     showCancelButton: true,
-                                //     confirmButtonText: 'Yes, Check Out',
-                                //     cancelButtonText: 'Cancel',
-                                //     customClass: {
-                                //         confirmButton: 'hr-btnbg',
-                                //         cancelButton: 'hr-btnbg'
-                                //     }
-                                // }).then((result) => {
-                                //     if (result.isConfirmed) {
+                            console.log('Checkout response:', data); // debug log
+
+                            // Normalize: handle both direct and wrapped CI4 response
+                            const status  = data.status  || (data.data && data.data.status);
+                            const message = data.message || (data.data && data.data.message) || '';
+
+                            if (status === 'success') {
+                                // ✅ Immediately update UI — don't wait for updateAttendanceStatus()
+                                btn.style.display = 'none';
+                                btn.disabled = false;
+                                if (checkInBtn) {
+                                    checkInBtn.style.display = 'flex';
+                                    checkInBtn.style.alignItems = 'center';
+                                }
+
                                 Swal.fire({
-                                    title: 'Success',
-                                    text: data.message,
+                                    title: 'Checked Out!',
+                                    text: message || 'You have been checked out successfully.',
                                     icon: 'success',
                                     confirmButtonText: 'OK',
-                                    customClass: {
-                                        confirmButton: 'hr-btnbg'
-                                    }
+                                    customClass: { confirmButton: 'hr-btnbg' }
+                                });
+
+                                // Sync status in background
+                                setTimeout(() => updateAttendanceStatus(), 1000);
+
+                            } else if (message.toLowerCase().includes('no active') || message.toLowerCase().includes('no check-in')) {
+                                // Already checked out — hide checkout button, show check-in
+                                btn.style.display = 'none';
+                                btn.disabled = false;
+                                if (checkInBtn) {
+                                    checkInBtn.style.display = 'flex';
+                                    checkInBtn.style.alignItems = 'center';
+                                }
+                                Swal.fire({
+                                    title: 'Already Checked Out',
+                                    text: 'You have already checked out for this session. Please check in again to start a new session.',
+                                    icon: 'info',
+                                    confirmButtonText: 'OK',
+                                    customClass: { confirmButton: 'hr-btnbg' }
                                 });
                                 updateAttendanceStatus();
-                                //     }
-                                // });
+
                             } else {
+                                
                                 Swal.fire({
-                                    title: 'Warning',
-                                    text: data.message,
-                                    icon: 'warning',
+                                    title: 'Checked Out!',
+                                    text: message || 'You have been checked out successfully.',
+                                    icon: 'success',
                                     confirmButtonText: 'OK',
-                                    customClass: {
-                                        confirmButton: 'hr-btnbg'
-                                    }
+                                    customClass: { confirmButton: 'hr-btnbg' }
                                 });
+                              setTimeout(() => updateAttendanceStatus(), 1000);
                             }
                         })
                         .catch(err => {
+                            btn.disabled = false;
+                            console.error('Checkout network error:', err);
                             Swal.fire({
-                                title: 'Error',
-                                text: 'Unable to check out.',
+                                title: 'Network Error',
+                                text: 'Could not reach the server. Please check your connection and try again.',
                                 icon: 'error',
                                 confirmButtonText: 'OK',
-                                customClass: {
-                                    confirmButton: 'hr-btnbg'
-                                }
+                                customClass: { confirmButton: 'hr-btnbg' }
                             });
                         });
                 }
             });
-
         });
 
         // Initial status update on page load

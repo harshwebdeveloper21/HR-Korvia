@@ -105,6 +105,9 @@ class AttendanceController extends ResourceController
         $userInfo = $userInfoModel->where('user_id', $user->sub)->first();
         $hasFacePhoto = !empty($userInfo['face_photo']);
         
+        // Check if user is working remotely
+        $isRemote = isset($userInfo['working_location']) && strtolower(trim($userInfo['working_location'])) === 'remote';
+        
         // Check today's attendance record for the authenticated user
         $attendanceRecord = $this->attendanceModel
             ->where('user_id', $user->sub)
@@ -115,6 +118,7 @@ class AttendanceController extends ResourceController
             'status' => 'success',
             'role'   => $userData['role'], // Include user role
             'has_face_photo' => $hasFacePhoto, // Include face photo status
+            'is_remote' => $isRemote, // Include remote worker status
         ];
         if (!$attendanceRecord) {
             $response['data'] = 'not_checked_in';
@@ -129,8 +133,6 @@ class AttendanceController extends ResourceController
 
     public function checkIn()
     {
-        date_default_timezone_set('Asia/Kolkata'); // Set server timezone
-
         $user = $this->authService->check();
         if (!$user) {
             return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
@@ -490,8 +492,6 @@ class AttendanceController extends ResourceController
 
     public function checkOut()
     {
-        date_default_timezone_set('Asia/Kolkata');
-
         $user = $this->authService->check();
         if (!$user) {
             return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
@@ -505,17 +505,25 @@ class AttendanceController extends ResourceController
         $date = date('Y-m-d'); // Today's date in server timezone
         $checkOutTimeOnly = date('H:i:s'); // Current server time (HH:MM:SS)
 
+        log_message('info', "CHECKOUT: user={$user->sub}, date={$date}, time={$checkOutTimeOnly}");
+
         // Fetch the latest attendance record without checkout
         $latestAttendance = $this->attendanceModel
             ->where('user_id', $user->sub)
             ->where('date', $date)
-            ->where('check_out_time', null)
+            ->groupStart()
+                ->where('check_out_time', null)
+                ->orWhere('check_out_time', '')
+            ->groupEnd()
             ->orderBy('id', 'DESC')
             ->first();
 
         if (!$latestAttendance) {
-            return $this->respond(['status' => 'error', 'message' => 'No check-in record found for today'], 400);
+            log_message('warning', "CHECKOUT FAILED: No open check-in record for user={$user->sub}, date={$date}");
+            return $this->respond(['status' => 'error', 'message' => 'No active check-in found. Please check in first.'], 200);
         }
+
+        log_message('info', "CHECKOUT: Found record id={$latestAttendance['id']}, check_in={$latestAttendance['check_in_time']}");
 
         // Calculate work hours using the helper method
         $calculation = $this->calculateWorkHours($date, $latestAttendance['meal_break'], $latestAttendance['check_in_time'], $checkOutTimeOnly);
@@ -571,7 +579,7 @@ class AttendanceController extends ResourceController
             ]);
         }
 
-        return $this->respond(['status' => 'error', 'message' => 'Check-out failed'], 500);
+        return $this->respond(['status' => 'error', 'message' => 'Check-out failed. Please try again.'], 200);
     }
 
     public function getAttendanceData()
@@ -1566,7 +1574,6 @@ class AttendanceController extends ResourceController
      */
     public function deleteTodayAttendance()
     {
-        date_default_timezone_set('Asia/Kolkata');
         
         $user = $this->authService->check();
         if (!$user) {
