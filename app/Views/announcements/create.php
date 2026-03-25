@@ -156,14 +156,14 @@
                             </div>
 
                             <!-- Buttons -->
-                            <div class="col-xl-12 d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                                <a href="/announcements/admin" class="btn btn-light px-4 fw-semibold" style="border-radius: 8px;">
-                                    <i class="mdi mdi-arrow-left me-1"></i>Back
-                                </a>
-                                <button type="submit" id="submitBtn" class="btn px-4 text-white fw-semibold" style="background-color: #E66136; border-radius: 8px; box-shadow: 0 4px 12px rgba(230, 97, 54, 0.2);">
-                                    <i class="mdi mdi-send me-1"></i>Submit
-                                </button>
-                            </div>
+                             <div class="col-xl-12 d-flex justify-content-end align-items-center gap-3 mt-4 pt-3 border-top">
+                                 <a href="/announcements/admin" class="btn px-4 py-2 text-white fw-bold shadow-sm" style="background-color: #E66136; border-radius: 8px;">
+                                     Back
+                                 </a>
+                                 <button type="submit" id="submitBtn" class="btn px-4 py-2 text-white fw-bold shadow-sm" style="background-color: #E66136; border-radius: 8px;">
+                                     Submit
+                                 </button>
+                             </div>
 
                         </div>
                     </form>

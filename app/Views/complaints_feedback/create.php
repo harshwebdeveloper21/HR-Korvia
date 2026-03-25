@@ -154,12 +154,12 @@
                     </div>
 
                     <!-- Footer Buttons -->
-                    <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
-                        <a href="<?= in_array($role, ['admin', 'hr']) ? base_url('complaints/admin') : base_url('complaints') ?>" class="btn btn-link text-muted text-decoration-none fw-semibold">
-                            <i class="mdi mdi-arrow-left me-1"></i> Cancel and go back
+                    <div class="d-flex justify-content-end align-items-center gap-3 mt-5 pt-4 border-top">
+                        <a href="<?= in_array($role, ['admin', 'hr']) ? base_url('complaints/admin') : base_url('complaints') ?>" class="btn px-4 py-2 text-white shadow-sm fw-bold" style="background-color: #E66136; border-radius: 8px;">
+                            Back
                         </a>
-                        <button type="submit" id="submitBtn" class="btn btn-lg px-5 text-white shadow-sm fw-bold" style="background-color: #E66136; border-radius: 10px;">
-                            Submit <i class="mdi mdi-send ms-2"></i>
+                        <button type="submit" id="submitBtn" class="btn px-4 py-2 text-white shadow-sm fw-bold" style="background-color: #E66136; border-radius: 8px;">
+                            Submit
                         </button>
                     </div>
                 </form>
