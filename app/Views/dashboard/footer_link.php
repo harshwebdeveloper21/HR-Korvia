@@ -202,3 +202,98 @@ $(document).ready(function() {
     });
 });
 </script>
+
+<!-- Session expiry handler: clear stale auth + redirect -->
+<script>
+(function() {
+    'use strict';
+
+    let isRedirecting = false;
+
+    function isLoginPage() {
+        var p = (window.location && window.location.pathname) ? window.location.pathname : '';
+        return p === '/login' || p.endsWith('/login');
+    }
+
+    function getRequestUrl(resource) {
+        try {
+            if (!resource) return '';
+            if (typeof resource === 'string') return resource;
+            if (resource && typeof resource === 'object' && resource.url) return resource.url;
+            return String(resource);
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function clearAuthAndRedirect(reason) {
+        if (isRedirecting) return;
+        isRedirecting = true;
+
+        try { localStorage.removeItem('token'); } catch (e) {}
+        try { sessionStorage.clear(); } catch (e) {}
+
+        // Try to delete remember-me cookie (if it's not HttpOnly)
+        try { document.cookie = 'remember_me_token=; Max-Age=0; path=/;'; } catch (e) {}
+
+        // Clear CacheStorage to avoid stale responses
+        try {
+            if ('caches' in window) {
+                caches.keys()
+                    .then(function(keys) {
+                        return Promise.all(keys.map(function(k) {
+                            return caches.delete(k);
+                        }));
+                    })
+                    .catch(function() {});
+            }
+        } catch (e) {}
+
+        console.warn('Session expired; redirecting to login:', reason);
+        window.location.replace('/login');
+    }
+
+    // Patch fetch globally to handle 401/403 from APIs
+    try {
+        if (window.fetch && !window.__sessionFetchPatched) {
+            var originalFetch = window.fetch.bind(window);
+            window.__sessionFetchPatched = true;
+
+            window.fetch = async function(resource, options) {
+                var response = await originalFetch(resource, options);
+                var status = response ? response.status : 0;
+
+                if ((status === 401 || status === 403) && !isLoginPage()) {
+                    var url = getRequestUrl(resource) || '';
+                    var looksLikeApi = url.indexOf('/api/') !== -1 || url.indexOf('/auth') !== -1 || url.indexOf('/logout') !== -1;
+
+                    if (status === 401 || looksLikeApi) {
+                        clearAuthAndRedirect('fetch_http_' + status);
+                    }
+                }
+                return response;
+            };
+        }
+    } catch (e) {}
+
+    // Patch jQuery AJAX to handle 401/403
+    if (window.$ && $.ajaxSetup) {
+        $(document).ajaxError(function(event, xhr) {
+            var status = xhr && xhr.status ? xhr.status : 0;
+            if ((status === 401 || status === 403) && !isLoginPage()) {
+                var message = '';
+                try {
+                    if (xhr && xhr.responseJSON) {
+                        message = String(xhr.responseJSON.message || xhr.responseJSON.error || '');
+                    }
+                } catch (e) {}
+
+                var looksAuth = (status === 401) || /unauthorized|token|expired|invalid/i.test(message);
+                if (looksAuth) {
+                    clearAuthAndRedirect('xhr_http_' + status);
+                }
+            }
+        });
+    }
+})();
+</script>

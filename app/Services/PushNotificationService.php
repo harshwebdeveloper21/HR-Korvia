@@ -100,11 +100,11 @@ class PushNotificationService
         
         $subscriptions = $this->pushSubscriptionModel->getAdminSubscriptions();
         
-        log_message('info', '🔔 Found ' . count($subscriptions) . ' admin subscription(s)');
+        log_message('info', '🔔 Found ' . count($subscriptions) . ' Admin/HR subscription(s)');
         
         if (empty($subscriptions)) {
-            log_message('warning', '⚠️⚠️⚠️ NO ADMIN SUBSCRIPTIONS FOUND!');
-            log_message('warning', '⚠️ Admins need to login on mobile and enable push notifications');
+            log_message('warning', '⚠️⚠️⚠️ NO ADMIN/HR SUBSCRIPTIONS FOUND!');
+            log_message('warning', '⚠️ Admins/HR need to login on mobile and enable push notifications');
             log_message('warning', '⚠️ Database table push_subscriptions is empty!');
             return ['success' => 0, 'failed' => 0, 'errors' => ['No subscriptions found - database is empty']];
         }
@@ -132,11 +132,11 @@ class PushNotificationService
         }
         
         if (empty($validSubscriptions)) {
-            log_message('warning', '⚠️⚠️⚠️ NO VALID ADMIN SUBSCRIPTIONS FOUND AFTER VERIFICATION!');
-            return ['success' => 0, 'failed' => 0, 'errors' => ['No valid admin subscriptions found']];
+            log_message('warning', '⚠️⚠️⚠️ NO VALID ADMIN/HR SUBSCRIPTIONS FOUND AFTER VERIFICATION!');
+            return ['success' => 0, 'failed' => 0, 'errors' => ['No valid Admin/HR subscriptions found']];
         }
         
-        log_message('info', '✅ Proceeding to send notifications to ' . count($validSubscriptions) . ' admin(s)');
+        log_message('info', '✅ Proceeding to send notifications to ' . count($validSubscriptions) . ' Admin/HR users');
         
         // Use only valid subscriptions
         $subscriptions = $validSubscriptions;

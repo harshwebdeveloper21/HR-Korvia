@@ -227,94 +227,19 @@ class LeaveController extends ResourceController
         $data['created_by'] = $userId;
 
         if ($this->leaveModel->insert($data)) {
-            // Notifications
-            $notificationModel = new \App\Models\NotificationModel();
-            $sender = $userModel->find($data['user_id']);
-
-            $recipients = $userModel->whereIn('role', ['admin', 'hr'])->findAll();
-            $recipients[] = [
-                'id' => $sender['id'],
-                'role' => $sender['role'],
-                'username' => $sender['username']
-            ];
-
-            $uniqueRecipients = [];
-            foreach ($recipients as $recipient) {
-                $uniqueRecipients[$recipient['id']] = $recipient;
-            }
-
-            foreach ($uniqueRecipients as $recipient) {
-                $notificationModel->insert([
-                    'sender_id'    => $data['user_id'],
-                    'recipient_id' => $recipient['id'],
-                    'data'         => json_encode([
-                        'username' => $sender['username'],
-                        'type'     => 'leave'
-                    ]),
-                    'is_read' => 0
-                ]);
-                
-            }
-
-            // Check if leave notifications are enabled
+            $leaveId = $this->leaveModel->getInsertID();
+            
+            // Send notifications (internal and push)
             try {
-                $notificationSettingsModel = new NotificationSettingsModel();
-                if ($notificationSettingsModel->isLeaveNotificationsEnabled()) {
-                    $leaveStart = $data['start_date'];
-                    $leaveEnd   = $data['end_date'];
-                    $noOfDays   = $data['no_of_day'];
-                    $employeeName = $sender['username'];
-                    
-                    log_message('info', '📝 Employee leave request: ' . $employeeName . ' from ' . $leaveStart . ' to ' . $leaveEnd);
-                    
-                    $this->pushNotificationService->notifyAdmins(
-                        'Employee Leave Request',
-                        $employeeName . ' requested leave from ' . $leaveStart . ' to ' . $leaveEnd . ' (' . $noOfDays . ' day' . ($noOfDays > 1 ? 's' : '') . ')',
-                        [
-                            'type'        => 'leave_request',
-                            'user_id'     => $data['user_id'],
-                            'username'    => $employeeName,
-                            'start_date'  => $leaveStart,
-                            'end_date'    => $leaveEnd,
-                            'no_of_days'  => $noOfDays,
-                            'leave_id'    => $data['leave_id'],
-                            'status'      => $data['status'],
-                            'url'         => base_url('/leaveview')
-                        ]
-                    );
-                } else {
-                    log_message('info', '📝 Leave notifications are disabled - skipping push notification');
-                }
+                $this->sendLeaveNotification($data, $leaveId);
             } catch (\Exception $e) {
-                // If notification settings table doesn't exist, send notification anyway (default behavior)
-                log_message('warning', 'Notification settings table not found, sending leave notification by default: ' . $e->getMessage());
-                
-                $leaveStart = $data['start_date'];
-                $leaveEnd   = $data['end_date'];
-                $noOfDays   = $data['no_of_day'];
-                $employeeName = $sender['username'];
-                
-                $this->pushNotificationService->notifyAdmins(
-                    'Employee Leave Request',
-                    $employeeName . ' requested leave from ' . $leaveStart . ' to ' . $leaveEnd . ' (' . $noOfDays . ' day' . ($noOfDays > 1 ? 's' : '') . ')',
-                    [
-                        'type'        => 'leave_request',
-                        'user_id'     => $data['user_id'],
-                        'username'    => $employeeName,
-                        'start_date'  => $leaveStart,
-                        'end_date'    => $leaveEnd,
-                        'no_of_days'  => $noOfDays,
-                        'leave_id'    => $data['leave_id'],
-                        'status'      => $data['status'],
-                        'url'         => base_url('/leaveview')
-                    ]
-                );
+                log_message('error', '❌ Failed to trigger leave notifications: ' . $e->getMessage());
             }
-
 
             return $this->respond([
                 'status' => 'success',
-                'message' => 'Leave record added successfully'
+                'message' => 'Leave record added successfully',
+                'id' => $leaveId
             ], 201);
         }
 
@@ -527,6 +452,84 @@ class LeaveController extends ResourceController
                 'success' => false,
                 'message' => 'Failed to add leave type.'
             ]);
+        }
+    }
+
+    /**
+     * Helper to send internal and push notifications for new leave requests
+     */
+    private function sendLeaveNotification($data, $leaveId)
+    {
+        $userModel = new \App\Models\UserModel();
+        $notificationModel = new \App\Models\NotificationModel();
+        
+        $sender = $userModel->find($data['user_id']);
+        $senderName = $sender['username'] ?? 'Employee';
+        
+        log_message('info', '🔔 [sendLeaveNotification] Starting notification process for leave #' . $leaveId . ' (User: ' . $senderName . ')');
+
+        // 1. Internal Notifications (Database)
+        $recipients = $userModel->whereIn('role', ['admin', 'hr'])->where('is_deleted', 0)->findAll();
+        
+        foreach ($recipients as $recipient) {
+            $notificationModel->insert([
+                'sender_id'    => $data['user_id'],
+                'recipient_id' => $recipient['id'],
+                'data'         => json_encode([
+                    'username' => $senderName,
+                    'type'     => 'leave',
+                    'leave_id' => $leaveId
+                ]),
+                'is_read' => 0
+            ]);
+        }
+
+        // 2. Push Notification to Admin/HR
+        try {
+            $notificationSettingsModel = new \App\Models\NotificationSettingsModel();
+            
+            // Safe check for settings
+            $shouldNotify = true;
+            try {
+                $shouldNotify = $notificationSettingsModel->isLeaveNotificationsEnabled();
+            } catch (\Exception $e) {
+                log_message('warning', '🔔 [sendLeaveNotification] Could not check settings, defaulting to TRUE: ' . $e->getMessage());
+            }
+
+            if ($shouldNotify) {
+                $leaveStart = $data['start_date'] ?? '';
+                $leaveEnd   = $data['end_date'] ?? '';
+                $noOfDays   = $data['no_of_day'] ?? 1;
+                
+                // Fetch leave type name
+                $leaveTypeName = 'Leave';
+                try {
+                    $leaveTypeModel = new \App\Models\LeaveTypeModel();
+                    $leaveType = $leaveTypeModel->find($data['leave_id']);
+                    if ($leaveType) {
+                        $leaveTypeName = $leaveType['leave_type'];
+                    }
+                } catch (\Exception $e) {
+                    log_message('warning', '🔔 [sendLeaveNotification] Could not fetch leave type: ' . $e->getMessage());
+                }
+
+                log_message('info', '🔔 [sendLeaveNotification] Sending push notification to admins/HR');
+                
+                $this->pushNotificationService->notifyAdmins(
+                    'Employee Leave Request (New Application)',
+                    $senderName . ' has requested ' . $leaveTypeName . ' from ' . $leaveStart . ' to ' . $leaveEnd . ' (' . $noOfDays . ' day' . ($noOfDays > 1 ? 's' : '') . '). Reason: ' . ($data['reason'] ?? 'Not specified'),
+                    [
+                        'type'        => 'leave_request',
+                        'user_id'     => $data['user_id'],
+                        'username'    => $senderName,
+                        'leave_id'    => $leaveId,
+                        'leave_type'  => $leaveTypeName,
+                        'url'         => base_url('/leaveview')
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            log_message('error', '🔔 [sendLeaveNotification] Push notification failed: ' . $e->getMessage());
         }
     }
 }

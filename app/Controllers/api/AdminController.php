@@ -180,6 +180,326 @@ class AdminController extends ResourceController
         ]);
     }
 
+    // public function DashboardData()
+    // {
+    //     if (!$this->authService->check()) {
+    //         return redirect()->to('/login');
+    //     }
+
+    //     $user = $this->authService->user(); // Get logged-in user
+    //     $role = $user->role;
+    //     $userId = $user->sub;
+    //     $startOfWeek = date('Y-m-d', strtotime('monday this week'));
+    //     $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
+    //     $today = date('Y-m-d');
+    //     $startOfMonth = date('Y-m-01'); // 1st of current month
+    //     $endOfMonth = date('Y-m-t');    // Last day of current month
+    //     $startOfYear = date('Y-01-01'); // 1st Jan this year
+    //     $endOfYear = date('Y-m-d'); // today
+    //     // Only admin and HR can see new employees this week
+    //     if (in_array($role, ['admin', 'hr'])) {
+    //         $totalThisWeekEmployees = $this->userModel
+    //             ->where('role', 'employee')
+    //             ->where('DATE(created_at) >=', $startOfWeek)
+    //             ->where('DATE(created_at) <=', $today)
+    //             ->where('is_deleted', 0)
+    //             ->countAllResults();
+    //         $startOfMonth = date('Y-m-01'); // 1st of current month
+    //         $endOfMonth = date('Y-m-t');    // Last day of current month
+    //         $totalEmployeesThisMonth = $this->userModel
+    //             ->where('role', 'employee')
+    //             ->where('DATE(created_at) >=', $startOfMonth)
+    //             ->where('DATE(created_at) <=', $endOfMonth)
+    //             ->where('is_deleted', 0)
+    //             ->countAllResults();
+    //         $totalEmployeesThisYear = $this->userModel
+    //             ->where('role', 'employee')
+    //             ->where('YEAR(created_at)', date('Y')) // Filters based on the current year (e.g., 2025)
+    //             ->where('is_deleted', 0)
+    //             ->countAllResults();
+    //     }
+
+    //     $todayDate = date('Y-m-d');
+    //     $totalLeavesToday = $this->leaveModel
+    //         ->select('leaves.*, users.username, user_info.profile_image')
+    //         ->join('users', 'users.id = leaves.user_id')
+    //         ->join('user_info', 'user_info.user_id = users.id')
+    //         ->where('start_date <=', $todayDate)
+    //         ->where('end_date >=', $todayDate)
+    //         ->where('leaves.status', 'approved') // ✅ Fully qualified
+    //         ->findAll();
+    //     $todayAttendance = $this->attendanceModel
+    //         ->select('attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image')
+    //         ->join('users', 'users.id = attendance.user_id', 'inner')
+    //         ->join('user_info', 'user_info.user_id = users.id', 'left')
+    //         ->where('attendance.date', $todayDate)
+    //         ->where('users.is_deleted', 0)
+    //         ->groupBy('attendance.user_id')
+    //         ->orderBy('attendance.check_in_time', 'ASC')
+    //         ->findAll();
+    //     // Leave count for all roles
+    //     if (in_array($role, ['admin', 'hr'])) {
+    //         $totalLeavesThisWeek = $this->leaveModel
+    //             ->where('start_date >=', $startOfWeek)
+    //             ->where('start_date <=', $endOfWeek)
+    //             ->countAllResults();
+    //         $totalLeavesThisYear = $this->leaveModel
+    //             ->where('YEAR(created_at)', date('Y')) // Filter by current year
+    //             ->countAllResults();
+    //         $attendanceCountThisWeek = $this->attendanceModel
+    //             ->select('user_id')
+    //             ->where('date >=', $startOfWeek)
+    //             ->where('date <=', $endOfWeek)
+    //             ->groupBy('user_id')
+    //             ->countAllResults();
+    //         $totalTasksThisWeek = $this->taskModel
+    //             ->where('assigned_date >=', $startOfWeek)
+    //             ->where('assigned_date <=', $endOfWeek)
+    //             ->countAllResults();
+    //         $totalLeaves = $this->leaveModel
+    //             ->where('start_date >=', $startOfMonth)
+    //             ->where('start_date <=', $endOfMonth)
+    //             ->countAllResults();
+    //         $attendanceCountThisMonth = $this->attendanceModel
+    //             ->select('user_id')
+    //             ->where('date >=', $startOfMonth)
+    //             ->where('date <=', $endOfMonth)
+    //             ->groupBy('user_id')
+    //             ->countAllResults();
+    //         // HR/Admin: count unique employees who marked attendance this year
+    //         $attendanceCountThisYear = $this->attendanceModel
+    //             ->select('user_id')
+    //             ->where('YEAR(date)', date('Y'))
+    //             ->groupBy('user_id')
+    //             ->countAllResults();
+    //         $totalTasksThisMonth = $this->taskModel
+    //             ->where('assigned_date >=', $startOfMonth)
+    //             ->where('assigned_date <=', $endOfMonth)
+    //             ->countAllResults();
+    //         $totalTasksThisYear = $this->taskModel
+    //             ->where('assigned_date >=', $startOfYear)
+    //             ->where('assigned_date <=', $endOfYear)
+    //             ->countAllResults();
+    //         $remoteEmployees = $this->userInfoModel->where('working_location', 'remote')->countAllResults();
+    //         $onSiteEmployees = $this->userInfoModel->where('working_location', 'on-site')->countAllResults();
+    //         $workingFormatTotal = $remoteEmployees + $onSiteEmployees;
+    //         $remotePercentage = 0;
+    //         $onSitePercentage = 0;
+    //         if ($workingFormatTotal > 0) {
+    //             $remotePercentage = $remoteEmployees / $workingFormatTotal;
+    //             $onSitePercentage = 1 - $remotePercentage;
+    //         }
+    //     } else {
+    //         $employeeId = $user->sub; // Get the logged-in employee's ID
+    //         $startOfYear = date('Y-01-01'); // 1st January this year
+    //         $todayDate = date('Y-m-d');  // Define todayDate for employee
+    //         $totalLeavesThisWeek = $this->leaveModel
+    //             ->where('user_id', $userId)
+    //             ->where('start_date >=', $startOfWeek)
+    //             ->where('start_date <=', $endOfWeek)
+    //             ->countAllResults();
+    //         // Total leaves this year
+    //         $totalLeavesThisYear = $this->leaveModel
+    //             ->where('user_id', $employeeId) // Only logged-in employee's leaves
+    //             ->where('YEAR(created_at)', date('Y')) // start_date is inside current year
+    //             ->countAllResults();
+    //         $todayDate = date('Y-m-d');
+    //         $totalLeavesToday = $this->leaveModel
+    //             ->select('leaves.*, users.username, user_info.profile_image')
+    //             ->join('users', 'users.id = leaves.user_id')
+    //             ->join('user_info', 'user_info.user_id = users.id')
+    //             ->where('start_date <=', $todayDate)
+    //             ->where('end_date >=', $todayDate)
+    //             ->where('leaves.status', 'approved') // ✅ Fully qualified
+    //             ->findAll();
+    //         $todayAttendance = $this->attendanceModel
+    //                 ->select('attendance.check_in_time, users.username, user_info.profile_image')
+    //                 ->join('users', 'users.id = attendance.user_id', 'inner')
+    //                 ->join('user_info', 'user_info.user_id = users.id', 'left')
+    //                 ->where('attendance.date', $todayDate)
+    //                 ->where('users.is_deleted', 0)
+    //                 ->groupBy('attendance.user_id')
+    //                 ->orderBy('attendance.check_in_time', 'ASC')
+    //                 ->findAll();
+    //         $attendanceCountThisWeek = $this->attendanceModel
+    //             ->select('user_id')
+    //             ->where('user_id', $employeeId)
+    //             ->where('date >=', $startOfWeek)
+    //             ->where('date <=', $endOfWeek)
+    //             ->groupBy('user_id')
+    //             ->countAllResults();
+    //         $totalTasksThisWeek = $this->taskModel->where('user_id', $employeeId)
+    //             ->where('assigned_date >=', $startOfWeek)
+    //             ->where('assigned_date <=', $endOfWeek)
+    //             ->countAllResults();
+
+    //         $totalLeaves = $this->leaveModel
+    //             ->where('user_id', $employeeId)
+    //             ->where('start_date >=', $startOfMonth)
+    //             ->where('start_date <=', $endOfMonth)
+    //             ->countAllResults();
+
+    //         $attendanceCountThisMonth = $this->attendanceModel
+    //             ->where('user_id', $employeeId)
+    //             ->where('date >=', $startOfMonth)
+    //             ->where('date <=', $endOfMonth)
+    //             ->groupBy('user_id')
+    //             ->countAllResults();
+    //         $attendanceCountThisYear = $this->attendanceModel
+    //             ->where('user_id', $employeeId)
+    //             ->where('YEAR(date)', date('Y')) // Filter by current year
+    //             ->countAllResults();
+    //         $totalTasksThisMonth = $this->taskModel
+    //             ->where('user_id', $employeeId)
+    //             ->where('assigned_date >=', $startOfMonth)
+    //             ->where('assigned_date <=', $endOfMonth)
+    //             ->countAllResults();
+    //         $totalTasksThisYear = $this->taskModel
+    //             ->where('user_id', $employeeId)
+    //             ->where('assigned_date >=', $startOfYear)
+    //             ->where('assigned_date <=', $endOfYear)
+    //             ->countAllResults();
+    //     }
+
+    //     if ($role == 'admin' || $role == 'hr') {
+    //         $departmentData = $this->userInfoModel
+    //             ->select("department.department_name, COUNT(user_info.id) as employee_count")
+    //             ->join('department', 'department.id = user_info.department_id', 'left')
+    //             ->join('users', 'users.id = user_info.user_id', 'inner')
+    //             ->where('users.is_deleted', 0)
+    //             ->where('department.department_name IS NOT NULL') // Remove unassigned
+    //             ->groupBy('department.department_name')
+    //             ->orderBy('department.id', 'DESC') // Sort by latest departments
+    //             ->limit(4) // Get only latest 6 departments
+    //             ->findAll();
+    //     } else {
+
+    //         $departmentData = $this->userInfoModel
+    //             ->select("department.department_name, COUNT(user_info.id) as employee_count")
+    //             ->join('department', 'department.id = user_info.department_id', 'left')
+    //             ->join('users', 'users.id = user_info.user_id', 'inner')
+    //             ->where('users.is_deleted', 0)
+    //             ->where('department.department_name IS NOT NULL') // Remove unassigned
+    //             ->where('user_info.user_id', $user->sub)
+    //             ->groupBy('department.department_name')
+    //             ->orderBy('department.id', 'DESC') // Sort by latest departments
+    //             ->limit(4) // Get only latest 6 departments
+    //             ->findAll();
+    //     }
+    //     // Determine if there is any data available
+    //     $hasData = !empty($departmentData);
+    //     // Prepare data for JavaScript
+    //     $departmentLabels = [];
+    //     $employeeCounts = [];
+    //     foreach ($departmentData as $data) {
+    //         $departmentLabels[] = $data['department_name'];
+    //         $employeeCounts[] = (int) $data['employee_count'];
+    //     }
+    //     // Fetch birthdays for the current week (Monday-Sunday)
+    //     $weekDates = [];
+    //     for ($i = 0; $i < 7; $i++) {
+    //         $weekDates[] = date('m-d', strtotime("monday this week +$i days"));
+    //     }
+        
+    //     $birthdayUsers = $this->userInfoModel->select('user_info.*')
+    //                 ->join('users', 'users.id = user_info.user_id', 'inner')
+    //                 ->where('users.is_deleted', 0)
+    //                 ->whereIn('DATE_FORMAT(user_info.date_of_birth, "%m-%d")', $weekDates)
+    //                 ->findAll();
+
+    //     $currentMonth = date('m');
+    //     $currentYear = date('Y');
+    //     if ($role == 'admin' || $role == 'hr') {
+    //         $employees = $this->userInfoModel
+    //             ->select('user_info.*, designation.designation_name, department.department_name')
+    //             ->join('designation', 'designation.id = user_info.designation_id', 'left')
+    //             ->join('department', 'department.id = user_info.department_id', 'left')
+    //             ->join('users', 'users.id = user_info.user_id', 'inner')
+    //             ->where('users.is_deleted', 0)
+    //             ->where('user_info.role', 'employee')
+    //             ->where('MONTH(user_info.joining_date)', $currentMonth)
+    //             ->where('YEAR(user_info.joining_date)', $currentYear)
+    //             ->orderBy('user_info.joining_date', 'DESC')
+    //             ->limit(5)
+    //             ->findAll();
+    //     } else {
+    //         $employees = $this->userInfoModel
+    //             ->select('user_info.*, designation.designation_name, department.department_name')
+    //             ->join('designation', 'designation.id = user_info.designation_id', 'left')
+    //             ->join('department', 'department.id = user_info.department_id', 'left')
+    //             ->join('users', 'users.id = user_info.user_id', 'inner')
+    //             ->where('users.is_deleted', 0)
+    //             ->where('user_info.user_id', $user->sub)
+    //             ->where('user_info.role', 'employee')
+    //             ->where('MONTH(user_info.joining_date)', $currentMonth)
+    //             ->where('YEAR(user_info.joining_date)', $currentYear)
+    //             ->orderBy('user_info.joining_date', 'DESC')
+    //             ->limit(5)
+    //             ->findAll();
+    //     }
+    //     // Fetch the count of completed and scheduled interviews
+    //     if ($role == 'admin' || $role == 'hr') {
+    //         $completedInterviews = $this->interviewModel->where('status', 'completed')->countAllResults();
+    //         $scheduledInterviews = $this->interviewModel->where('status', 'scheduled')->countAllResults();
+    //         // Total interviews (prevent division by zero)
+    //         $totalInterviews = $completedInterviews + $scheduledInterviews;
+    //     } else {
+    //         $completedInterviews = 0;
+    //         $scheduledInterviews = 0;
+    //         $totalInterviews = 0;
+    //     }
+
+    //     if ($role == 'admin' || $role == 'hr') {
+    //         $candidates = $this->candidateModel
+    //             ->select('candidate.candidate_name, candidate.email, candidate.phone_number, candidate.status,jobs.job_title')
+    //             ->join('jobs', 'jobs.id = candidate.job_id', 'left')
+    //             ->join('onboarding', 'onboarding.candidate_id = candidate.id', 'left') // Left join to include candidates without onboarding records
+    //             ->where('(onboarding.onboarding_status IS NULL OR onboarding.onboarding_status != "completed")') // Exclude completed onboarding
+    //             ->orderBy('candidate.created_at', 'DESC')
+    //             ->findAll();
+    //     } else {
+    //         $candidates = $this->candidateModel
+    //             ->select('candidate.candidate_name,candidate.email,candidate.phone_number,candidate.status,jobs.job_title')
+    //             ->join('jobs', 'jobs.id = candidate.job_id', 'left')
+    //             ->join('onboarding', 'onboarding.candidate_id = candidate.id', 'left') // Left join to include candidates without onboarding records
+    //             ->where('(onboarding.onboarding_status IS NULL OR onboarding.onboarding_status != "completed")') // Exclude completed onboarding
+    //             ->orderBy('candidate.created_at', 'DESC')
+    //             ->findAll();
+    //     }
+    //     // Check if data exists
+    //     $hasInterviewData = ($totalInterviews > 0);
+    //     return $this->response->setJSON([
+    //         'totalThisWeekEmployees' => $totalThisWeekEmployees ?? 0,
+    //         'totalLeavesThisWeek' => $totalLeavesThisWeek ?? 0,
+    //         'attendanceCountThisWeek' => $attendanceCountThisWeek ?? 0,
+    //         'totalTasksThisWeek' => $totalTasksThisWeek ?? 0,
+    //         'totalEmployeesThisMonth' => $totalEmployeesThisMonth ?? 0,
+    //         'totalLeaves' => $totalLeaves ?? 0,
+    //         'attendanceCountThisMonth' => $attendanceCountThisMonth ?? 0,
+    //         'totalTasksThisMonth' => $totalTasksThisMonth ?? 0,
+    //         'totalEmployeesThisYear' => $totalEmployeesThisYear ?? 0,
+    //         'totalLeavesThisYear' => $totalLeavesThisYear ?? 0,
+    //         'totalLeavesToday' => !empty($totalLeavesToday) ? $totalLeavesToday : [],
+    //         'todayAttendance' => !empty($todayAttendance) ? $todayAttendance : [],
+    //         'attendanceCountThisYear' => $attendanceCountThisYear ?? 0,
+    //         'totalTasksThisYear' => $totalTasksThisYear ?? 0,
+    //         'departmentLabels' => $departmentLabels,
+    //         'employeeCounts' => $employeeCounts, // ✅ add this line
+    //         'workingFormatTotal' => $workingFormatTotal ?? 0,
+    //         'remotePercentage' => $remotePercentage ?? 0,
+    //         'onSitePercentage' => $onSitePercentage ?? 0,
+    //         'birthdayUsers' => !empty($birthdayUsers) ? $birthdayUsers : [],
+    //         'employees' => $employees,
+    //         'completedInterviews' => $completedInterviews,
+    //         'scheduledInterviews' => $scheduledInterviews,
+    //         'hasInterviewData' => $hasInterviewData,
+    //         'totalInterviews' => $totalInterviews,
+    //         'candidates' => $candidates ?? 0,
+    //         'latestComplaints' => $this->getLatestComplaints($role, $userId),
+    //     ]);
+    // }
+    
+     
     public function DashboardData()
     {
         if (!$this->authService->check()) {
@@ -228,15 +548,28 @@ class AdminController extends ResourceController
             ->where('end_date >=', $todayDate)
             ->where('leaves.status', 'approved') // ✅ Fully qualified
             ->findAll();
-        $todayAttendance = $this->attendanceModel
-            ->select('attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image')
+        $todayAttendanceRaw = $this->attendanceModel
+            ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image')
             ->join('users', 'users.id = attendance.user_id', 'inner')
             ->join('user_info', 'user_info.user_id = users.id', 'left')
             ->where('attendance.date', $todayDate)
             ->where('users.is_deleted', 0)
-            ->groupBy('attendance.user_id')
-            ->orderBy('attendance.check_in_time', 'ASC')
+            ->orderBy('attendance.id', 'DESC')
             ->findAll();
+
+        $todayAttendance = [];
+        $userIds = [];
+        foreach ($todayAttendanceRaw as $att) {
+            if (!in_array($att['user_id'], $userIds)) {
+                $todayAttendance[] = $att;
+                $userIds[] = $att['user_id'];
+            }
+        }
+        
+        // Sort by check-in time for display order
+        usort($todayAttendance, function($a, $b) {
+            return strcmp($a['check_in_time'], $b['check_in_time']);
+        });
         // Leave count for all roles
         if (in_array($role, ['admin', 'hr'])) {
             $totalLeavesThisWeek = $this->leaveModel
@@ -247,10 +580,9 @@ class AdminController extends ResourceController
                 ->where('YEAR(created_at)', date('Y')) // Filter by current year
                 ->countAllResults();
             $attendanceCountThisWeek = $this->attendanceModel
-                ->select('user_id')
                 ->where('date >=', $startOfWeek)
                 ->where('date <=', $endOfWeek)
-                ->groupBy('user_id')
+                ->groupBy('date, user_id')
                 ->countAllResults();
             $totalTasksThisWeek = $this->taskModel
                 ->where('assigned_date >=', $startOfWeek)
@@ -261,16 +593,14 @@ class AdminController extends ResourceController
                 ->where('start_date <=', $endOfMonth)
                 ->countAllResults();
             $attendanceCountThisMonth = $this->attendanceModel
-                ->select('user_id')
                 ->where('date >=', $startOfMonth)
                 ->where('date <=', $endOfMonth)
-                ->groupBy('user_id')
+                ->groupBy('date, user_id')
                 ->countAllResults();
             // HR/Admin: count unique employees who marked attendance this year
             $attendanceCountThisYear = $this->attendanceModel
-                ->select('user_id')
                 ->where('YEAR(date)', date('Y'))
-                ->groupBy('user_id')
+                ->groupBy('date, user_id')
                 ->countAllResults();
             $totalTasksThisMonth = $this->taskModel
                 ->where('assigned_date >=', $startOfMonth)
@@ -312,21 +642,33 @@ class AdminController extends ResourceController
                 ->where('end_date >=', $todayDate)
                 ->where('leaves.status', 'approved') // ✅ Fully qualified
                 ->findAll();
-            $todayAttendance = $this->attendanceModel
-                    ->select('attendance.check_in_time, users.username, user_info.profile_image')
-                    ->join('users', 'users.id = attendance.user_id', 'inner')
-                    ->join('user_info', 'user_info.user_id = users.id', 'left')
-                    ->where('attendance.date', $todayDate)
-                    ->where('users.is_deleted', 0)
-                    ->groupBy('attendance.user_id')
-                    ->orderBy('attendance.check_in_time', 'ASC')
-                    ->findAll();
+            $todayAttendanceRaw = $this->attendanceModel
+                ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image')
+                ->join('users', 'users.id = attendance.user_id', 'inner')
+                ->join('user_info', 'user_info.user_id = users.id', 'left')
+                ->where('attendance.date', $todayDate)
+                ->where('users.is_deleted', 0)
+                ->orderBy('attendance.id', 'DESC')
+                ->findAll();
+
+            $todayAttendance = [];
+            $userIds = [];
+            foreach ($todayAttendanceRaw as $att) {
+                if (!in_array($att['user_id'], $userIds)) {
+                    $todayAttendance[] = $att;
+                    $userIds[] = $att['user_id'];
+                }
+            }
+
+            // Sort by check-in time for display order
+            usort($todayAttendance, function($a, $b) {
+                return strcmp($a['check_in_time'], $b['check_in_time']);
+            });
             $attendanceCountThisWeek = $this->attendanceModel
-                ->select('user_id')
                 ->where('user_id', $employeeId)
                 ->where('date >=', $startOfWeek)
                 ->where('date <=', $endOfWeek)
-                ->groupBy('user_id')
+                ->groupBy('date')
                 ->countAllResults();
             $totalTasksThisWeek = $this->taskModel->where('user_id', $employeeId)
                 ->where('assigned_date >=', $startOfWeek)
@@ -343,11 +685,12 @@ class AdminController extends ResourceController
                 ->where('user_id', $employeeId)
                 ->where('date >=', $startOfMonth)
                 ->where('date <=', $endOfMonth)
-                ->groupBy('user_id')
+                ->groupBy('date')
                 ->countAllResults();
             $attendanceCountThisYear = $this->attendanceModel
                 ->where('user_id', $employeeId)
                 ->where('YEAR(date)', date('Y')) // Filter by current year
+                ->groupBy('date')
                 ->countAllResults();
             $totalTasksThisMonth = $this->taskModel
                 ->where('user_id', $employeeId)
@@ -499,6 +842,7 @@ class AdminController extends ResourceController
         ]);
     }
 
+    
     private function getLatestComplaints($role, $userId)
     {
         $complaintModel = new \App\Models\ComplaintModel();

@@ -4,12 +4,14 @@ namespace App\Controllers\api;
 
 use App\Models\ComplaintModel;
 use App\Services\AuthService;
+use App\Services\PushNotificationService;
 use CodeIgniter\RESTful\ResourceController;
 
 class ComplaintsController extends ResourceController
 {
     protected $userModel;
     protected $notificationModel;
+    protected $pushNotificationService;
 
     public function __construct()
     {
@@ -17,6 +19,7 @@ class ComplaintsController extends ResourceController
         $this->authService = new AuthService(\Config\Services::request());
         $this->userModel = new \App\Models\UserModel();
         $this->notificationModel = new \App\Models\NotificationModel();
+        $this->pushNotificationService = new PushNotificationService();
     }
 
     /**
@@ -147,6 +150,19 @@ class ComplaintsController extends ResourceController
                 'is_read' => 0
             ]);
         }
+
+        // Send Push Notification to all Admins and HRs
+         $this->pushNotificationService->notifyAdmins(
+            "Employee $type (New Submission)",
+            "$senderName has submitted a new " . strtolower($type) . ": " . $subject,
+            [
+                'type' => strtolower($type),
+                'complaint_id' => $complaintId,
+                'username' => $senderName,
+                'subject' => $subject,
+                'url' => base_url('/complaints/admin')
+            ]
+        );
     }
 
     /**

@@ -37,20 +37,19 @@ class AttendanceController extends ResourceController
         }
 
         // 🔹 DAILY / MONTHLY
-        $fullDayHours = $companyRule['working_hours_per_day'] ?? 8;
-        $halfDayHours = $companyRule['half_day_hours']
-            ?? ($fullDayHours / 2);
+        $graceSeconds = (isset($companyRule['grace_minutes']) ? (int)$companyRule['grace_minutes'] : 10) * 60;
+        $effectiveSeconds = $workedSeconds + $graceSeconds;
 
-        $fullDaySeconds = $fullDayHours * 3600;
-        $halfDaySeconds = $halfDayHours * 3600;
+        $fullDayThreshold = 4 * 3600; // 4 hours
+        $halfDayThreshold = 1 * 3600; // 1 hour
 
-        if ($workedSeconds >= $fullDaySeconds) {
+        if ($effectiveSeconds > $fullDayThreshold) {
             return 'present';
         }
 
-        // if ($workedSeconds >= $halfDaySeconds) {
-        //     return 'half-day';
-        // }
+        if ($effectiveSeconds >= $halfDayThreshold) {
+            return 'half-day';
+        }
 
         return 'absent';
     }
@@ -305,177 +304,144 @@ class AttendanceController extends ResourceController
      * @param string $checkOutTime Time in H:i:s format
      * @return array ['work_hours' => formatted time, 'work_hours_seconds' => seconds, 'status' => status]
      */
-    private function calculateWorkHours($date, $mealbreakTime, $checkInTime, $checkOutTime)
-    {
-        if (empty($checkInTime) || empty($checkOutTime)) {
-            return [
-                'work_hours' => null,
-                'work_hours_seconds' => 0,
-                'overtime' => '00:00:00',
-                'overtime_seconds' => 0,
-                'status' => 'absent'
-            ];
-        }
-
-        $checkInTimestamp  = strtotime($date . ' ' . $checkInTime);
-        $checkOutTimestamp = strtotime($date . ' ' . $checkOutTime);
-
-        if (!$checkInTimestamp || !$checkOutTimestamp || $checkOutTimestamp <= $checkInTimestamp) {
-            log_message('debug', 'Invalid timestamps or checkout <= checkin');
-            return [
-                'work_hours' => '00:00:00',
-                'work_hours_seconds' => 0,
-                'overtime' => '00:00:00',
-                'overtime_seconds' => 0,
-                'status' => 'absent'
-            ];
-        }
-
-        /* ---------------------------------------------------
-        1. GROSS WORK DURATION (before break)
-        --------------------------------------------------- */
-        $grossWorkSeconds = $checkOutTimestamp - $checkInTimestamp;
-        log_message('debug', 'Gross Duration (seconds): ' . $grossWorkSeconds);
-
-        /* ---------------------------------------------------
-        2. COMPANY RULES
-        --------------------------------------------------- */
-        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
-
-        // Check if this is a Saturday half-day
-        $isSaturdayHalfDay = $this->isSaturdayHalfDay($date, $companyRule);
-
-        /* ---------------------------------------------------
-        3. MEAL BREAK (Skip for Saturday half-days)
-        --------------------------------------------------- */
-        $mealBreakSeconds = 0;
-        
-        if (!$isSaturdayHalfDay) {
-            // Normal day - apply meal break
-            $time = new \DateTime($mealbreakTime);
-            $mealBreakSeconds =
-                ($time->format('H') * 3600) +
-                ($time->format('i') * 60) +
-                $time->format('s');
-        } else {
-            log_message('debug', 'Saturday half-day detected - skipping meal break');
-        }
-
-        /* ---------------------------------------------------
-        4. NET WORKING HOURS (after break)
-        --------------------------------------------------- */
-        $workHoursInSeconds = max(0, $grossWorkSeconds - $mealBreakSeconds);
-
-        /* ---------------------------------------------------
-        5. DETERMINE FULL DAY AND HALF DAY HOURS
-        --------------------------------------------------- */
-        $fullDayHours = 8.50;
-        $halfDayHours = 5; // Default 5 hrs = half day (per company policy)
-        $payrollType  = $companyRule['payroll_type'] ?? 'monthly';
-        $graceMinutes = (int)($companyRule['grace_minutes'] ?? 10);
-        $graceSeconds = $graceMinutes * 60;
-
-        if (!empty($companyRule) && (int)$companyRule['enable_payroll'] === 1) {
-            if (!empty($companyRule['working_hours_per_day'])) {
-                $fullDayHours = (float) $companyRule['working_hours_per_day'];
-            }
-            if (isset($companyRule['half_day_hours']) && $companyRule['half_day_hours'] !== '' && $companyRule['half_day_hours'] !== null) {
-                $halfDayHours = (float) $companyRule['half_day_hours'];
-            } else {
-                $halfDayHours = 5; // If 5 hrs then half day
-            }
-        }
-
-        // For Saturday half-days, the expected hours should be half-day hours
-        $expectedHours = $isSaturdayHalfDay ? $halfDayHours : $fullDayHours;
-        $expectedSeconds = $expectedHours * 3600;
-
-        $fullDaySeconds = $fullDayHours * 3600;
-        $halfDaySeconds = $halfDayHours * 3600;
-
-        /* ---------------------------------------------------
-        6. OVERTIME CALCULATION
-        --------------------------------------------------- */
-        $overtimeSeconds = 0;
-
-        if (!empty($companyRule) && (int)($companyRule['enable_overtime'] ?? 0) === 1) {
-            // For Saturday half-days, overtime starts after half-day hours (no meal break added)
-            // For normal days, overtime starts after full-day hours + meal break
-            $overtimeStartSeconds = $isSaturdayHalfDay 
-                ? $halfDaySeconds 
-                : ($fullDaySeconds + $mealBreakSeconds);
-
-            if ($grossWorkSeconds > $overtimeStartSeconds) {
-                $overtimeSeconds = $grossWorkSeconds - $overtimeStartSeconds;
-
-                $minOvertimeSeconds =
-                    ((float)($companyRule['min_overtime_count_in_minutes'] ?? 0)) * 60;
-
-                if ($overtimeSeconds < $minOvertimeSeconds) {
-                    $overtimeSeconds = 0;
-                }
-            }
-        }
-
-        /* ---------------------------------------------------
-        7. ATTENDANCE STATUS
-        --------------------------------------------------- */
-        $status = 'absent';
-
-        $grossSecondsWithGrace = $workHoursInSeconds + $graceSeconds;
-
-        if ($payrollType === 'hourly') {
-            if ($grossWorkSeconds > 0) {
-                $status = 'present';
-            }
-        } else {
-            if ($isSaturdayHalfDay) {
-                $halfhalfDaySeconds = $halfDaySeconds/2;
-                if ($grossSecondsWithGrace >= $halfDaySeconds) {
-                    $status = 'present';
-                } else if ($grossSecondsWithGrace > $halfhalfDaySeconds) {
-                    $status = 'present';
-                } else {
-                    $status = 'half-day';
-                }
-            } else {
-                // Normal day: >= full day = present, >= half day and < full = half-day, < half = absent
-                if ($grossSecondsWithGrace >= $fullDaySeconds) {
-                    $status = 'present';
-                } elseif ($grossSecondsWithGrace >= $halfDaySeconds) {
-                    $status = 'half-day';
-                } else {
-                    $status = 'absent';
-                }
-            }
-        }
-
-        /* ---------------------------------------------------
-        8. FORMAT OUTPUT
-        --------------------------------------------------- */
-        $formattedWorkHours = sprintf(
-            '%02d:%02d:%02d',
-            floor($workHoursInSeconds / 3600),
-            floor(($workHoursInSeconds % 3600) / 60),
-            $workHoursInSeconds % 60
-        );
-
-        $formattedOvertime = sprintf(
-            '%02d:%02d:%02d',
-            floor($overtimeSeconds / 3600),
-            floor(($overtimeSeconds % 3600) / 60),
-            $overtimeSeconds % 60
-        );
-
+   private function calculateWorkHours($date, $mealbreakTime, $checkInTime, $checkOutTime)
+{
+    if (empty($checkInTime) || empty($checkOutTime)) {
         return [
-            'work_hours' => $formattedWorkHours,
-            'work_hours_seconds' => $workHoursInSeconds,
-            'overtime' => $formattedOvertime,
-            'overtime_seconds' => $overtimeSeconds,
-            'status' => $status,
-            'is_saturday_half_day' => $isSaturdayHalfDay // Added for debugging
+            'work_hours' => null,
+            'work_hours_seconds' => 0,
+            'overtime' => '00:00:00',
+            'overtime_seconds' => 0,
+            'status' => 'absent'
         ];
     }
+
+    $checkInTimestamp  = strtotime($date . ' ' . $checkInTime);
+    $checkOutTimestamp = strtotime($date . ' ' . $checkOutTime);
+
+    if (!$checkInTimestamp || !$checkOutTimestamp || $checkOutTimestamp <= $checkInTimestamp) {
+        log_message('debug', 'Invalid timestamps or checkout <= checkin');
+        return [
+            'work_hours' => '00:00:00',
+            'work_hours_seconds' => 0,
+            'overtime' => '00:00:00',
+            'overtime_seconds' => 0,
+            'status' => 'absent'
+        ];
+    }
+
+    /* ---------------------------------------------------
+    1. GROSS WORK DURATION
+    --------------------------------------------------- */
+    $grossWorkSeconds = $checkOutTimestamp - $checkInTimestamp;
+
+    /* ---------------------------------------------------
+    2. COMPANY RULES
+    --------------------------------------------------- */
+    $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+    $isSaturdayHalfDay = $this->isSaturdayHalfDay($date, $companyRule);
+
+    /* ---------------------------------------------------
+    3. MEAL BREAK
+    --------------------------------------------------- */
+    $mealBreakSeconds = 0;
+
+    if (!$isSaturdayHalfDay && !empty($mealbreakTime)) {
+        $time = new \DateTime($mealbreakTime);
+        $mealBreakSeconds =
+            ($time->format('H') * 3600) +
+            ($time->format('i') * 60) +
+            $time->format('s');
+    }
+
+    /* ---------------------------------------------------
+    4. NET WORKING HOURS
+    --------------------------------------------------- */
+    $workHoursInSeconds = max(0, $grossWorkSeconds - $mealBreakSeconds);
+
+    /* ---------------------------------------------------
+    5. COMPANY SETTINGS
+    --------------------------------------------------- */
+    $payrollType  = $companyRule['payroll_type'] ?? 'monthly';
+    $graceMinutes = (int)($companyRule['grace_minutes'] ?? 10);
+    $graceSeconds = $graceMinutes * 60;
+
+    /* ---------------------------------------------------
+    6. OVERTIME CALCULATION (UNCHANGED)
+    --------------------------------------------------- */
+    $fullDayHours = (float)($companyRule['working_hours_per_day'] ?? 8);
+    $halfDayHours = (float)($companyRule['half_day_hours'] ?? 5);
+
+    $fullDaySeconds = $fullDayHours * 3600;
+    $halfDaySeconds = $halfDayHours * 3600;
+
+    $overtimeSeconds = 0;
+
+    if (!empty($companyRule) && (int)($companyRule['enable_overtime'] ?? 0) === 1) {
+        $overtimeStartSeconds = $isSaturdayHalfDay
+            ? $halfDaySeconds
+            : ($fullDaySeconds + $mealBreakSeconds);
+
+        if ($grossWorkSeconds > $overtimeStartSeconds) {
+            $overtimeSeconds = $grossWorkSeconds - $overtimeStartSeconds;
+
+            $minOvertimeSeconds =
+                ((float)($companyRule['min_overtime_count_in_minutes'] ?? 0)) * 60;
+
+            if ($overtimeSeconds < $minOvertimeSeconds) {
+                $overtimeSeconds = 0;
+            }
+        }
+    }
+
+    /* ---------------------------------------------------
+    7. ATTENDANCE STATUS (UPDATED - 4 HOUR RULE)
+    --------------------------------------------------- */
+    $status = 'absent';
+
+    $effectiveSeconds = $workHoursInSeconds + $graceSeconds;
+
+    $fullDayThreshold = 4 * 3600; // 4 hours
+    $halfDayThreshold = 1 * 3600; // optional
+
+    if ($payrollType === 'hourly') {
+        $status = $workHoursInSeconds > 0 ? 'present' : 'absent';
+    } else {
+        if ($effectiveSeconds > $fullDayThreshold) {
+            $status = 'present';
+        } elseif ($effectiveSeconds >= $halfDayThreshold) {
+            $status = 'half-day';
+        } else {
+            $status = 'absent';
+        }
+    }
+
+    /* ---------------------------------------------------
+    8. FORMAT OUTPUT
+    --------------------------------------------------- */
+    $formattedWorkHours = sprintf(
+        '%02d:%02d:%02d',
+        floor($workHoursInSeconds / 3600),
+        floor(($workHoursInSeconds % 3600) / 60),
+        $workHoursInSeconds % 60
+    );
+
+    $formattedOvertime = sprintf(
+        '%02d:%02d:%02d',
+        floor($overtimeSeconds / 3600),
+        floor(($overtimeSeconds % 3600) / 60),
+        $overtimeSeconds % 60
+    );
+
+    return [
+        'work_hours' => $formattedWorkHours,
+        'work_hours_seconds' => $workHoursInSeconds,
+        'overtime' => $formattedOvertime,
+        'overtime_seconds' => $overtimeSeconds,
+        'status' => $status,
+        'is_saturday_half_day' => $isSaturdayHalfDay
+    ];
+}
 
     /**
      * Check if a given date is a Saturday half-day based on company rules
@@ -934,9 +900,73 @@ class AttendanceController extends ResourceController
 
                 if (!isset($attendanceByDate[$date])) {
                     $attendanceByDate[$date] = $record;
+                    $attendanceByDate[$date]['total_work_seconds'] = $this->timeToSeconds($record['work_hours'] ?? '00:00:00');
+                    $attendanceByDate[$date]['total_overtime_seconds'] = $this->timeToSeconds($record['overtime'] ?? '00:00:00');
                 } else {
+                    // Accumulate hours
+                    $attendanceByDate[$date]['total_work_seconds'] += $this->timeToSeconds($record['work_hours'] ?? '00:00:00');
+                    $attendanceByDate[$date]['total_overtime_seconds'] += $this->timeToSeconds($record['overtime'] ?? '00:00:00');
+                    
+                    // Keep the earliest check_in_time
+                    if (!empty($record['check_in_time'])) {
+                        if (empty($attendanceByDate[$date]['check_in_time']) || $record['check_in_time'] < $attendanceByDate[$date]['check_in_time']) {
+                            $attendanceByDate[$date]['check_in_time'] = $record['check_in_time'];
+                            $attendanceByDate[$date]['is_late'] = $record['is_late'] ?? $attendanceByDate[$date]['is_late'];
+                            $attendanceByDate[$date]['late_minutes'] = $record['late_minutes'] ?? $attendanceByDate[$date]['late_minutes'];
+                        }
+                    }
+
+                    // Keep the latest check_out_time, or null if currently working
+                    if (empty($record['check_out_time'])) {
+                        $attendanceByDate[$date]['check_out_time'] = null;
+                    } elseif ($attendanceByDate[$date]['check_out_time'] !== null) {
+                        if (empty($attendanceByDate[$date]['check_out_time']) || $record['check_out_time'] > $attendanceByDate[$date]['check_out_time']) {
+                            $attendanceByDate[$date]['check_out_time'] = $record['check_out_time'];
+                        }
+                    }
+
+                    // Keep highest ID to maintain reference
                     if ($record['id'] > $attendanceByDate[$date]['id']) {
-                        $attendanceByDate[$date] = $record;
+                        $attendanceByDate[$date]['id'] = $record['id'];
+                    }
+                }
+            }
+
+            // Recalculate status and formatted hours for aggregated records
+            foreach ($attendanceByDate as $date => &$dayData) {
+                if (isset($dayData['total_work_seconds'])) {
+                    $totalSeconds = $dayData['total_work_seconds'];
+                    
+                    // Format the total work hours
+                    $dayData['work_hours'] = sprintf('%02d:%02d:%02d',
+                        floor($totalSeconds / 3600),
+                        floor(($totalSeconds % 3600) / 60),
+                        $totalSeconds % 60
+                    );
+                    
+                    $dayData['overtime'] = sprintf('%02d:%02d:%02d',
+                        floor($dayData['total_overtime_seconds'] / 3600),
+                        floor(($dayData['total_overtime_seconds'] % 3600) / 60),
+                        $dayData['total_overtime_seconds'] % 60
+                    );
+                    
+                    // Determine cumulative status
+                    $effectiveSeconds = $totalSeconds + (isset($companyRule['grace_minutes']) ? ((int)$companyRule['grace_minutes'] * 60) : 600);
+                    $payrollType = $companyRule['payroll_type'] ?? 'monthly';
+                    
+                    if ($payrollType === 'hourly') {
+                        $dayData['status'] = $totalSeconds > 0 ? 'present' : 'absent';
+                    } else {
+                        $fullDayThreshold = 4 * 3600; // 4 hours threshold
+                        $halfDayThreshold = 1 * 3600; // 1 hour threshold
+                        
+                        if ($effectiveSeconds > $fullDayThreshold) {
+                            $dayData['status'] = 'present';
+                        } elseif ($effectiveSeconds >= $halfDayThreshold) {
+                            $dayData['status'] = 'half-day';
+                        } else {
+                            $dayData['status'] = 'absent';
+                        }
                     }
                 }
             }
@@ -1766,21 +1796,27 @@ class AttendanceController extends ResourceController
             $totalSeconds -= $mealSeconds;
         }
 
-        // Company rules (5 hrs = half day when half_day_hours not set)
-        $requiredSeconds = ($companyRule['working_hours_per_day'] ?? 8) * 3600;
-        $halfDayHours = isset($companyRule['half_day_hours']) && $companyRule['half_day_hours'] !== '' && $companyRule['half_day_hours'] !== null
-            ? (float) $companyRule['half_day_hours'] : 5;
-        $halfDaySeconds = $halfDayHours * 3600;
+        // Company rules: We now use unified 4-hour full-day and 1-hour half-day logic
+        $effectiveSeconds = $totalSeconds + ($companyRule['grace_minutes'] ?? 10) * 60;
+        $fullDayThreshold = 4 * 3600; // 4 hours
+        $halfDayThreshold = 1 * 3600; // 1 hour
+        $payrollType = $companyRule['payroll_type'] ?? 'monthly';
 
         // Determine status - use manual status if provided
         if ($manualStatus) {
             $status = $manualStatus;
         } else {
             $status = 'absent';
-            if ($totalSeconds >= $requiredSeconds) {
-                $status = 'present';
-            } elseif ($totalSeconds >= $halfDaySeconds) {
-                $status = 'half-day';
+            if ($payrollType === 'hourly') {
+                $status = $totalSeconds > 0 ? 'present' : 'absent';
+            } else {
+                if ($effectiveSeconds > $fullDayThreshold) {
+                    $status = 'present';
+                } elseif ($effectiveSeconds >= $halfDayThreshold) {
+                    $status = 'half-day';
+                } else {
+                    $status = 'absent';
+                }
             }
         }
 
