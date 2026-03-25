@@ -290,13 +290,13 @@ $role = $user ? $user->role : null;
 
                     // Set greeting
                     if ($hour >= 5 && $hour < 12) {
-                        echo "Good Morning, <span class='text-black fw-bold'>{$username}</span>";
+                        echo "Good Morning, <span class='text-capitalize fw-bold' style='color: white; !important' >{$username}</span>";
                     } elseif ($hour >= 12 && $hour < 17) {
-                        echo "Good Afternoon, <span class='text-black fw-bold'>{$username}</span>";
+                        echo "Good Afternoon, <span class='text-capitalize fw-bold' style='color: white; !important' >{$username}</span>";
                     } elseif ($hour >= 17 && $hour < 21) {
-                        echo "Good Evening, <span class='text-black fw-bold'>{$username}</span>";
+                        echo "Good Evening, <span class='text-capitalize fw-bold' style='color: white;'!important>{$username}</span>";
                     } else {
-                        echo "Good Night, <span class='text-black fw-bold'>{$username}</span>";
+                        echo "Good Night, <span class='text-capitalize fw-bold' style='color: white;' !important>{$username}</span>";
                     }
                     ?>
                 </h1>

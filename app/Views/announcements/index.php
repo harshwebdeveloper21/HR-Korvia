@@ -141,37 +141,37 @@
 
 <!-- Read More Modal -->
 <div class="modal fade" id="announcementModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+    <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-            <div class="modal-body p-4 text-start">
-                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                    <h4 class="mb-0 fw-bold" style="color: #1e293b; font-size: 1.2rem;">Announcement Details</h4>
+            <div class="modal-body p-3 text-start">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <h5 class="mb-0 fw-bold text-dark-blue">Announcement Details</h5>
                     <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
-                <div class="mb-3">
-                    <h5 id="modalTitle" class="fw-bold mb-1" style="color: #334155;"></h5>
-                    <p class="text-muted mb-3" style="font-size: 0.8rem;"><i class="mdi mdi-calendar-blank-outline me-1"></i> Posted on: <span id="modalDate"></span></p>
+                <div class="mb-2">
+                    <h6 id="modalTitle" class="fw-bold mb-1 text-dark"></h6>
+                    <p class="text-muted mb-2" style="font-size: 0.8rem;"><i class="mdi mdi-calendar-blank-outline me-1"></i> Posted on: <span id="modalDate"></span></p>
                     
-                    <div class="announcement-content-scroll" style="max-height: 400px; overflow-y: auto;">
+                    <div class="announcement-content-scroll" style="max-height: 250px; overflow-y: auto;">
                         <div id="modalDescription" class="text-muted" style="font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5;"></div>
                     </div>
                 </div>
 
-                <div id="modalAttachmentDiv" class="mt-3 p-3 rounded bg-light border-start border-info border-3" style="display:none;">
+                <div id="modalAttachmentDiv" class="mt-2 p-2 rounded bg-light border-start border-3" style="display:none; border-color: #E66136 !important;">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center">
-                            <i class="mdi mdi-paperclip fs-18 text-info me-2"></i>
-                            <p class="fw-bold mb-0" style="color: #334155; font-size: 0.85rem;">Document Attached</p>
+                            <i class="mdi mdi-paperclip fs-18 me-2" style="color: #E66136;"></i>
+                            <p class="fw-bold mb-0 text-dark" style="font-size: 0.85rem;">Document Attached</p>
                         </div>
-                        <a id="modalAttachmentLink" href="#" target="_blank" class="btn btn-sm text-white px-3" style="background-color: #00c4ff; font-weight: 500;">
+                        <a id="modalAttachmentLink" href="#" target="_blank" class="btn btn-sm text-white px-3" style="background-color: #E66136; font-weight: 500;">
                             View File
                         </a>
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-end mt-4 pt-2">
-                    <button type="button" class="btn text-white px-4 rounded" style="background-color: #00c4ff; border: none; font-weight: 600;" data-bs-dismiss="modal">Close</button>
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" class="btn text-white px-4 rounded shadow-none" style="background-color: #E66136; font-weight: 600;" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>

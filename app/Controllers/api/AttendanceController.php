@@ -529,6 +529,15 @@ class AttendanceController extends ResourceController
         ];
 
         if ($this->attendanceModel->update($latestAttendance['id'], $data)) {
+            // Aggregate totals for the day and get the final status
+            $syncResult = $this->syncDayAttendance($user->sub, $date);
+            if ($syncResult) {
+                $calculation['status'] = $syncResult['status'];
+                $data['status'] = $syncResult['status'];
+                $data['work_hours'] = $syncResult['work_hours'];
+                $data['overtime'] = $syncResult['overtime'];
+            }
+
             // Check if attendance notifications are enabled
             $notificationSettingsModel = new NotificationSettingsModel();
             if ($notificationSettingsModel->isAttendanceNotificationsEnabled()) {
@@ -1609,8 +1618,7 @@ class AttendanceController extends ResourceController
         $records = $this->attendanceModel
             ->where('user_id', $userId)
             ->where('date', $date)
-            ->orderBy('updated_at', 'DESC')
-            ->limit(1)
+            ->orderBy('id', 'ASC')
             ->findAll();
 
         return $this->respond([
@@ -1637,222 +1645,38 @@ class AttendanceController extends ResourceController
             return $this->fail('Invalid data');
         }
 
-        // Get company rules
-        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
-        $mealBreak = $companyRule['lunch_break'] ?? '00:30:00';
-        $startTime = $companyRule['start_time'] ?? '09:00:00';
-        $gracePeriod = (int)($companyRule['grace_period'] ?? 0); // minutes
-
-        // Check if this is a new attendance record (no existing records)
-        $existingRecords = $this->attendanceModel
-            ->where('user_id', $userId)
-            ->where('date', $date)
-            ->findAll();
-
-        $isNewRecord = empty($existingRecords);
-
-        if ($isNewRecord || count($records) === 1) {
-            $record = $records[0];
-            
-            $workHours = '00:00:00';
-            $overTimeHours = '00:00:00';
-            $calculatedStatus = 'absent';
-            
-            if (!empty($record['check_in_time']) && !empty($record['check_out_time'])) {
-                $calculation = $this->calculateWorkHours(
-                    $date, 
-                    $mealBreak, 
-                    $record['check_in_time'], 
-                    $record['check_out_time']
-                );
-                $workHours = $calculation['work_hours'];
-                $overTimeHours = $calculation['overtime'];
-                $workedSeconds = $this->timeToSeconds($workHours);
-
-                $calculatedStatus = $this->calculateAttendanceStatus(
-                    $workedSeconds,
-                    $companyRule
-                );
-
-            }
-            
-            // Calculate late status for check-in time
-            $isLate = 0;
-            $lateMinutes = 0;
-            if (!empty($record['check_in_time'])) {
-                $checkInSeconds = $this->timeToSeconds($record['check_in_time']);
-                $startSeconds = $this->timeToSeconds($startTime);
-                $graceSeconds = $gracePeriod * 60;
-                
-                if ($checkInSeconds > ($startSeconds + $graceSeconds)) {
-                    $isLate = 1;
-                    $lateSeconds = $checkInSeconds - ($startSeconds + $graceSeconds);
-                    $lateMinutes = ceil($lateSeconds / 60);
-                }
-            }
-            
-            // Use manual status if provided, otherwise use calculated status
-            $finalStatus = $manualStatus ?? $calculatedStatus;
-            
-            // If manual status is "absent", force work hours to 0
-            if ($manualStatus === 'absent') {
-                $workHours = '00:00:00';
-            }
-            
-            $attendanceData = [
+        // Save records first without complex logic
+        foreach ($records as $record) {
+            $data = [
                 'user_id' => $userId,
                 'date' => $date,
-                'check_in_time' => $record['check_in_time'] ?? null,
-                'check_out_time' => $record['check_out_time'] ?? null,
-                'meal_break' => $mealBreak,
-                'work_hours' => $workHours,
-                'overtime' => !empty($record['check_in_time']) && !empty($record['check_out_time']) ? $calculation['overtime'] : '00:00:00',
-                'status' => $finalStatus,
-                'is_late' => $isLate,
-                'late_minutes' => $lateMinutes
+                'check_in_time' => !empty($record['check_in_time']) ? $record['check_in_time'] : null,
+                'check_out_time' => !empty($record['check_out_time']) ? $record['check_out_time'] : null,
             ];
-
-            if ($isNewRecord || $record['id'] === 'new') {
-                // Create new attendance record
-                $this->attendanceModel->insert($attendanceData);
-                
-                // Delete any conflicting leave records
-                $this->leaveModel
-                    ->where('user_id', $userId)
-                    ->where('start_date <=', $date)
-                    ->where('end_date >=', $date)
-                    ->delete();
+            
+            if (isset($record['id']) && $record['id'] !== 'new') {
+                $this->attendanceModel->update($record['id'], $data);
             } else {
-                // Update existing record
-                $this->attendanceModel->update($record['id'], $attendanceData);
+                if (!empty($data['check_in_time']) || !empty($data['check_out_time'])) {
+                    $this->attendanceModel->insert($data);
+                }
             }
-
-            return $this->respond([
-                'status' => 'success',
-                'message' => 'Attendance updated successfully',
-                'work_hours' => $workHours,
-                'overtime' => !empty($record['check_in_time']) && !empty($record['check_out_time']) ? $calculation['overtime'] : '00:00:00',
-                'final_status' => $finalStatus,
-                'is_late' => $isLate,
-                'late_minutes' => $lateMinutes
-            ]);
         }
-
-        // Handle multiple records (existing logic)
-        $mb = new \DateTime($mealBreak);
-        $mealSeconds = ($mb->format('H') * 3600)
-                    + ($mb->format('i') * 60)
-                    + $mb->format('s');
         
-        $totalSeconds = 0;
-        $earliestCheckIn = null;
-        $isLate = 0;
-        $lateMinutes = 0;
-
-        foreach ($records as $row) {
-            // Calculate late status based on the earliest check-in time
-            if (!empty($row['check_in_time'])) {
-                $currentCheckInSeconds = $this->timeToSeconds($row['check_in_time']);
-                
-                if ($earliestCheckIn === null || $currentCheckInSeconds < $earliestCheckIn) {
-                    $earliestCheckIn = $currentCheckInSeconds;
-                    
-                    // Calculate if this earliest check-in is late
-                    $startSeconds = $this->timeToSeconds($startTime);
-                    $graceSeconds = $gracePeriod * 60;
-                    
-                    if ($currentCheckInSeconds > ($startSeconds + $graceSeconds)) {
-                        $isLate = 1;
-                        $lateSeconds = $currentCheckInSeconds - ($startSeconds + $graceSeconds);
-                        $lateMinutes = ceil($lateSeconds / 60);
-                    } else {
-                        $isLate = 0;
-                        $lateMinutes = 0;
-                    }
-                }
-            }
-            
-            // Update individual punch with late information
-            $this->attendanceModel->update($row['id'], [
-                'check_in_time'  => $row['check_in_time'],
-                'check_out_time' => $row['check_out_time'],
-                'is_late' => $isLate,
-                'late_minutes' => $lateMinutes
-            ]);
-            
-            // Calculate duration
-            if (!empty($row['check_in_time']) && !empty($row['check_out_time'])) {
-                $in  = strtotime($date . ' ' . $row['check_in_time']);
-                $out = strtotime($date . ' ' . $row['check_out_time']);
-
-                if ($out > $in) {
-                    $totalSeconds += ($out - $in);
-                }
-            }
-        }
-
-        // Deduct meal break ONCE
-        if ($totalSeconds > $mealSeconds) {
-            $totalSeconds -= $mealSeconds;
-        }
-
-        // Company rules: We now use unified 4-hour full-day and 1-hour half-day logic
-        $effectiveSeconds = $totalSeconds + ($companyRule['grace_minutes'] ?? 10) * 60;
-        $fullDayThreshold = 4 * 3600; // 4 hours
-        $halfDayThreshold = 1 * 3600; // 1 hour
-        $payrollType = $companyRule['payroll_type'] ?? 'monthly';
-
-        // Determine status - use manual status if provided
-        if ($manualStatus) {
-            $status = $manualStatus;
-        } else {
-            $status = 'absent';
-            if ($payrollType === 'hourly') {
-                $status = $totalSeconds > 0 ? 'present' : 'absent';
-            } else {
-                if ($effectiveSeconds > $fullDayThreshold) {
-                    $status = 'present';
-                } elseif ($effectiveSeconds >= $halfDayThreshold) {
-                    $status = 'half-day';
-                } else {
-                    $status = 'absent';
-                }
-            }
-        }
-
-        // If manual status is "absent", force work hours to 0
-        if ($manualStatus === 'absent') {
-            $totalSeconds = 0;
-        }
-
-        $formattedHours = gmdate('H:i:s', $totalSeconds);
-
-        // Update ALL records of that day with final result
-        $this->attendanceModel
-            ->where('user_id', $userId)
-            ->where('date', $date)
-            ->set([
-                'work_hours' => $formattedHours,
-                'status' => $status,
-                'is_late' => $isLate,
-                'late_minutes' => $lateMinutes
-            ])
-            ->update();
-
-        // Delete any conflicting leave records
+        // Remove conflicting leave
         $this->leaveModel
             ->where('user_id', $userId)
             ->where('start_date <=', $date)
             ->where('end_date >=', $date)
             ->delete();
 
+        $syncResult = $this->syncDayAttendance($userId, $date, $manualStatus);
+
         return $this->respond([
             'status' => 'success',
             'message' => 'Attendance updated successfully',
-            'work_hours' => $formattedHours,
-            'final_status' => $status,
-            'is_late' => $isLate,
-            'late_minutes' => $lateMinutes
+            'work_hours' => $syncResult ? $syncResult['work_hours'] : '00:00:00',
+            'final_status' => $syncResult ? $syncResult['status'] : $manualStatus,
         ]);
     }
 
@@ -1970,5 +1794,146 @@ class AttendanceController extends ResourceController
         ]);
     }
 
-}
+    public function syncDayAttendance($userId, $date, $manualStatus = null)
+    {
+        $records = $this->attendanceModel
+            ->where('user_id', $userId)
+            ->where('date', $date)
+            ->orderBy('id', 'ASC')
+            ->findAll();
 
+        if (empty($records)) return null;
+
+        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+        $mealBreak   = $companyRule['lunch_break'] ?? '00:30:00';
+        $startTime   = $companyRule['start_time'] ?? '09:00:00';
+        $gracePeriod = (int)($companyRule['grace_period'] ?? 0);
+
+        // Meal break setup
+        $mb = new \DateTime($mealBreak);
+        $mealSeconds = ($mb->format('H') * 3600) + ($mb->format('i') * 60) + $mb->format('s');
+        $remainingMealBreak = $mealSeconds;
+
+        $totalWorkSeconds = 0;
+        $totalOvertimeSeconds = 0;
+        $earliestCheckInStamp = null;
+        $isLate = 0;
+        $lateMinutes = 0;
+
+        foreach ($records as &$record) {
+            if (!empty($record['check_in_time'])) {
+                $ciTs = strtotime($date . ' ' . $record['check_in_time']);
+                if ($earliestCheckInStamp === null || $ciTs < $earliestCheckInStamp) {
+                    $earliestCheckInStamp = $ciTs;
+                }
+            }
+
+            $recordWorkSeconds = 0;
+            if (!empty($record['check_in_time']) && !empty($record['check_out_time'])) {
+                $in = strtotime($date . ' ' . $record['check_in_time']);
+                $out = strtotime($date . ' ' . $record['check_out_time']);
+                if ($out > $in) {
+                    $duration = $out - $in;
+
+                    // Deduct meal break sequentially
+                    if ($remainingMealBreak > 0) {
+                        if ($duration >= $remainingMealBreak) {
+                            $duration -= $remainingMealBreak;
+                            $remainingMealBreak = 0;
+                        } else {
+                            $remainingMealBreak -= $duration;
+                            $duration = 0;
+                        }
+                    }
+                    $recordWorkSeconds = $duration;
+                    $totalWorkSeconds += $recordWorkSeconds;
+                }
+            }
+            $record['calculated_work_seconds'] = $recordWorkSeconds;
+        }
+
+        // Overtime check on total
+        $fullDayHours = (float)($companyRule['working_hours_per_day'] ?? 8);
+        $halfDayHours = (float)($companyRule['half_day_hours'] ?? 5);
+        $fullDaySeconds = $fullDayHours * 3600;
+
+        $isSaturdayHalfDay = $this->isSaturdayHalfDay($date, $companyRule);
+        $overtimeStartSeconds = $isSaturdayHalfDay ? ($halfDayHours * 3600) : $fullDaySeconds;
+
+        if (!empty($companyRule) && (int)($companyRule['enable_overtime'] ?? 0) === 1) {
+            if ($totalWorkSeconds > $overtimeStartSeconds) {
+                $totalOvertimeSeconds = $totalWorkSeconds - $overtimeStartSeconds;
+                $minOvertimeSeconds = ((float)($companyRule['min_overtime_count_in_minutes'] ?? 0)) * 60;
+                if ($totalOvertimeSeconds < $minOvertimeSeconds) {
+                    $totalOvertimeSeconds = 0;
+                }
+            }
+        }
+
+        // Late calc
+        if ($earliestCheckInStamp) {
+            $startSeconds = $this->timeToSeconds($startTime);
+            $checkInSeconds = date('H', $earliestCheckInStamp) * 3600 + date('i', $earliestCheckInStamp) * 60 + date('s', $earliestCheckInStamp);
+            $graceSeconds = $gracePeriod * 60;
+
+            if ($checkInSeconds > ($startSeconds + $graceSeconds)) {
+                $isLate = 1;
+                $lateSeconds = $checkInSeconds - ($startSeconds + $graceSeconds);
+                $lateMinutes = ceil($lateSeconds / 60);
+            }
+        }
+
+        // Status calc
+        $effectiveSeconds = $totalWorkSeconds + ($companyRule['grace_minutes'] ?? 10) * 60;
+        $fullDayThreshold = 4 * 3600;
+        $halfDayThreshold = 1 * 3600;
+        $payrollType = $companyRule['payroll_type'] ?? 'monthly';
+
+        if ($manualStatus) {
+            $status = $manualStatus;
+        } else {
+            if ($payrollType === 'hourly') {
+                $status = $totalWorkSeconds > 0 ? 'present' : 'absent';
+            } else {
+                if ($effectiveSeconds > $fullDayThreshold) {
+                    $status = 'present';
+                } elseif ($effectiveSeconds >= $halfDayThreshold) {
+                    $status = 'half-day';
+                } else {
+                    $status = 'absent';
+                }
+            }
+        }
+
+        if ($status === 'absent') {
+            $totalWorkSeconds = 0;
+            // Also reset individual calculated variables
+            foreach ($records as &$rec) {
+                $rec['calculated_work_seconds'] = 0;
+            }
+            $totalOvertimeSeconds = 0;
+        }
+
+        // Update each record individually with its local work duration but GLOBAL status/late.
+        // Overtime is assigned proportionally to the last record.
+        $recCount = count($records);
+        foreach ($records as $index => $rec) {
+            $h = gmdate('H:i:s', $rec['calculated_work_seconds']);
+            $ot = ($index === $recCount - 1) ? gmdate('H:i:s', $totalOvertimeSeconds) : '00:00:00';
+
+            $this->attendanceModel->update($rec['id'], [
+                'work_hours' => $h,
+                'overtime' => $ot,
+                'status' => $status,
+                'is_late' => $isLate,
+                'late_minutes' => $lateMinutes
+            ]);
+        }
+
+        return [
+            'status' => $status,
+            'work_hours' => gmdate('H:i:s', $totalWorkSeconds),
+            'overtime' => gmdate('H:i:s', $totalOvertimeSeconds)
+        ];
+    }
+}

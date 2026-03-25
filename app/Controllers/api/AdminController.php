@@ -519,17 +519,17 @@ class AdminController extends ResourceController
         // Only admin and HR can see new employees this week
         if (in_array($role, ['admin', 'hr'])) {
             $totalThisWeekEmployees = $this->userModel
-                ->where('role', 'employee')
+                ->where('role !=', 'admin')
                 ->where('is_deleted', 0)
                 ->countAllResults();
             $startOfMonth = date('Y-m-01'); // 1st of current month
             $endOfMonth = date('Y-m-t');    // Last day of current month
             $totalEmployeesThisMonth = $this->userModel
-                ->where('role', 'employee')
+                ->where('role !=', 'admin')
                 ->where('is_deleted', 0)
                 ->countAllResults();
             $totalEmployeesThisYear = $this->userModel
-                ->where('role', 'employee')
+                ->where('role !=', 'admin')
                 ->where('is_deleted', 0)
                 ->countAllResults();
         }

@@ -267,7 +267,7 @@ $role = $user ? $user->role : null;
           <ul class="nav flex-column sub-menu">
             <li class="nav-item"> <a class="nav-link" href="/exprience-templates-view">Exprience Template</a></li>
             <li class="nav-item"> <a class="nav-link" href="/generate-letter">Generate Letter</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/add-emp-exprience">Genrate Letter</a></li>
+            <!-- <li class="nav-item"> <a class="nav-link" href="/add-emp-exprience">Genrate Letter</a></li> -->
           </ul>
         </div>
       </li> 
