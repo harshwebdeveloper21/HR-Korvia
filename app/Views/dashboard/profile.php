@@ -522,7 +522,12 @@
                 <!-- Other Tabs Placeholder -->
                 <div class="tab-pane fade" id="emergency">
                     <div class="mt-3">
-                        <h6 class="section-title">Bank Details</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="section-title mb-0">Bank Details</h6>
+                            <a href="#" id="editBankBtn" class="btn btn-sm rounded" style="background-color: #E66136; color: white;">
+                                <i class="mdi mdi-pencil-outline"></i> Edit Bank Details
+                            </a>
+                        </div>
                         <div class="card-body">
                             <table class="table mb-0">
                                 <tbody>
@@ -551,6 +556,54 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Edit Bank Details Modal -->
+                <div class="modal fade" id="editBankModal" tabindex="-1" aria-labelledby="editBankModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <form id="dashboardEditBankForm">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editBankModalLabel">Edit Bank Details</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <input type="hidden" id="dash-bank-user-id" name="user_id">
+                                    <div class="mb-3">
+                                        <label class="form-label">Bank Name</label>
+                                        <input type="text" class="form-control" id="dash-bank-name" name="bank_name">
+                                        <div class="text-danger" id="dash-error-bank_name"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Account Number</label>
+                                        <input type="text" class="form-control" id="dash-account-number" name="acc_number">
+                                        <div class="text-danger" id="dash-error-acc_number"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Account Holder Name</label>
+                                        <input type="text" class="form-control" id="dash-account-in-name" name="acc_in_name">
+                                        <div class="text-danger" id="dash-error-acc_in_name"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Branch Name</label>
+                                        <input type="text" class="form-control" id="dash-branch-name" name="branch_name">
+                                        <div class="text-danger" id="dash-error-branch_name"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Branch Code</label>
+                                        <input type="text" class="form-control" id="dash-branch-code" name="branch_code">
+                                        <div class="text-danger" id="dash-error-branch_code"></div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn" style="background-color: #E66136; color: white;">Save</button>
+                                    <button type="button" class="btn" style="background-color: #6c757d; color: white;" data-bs-dismiss="modal">Cancel</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- END Edit Bank Details Modal -->
+
                 <!-- <div class="tab-pane fade" id="performance">
                     <p class="mt-3">Performance history loading...</p>
                 </div> -->
@@ -1332,6 +1385,79 @@
             }
         });
     });
+
+    // ─── Edit Bank Details ────────────────────────────────────────────
+    $(document).ready(function () {
+        $('#editBankBtn').on('click', function (e) {
+            e.preventDefault();
+            const userId = $('#admin_id').val();
+            if (!userId) {
+                Swal.fire('Error', 'Could not identify user. Please refresh the page.', 'error');
+                return;
+            }
+
+            $.ajax({
+                url: '/api/get_user_bank_data/' + userId,
+                type: 'GET',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                success: function (response) {
+                    if (response.success) {
+                        const bank = response.data;
+                        $('#dash-bank-user-id').val(bank.user_id);
+                        $('#dash-bank-name').val(bank.bank_name);
+                        $('#dash-account-number').val(bank.acc_number);
+                        $('#dash-account-in-name').val(bank.acc_in_name);
+                        $('#dash-branch-name').val(bank.branch_name);
+                        $('#dash-branch-code').val(bank.branch_code);
+                        $('#editBankModal').modal('show');
+                    } else {
+                        Swal.fire('Error', 'Could not load bank details.', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Error', 'Server error while fetching bank details.', 'error');
+                }
+            });
+        });
+
+        $('#dashboardEditBankForm').on('submit', function (e) {
+            e.preventDefault();
+            // Clear previous errors
+            $('[id^="dash-error-"]').text('');
+
+            const formData = $(this).serialize();
+
+            $.ajax({
+                url: '/api/update_user_bank_data',
+                type: 'POST',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        $('#editBankModal').modal('hide');
+                        // Refresh displayed bank data
+                        $('.bank_name').text($('#dash-bank-name').val());
+                        $('.acc_number').text($('#dash-account-number').val());
+                        $('.acc_in_name').text($('#dash-account-in-name').val());
+                        $('.branch_name').text($('#dash-branch-name').val());
+                        $('.branch_code').text($('#dash-branch-code').val());
+                        Swal.fire('Success', response.message || 'Bank details updated successfully.', 'success');
+                    } else if (response.errors) {
+                        $.each(response.errors, function (field, msg) {
+                            $('#dash-error-' + field).text(msg);
+                        });
+                    } else {
+                        Swal.fire('Error', response.message || 'Something went wrong.', 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Error', 'Server error while saving bank details.', 'error');
+                }
+            });
+        });
+    });
+    // ─────────────────────────────────────────────────────────────────
+
 
     function fetchCompanyLogo() {
         $.ajax({
