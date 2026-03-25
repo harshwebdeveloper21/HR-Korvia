@@ -2226,7 +2226,9 @@
             console.log('Using default working hours: 8 hours');
         }
     });
-
+    // 🕒 Timezone sync offset (Server - Browser) for absolute accuracy
+    window.serverOffset = (<?= time() ?> * 1000) - Date.now();
+    
     // Function to start and update work timer for each employee
     function startWorkTimer(timerId, progressId, checkInTime, checkOutTime) {
         
@@ -2252,15 +2254,9 @@
         var intervalId = null;
 
         function updateTimer() {
-            var now = new Date();
-
-            // 👉 Stop timer if checkout time reached
-            if (checkOutDate && now >= checkOutDate) {
-                now = checkOutDate;      // freeze at checkout
-                clearInterval(intervalId);
-            }
-
-            var diff = now - checkInDate;
+            const now = new Date(Date.now() + (window.serverOffset || 0));
+            if (checkOutDate && now >= checkOutDate) { now = checkOutDate; clearInterval(intervalId); }
+            const diff = now - checkInDate;
             if (diff < 0) diff = 0;
 
             var hours = Math.floor(diff / (1000 * 60 * 60));
@@ -2732,92 +2728,73 @@
 
             console.log('⏰ Parsed check-in time:', checkInHours + ':' + checkInMinutes + ':' + checkInSecs);
 
-            // Create check-in Date object using today's date
-            const today = new Date();
-            const checkInDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), checkInHours, checkInMinutes, checkInSecs);
+            // 🕒 Timezone-aware calculation using server time offset
+            const serverCurrentTimeUnix = <?= time() ?>; // Server's current Unix timestamp
+            const browserCurrentTimeUnix = Math.floor(Date.now() / 1000);
+            const serverToBrowserOffset = serverCurrentTimeUnix - browserCurrentTimeUnix;
 
-            console.log('📅 Check-in Date object:', checkInDate.toString());
+            console.log('⏰ Timezone sync:', {
+                serverTime: new Date(serverCurrentTimeUnix * 1000).toString(),
+                browserTime: new Date(browserCurrentTimeUnix * 1000).toString(),
+                offsetSeconds: serverToBrowserOffset
+            });
 
-            // Store initial completed hours from server
+            // Parse check-in time into a Unix timestamp relative to today (server date)
+            const checkInParts = checkInTime.split(':');
+            const checkInH = parseInt(checkInParts[0]) || 0;
+            const checkInM = parseInt(checkInParts[1]) || 0;
+            const checkInS = parseInt(checkInParts[2]) || 0;
+            
+            // Server's start-of-day timestamp
+            const serverToday = new Date(serverCurrentTimeUnix * 1000);
+            const serverCheckInDate = new Date(serverToday.getFullYear(), serverToday.getMonth(), serverToday.getDate(), checkInH, checkInM, checkInS);
+            const checkInTimestamp = Math.floor(serverCheckInDate.getTime() / 1000);
+
             let baseCompletedHours = completedHoursSeconds;
-            let updateInterval = null;
 
             function updateHours() {
                 try {
-                    // Check if elements exist first
                     const hoursBadge = document.getElementById('hours-worked-badge');
-                    const remainingBadge = document.getElementById('remaining-hours-badge');
                     const hoursProgress = document.getElementById('hours-worked-progress');
-                    const remainingProgress = document.getElementById('remaining-hours-progress');
 
-                    if (!hoursBadge || !remainingBadge || !hoursProgress || !remainingProgress) {
-                        console.warn('⚠️ Elements not found yet, waiting...');
-                        return;
-                    }
+                    if (!hoursBadge || !hoursProgress) return;
 
-                    const now = new Date();
+                    // Calculate "now" in server-time context
+                    const nowBrowserUnix = Math.floor(Date.now() / 1000);
+                    const nowServerUnix = nowBrowserUnix + serverToBrowserOffset;
 
-                    // Use time-based calculation (more reliable than Date object difference)
-                    const currentHours = now.getHours();
-                    const currentMinutes = now.getMinutes();
-                    const currentSecs = now.getSeconds();
+                    // Absolute difference between check-in and current time
+                    let activeSessionSeconds = nowServerUnix - checkInTimestamp;
 
-                    const checkInTotalSeconds = (checkInHours * 3600) + (checkInMinutes * 60) + checkInSecs;
-                    const currentTotalSeconds = (currentHours * 3600) + (currentMinutes * 60) + currentSecs;
-
-                    let activeSessionSeconds = currentTotalSeconds - checkInTotalSeconds;
-
-                    // Handle day rollover (if check-in was yesterday or if current time is before check-in)
-                    if (activeSessionSeconds < 0) {
-                        // Assume it's the same day, so if negative, it means we're still in the same session
-                        // This shouldn't happen normally, but handle it gracefully
-                        activeSessionSeconds = Math.max(0, activeSessionSeconds);
-                    }
-
-                    // Cap at 24 hours (86400 seconds) to prevent unrealistic values
-                    activeSessionSeconds = Math.min(activeSessionSeconds, 86400);
+                    // Handle potential negative values if server clock is slightly behind
                     activeSessionSeconds = Math.max(0, activeSessionSeconds);
+                    
+                    // Cap at 24 hours to prevent glitches
+                    activeSessionSeconds = Math.min(activeSessionSeconds, 86400);
 
-                    // Store time before break deduction for logging
-                    const activeSessionBeforeBreak = activeSessionSeconds;
+                    // For active session (not checked out yet), we add elapsed time to completed historical time
+                    let totalWorkedSeconds = baseCompletedHours + activeSessionSeconds;
 
-                    // For active session (not checked out yet), show actual elapsed time
-                    // Meal break will be deducted by the backend when they check out
-                    // Don't subtract break from active session - show real-time elapsed time
-                    let activeSessionAfterBreak = activeSessionSeconds;
+                    // Format HH:MM:SS
+                    const h = Math.floor(totalWorkedSeconds / 3600);
+                    const m = Math.floor((totalWorkedSeconds % 3600) / 60);
+                    const s = totalWorkedSeconds % 60;
+                    const formatted = String(h).padStart(2, '0') + ':' +
+                                    String(m).padStart(2, '0') + ':' +
+                                    String(s).padStart(2, '0');
 
-                    // Add completed hours from previous check-in/check-out pairs
-                    // For active session, use the actual elapsed time (break handled on check-out)
-                    let workedSeconds = baseCompletedHours + activeSessionAfterBreak;
+                    hoursBadge.textContent = formatted;
 
-                    // Format hours worked
-                    const hours = Math.floor(workedSeconds / 3600);
-                    const minutes = Math.floor((workedSeconds % 3600) / 60);
-                    const seconds = workedSeconds % 60;
-                    const hoursWorkedFormatted = String(hours).padStart(2, '0') + ':' +
-                        String(minutes).padStart(2, '0') + ':' +
-                        String(seconds).padStart(2, '0');
-
-                    // Calculate remaining hours
-                    const remainingSeconds = Math.max(0, standardHoursSeconds - workedSeconds);
-                    const remainingHours = Math.floor(remainingSeconds / 3600);
-                    const remainingMinutes = Math.floor((remainingSeconds % 3600) / 60);
-                    const remainingSecs = remainingSeconds % 60;
-                    const remainingHoursFormatted = String(remainingHours).padStart(2, '0') + ':' +
-                        String(remainingMinutes).padStart(2, '0') + ':' +
-                        String(remainingSecs).padStart(2, '0');
-
-                    // Debug logging (log first update and then every 10 seconds)
-                    const shouldLog = (typeof updateHours.updateCount === 'undefined' || updateHours.updateCount === 0) ||
-                        (Math.floor(Date.now() / 1000) % 10 === 0);
-
-                    if (typeof updateHours.updateCount === 'undefined') {
-                        updateHours.updateCount = 0;
+                    // Progress bar
+                    if (hoursProgress && standardHoursSeconds > 0) {
+                        const percent = Math.min(100, (totalWorkedSeconds / standardHoursSeconds) * 100);
+                        hoursProgress.style.width = percent + '%';
+                        hoursProgress.setAttribute('aria-valuenow', percent);
                     }
-                    updateHours.updateCount++;
-
-                    // if (shouldLog) {
-                    //     console.log('🔄 Update #' + updateHours.updateCount + ':', {
+                } catch (e) {
+                    console.error('Update timer error:', e);
+                }
+            }
                     //         now: now.toLocaleTimeString(),
                     //         checkInTime: checkInHours + ':' + checkInMinutes + ':' + checkInSecs,
                     //         activeSessionSeconds: activeSessionSeconds,
