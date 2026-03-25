@@ -14,40 +14,17 @@ class AuthFilter implements FilterInterface
 
     public function before(RequestInterface $request, $arguments = null)
     {
-        $configuredKey = trim((string) (env('JWT_SECRET') ?? getenv('JWT_SECRET') ?? ''));
-        $key = strlen($configuredKey) >= 32 ? $configuredKey : self::DEFAULT_JWT_SECRET;
+        $authService = new \App\Services\AuthService($request);
 
-        $authHeader = $request->getHeaderLine('Authorization');
-        $token = null;
-        // print_r($token);
-        // die;
-        if ($authHeader) {
-            $arr = explode(' ', $authHeader);
-            if (count($arr) === 2) {
-                $token = $arr[1];
-            }
-        } else {
-            $session = session();
-            $token = $session->get('user_token');
+        if (!$authService->check()) {
+            return redirect()->to('/login')->with('error', 'Session expired or login required.');
         }
 
-        if ($token) {
-            try {
-                $decoded = JWT::decode($token, new Key($key, 'HS256'));
-                // Token is valid; proceed with the request
-                return;
-            } catch (\Exception $e) {
-                // Token is invalid or expired
-                return redirect()->to('/login')->with('error', 'Session expired. Please log in again.');
-            }
-        }
-
-        // No token found; redirect to login
-        return redirect()->to('/login')->with('error', 'You must be logged in to access this page.');
+        return;
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        // No action needed after the controller's execution
+    // No action needed after the controller's execution
     }
 }

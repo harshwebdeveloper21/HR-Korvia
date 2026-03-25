@@ -98,7 +98,7 @@ class PushNotificationController extends ResourceController
             $userModel = new \App\Models\UserModel();
             $existingUser = $userModel->find($existing['user_id']);
             
-            if ($existingUser && $existingUser['role'] !== 'admin') {
+             if ($existingUser && !in_array($existingUser['role'], ['admin', 'hr'])) {
                 // Delete non-admin subscription
                 log_message('warning', 'Deleting non-admin subscription ID: ' . $existing['id'] . ' (User: ' . $existingUser['username'] . ', Role: ' . $existingUser['role'] . ')');
                 $this->pushSubscriptionModel->delete($existing['id']);
@@ -217,7 +217,7 @@ class PushNotificationController extends ResourceController
         }
 
         // Only admin can test
-        if ($user->role !== 'admin') {
+         if (!in_array($user->role, ['admin', 'hr'])) {
             return $this->respond(['status' => 'error', 'message' => 'Only admin can test notifications'], 403);
         }
 

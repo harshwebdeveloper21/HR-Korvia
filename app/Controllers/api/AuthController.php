@@ -71,33 +71,9 @@ class AuthController extends ResourceController
             );
         }
 
-        // ✅ Remember Me (SEPARATE TOKEN)
+        // ✅ Remember Me
         if ($this->request->getPost("remember_me")) {
-            helper("text");
-
-            $rememberToken = random_string("crypto", 64);
-            $rememberTokenHash = hash("sha256", $rememberToken);
-
-            db_connect()
-                ->table("remember_tokens")
-                ->insert([
-                    "user_id" => $user["id"],
-                    "token_hash" => $rememberTokenHash,
-                    "expires_at" => date("Y-m-d H:i:s", strtotime("+30 days")),
-                ]);
-
-            // Set secure flag based on current connection (false for localhost/HTTP, true for HTTPS)
-            $secure = isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off";
-
-            setcookie(
-                "remember_me_token",
-                $rememberToken,
-                time() + 86400 * 30,
-                "/",
-                "",
-                $secure,
-                true,
-            );
+            $this->authService->rememberUser($user["id"]);
         }
 
         // Update status
@@ -108,7 +84,7 @@ class AuthController extends ResourceController
 
         return $this->respond([
             "status" => "success",
-            "token" => $jwtToken, // ✅ REAL JWT
+            "token" => $jwtToken,
             "role" => $user["role"],
             "redirect" => "/dashboard",
         ]);
@@ -124,12 +100,9 @@ class AuthController extends ResourceController
         return $this->respond($user);
     }
 
+   
     public function logout()
     {
-        $request = service("request");
-        $session = session();
-        $db = db_connect();
-
         $user = $this->authService->user();
 
         if ($user) {
@@ -141,36 +114,13 @@ class AuthController extends ResourceController
             $pushSubscriptionModel->where("user_id", $user->sub)->delete();
         }
 
-        $rememberToken = $request->getCookie("remember_me_token");
-
-        if ($rememberToken) {
-            $deleted = $db
-                ->table("remember_tokens")
-                ->where("token_hash", hash("sha256", $rememberToken))
-                ->delete();
-
-            log_message("debug", "Remember-me token delete count: " . $deleted);
-
-            setcookie(
-                "remember_me_token",
-                "",
-                time() - 3600,
-                "/",
-                "",
-                is_https(), // match secure flag
-                true,
-            );
-        } else {
-            log_message("debug", "No remember-me cookie found on logout");
-        }
-
         $this->authService->logout();
-        $session->destroy();
 
         return redirect()
             ->to("/login")
             ->with("message", "You have been logged out.");
     }
+
 
     public function display()
     {
