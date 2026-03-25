@@ -1237,20 +1237,21 @@ class AdminController extends ResourceController
                 $totalWorkedSeconds += $workHoursSeconds;
                 $completedHoursSeconds += $workHoursSeconds;
             }
-            // If this record has check-in but no check-out, it's an active session
-            // Only count the latest active session
             elseif (!empty($attendance['check_in_time']) && empty($attendance['check_out_time'])) {
                 // Only process if this is the latest active session
                 if ($isLatestRecord) {
-                    // USE strtotime with date() to ensure same timezone context as check_in_time
-                    $checkInDateTime = strtotime($today . ' ' . $attendance['check_in_time']);
-                    $currentDateTime = strtotime(date('Y-m-d H:i:s')); 
+                    // Use DateTime with explicit IST timezone to avoid system timezone issues
+                    $tz = new \DateTimeZone('Asia/Kolkata');
+                    $checkInDt = new \DateTime($today . ' ' . $attendance['check_in_time'], $tz);
+                    $currentDt  = new \DateTime('now', $tz);
                     
-                    // Calculate worked seconds for active session
-                    $activeSessionSeconds = max(0, $currentDateTime - $checkInDateTime);
+                    // Calculate worked seconds for active session (server-accurate)
+                    $activeSessionSeconds = max(0, $currentDt->getTimestamp() - $checkInDt->getTimestamp());
+                    
+                    // Store elapsed at page-load for the frontend counter
+                    $elapsedSecondsAtLoad = $activeSessionSeconds;
                     
                     // Don't subtract meal break for active session - show actual elapsed time
-                    // Meal break will be handled when they check out
                     $totalWorkedSeconds += $activeSessionSeconds;
                 }
             }
@@ -1274,10 +1275,19 @@ class AdminController extends ResourceController
         // Format standard hours
         $standardHoursFormatted = sprintf('%02d:%02d:%02d', floor($standardHoursPerDay), floor(($standardHoursPerDay - floor($standardHoursPerDay)) * 60), 0);
         
+        // Compute elapsed seconds using DateTime with IST timezone (fixes UTC system timezone bug)
+        $elapsedSecondsAtLoad = 0;
+        if ($isCheckedIn && !empty($latestCheckInTime)) {
+            $tz = new \DateTimeZone('Asia/Kolkata');
+            $checkInDt  = new \DateTime($today . ' ' . $latestCheckInTime, $tz);
+            $currentDt  = new \DateTime('now', $tz);
+            $elapsedSecondsAtLoad = max(0, $currentDt->getTimestamp() - $checkInDt->getTimestamp());
+        }
+
         return [
             'hours_worked' => $hoursWorkedFormatted,
             'hours_worked_seconds' => $totalWorkedSeconds,
-            'completed_hours_seconds' => $completedHoursSeconds, // Hours from completed sessions only
+            'completed_hours_seconds' => $completedHoursSeconds,
             'remaining_hours' => $remainingHoursFormatted,
             'remaining_hours_seconds' => $remainingSeconds,
             'standard_hours' => $standardHoursFormatted,
@@ -1287,7 +1297,8 @@ class AdminController extends ResourceController
             'is_checked_in' => $isCheckedIn,
             'is_checked_out' => $isCheckedOut,
             'check_in_time' => $latestCheckInTime,
-            'check_out_time' => $latestCheckOutTime
+            'check_out_time' => $latestCheckOutTime,
+            'elapsed_seconds_at_load' => $elapsedSecondsAtLoad  // Pre-calculated by server (IST-accurate)
         ];
     }
 }
