@@ -85,7 +85,7 @@ class ProfileController extends ResourceController
 
         // Fetch company logo and name from `company_logo` table
         $company = $this->companyLogoModel->first(); // Fetch first company record
-        $account = $this->accountdetail->first();
+        $account = $this->accountdetail->where('user_id', $user->sub)->first();
         // Fetch tasks assigned to the user
         $tasks = $this->taskModel->where('user_id', $user->sub)->findAll();
 
@@ -101,20 +101,20 @@ class ProfileController extends ResourceController
             'designation_name' => !empty($designation['designation_name']) ? $designation['designation_name'] : 'N/A',
             'department_name' => !empty($department['department_name']) ? $department['department_name'] : 'N/A',
             'city_name' => !empty($city['city_name']) ? $city['city_name'] : 'N/A',
-             'state_name' => !empty($state['state_name']) ? $state['state_name'] : 'N/A',
+            'state_name' => !empty($state['state_name']) ? $state['state_name'] : 'N/A',
             'country_name' => !empty($country['country_name']) ? $country['country_name'] : 'N/A',
             'company_name' => !empty($company['company_name']) ? $company['company_name'] : 'N/A',
             'logo_img' => !empty($company['logo_img']) ? $company['logo_img'] : 'upload/fab_logo.jpg', // Default fallback
             'profile_image' => !empty($userInfo['profile_image']) ? $userInfo['profile_image'] : 'default-profile.jpg',
-            'company_address'  => !empty($company['company_address']) ? $company['company_address'] : 'N/A', // Added
-            'company_phone'    => !empty($company['company_phone']) ? $company['company_phone'] : 'N/A',     // Added
-            'company_email'    => !empty($company['company_email']) ? $company['company_email'] : 'N/A',     // Added
-            'acc_number'    => !empty($account['acc_number']) ? $account['acc_number'] : 'N/A',     // Added
-            'bank_name'    => !empty($account['bank_name']) ? $account['bank_name'] : 'N/A',     // Added
-            'ifsc_code'    => !empty($account['ifsc_code']) ? $account['ifsc_code'] : 'N/A',     // Added
-            'acc_in_name'    => !empty($account['acc_in_name']) ? $account['acc_in_name'] : 'N/A',     // Added
-            'branch_name'    => !empty($account['branch_name']) ? $account['branch_name'] : 'N/A',     // Added
-            'branch_code'    => !empty($account['branch_code']) ? $account['branch_code'] : 'N/A',     // Added
+            'company_address' => !empty($company['company_address']) ? $company['company_address'] : 'N/A', // Added
+            'company_phone' => !empty($company['company_phone']) ? $company['company_phone'] : 'N/A', // Added
+            'company_email' => !empty($company['company_email']) ? $company['company_email'] : 'N/A', // Added
+            'acc_number' => !empty($account['acc_number']) ? $account['acc_number'] : 'N/A', // Added
+            'bank_name' => !empty($account['bank_name']) ? $account['bank_name'] : 'N/A', // Added
+            'ifsc_code' => !empty($account['ifsc_code']) ? $account['ifsc_code'] : 'N/A', // Added
+            'acc_in_name' => !empty($account['acc_in_name']) ? $account['acc_in_name'] : 'N/A', // Added
+            'branch_name' => !empty($account['branch_name']) ? $account['branch_name'] : 'N/A', // Added
+            'branch_code' => !empty($account['branch_code']) ? $account['branch_code'] : 'N/A', // Added
             'task' => $tasks
         ]);
 
@@ -140,7 +140,8 @@ class ProfileController extends ResourceController
             ]);
 
             return $this->respond(['status' => 'success', 'message' => 'Company logo uploaded successfully']);
-        } else {
+        }
+        else {
             return $this->failValidationErrors($file->getErrorString());
         }
     }
@@ -173,8 +174,8 @@ class ProfileController extends ResourceController
             'company_name' => $company ? $company['company_name'] : 'N/A',
             'logo_img' => $company ? $company['logo_img'] : 'upload/fab_logo.jpg',
             'company_address' => $company ? $company['company_address'] : 'N/A', // Added
-            'company_phone'   => $company ? $company['company_phone'] : 'N/A',   // Added
-            'company_email'   => $company ? $company['company_email'] : 'N/A',   // Added
+            'company_phone' => $company ? $company['company_phone'] : 'N/A', // Added
+            'company_email' => $company ? $company['company_email'] : 'N/A', // Added
         ]);
 
         return $this->respond([
@@ -196,7 +197,8 @@ class ProfileController extends ResourceController
             ]);
 
             return $this->respond(['status' => 'success', 'logo_img' => $newName]);
-        } else {
+        }
+        else {
             return $this->failValidationErrors($file->getErrorString());
         }
     }
