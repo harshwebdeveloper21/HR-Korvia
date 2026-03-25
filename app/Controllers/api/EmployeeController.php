@@ -1088,12 +1088,44 @@ class EmployeeController extends ResourceController
         $data = $this->request->getPost();
 
         $rules = [
-            'user_id'       => 'required|integer',
-            'bank_name'     => 'required',
-            'acc_number'    => 'required|numeric',
-            'acc_in_name'   => 'required',
-            'branch_name'   => 'required',
-            'branch_code'   => 'required'
+            'user_id' => [
+                'rules'  => 'required|integer',
+                'errors' => [
+                    'required' => 'User ID is required.',
+                    'integer'  => 'Invalid User ID.',
+                ],
+            ],
+            'bank_name' => [
+                'rules'  => 'required',
+                'errors' => [
+                    'required' => 'The Bank Name field is required.',
+                ],
+            ],
+            'acc_number' => [
+                'rules'  => 'required|numeric',
+                'errors' => [
+                    'required' => 'The Account Number field is required.',
+                    'numeric'  => 'The Account Number must contain only digits.',
+                ],
+            ],
+            'acc_in_name' => [
+                'rules'  => 'required',
+                'errors' => [
+                    'required' => 'The Account Holder Name field is required.',
+                ],
+            ],
+            'branch_name' => [
+                'rules'  => 'required',
+                'errors' => [
+                    'required' => 'The Branch Name field is required.',
+                ],
+            ],
+            'branch_code' => [
+                'rules'  => 'required',
+                'errors' => [
+                    'required' => 'The Branch Code field is required.',
+                ],
+            ],
         ];
 
         if (!$this->validate($rules)) {
