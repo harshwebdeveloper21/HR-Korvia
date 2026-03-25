@@ -1242,9 +1242,9 @@ class AdminController extends ResourceController
             elseif (!empty($attendance['check_in_time']) && empty($attendance['check_out_time'])) {
                 // Only process if this is the latest active session
                 if ($isLatestRecord) {
-                    // Calculate hours from check-in to current time using proper datetime comparison
+                    // USE strtotime with date() to ensure same timezone context as check_in_time
                     $checkInDateTime = strtotime($today . ' ' . $attendance['check_in_time']);
-                    $currentDateTime = time();
+                    $currentDateTime = strtotime(date('Y-m-d H:i:s')); 
                     
                     // Calculate worked seconds for active session
                     $activeSessionSeconds = max(0, $currentDateTime - $checkInDateTime);
