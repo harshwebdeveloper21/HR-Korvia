@@ -15,37 +15,37 @@ class AttendanceModel extends Model
 
     public function getAttendanceReport($departmentId = null, $employeeId = null, $startDate = null, $endDate = null, $year = null, $month = null)
     {
-        $attendanceModel = new AttendanceModel();
-        $query = $attendanceModel ->select('user_info.firstname, department.department_name, attendance.date, attendance.status')
-        ->join('user_info', 'user_info.user_id = attendance.user_id','left')
-        ->join('department', 'department.id = user_info.department_id','left');
+        $builder = $this->db->table('attendance');
+        $builder->select('attendance.user_id, user_info.firstname, user_info.lastname, department.department_name, attendance.date, attendance.status')
+               ->join('user_info', 'user_info.user_id = attendance.user_id', 'left')
+               ->join('department', 'department.id = user_info.department_id', 'left');
 
-            if ($departmentId) {
-                $query->where('department.id', $departmentId);
-            }
-    
-            if ($employeeId) {
-                $query->where('user_info.user_id', $employeeId);
-            }
-    
-            if ($startDate) {
-                $query->where('attendance.date >=', $startDate);
-            }
-
-            if ($endDate) {
-                $query->where('attendance.date <=', $endDate);
-            }
-
-            if ($year) {
-                $query->where('YEAR(attendance.date)', $year);
-            }
-
-            if ($month) {
-                $query->where('MONTH(attendance.date)', $month);
-            }
-    
-            return $query->orderBy('attendance.date', 'DESC')->get()->getResultArray();
+        if (!empty($employeeId) && $employeeId !== 'null' && $employeeId !== 'undefined' && $employeeId !== '') {
+            $builder->where('attendance.user_id', (int)$employeeId);
         }
+
+        if (!empty($departmentId) && $departmentId !== 'null' && $departmentId !== 'undefined' && $departmentId !== '') {
+            $builder->where('user_info.department_id', (int)$departmentId);
+        }
+
+        if (!empty($startDate)) {
+            $builder->where('attendance.date >=', $startDate);
+        }
+
+        if (!empty($endDate)) {
+            $builder->where('attendance.date <=', $endDate);
+        }
+
+        if (!empty($year)) {
+            $builder->where('YEAR(attendance.date)', $year);
+        }
+
+        if (!empty($month)) {
+            $builder->where('MONTH(attendance.date)', $month);
+        }
+
+        return $builder->orderBy('attendance.date', 'DESC')->get()->getResultArray();
+    }
         public function getHoursByStatus()
         {
             $builder = $this->db->table($this->table);

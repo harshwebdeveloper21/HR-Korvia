@@ -8,56 +8,55 @@ use App\Models\PerformanceModel;
 
 class PerformanceReportController extends Controller
 {
+    /**
+     * Render the performance report page.
+     */
     public function create()
     {
         $departmentModel = new DepartmentModel();
         $departments = $departmentModel->findAll();
 
         $userModel = new \App\Models\UserModel();
-        // Fetch employees with role 'employee'
         $employees = $userModel->whereIn('role', ['hr', 'employee'])->findAll();
-        return view('report/performanceReport',['departments'=>$departments,'employees'=>$employees]);
+
+        return view('report/performanceReport', [
+            'departments' => $departments,
+            'employees' => $employees,
+        ]);
     }
-    // public function fetchtPerformanceReport()
-    // {
-    //     if ($this->request->isAJAX()) {
-    //         $departmentId = $this->request->getPost('department_id');
-    //         $employeeId = $this->request->getPost('employee_id');
-    //         $startDate = $this->request->getPost('start_date');
-   
-    //         $performanceModel = new PerformanceModel();
 
-    //         // $reportData = $performanceModel->getperformanceReport($departmentId, $employeeId, $startDate);
-    //         // print_r($reportData);
-    //         // die;
-
-    //         $reportData = $performanceModel->where('user_id' , $employeeId)
-    //                                         ->where('review_date',$startDate)
-    //                                         ->where('user_id',$departmentId)
-    //                                        ->findAll();
-
-    //         print_r($reportData);
-    //         die;
-              
-    //         return $this->response->setJSON([
-    //             'tableData' => $reportData
-    //         ]);
-    //     }
-    // }
+    /**
+     * AJAX handler – fetch filtered performance data.
+     * Accepts: department_id, employee_id, start_date, month, year
+     */
     public function fetchtPerformanceReport()
     {
         if ($this->request->isAJAX()) {
             $departmentId = $this->request->getPost('department_id');
             $employeeId = $this->request->getPost('employee_id');
-            $startDate = date('Y-m-d', strtotime($this->request->getPost('start_date')));
+            $month = $this->request->getPost('month');   // 1-12 or empty
+            $year = $this->request->getPost('year');    // YYYY or empty
+
+            // start_date: only parse if a non-empty value was posted
+            $rawDate = $this->request->getPost('start_date');
+            $startDate = (!empty($rawDate) && strtotime($rawDate))
+                ? date('Y-m-d', strtotime($rawDate))
+                : null;
 
             $performanceModel = new PerformanceModel();
-            $reportData = $performanceModel->getperformanceReport($departmentId, $employeeId, $startDate);
+            $reportData = $performanceModel->getperformanceReport(
+                $departmentId,
+                $employeeId,
+                $startDate,
+                $month,
+                $year
+            );
 
-            // Ensure an empty array is returned if no records are found
             return $this->response->setJSON([
-                'tableData' => !empty($reportData) ? $reportData : []
+                'tableData' => !empty($reportData) ? $reportData : [],
             ]);
         }
+
+        return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid request']);
     }
 }

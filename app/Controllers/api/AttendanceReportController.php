@@ -5,9 +5,27 @@ namespace App\Controllers\Api;
 use CodeIgniter\Controller;
 use App\Models\DepartmentModel;
 use App\Models\AttendanceModel;
+use App\Models\UserInfoModel;
+use App\Models\UserModel;
 
 class AttendanceReportController extends Controller
 {
+    public function fetchEmployeesByDepartment()
+    {
+        $departmentId = $this->request->getPost('department_id');
+        $userInfoModel = new \App\Models\UserInfoModel();
+        
+        $builder = $userInfoModel->select('user_id as id, firstname, lastname');
+
+        if (!empty($departmentId) && $departmentId !== 'null') {
+            $builder->where('department_id', $departmentId);
+        }
+
+        $employees = $builder->orderBy('firstname', 'ASC')->findAll();
+        
+        return $this->response->setJSON($employees);
+    }
+
     public function create()
     {
         $departmentModel = new DepartmentModel();
@@ -20,40 +38,60 @@ class AttendanceReportController extends Controller
     }
     public function fetchAttendanceReport()
     {
-        if ($this->request->isAJAX()) {
-            $departmentId = $this->request->getPost('department_id');
-            $employeeId = $this->request->getPost('employee_id');
-            $startDate = $this->request->getPost('start_date');
-            $endDate = $this->request->getPost('end_date');
-            $year = $this->request->getPost('year');
-            $month = $this->request->getPost('month');
-    
-            $attendanceModel = new AttendanceModel();
-            $reportData = $attendanceModel->getAttendanceReport($departmentId, $employeeId, $startDate, $endDate, $year, $month);
-    
-            // Process data for the chart
-            $chartData = [];
-            foreach ($reportData as $data) {
-                $date = $data['date'];
-                if (!isset($chartData[$date])) {
-                    $chartData[$date] = 0;
-                }
-                $chartData[$date]++;
+        $departmentId = $this->request->getPost('department_id');
+        $employeeId = $this->request->getPost('employee_id');
+        $startDate = $this->request->getPost('start_date');
+        $endDate = $this->request->getPost('end_date');
+        $year = $this->request->getPost('year');
+        $month = $this->request->getPost('month');
+
+        // Debug: log what we receive
+        log_message('debug', 'AttendanceReport Filters => department_id: ' . $departmentId . ', employee_id: ' . $employeeId . ', year: ' . $year . ', month: ' . $month);
+
+        $attendanceModel = new AttendanceModel();
+        $reportData = $attendanceModel->getAttendanceReport($departmentId, $employeeId, $startDate, $endDate, $year, $month);
+
+        log_message('debug', 'AttendanceReport Result count: ' . count($reportData));
+
+        // Process data for the chart
+        $dailyUniqueUsers = [];
+        foreach ($reportData as $data) {
+            $date = $data['date'];
+            $userId = $data['user_id'] ?? null;
+            if (!isset($dailyUniqueUsers[$date])) {
+                $dailyUniqueUsers[$date] = [];
             }
-    
-            $formattedData = [];
-            foreach ($chartData as $date => $count) {
-                $formattedData[] = [
-                    'date' => $date,
-                    'attendance_count' => $count
-                ];
+            if ($userId) {
+                $dailyUniqueUsers[$date][$userId] = true;
             }
-    
-            return $this->response->setJSON([
-                'tableData' => $reportData,
-                'chartData' => $formattedData
-            ]);
         }
+
+        $formattedChartData = [];
+        foreach ($dailyUniqueUsers as $date => $users) {
+            $formattedChartData[] = [
+                'date' => $date,
+                'attendance_count' => count($users)
+            ];
+        }
+
+        // Sort chart data by date
+        usort($formattedChartData, function($a, $b) {
+            return strtotime($a['date']) - strtotime($b['date']);
+        });
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'tableData' => $reportData,
+            'chartData' => $formattedChartData,
+            'empty' => empty($reportData),
+            'debug' => [
+                'received_department_id' => $departmentId,
+                'received_employee_id' => $employeeId,
+                'received_year' => $year,
+                'received_month' => $month,
+                'result_count' => count($reportData)
+            ]
+        ]);
     }
     
 }
