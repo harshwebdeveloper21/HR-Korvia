@@ -173,18 +173,20 @@
 
     let AttendanceInstance = null;
 
-    // Helper: get fresh CSRF token from cookie
-    function getCSRFToken() {
-        let cookieName = '<?= csrf_token() ?>';
-        let csrfCookieName = 'csrf_cookie_name';
-        let match = document.cookie.match(new RegExp('(^| )' + csrfCookieName + '=([^;]+)'));
-        return match ? match[2] : '<?= csrf_hash() ?>';
-    }
+    // Store CSRF token - refreshed after every AJAX response
+    let csrfTokenName = '<?= csrf_token() ?>';
+    let csrfTokenValue = '<?= csrf_hash() ?>';
 
     function getCSRFData() {
         let data = {};
-        data['<?= csrf_token() ?>'] = getCSRFToken();
+        data[csrfTokenName] = csrfTokenValue;
         return data;
+    }
+
+    function refreshCSRF(response) {
+        if (response && response.csrfHash) {
+            csrfTokenValue = response.csrfHash;
+        }
     }
 
     function loadEmployees(departmentId) {
@@ -201,8 +203,10 @@
                 department_id: departmentId
             },
             success: function (response) {
+                // Update CSRF token for next request
+                refreshCSRF(response);
+
                 employeeSelect.innerHTML = '<option value="">All Employees</option>';
-                // This route returns { employees: [...], csrfHash: '...' }
                 const list = response.employees || response;
                 if (Array.isArray(list)) {
                     list.forEach(emp => {
@@ -228,7 +232,6 @@
         const year = document.getElementById('year').value;
         const month = document.getElementById('month').value;
 
-        console.log("Fetching report with:", { departmentId, employeeId, startDate, endDate, year, month });
         clearValidationMessages();
 
         $.ajax({
@@ -245,8 +248,8 @@
                 month: month
             },
             success: function (response) {
-                console.log("AJAX Response:", response);
-                console.log("Sent employee_id:", employeeId);
+                // Update CSRF token for next request
+                refreshCSRF(response);
 
                 if (response && response.tableData && Array.isArray(response.tableData)) {
                     populateTable(response.tableData);
