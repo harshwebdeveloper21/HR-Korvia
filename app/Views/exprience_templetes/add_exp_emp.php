@@ -248,7 +248,12 @@
                         }
                     },
                     error: function() {
-                        alert("Failed to fetch joining date.");
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to fetch joining date.',
+                            confirmButtonColor: '#d33'
+                        });
                         $('#from_date').val('');
                     }
                 });

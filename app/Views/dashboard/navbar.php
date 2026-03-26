@@ -1039,7 +1039,12 @@ $role = $user ? $user->role : null;
                 loadNotifications(); // Reload notifications after clearing
             },
             error: function(xhr) {
-                alert('Failed to clear notifications');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to clear notifications',
+                    confirmButtonColor: '#d33'
+                });
             }
         });
     });
@@ -1996,7 +2001,12 @@ $role = $user ? $user->role : null;
     // Request notification permission (called when user clicks enable button)
     async function requestNotificationPermission() {
         if (!('Notification' in window)) {
-            alert('Notifications are not supported in this browser');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Not Supported',
+                text: 'Notifications are not supported in this browser',
+                confirmButtonColor: '#3085d6'
+            });
             return;
         }
 
@@ -2022,13 +2032,23 @@ $role = $user ? $user->role : null;
                     });
                 }
             } else if (permission === 'denied') {
-                alert('Notification permission was denied. Please enable it in your browser settings to receive push notifications.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Permission Denied',
+                    text: 'Notification permission was denied. Please enable it in your browser settings to receive push notifications.',
+                    confirmButtonColor: '#d33'
+                });
             } else {
                 console.log('Notification permission dismissed');
             }
         } catch (error) {
             console.error('Error requesting notification permission:', error);
-            alert('Error requesting notification permission. Please try again.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error requesting notification permission. Please try again.',
+                confirmButtonColor: '#d33'
+            });
         }
     }
 

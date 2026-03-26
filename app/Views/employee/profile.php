@@ -795,7 +795,12 @@
                     }
                 },
                 error: function(xhr) {
-                    alert('Server error: ' + xhr.responseText);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Server Error',
+                        text: 'Server error: ' + xhr.responseText,
+                        confirmButtonColor: '#d33'
+                    });
                 }
             });
         });
@@ -844,11 +849,21 @@
 
                         $('#editAddressModal').modal('show');
                     } else {
-                        alert('User not found');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Not Found',
+                            text: 'User not found',
+                            confirmButtonColor: '#d33'
+                        });
                     }
                 },
                 error: function() {
-                    alert('Error fetching address data.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error fetching address data.',
+                        confirmButtonColor: '#d33'
+                    });
                 }
             });
         });
@@ -888,7 +903,12 @@
                     }
                 },
                 error: function() {
-                    alert('Server error while updating address.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Server Error',
+                        text: 'Server error while updating address.',
+                        confirmButtonColor: '#d33'
+                    });
                 }
             });
         });
@@ -912,11 +932,21 @@
 
                         $('#editBankModal').modal('show');
                     } else {
-                        alert('Bank data not found');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Not Found',
+                            text: 'Bank data not found',
+                            confirmButtonColor: '#d33'
+                        });
                     }
                 },
                 error: function() {
-                    alert('Server error fetching bank details');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Server Error',
+                        text: 'Server error fetching bank details',
+                        confirmButtonColor: '#d33'
+                    });
                 }
             });
         });
@@ -945,7 +975,12 @@
                     }
                 },
                 error: function() {
-                    alert('Error submitting bank details');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error submitting bank details',
+                        confirmButtonColor: '#d33'
+                    });
                 }
             });
         });
@@ -994,11 +1029,21 @@
 
                         $('#editJobModal').modal('show');
                     } else {
-                        alert('User not found');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Not Found',
+                            text: 'User not found',
+                            confirmButtonColor: '#d33'
+                        });
                     }
                 },
                 error: function() {
-                    alert('Error fetching address data.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error fetching address data.',
+                        confirmButtonColor: '#d33'
+                    });
                 }
             });
         });
@@ -1033,14 +1078,24 @@
                         if (response.errors) {
                             // Show validation errors
                             console.error(response.errors);
-                            alert('Please fill all required fields correctly.');
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Validation Error',
+                                text: 'Please fill all required fields correctly.',
+                                confirmButtonColor: '#3085d6'
+                            });
                         } else {
                             Swal.fire(response.message || 'Something went wrong!');;
                         }
                     }
                 },
                 error: function() {
-                    alert('An error occurred while updating job data.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while updating job data.',
+                        confirmButtonColor: '#d33'
+                    });
                 }
             });
         });

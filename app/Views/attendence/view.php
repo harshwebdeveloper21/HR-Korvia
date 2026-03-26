@@ -972,14 +972,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 bootstrap.Modal
                     .getInstance(document.getElementById('attendanceEditModal'))
                     .hide();
-                alert('Attendance updated successfully!');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Attendance updated successfully!',
+                    confirmButtonColor: '#3085d6'
+                });
             } else {
-                alert('Error updating attendance: ' + (data.message || 'Unknown error'));
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error updating attendance: ' + (data.message || 'Unknown error'),
+                    confirmButtonColor: '#d33'
+                });
             }
         })
         .catch(err => {
             console.error('Error:', err);
-            alert('Failed to update attendance');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to update attendance',
+                confirmButtonColor: '#d33'
+            });
         });
     }
 
@@ -1024,7 +1039,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkOut = document.getElementById('check_out_time').value;
 
         if (!fromDate || !toDate) {
-            alert('Please select date range');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please select date range',
+                confirmButtonColor: '#3085d6'
+            });
             return;
         }
 
@@ -1047,9 +1067,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 bootstrap.Modal
                 .getInstance(document.getElementById('attendanceBulkModal'))
                 .hide();
-                alert('Attendance updated successfully');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Attendance updated successfully',
+                    confirmButtonColor: '#3085d6'
+                });
             } else {
-                alert(res.message || 'Failed');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: res.message || 'Failed',
+                    confirmButtonColor: '#d33'
+                });
             }
         });
     }
