@@ -756,7 +756,12 @@
                         calculateNetSalary();
                     },
                     error: function() {
-                        alert('Failed to fetch leave details.');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to fetch leave details.',
+                            confirmButtonColor: '#d33'
+                        });
                     }
                 });
             }

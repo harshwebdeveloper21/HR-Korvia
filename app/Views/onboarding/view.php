@@ -476,7 +476,12 @@
                 window.URL.revokeObjectURL(link.href);
             },
             error: function() {
-                alert('Failed to download offer letter.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to download offer letter.',
+                    confirmButtonColor: '#d33'
+                });
             }
         });
     });

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <form id="multiStepForm" method="post">
@@ -81,10 +82,20 @@
                     method: 'POST',
                     data: formData,
                     success: function(response) {
-                        alert('Form submitted successfully!');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Form submitted successfully!',
+                            confirmButtonColor: '#3085d6'
+                        });
                     },
                     error: function(xhr, status, error) {
-                        alert('Error occurred during submission.');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error occurred during submission.',
+                            confirmButtonColor: '#d33'
+                        });
                     }
                 });
             });

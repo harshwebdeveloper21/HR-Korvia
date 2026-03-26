@@ -1083,7 +1083,12 @@
                             $('meta[name="csrf-token"]').attr('content', response.csrf_token);
                         }
                     } else {
-                        alert('Error: ' + response.message);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error: ' + response.message,
+                            confirmButtonColor: '#d33'
+                        });
                     }
                 },
                 error: function(xhr) {
