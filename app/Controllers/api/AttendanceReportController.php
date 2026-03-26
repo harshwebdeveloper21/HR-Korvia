@@ -80,16 +80,17 @@ class AttendanceReportController extends Controller
         });
 
         return $this->response->setJSON([
-            'status' => 'success',
+            'status'    => 'success',
             'tableData' => $reportData,
             'chartData' => $formattedChartData,
-            'empty' => empty($reportData),
-            'debug' => [
+            'empty'     => empty($reportData),
+            'csrfHash'  => csrf_hash(),
+            'debug'     => [
                 'received_department_id' => $departmentId,
-                'received_employee_id' => $employeeId,
-                'received_year' => $year,
-                'received_month' => $month,
-                'result_count' => count($reportData)
+                'received_employee_id'   => $employeeId,
+                'received_year'          => $year,
+                'received_month'         => $month,
+                'result_count'           => count($reportData)
             ]
         ]);
     }
