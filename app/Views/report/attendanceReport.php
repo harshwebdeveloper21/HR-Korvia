@@ -193,7 +193,7 @@
         employeeSelect.innerHTML = '<option value="">All Employees</option>';
 
         $.ajax({
-            url: "<?= site_url("report/fetchAttendanceEmployeesByDepartment") ?>",
+            url: "<?= site_url("report/fetchEmployeesByDepartment") ?>",
             type: "POST",
             dataType: "json",
             data: {
@@ -202,17 +202,19 @@
             },
             success: function (response) {
                 employeeSelect.innerHTML = '<option value="">All Employees</option>';
-                if (Array.isArray(response)) {
-                    response.forEach(emp => {
-                        employeeSelect.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
+                // This route returns { employees: [...], csrfHash: '...' }
+                const list = response.employees || response;
+                if (Array.isArray(list)) {
+                    list.forEach(emp => {
+                        const name = (emp.firstname || '') + ' ' + (emp.lastname || '');
+                        employeeSelect.innerHTML += `<option value="${emp.id}">${name.trim()}</option>`;
                     });
                 }
                 // Fetch report AFTER employees are loaded
                 fetchAttenReport();
             },
             error: function (xhr) {
-                console.error("Error loading employees:", xhr.responseText);
-                // Still fetch report even if employee load fails
+                console.error("Error loading employees:", xhr.status, xhr.responseText);
                 fetchAttenReport();
             }
         });
