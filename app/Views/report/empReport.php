@@ -99,7 +99,7 @@
         <!-- Department -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Department:</label>
-            <select id="department_id" name="department_id" class="form-select">
+            <select id="department_id" name="department_id" class="form-select" onchange="loadEmployees(this.value)">
                 <option value="">All Departments</option>
                 <?php foreach ($departments as $department): ?>
                     <option value="<?= $department["id"] ?>"><?= $department["department_name"] ?></option>
@@ -222,6 +222,33 @@
     }
 
 
+
+    // ── CSRF token store (refreshed after every AJAX response) ──
+    let csrfTokenName  = '<?= csrf_token() ?>';
+    let csrfTokenValue = '<?= csrf_hash() ?>';
+    function getCSRFData() { let d = {}; d[csrfTokenName] = csrfTokenValue; return d; }
+    function refreshCSRF(r) { if (r && r.csrfHash) csrfTokenValue = r.csrfHash; }
+
+    // ── Load employees when department changes ──
+    function loadEmployees(departmentId) {
+        const sel = document.getElementById('user_id');
+        sel.innerHTML = '<option value="">All Employees</option>';
+        $.ajax({
+            url: '<?= site_url("report/fetchEmployeesByDepartment") ?>',
+            type: 'POST',
+            dataType: 'json',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            data: { ...getCSRFData(), department_id: departmentId },
+            success: function(response) {
+                refreshCSRF(response);
+                const list = response.employees || [];
+                list.forEach(emp => {
+                    sel.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
+                });
+            },
+            error: function(xhr) { console.error('loadEmployees error:', xhr.status, xhr.responseText); }
+        });
+    }
 
     function fetchSalaryReport() {
 
@@ -374,44 +401,7 @@
         });
     }
 
-    $('#department_id').on('change', function () {
-        let departmentId = $(this).val();
-        const token = localStorage.getItem('token');
-        
-        $.ajax({
-            url: "<?= site_url('report/fetchEmployeesByDepartment') ?>",
-            type: "POST",
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-            data: {
-                ...getCSRFData(),
-                department_id: departmentId
-            },
-            dataType: "json",
-            success: function (response) {
-                // if (response.csrfHash) {
-                //     localStorage.setItem('token', response.csrfHash);
-                // }
-                if (response.csrfHash) {
-                    $('meta[name="csrf-token"]').attr('content', response.csrfHash);
-                }
-                if (response.summary) {
-                    renderSummary(response.summary);
-                }
-
-                let employeeSelect = $('#user_id');
-                employeeSelect.empty();
-                employeeSelect.append(`<option value="">All Employees</option>`);
-
-                response.employees.forEach(emp => {
-                    employeeSelect.append(
-                        `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`
-                    );
-                });
-            }
-        });
-    });
+    // ── Department change: now handled by loadEmployees() above ──
 
     function renderSummary(summary) {
         let container = $('#departmentSummary');

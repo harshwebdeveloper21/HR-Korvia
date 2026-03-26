@@ -252,7 +252,7 @@ $role = $user ? $user->role : null;
         <div class="collapse" id="eomletter">
           <ul class="nav flex-column sub-menu">
             <li class="nav-item"> <a class="nav-link" href="/all-empof-month">All EOM</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/addemp-month-performance">EOM Genrate</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/addemp-month-performance">EOM Generate</a></li>
              <li class="nav-item"> <a class="nav-link" href="/emp-month-view">EOM Templates</a></li>
           </ul>
         </div>

@@ -70,7 +70,7 @@
         <!-- Department -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="department_id" class="form-label">Department:</label>
-            <select id="department_id" name="department_id" class="form-select">
+            <select id="department_id" name="department_id" class="form-select" onchange="loadEmployees(this.value)">
                 <option value="" disabled selected>Select Department</option>
                 <?php foreach ($departments as $department): ?>
                     <option value="<?= $department["id"] ?>"><?= $department["department_name"] ?></option>
@@ -83,9 +83,6 @@
             <label for="user_id" class="form-label">Employee:</label>
             <select id="user_id" name="user_id" class="form-select">
                 <option value="" disabled selected>Select Employee</option>
-                <?php foreach ($employees as $employee): ?>
-                    <option value="<?= $employee["id"] ?>"><?= esc($employee["username"]) ?></option>
-                <?php endforeach; ?>
             </select>
         </div>
 
@@ -177,6 +174,36 @@ function displayValidationMessage(inputId, message) {
 }
 function clearValidationMessages() {
     document.querySelectorAll(".validation-msg").forEach(m => m.remove());
+}
+
+/* ============================================================
+   CSRF token store (refreshed after every AJAX response)
+   ============================================================ */
+let csrfTokenName  = '<?= csrf_token() ?>';
+let csrfTokenValue = '<?= csrf_hash() ?>';
+function getCSRFData() { let d = {}; d[csrfTokenName] = csrfTokenValue; return d; }
+function refreshCSRF(r) { if (r && r.csrfHash) csrfTokenValue = r.csrfHash; }
+
+/* ============================================================
+   Load employees when department changes
+   ============================================================ */
+function loadEmployees(departmentId) {
+    const sel = document.getElementById('user_id');
+    sel.innerHTML = '<option value="" disabled selected>Select Employee</option>';
+    $.ajax({
+        url: '<?= site_url("report/fetchEmployeesByDepartment") ?>',
+        type: 'POST',
+        dataType: 'json',
+        data: { ...getCSRFData(), department_id: departmentId },
+        success: function(response) {
+            refreshCSRF(response);
+            const list = response.employees || [];
+            list.forEach(emp => {
+                sel.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
+            });
+        },
+        error: function(xhr) { console.error('loadEmployees error:', xhr.status, xhr.responseText); }
+    });
 }
 
 /* ============================================================

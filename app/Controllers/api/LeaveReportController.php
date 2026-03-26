@@ -13,15 +13,18 @@ class LeaveReportController extends Controller
     public function create()
     {
         $userModel = new \App\Models\UserModel();
-        // Fetch employees with role 'employee'
         $employees = $userModel->whereIn('role', ['hr', 'employee'])->findAll();
 
         $leaveTypeModel = new \App\Models\LeaveTypeModel();
         $leaveTypes = $leaveTypeModel->findAll();
 
+        $departmentModel = new \App\Models\DepartmentModel();
+        $departments = $departmentModel->findAll();
+
         return view('report/leaveReport', [
-            'employees' => $employees,
-            'leaveTypes' => $leaveTypes
+            'employees'  => $employees,
+            'leaveTypes' => $leaveTypes,
+            'departments' => $departments
         ]);
     }
 public function fetchLeaveReport()
