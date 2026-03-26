@@ -95,16 +95,16 @@ class EmployeeReportController extends ResourceController
 
         $userModel = new UserModel();
 
-        $builder = $userModel->where('users.role', 'employee');
+        $builder = $userModel
+            ->select('users.id, user_info.firstname, user_info.lastname')
+            ->join('user_info', 'user_info.user_id = users.id', 'left')
+            ->whereIn('users.role', ['hr', 'employee']);
 
         if (!empty($departmentId)) {
-            $builder->join('user_info', 'user_info.user_id = users.id')
-                    ->where('user_info.department_id', $departmentId);
+            $builder->where('user_info.department_id', $departmentId);
         }
 
-        $employees = $builder->select('users.id, user_info.firstname, user_info.lastname')
-                            ->orderBy('firstname', 'ASC')
-                            ->findAll();
+        $employees = $builder->orderBy('user_info.firstname', 'ASC')->findAll();
 
         return $this->response->setJSON([
             'employees' => $employees,
