@@ -56,8 +56,7 @@
         <!-- Department -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Department:</label>
-            <select id="department_id" name="department_id" class="form-select"
-                onchange="loadEmployees(this.value); fetchAttenReport();">
+            <select id="department_id" name="department_id" class="form-select" onchange="loadEmployees(this.value);">
                 <option value="">All Departments</option>
                 <?php foreach ($departments as $department): ?>
                     <option value="<?= $department["id"] ?>"><?= $department["department_name"] ?></option>
@@ -174,23 +173,47 @@
 
     let AttendanceInstance = null;
 
+    // Helper: get fresh CSRF token from cookie
+    function getCSRFToken() {
+        let cookieName = '<?= csrf_token() ?>';
+        let csrfCookieName = 'csrf_cookie_name';
+        let match = document.cookie.match(new RegExp('(^| )' + csrfCookieName + '=([^;]+)'));
+        return match ? match[2] : '<?= csrf_hash() ?>';
+    }
+
+    function getCSRFData() {
+        let data = {};
+        data['<?= csrf_token() ?>'] = getCSRFToken();
+        return data;
+    }
+
     function loadEmployees(departmentId) {
+        // Reset employee dropdown immediately
+        const employeeSelect = document.getElementById('user_id');
+        employeeSelect.innerHTML = '<option value="">All Employees</option>';
+
         $.ajax({
             url: "<?= site_url("report/fetchAttendanceEmployeesByDepartment") ?>",
             type: "POST",
+            dataType: "json",
             data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                ...getCSRFData(),
                 department_id: departmentId
             },
             success: function (response) {
-                const employeeSelect = document.getElementById('user_id');
                 employeeSelect.innerHTML = '<option value="">All Employees</option>';
-                response.forEach(emp => {
-                    employeeSelect.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
-                });
+                if (Array.isArray(response)) {
+                    response.forEach(emp => {
+                        employeeSelect.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
+                    });
+                }
+                // Fetch report AFTER employees are loaded
+                fetchAttenReport();
             },
             error: function (xhr) {
                 console.error("Error loading employees:", xhr.responseText);
+                // Still fetch report even if employee load fails
+                fetchAttenReport();
             }
         });
     }
@@ -211,7 +234,7 @@
             type: "POST",
             dataType: "json",
             data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                ...getCSRFData(),
                 department_id: departmentId,
                 employee_id: employeeId,
                 start_date: startDate,

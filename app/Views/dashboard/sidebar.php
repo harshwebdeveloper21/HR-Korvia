@@ -216,10 +216,9 @@ $role = $user ? $user->role : null;
             <li class="nav-item"> <a class="nav-link" href="/leavetypeview">Leave Types</a></li>
             <li class="nav-item"> <a class="nav-link" href="/locationview">Job Location</a></li>
             <li class="nav-item"> <a class="nav-link" href="/addressview">Job Addresses</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/applyjob">Apply Job</a></li>
+            <!-- <li class="nav-item"> <a class="nav-link" href="/applyjob">Apply Job</a></li> -->
             <li class="nav-item"> <a class="nav-link" href="/SMTPemail">SMTP Mail</a></li>
             <li class="nav-item"> <a class="nav-link" href="/offer-templates-view">Offer Letter Templates</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/emp-month-view">EOM Templates</a></li>
             <li class="nav-item"> <a class="nav-link" href="/view-rules">Company Rules</a></li>
             <li class="nav-item"> <a class="nav-link" href="/creates-rules">Company Rules</a></li>
             <li class="nav-item"> <a class="nav-link" href="/holidays">Holidays</a></li>
@@ -254,6 +253,7 @@ $role = $user ? $user->role : null;
           <ul class="nav flex-column sub-menu">
             <li class="nav-item"> <a class="nav-link" href="/all-empof-month">All EOM</a></li>
             <li class="nav-item"> <a class="nav-link" href="/addemp-month-performance">EOM Genrate</a></li>
+             <li class="nav-item"> <a class="nav-link" href="/emp-month-view">EOM Templates</a></li>
           </ul>
         </div>
       </li> 
