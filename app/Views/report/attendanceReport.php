@@ -2,8 +2,8 @@
 <?= $this->section("content") ?>
 <!-- <link rel="stylesheet" href="assets/css/attendancereport.css"> -->
 <link rel="stylesheet" href="<?= base_url(
-                                    env("ImagePath") . "assets/css/attendancereport.css",
-                                ) ?>">
+    env("ImagePath") . "assets/css/attendancereport.css",
+) ?>">
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <style>
@@ -43,18 +43,21 @@
             <h4 class="card-title fw-bolder mb-0">Attendance Report</h4>
         </div>
         <div class="d-flex align-items-center">
-            <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchAttenReport()">Generate Report</button>
+            <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchAttenReport()">Generate
+                Report</button>
         </div>
     </div>
-    
-    <button id="toggleFilters" class="btn btnpdingam hr-btnbg mx-0 w-100 d-md-none" onclick="toggleFilters()">Filters</button>
+
+    <button id="toggleFilters" class="btn btnpdingam hr-btnbg mx-0 w-100 d-md-none"
+        onclick="toggleFilters()">Filters</button>
 
     <!-- Filter Row -->
     <div id="filters-row" class="row g-3">
         <!-- Department -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Department:</label>
-            <select id="department_id" name="department_id" class="form-select">
+            <select id="department_id" name="department_id" class="form-select"
+                onchange="loadEmployees(this.value); fetchAttenReport();">
                 <option value="">All Departments</option>
                 <?php foreach ($departments as $department): ?>
                     <option value="<?= $department["id"] ?>"><?= $department["department_name"] ?></option>
@@ -65,12 +68,12 @@
         <!-- Employee -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Employee:</label>
-            <select id="user_id" name="user_id" class="form-select">
+            <select id="user_id" name="user_id" class="form-select" onchange="fetchAttenReport();">
                 <option value="">All Employees</option>
                 <?php foreach ($employees as $employee): ?>
                     <option value="<?= $employee["id"] ?>"><?= esc(
-                                                                $employee["username"],
-                                                            ) ?></option>
+                          $employee["username"] ?? ''
+                      ) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -78,11 +81,11 @@
         <!-- Year -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Year:</label>
-            <select id="year" name="year" class="form-select">
+            <select id="year" name="year" class="form-select" onchange="fetchAttenReport();">
                 <option value="">All Years</option>
                 <?php
                 $currentYear = date('Y');
-                for ($i = $currentYear; $i >= $currentYear - 10; $i--): ?>
+                for ($i = $currentYear; $i >= $currentYear - 5; $i--): ?>
                     <option value="<?= $i ?>" <?= $i == $currentYear ? 'selected' : '' ?>><?= $i ?></option>
                 <?php endfor; ?>
             </select>
@@ -91,7 +94,7 @@
         <!-- Month -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Month:</label>
-            <select id="month" name="month" class="form-select">
+            <select id="month" name="month" class="form-select" onchange="fetchAttenReport();">
                 <option value="">All Months</option>
                 <option value="1">January</option>
                 <option value="2">February</option>
@@ -111,13 +114,13 @@
         <!-- Start Date -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">From Date:</label>
-            <input type="date" id="start_date" class="form-control" placeholder="Select Start Date">
+            <input type="date" id="start_date" class="form-control" onchange="fetchAttenReport();">
         </div>
 
         <!-- End Date -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">To Date:</label>
-            <input type="date" id="end_date" class="form-control" placeholder="Select End Date">
+            <input type="date" id="end_date" class="form-control" onchange="fetchAttenReport();">
         </div>
     </div>
 
@@ -171,6 +174,27 @@
 
     let AttendanceInstance = null;
 
+    function loadEmployees(departmentId) {
+        $.ajax({
+            url: "<?= site_url("report/fetchAttendanceEmployeesByDepartment") ?>",
+            type: "POST",
+            data: {
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                department_id: departmentId
+            },
+            success: function (response) {
+                const employeeSelect = document.getElementById('user_id');
+                employeeSelect.innerHTML = '<option value="">All Employees</option>';
+                response.forEach(emp => {
+                    employeeSelect.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
+                });
+            },
+            error: function (xhr) {
+                console.error("Error loading employees:", xhr.responseText);
+            }
+        });
+    }
+
     function fetchAttenReport() {
         const departmentId = document.getElementById("department_id").value;
         const employeeId = document.getElementById('user_id').value;
@@ -178,13 +202,16 @@
         const endDate = document.getElementById('end_date').value;
         const year = document.getElementById('year').value;
         const month = document.getElementById('month').value;
+
+        console.log("Fetching report with:", { departmentId, employeeId, startDate, endDate, year, month });
         clearValidationMessages();
 
         $.ajax({
             url: "<?= site_url("report/fetchAttendanceReport") ?>",
             type: "POST",
+            dataType: "json",
             data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>', // Add CSRF token here
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
                 department_id: departmentId,
                 employee_id: employeeId,
                 start_date: startDate,
@@ -192,20 +219,15 @@
                 year: year,
                 month: month
             },
-            headers: {
-                'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
-            },
-            success: function(response) {
-                // Debugging: Log the entire response to inspect its structure
+            success: function (response) {
                 console.log("AJAX Response:", response);
+                console.log("Sent employee_id:", employeeId);
 
-                // Ensure the response contains the necessary data
                 if (response && response.tableData && Array.isArray(response.tableData)) {
-
                     populateTable(response.tableData);
-                    document.getElementById("table-section").style.display = "block"; // Show Table
+                    document.getElementById("table-section").style.display = "block";
                 } else {
-                    document.getElementById("table-section").style.display = "none"; // Hide Table
+                    document.getElementById("table-section").style.display = "none";
                     console.error("Invalid data for the table:", response);
                 }
 
@@ -213,13 +235,19 @@
                     updateChart(response.chartData);
                 }
             },
-            error: function(xhr) {
-                console.error(xhr.responseText);
+            error: function (xhr) {
+                console.error("AJAX Error:", xhr.status, xhr.responseText);
             }
         });
     }
 
     function populateTable(data) {
+        // IMPORTANT: Destroy DataTable FIRST before touching the DOM
+        // Otherwise destroy() puts cached old rows back into the tbody
+        if ($.fn.DataTable.isDataTable('#attendanceTable')) {
+            $('#attendanceTable').DataTable().clear().destroy();
+        }
+
         const tableBody = document.getElementById('attendance-body');
         tableBody.innerHTML = "";
 
@@ -231,16 +259,30 @@
         data.forEach(row => {
             tableBody.innerHTML += `
                 <tr>
-                    <td class="capitalize-text">${row.firstname}</td>
-                    <td class="capitalize-text">${row.department_name}</td>
+                    <td class="capitalize-text">${row.firstname} ${row.lastname || ''}</td>
+                    <td class="capitalize-text">${row.department_name || 'N/A'}</td>
                     <td class="capitalize-text">${row.date}</td>
                     <td class="capitalize-text">${row.status || 'N/A'}</td>
                 </tr>
             `;
         });
 
-        // Initialize DataTable after populating
-        initializeAttendanceDataTable();
+        // Now initialize fresh DataTable with the new rows only
+        $('#attendanceTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "responsive": true,
+            "pageLength": 10,
+            "language": {
+                "search": "Search attendance:",
+                "lengthMenu": "Show _MENU_ entries",
+                "info": "Showing _START_ to _END_ of _TOTAL_ records",
+                "infoEmpty": "No records found",
+                "zeroRecords": "No matching records found"
+            }
+        });
     }
 
     function updateChart(data) {
@@ -322,9 +364,9 @@
         if (el) el.classList.toggle('d-none');
     }
 
-    // Ensure DataTables scripts are loaded before initial fetch
-    $(document).ready(function() {
-        fetchAttenReport();
+    // Table starts empty - data loads only when user selects filters or clicks Generate Report
+    $(document).ready(function () {
+        // Do not auto-fetch on page load
     });
 </script>
 

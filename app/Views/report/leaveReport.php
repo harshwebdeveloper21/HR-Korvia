@@ -1,11 +1,10 @@
 <?= $this->extend("layout") ?>
 <?= $this->section("content") ?>
-<!-- <link rel="stylesheet" href="assets/css/empreport.css"> -->
-<link rel="stylesheet" href="<?= base_url(
-                                    env("ImagePath") . "assets/css/empreport.css",
-                                ) ?>">
-<!-- DataTables CSS -->
+
+<link rel="stylesheet" href="<?= base_url(env("ImagePath") . "assets/css/empreport.css") ?>">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
     .capitalize-text {
         text-transform: capitalize;
@@ -40,28 +39,32 @@
         }
     }
 </style>
+
 <div class="filter-section">
     <!-- Header -->
-
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="header-controls">
             <h4 class="card-title fw-bolder mb-0">Leave Report</h4>
         </div>
         <div class="d-flex align-items-center">
-
-            <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchLeaveReport()">Generate Report</button>
+            <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchLeaveReport()">Generate
+                Report</button>
         </div>
     </div>
-    <button id="toggleFilters" class="btn btnpdingam hr-btnbg mx-0 w-100 d-md-none" onclick="toggleFilters()">Filters</button>
+
+    <button id="toggleFilters" class="btn btnpdingam hr-btnbg mx-0 w-100 d-md-none"
+        onclick="toggleFilters()">Filters</button>
+
     <!-- Filter Form -->
     <div id="filters-row" class="row g-3">
+
         <!-- Employee/HR -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="user_id" class="form-label">Employee/HR:</label>
             <select class="form-select" id="user_id">
                 <option value="">All Employees</option>
                 <?php foreach ($employees as $employee): ?>
-                    <option value="<?= $employee["id"] ?>"><?= esc($employee["username"],) ?></option>
+                    <option value="<?= $employee["id"] ?>"><?= esc($employee["username"]) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -158,25 +161,31 @@
     </div>
 </div>
 
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    function displayValidationMessage(inputId, message) {
-        const inputElement = document.getElementById(inputId);
-        const errorElement = document.createElement("div");
-        errorElement.className = "text-danger mt-1";
-        errorElement.innerText = message;
-
-        // Insert the error message after the input field
-        inputElement.parentNode.appendChild(errorElement);
-    }
-
-    // Function to clear all validation messages
-    function clearValidationMessages() {
-        const errorMessages = document.querySelectorAll(".text-danger");
-        errorMessages.forEach(message => message.remove());
-    }
     let leaveChartInstance = null;
+    let leaveDataTable = null;
 
+    /* ── Scoped validation helpers ───────────────────────────────── */
+    function displayValidationMessage(inputId, message) {
+        const el = document.getElementById(inputId);
+        const old = el.parentNode.querySelector('.leave-validation-msg');
+        if (old) old.remove();
+        const div = document.createElement('div');
+        div.className = 'text-danger mt-1 leave-validation-msg';
+        div.innerText = message;
+        el.parentNode.appendChild(div);
+    }
+
+    /* Only removes THIS page's own validation messages — NOT navbar/sidebar */
+    function clearValidationMessages() {
+        document.querySelectorAll('.leave-validation-msg').forEach(m => m.remove());
+    }
+
+    /* ── Fetch ───────────────────────────────────────────────────── */
     function fetchLeaveReport() {
         const employeeId = document.getElementById('user_id').value;
         const leaveType = document.getElementById('leave_type').value;
@@ -185,13 +194,14 @@
         const month = document.getElementById('month').value;
         const startDate = document.getElementById('start_date').value;
         const endDate = document.getElementById('end_date').value;
+
         clearValidationMessages();
 
         $.ajax({
-            url: "<?= site_url("report/fetchLeaveReport") ?>",
-            type: "POST",
+            url: '<?= site_url("report/fetchLeaveReport") ?>',
+            type: 'POST',
             data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>', // Add CSRF token here
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
                 employee_id: employeeId,
                 leave_type: leaveType,
                 status: status,
@@ -200,55 +210,73 @@
                 start_date: startDate,
                 end_date: endDate
             },
-            success: function(response) {
-                // Debugging: Log the entire response to inspect its structure
-                console.log("AJAX Response:", response);
-
-                // Ensure the response contains the necessary data
+            success: function (response) {
                 if (response && response.tableData && Array.isArray(response.tableData)) {
-
                     populateTable(response.tableData);
-                    document.getElementById("table-section").style.display = "block"; // Show Table
+                    document.getElementById('table-section').style.display = 'block';
                 } else {
-                    document.getElementById("table-section").style.display = "none"; // Hide Table
-                    console.error("Invalid data for the table:", response);
+                    document.getElementById('table-section').style.display = 'none';
                 }
 
-                if (response.chartData) {
+                if (response && response.chartData) {
                     updateChart(response.chartData);
                 }
             },
-            error: function(xhr) {
-                console.error(xhr.responseText);
+            error: function (xhr) {
+                console.error('Leave report error:', xhr.responseText);
             }
         });
     }
 
+    /* ── Table ───────────────────────────────────────────────────── */
     function populateTable(data) {
-        const tableBody = document.getElementById('leave-table-body');
-        tableBody.innerHTML = "";
+        const tbody = document.getElementById('leave-table-body');
+        tbody.innerHTML = '';
 
         if (!data.length) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+            document.getElementById('table-section').style.display = 'block';
             return;
         }
 
         data.forEach(row => {
-            tableBody.innerHTML += `
+            tbody.innerHTML += `
             <tr>
-                <td class="capitalize-text">${row.username}</td>
-                <td class="capitalize-text">${row.leave_type}</td>
-                <td class="capitalize-text">${row.start_date}</td>
-                <td class="capitalize-text">${row.end_date}</td>
+                <td class="capitalize-text">${row.username || 'N/A'}</td>
+                <td class="capitalize-text">${row.leave_type || 'N/A'}</td>
+                <td class="capitalize-text">${row.start_date || 'N/A'}</td>
+                <td class="capitalize-text">${row.end_date || 'N/A'}</td>
                 <td class="capitalize-text">${row.status || 'N/A'}</td>
-            </tr>
-        `;
+            </tr>`;
         });
 
-        // Initialize DataTable after populating
         initializeLeaveDataTable();
     }
 
+    /* ── DataTable ───────────────────────────────────────────────── */
+    function initializeLeaveDataTable() {
+        if (leaveDataTable) {
+            leaveDataTable.destroy();
+            leaveDataTable = null;
+        }
+        leaveDataTable = $('#leaveTable').DataTable({
+            paging: true,
+            searching: true,
+            ordering: true,
+            info: true,
+            responsive: false,   // ← false prevents the responsive crash loop
+            pageLength: 10,
+            language: {
+                search: 'Search leaves:',
+                lengthMenu: 'Show _MENU_ entries',
+                info: 'Showing _START_ to _END_ of _TOTAL_ leaves',
+                infoEmpty: 'No leaves found',
+                zeroRecords: 'No matching leaves found'
+            }
+        });
+    }
+
+    /* ── Chart ───────────────────────────────────────────────────── */
     function updateChart(chartData) {
         const ctx = document.getElementById('leaveChart').getContext('2d');
         if (leaveChartInstance instanceof Chart) {
@@ -260,56 +288,20 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: {
-                        position: 'top'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Leave Statistics'
-                    }
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Leave Statistics' }
                 }
             }
         });
     }
 
-    // Load data on page load (moved below after DataTables scripts are loaded)
-</script>
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script>
-    // Initialize DataTable when table is shown
-    function initializeLeaveDataTable() {
-        if ($.fn.DataTable.isDataTable('#leaveTable')) {
-            $('#leaveTable').DataTable().destroy();
-        }
-        $('#leaveTable').DataTable({
-            "paging": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "responsive": true,
-            "pageLength": 10,
-            "language": {
-                "search": "Search leaves:",
-                "lengthMenu": "Show _MENU_ entries",
-                "info": "Showing _START_ to _END_ of _TOTAL_ leaves",
-                "infoEmpty": "No leaves found",
-                "zeroRecords": "No matching leaves found"
-            }
-        });
-    }
-</script>
-<script>
+    /* ── Filters toggle ──────────────────────────────────────────── */
     function toggleFilters() {
         const el = document.getElementById('filters-row');
         if (el) el.classList.toggle('d-none');
-    }    
+    }
 
-    // Ensure DataTables scripts are loaded before initial fetch
-    $(document).ready(function() {
-        fetchLeaveReport();
-    });
+    /* NOTE: Auto-fetch removed — click "Generate Report" to load data */
 </script>
 
 <?= $this->endSection() ?>
