@@ -170,7 +170,12 @@
                             <td style="display: flex; align-items: center; gap: 8px;">
                                 <a href="/candidate/display/${candidate.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
                                 <a href="/candidate/${candidate.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                <a href="#" class="text-danger fs-5" title="Delete" data-id="${candidate.id}" onclick="deleteCandidate(event)"><i class="mdi mdi-delete"></i></a>
+                                <a href="#" class="text-danger fs-5" title="Delete"
+                                   data-id="${candidate.id}"
+                                   data-status="${candidate.status}"
+                                   onclick="deleteCandidate(event)">
+                                   <i class="mdi mdi-delete"></i>
+                                </a>
                             </td>
                         </tr>
                     `;
@@ -197,84 +202,92 @@
             });
     });
 
-    // Function to handle delete action
+    // Delete candidate — warns if candidate has a completed interview or is hired
     function deleteCandidate(event) {
-        event.preventDefault(); // Prevent default link behavior
-        const candidateId = event.target.closest('a').getAttribute('data-id'); // Get candidate ID
+        event.preventDefault();
+        const anchor      = event.target.closest('a');
+        const candidateId = anchor.getAttribute('data-id');
+        const status      = (anchor.getAttribute('data-status') || '').toLowerCase();
 
-        // Show SweetAlert confirmation dialog
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'This candidate might have interviews or onboarding data.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!',
-            buttonsStyling: false,
-            customClass: {
-                confirmButton: 'hr-btnbg',
-                cancelButton: 'hr-btnbg',
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Perform the delete action (AJAX call)
-                fetch(`/api/candidate/${candidateId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            'Content-Type': 'application/json',
-                        },
-                    })
-                    .then((response) => response.json())
-                    .then((responseData) => {
-                        if (responseData.status === 'success') {
-                            // Dynamically remove the row from the table
-                            const row = document.querySelector(`tr[data-id="${candidateId}"]`);
-                            if (row) row.remove();
+        // High-risk statuses that warrant an extra warning
+        const isHighRisk = ['hired', 'completed', 'scheduled'].includes(status);
 
-                            // Show success message with custom CSS for OK button
-                            Swal.fire({
-                                title: 'Deleted!',
-                                text: 'The candidate has been deleted successfully.',
-                                icon: 'success',
-                                customClass: {
-                                    confirmButton: 'hr-btnbg', // Apply the custom class
-                                },
-                                confirmButtonText: 'OK',
-                            });
-                        } else {
-                            // Show specific error message based on the response
-                            if (responseData.messages && responseData.messages.error) {
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: responseData.messages.error,
-                                    icon: 'error',
-                                    customClass: {
-                                        confirmButton: 'hr-btnbg', // Apply the custom class
-                                    },
-                                    confirmButtonText: 'OK',
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: 'Failed to delete the candidate. Please try again later.',
-                                    icon: 'error',
-                                    customClass: {
-                                        confirmButton: 'hr-btnbg', // Apply the custom class
-                                    },
-                                    confirmButtonText: 'OK',
-                                });
-                            }
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error deleting candidate:', error);
-                        Swal.fire('Error!', 'An error occurred while deleting the candidate.', 'error');
+        function performDelete() {
+            fetch(`/api/candidate/${candidateId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(r => r.json())
+            .then(responseData => {
+                if (responseData.status === 'success') {
+                    const row = document.querySelector(`tr[data-id="${candidateId}"]`);
+                    if (row) row.remove();
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: 'The candidate has been deleted successfully.',
+                        icon: 'success',
+                        buttonsStyling: false,
+                        customClass: { confirmButton: 'hr-btnbg' },
+                        confirmButtonText: 'OK',
                     });
+                } else {
+                    const msg = responseData.messages?.error
+                        || responseData.message
+                        || 'Failed to delete the candidate. They may have associated interviews.';
+                    Swal.fire({
+                        title: 'Cannot Delete',
+                        text: msg,
+                        icon: 'error',
+                        buttonsStyling: false,
+                        customClass: { confirmButton: 'hr-btnbg' },
+                        confirmButtonText: 'OK',
+                    });
+                }
+            })
+            .catch(() => {
+                Swal.fire('Error!', 'An error occurred while deleting the candidate.', 'error');
+            });
+        }
 
-            }
-        });
+        if (isHighRisk) {
+            // ⚠️ Strong warning for candidates with interviews / already hired
+            Swal.fire({
+                title: '⚠️ Warning: Active Candidate',
+                html: `<p>This candidate's status is <strong>${status}</strong>.</p>
+                       <p>They may have <strong>interview or onboarding records</strong> linked to their profile.</p>
+                       <p>Deleting this candidate will <strong>not</strong> delete associated user accounts, but their recruitment history will be lost.</p>
+                       <p><strong>Are you absolutely sure?</strong></p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete Candidate',
+                cancelButtonText: 'No, Keep It',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-danger me-2',
+                    cancelButton: 'btn hr-btnbg'
+                }
+            }).then(result => {
+                if (result.isConfirmed) performDelete();
+            });
+        } else {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This candidate and their application data will be permanently removed.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'hr-btnbg',
+                    cancelButton: 'hr-btnbg',
+                }
+            }).then(result => {
+                if (result.isConfirmed) performDelete();
+            });
+        }
     }
 </script>
 

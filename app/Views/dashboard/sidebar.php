@@ -17,30 +17,35 @@ $role = $user ? $user->role : null;
         <span class="menu-title">Dashboard</span>
       </a>
     </li>
-    <?php if ($role === 'admin' || $role === 'hr') : ?>
+    <?php if ($role === 'admin' || $role === 'hr'): ?>
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="collapse" href="#complaintsMenu" aria-expanded="false" aria-controls="complaintsMenu">
+        <a class="nav-link" data-bs-toggle="collapse" href="#complaintsMenu" aria-expanded="false"
+          aria-controls="complaintsMenu">
           <i class="menu-icon mdi mdi-message-alert"></i>
           <span class="menu-title">Complaints & Feedback</span>
           <i class="menu-arrow"></i>
         </a>
         <div class="collapse" id="complaintsMenu">
           <ul class="nav flex-column sub-menu">
-            <li class="nav-item"> <a class="nav-link" href="<?= base_url('complaints/admin') ?>">Manage Complaints</a></li>
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('complaints/admin') ?>">Manage Complaints</a>
+            </li>
             <li class="nav-item"> <a class="nav-link" href="<?= base_url('complaints/create') ?>">Add Complaint</a></li>
           </ul>
         </div>
       </li>
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="collapse" href="#announcementsMenu" aria-expanded="false" aria-controls="announcementsMenu">
+        <a class="nav-link" data-bs-toggle="collapse" href="#announcementsMenu" aria-expanded="false"
+          aria-controls="announcementsMenu">
           <i class="menu-icon mdi mdi-bullhorn"></i>
           <span class="menu-title">Announcements</span>
           <i class="menu-arrow"></i>
         </a>
         <div class="collapse" id="announcementsMenu">
           <ul class="nav flex-column sub-menu">
-            <li class="nav-item"> <a class="nav-link" href="<?= base_url('announcements/admin') ?>">Manage Announcements</a></li>
-            <li class="nav-item"> <a class="nav-link" href="<?= base_url('announcements/create') ?>">Add Announcement</a></li>
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('announcements/admin') ?>">Manage
+                Announcements</a></li>
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('announcements/create') ?>">Add Announcement</a>
+            </li>
           </ul>
         </div>
       </li>
@@ -59,7 +64,7 @@ $role = $user ? $user->role : null;
       </li>
     <?php endif; ?>
     <li class="nav-item nav-category">Menus</li>
-    <?php if ($role === 'admin' || $role === 'hr') : ?>
+    <?php if ($role === 'admin' || $role === 'hr'): ?>
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#ui-basic" aria-expanded="false" aria-controls="ui-basic">
           <i class="menu-icon mdi mdi-account-multiple"></i>
@@ -74,7 +79,8 @@ $role = $user ? $user->role : null;
         </div>
       </li>
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="collapse" href="#form-elements" aria-expanded="false" aria-controls="form-elements">
+        <a class="nav-link" data-bs-toggle="collapse" href="#form-elements" aria-expanded="false"
+          aria-controls="form-elements">
           <i class="menu-icon mdi mdi-card-text-outline"></i>
           <span class="menu-title">Attendance</span>
           <i class="menu-arrow"></i>
@@ -100,7 +106,7 @@ $role = $user ? $user->role : null;
         </div>
       </li>
 
-     <li class="nav-item">
+      <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#tables" aria-expanded="false" aria-controls="tables">
           <i class="menu-icon mdi mdi-table"></i>
           <span class="menu-title lh-base">Recruitment & </br> Onboarding</span>
@@ -116,6 +122,7 @@ $role = $user ? $user->role : null;
 
             <li class="nav-item"> <a class="nav-link" href="/onboardingview">Employees Onboarding</a></li>
 
+            <li class="nav-item"> <a class="nav-link" href="/offer-templates-view">Offer Letter Templates</a></li>
           </ul>
         </div>
       </li>
@@ -173,7 +180,7 @@ $role = $user ? $user->role : null;
             <li class="nav-item"> <a class="nav-link" href="/all_subtask">SubTask List</a></li>
           </ul>
         </div>
-      </li>     
+      </li>
 
       <!-- PDF Recorder - Available for all users -->
       <!-- <li class="nav-item">
@@ -182,7 +189,7 @@ $role = $user ? $user->role : null;
           <span class="menu-title">PDF Statement</span>
         </a>
       </li> -->
-      
+
       <!-- <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#HRConfig" aria-expanded="false" aria-controls="HRConfig">
           <i class="menu-icon mdi mdi-clipboard-text"></i>
@@ -200,7 +207,7 @@ $role = $user ? $user->role : null;
       </li> -->
 
 
-       <li class="nav-item">
+      <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#Settings" aria-expanded="false" aria-controls="Settings">
           <i class="menu-icon mdi mdi-power-settings"></i>
           <span class="menu-title">Settings</span>
@@ -218,7 +225,6 @@ $role = $user ? $user->role : null;
             <li class="nav-item"> <a class="nav-link" href="/addressview">Job Addresses</a></li>
             <!-- <li class="nav-item"> <a class="nav-link" href="/applyjob">Apply Job</a></li> -->
             <li class="nav-item"> <a class="nav-link" href="/SMTPemail">SMTP Mail</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/offer-templates-view">Offer Letter Templates</a></li>
             <li class="nav-item"> <a class="nav-link" href="/view-rules">Company Rules</a></li>
             <li class="nav-item"> <a class="nav-link" href="/creates-rules">Company Rules</a></li>
             <li class="nav-item"> <a class="nav-link" href="/holidays">Holidays</a></li>
@@ -226,9 +232,9 @@ $role = $user ? $user->role : null;
             <li class="nav-item"> <a class="nav-link" href="/offer-templates-view">Templates</a></li>
           </ul>
         </div>
-      </li> 
+      </li>
 
-    <!-- <li class="nav-item">
+      <!-- <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#eomMenu" aria-expanded="false" aria-controls="eomMenu">
           <i class="menu-icon mdi mdi-star-circle"></i>
           <span class="menu-title">EOM</span>
@@ -242,10 +248,10 @@ $role = $user ? $user->role : null;
           </ul>
         </div>
       </li> -->
-      
+
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#eomletter" aria-expanded="false" aria-controls="eomletter">
-        <i class="menu-icon mdi mdi-star-circle"></i>
+          <i class="menu-icon mdi mdi-star-circle"></i>
           <span class="menu-title">EOM</span>
           <i class="menu-arrow"></i>
         </a>
@@ -253,14 +259,14 @@ $role = $user ? $user->role : null;
           <ul class="nav flex-column sub-menu">
             <li class="nav-item"> <a class="nav-link" href="/all-empof-month">All EOM</a></li>
             <li class="nav-item"> <a class="nav-link" href="/addemp-month-performance">EOM Generate</a></li>
-             <li class="nav-item"> <a class="nav-link" href="/emp-month-view">EOM Templates</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/emp-month-view">EOM Templates</a></li>
           </ul>
         </div>
-      </li> 
+      </li>
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#exp" aria-expanded="false" aria-controls="exp">
           <i class="menu-icon mdi mdi-file-account-outline"></i>
-          <span class="menu-title  lh-base">Exprience  </br> Letter</span>
+          <span class="menu-title  lh-base">Exprience </br> Letter</span>
           <i class="menu-arrow"></i>
         </a>
         <div class="collapse" id="exp">
@@ -270,7 +276,7 @@ $role = $user ? $user->role : null;
             <!-- <li class="nav-item"> <a class="nav-link" href="/add-emp-exprience">Genrate Letter</a></li> -->
           </ul>
         </div>
-      </li> 
+      </li>
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#report" aria-expanded="false" aria-controls="report">
           <i class="menu-icon mdi mdi-image-filter-none"></i>
@@ -305,7 +311,7 @@ $role = $user ? $user->role : null;
           </ul>
         </div>
       </li>
-<!-- 
+      <!-- 
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#Settings" aria-expanded="false" aria-controls="Settings">
           <i class="menu-icon mdi mdi-cog"></i>
@@ -336,7 +342,7 @@ $role = $user ? $user->role : null;
       </li>  -->
     <?php endif; ?>
 
-    <?php if ($role === 'employee') : ?>
+    <?php if ($role === 'employee'): ?>
 
       <li class="nav-item">
         <a class="nav-link" href="<?= base_url('/view-calendar') ?>">
@@ -356,7 +362,7 @@ $role = $user ? $user->role : null;
           <i class="menu-icon mdi mdi-gauge"></i>
           <span class="menu-title">Performance</span>
         </a>
-      </li> 
+      </li>
 
       <!-- <li class="nav-item">
         <a class="nav-link" href="/payrollview">
@@ -370,9 +376,9 @@ $role = $user ? $user->role : null;
           <i class="menu-icon mdi mdi-currency-usd"></i>
           <span class="menu-title">Training</span>
         </a>
-      </li> 
+      </li>
 
-       <!-- <li class="nav-item">
+      <!-- <li class="nav-item">
         <a class="nav-link" href="/taskview">
           <i class="menu-icon mdi mdi-book-open"></i>
           <span class="menu-title">Task</span>
@@ -390,10 +396,10 @@ $role = $user ? $user->role : null;
           <span class="menu-title">Task</span>
           <i class="menu-arrow"></i>
         </a>
-       
+
         <div class="collapse" id="subtasks">
           <ul class="nav flex-column sub-menu">
-             <li class="nav-item"> <a class="nav-link" href="/taskview">Task</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/taskview">Task</a></li>
             <li class="nav-item"> <a class="nav-link" href="/all_subtask">SubTask List</a></li>
           </ul>
         </div>
@@ -418,7 +424,7 @@ $role = $user ? $user->role : null;
         </a>
       </li> -->
     <?php endif; ?>
-    
-    
+
+
   </ul>
 </nav>
