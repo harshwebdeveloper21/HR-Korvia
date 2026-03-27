@@ -485,6 +485,17 @@ $role = $user ? $user->role : null;
                                 message = `<strong>${data.username}</strong> submitted a Feedback: ${data.subject}`;
                                 icon = 'mdi-comment-text-outline';
                                 break;
+                            case 'leave_status': {
+                                // Message is already pre-built on the backend
+                                const st = (data.status || '').toLowerCase();
+                                message = data.message || `Your leave request has been ${data.status}.`;
+                                icon = st === 'approved'
+                                    ? 'mdi-calendar-check'       // green-ish check
+                                    : st === 'rejected'
+                                        ? 'mdi-calendar-remove'  // red-ish remove
+                                        : 'mdi-calendar-clock';  // pending
+                                break;
+                            }
                             default:
                                 message = 'New notification';
                                 icon = 'mdi-bell-ring';
@@ -572,6 +583,7 @@ $role = $user ? $user->role : null;
                         window.location.href = '<?= base_url('/empview') ?>';
                         break;
                     case 'leave':
+                    case 'leave_status':
                         window.location.href = '<?= base_url('/leaveview') ?>';
                         break;
                         <?php if ($role !== 'employee') : ?>

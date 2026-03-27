@@ -225,8 +225,8 @@ $role = $user ? $user->role : null;
             <li class="nav-item"> <a class="nav-link" href="/addressview">Job Addresses</a></li>
             <!-- <li class="nav-item"> <a class="nav-link" href="/applyjob">Apply Job</a></li> -->
             <li class="nav-item"> <a class="nav-link" href="/SMTPemail">SMTP Mail</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/view-rules">Company Rules</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/creates-rules">Company Rules</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/view-rules">Company Rules View</a></li>
+            <!-- <li class="nav-item"> <a class="nav-link" href="/creates-rules">Company Rules</a></li> -->
             <li class="nav-item"> <a class="nav-link" href="/holidays">Holidays</a></li>
             <li class="nav-item"> <a class="nav-link" href="/notification-settings">Push Notifications</a></li>
             <li class="nav-item"> <a class="nav-link" href="/offer-templates-view">Templates</a></li>

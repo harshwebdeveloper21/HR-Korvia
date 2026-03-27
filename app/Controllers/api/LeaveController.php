@@ -353,42 +353,71 @@ class LeaveController extends ResourceController
             }
         }
 
-        // ===============================
-        // 🔔 PUSH NOTIFICATION TO EMPLOYEE
-        // ===============================
+        // ─────────────────────────────────────────────────────────────
+        // 🔔  SEND NOTIFICATION TO THE EMPLOYEE WHOSE LEAVE WAS UPDATED
+        // ─────────────────────────────────────────────────────────────
 
-        // $userModel = new UserModel();
-        // $employee  = $userModel->find($leave['user_id']);
-        // $updatedBy = $userModel->find($userId);
+        $notificationModel = new \App\Models\NotificationModel();
+        $userModel2 = new UserModel();
 
-        // $title = 'Leave Request ' . ucfirst($status);
+        $employeeUser = $userModel2->find($leave['user_id']);
+        $updatedBy    = $userModel2->find($userId);
+        $updaterName  = $updatedBy['username'] ?? 'HR/Admin';
 
-        // $message = match ($status) {
-        //     'approved' => 'Your leave request has been approved.',
-        //     'rejected' => 'Your leave request has been rejected.',
-        //     default    => 'Your leave request status has been updated.'
-        // };
+        // Human-readable status message
+        $statusLabel = match (strtolower($status)) {
+            'approved' => 'approved ✅',
+            'rejected' => 'rejected ❌',
+            default    => 'moved to pending 🕐',
+        };
 
-        // $this->pushNotificationService->notifyUser(
-        //     $leave['user_id'],
-        //     $title,
-        //     $message,
-        //     [
-        //         'type'        => 'leave_status',
-        //         'leave_id'    => $leaveId,
-        //         'status'      => $status,
-        //         'start_date'  => $leave['start_date'],
-        //         'end_date'    => $leave['end_date'],
-        //         'no_of_days'  => $leave['no_of_day'],
-        //         'updated_by'  => $updatedBy['username'] ?? 'HR/Admin',
-        //         'url'         => base_url('/leaveview')
-        //     ]
-        // );
+        $notifMessage = 'Your leave request from ' . $leave['start_date'] . ' to ' . $leave['end_date']
+            . ' has been ' . $statusLabel . ' by ' . $updaterName . '.';
+
+        // 1. ── In-App (database) notification ──
+        $notificationModel->insert([
+            'sender_id'    => $userId,
+            'recipient_id' => $leave['user_id'],
+            'data'         => json_encode([
+                'username'   => $employeeUser['username'] ?? 'Employee',
+                'type'       => 'leave_status',
+                'message'    => $notifMessage,
+                'status'     => $status,
+                'leave_id'   => $leaveId,
+                'start_date' => $leave['start_date'],
+                'end_date'   => $leave['end_date'],
+                'url'        => base_url('/leaveview'),
+            ]),
+            'is_read' => 0,
+        ]);
+
+        // 2. ── Web Push notification to the employee ──
+        try {
+            $pushTitle = 'Leave Request ' . ucfirst($status);
+            $this->pushNotificationService->notifyUser(
+                $leave['user_id'],
+                $pushTitle,
+                $notifMessage,
+                [
+                    'type'       => 'leave_status',
+                    'leave_id'   => $leaveId,
+                    'status'     => $status,
+                    'start_date' => $leave['start_date'],
+                    'end_date'   => $leave['end_date'],
+                    'no_of_days' => $leave['no_of_day'] ?? 1,
+                    'updated_by' => $updaterName,
+                    'url'        => base_url('/leaveview'),
+                ]
+            );
+        } catch (\Exception $e) {
+            log_message('error', '🔔 [updateStatus] Push notification failed: ' . $e->getMessage());
+            // Do NOT abort the response — notification failure should not block the status update
+        }
 
         // Update leave status
         $leaveModel->update($leaveId, [
-            'status' => $status,
-            'created_by' => $userId  // 👈 this sets the new updater as the creator
+            'status'     => $status,
+            'created_by' => $userId,
         ]);
 
         return $this->respond(['status' => 'success', 'message' => 'Leave status updated successfully']);

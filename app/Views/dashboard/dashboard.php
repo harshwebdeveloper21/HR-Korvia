@@ -1955,7 +1955,7 @@
                         todayAttendance.forEach(function(att) {
                             var timerId = 'timer-' + att.username.replace(/\s+/g, '-');
                             var progressId = 'progress-' + att.username.replace(/\s+/g, '-');                            
-                            startWorkTimer(timerId, progressId, att.check_in_time, att.check_out_time);
+                            startWorkTimer(timerId, progressId, att.check_in_time, att.check_out_time, att.completed_seconds || 0);
                         });
                     }, 100);
                 } else {
@@ -2253,8 +2253,8 @@
     window.serverOffset = (<?= time() ?> * 1000) - Date.now();
     
     // Function to start and update work timer for each employee
-    function startWorkTimer(timerId, progressId, checkInTime, checkOutTime) {
-        
+    function startWorkTimer(timerId, progressId, checkInTime, checkOutTime, completedSeconds) {
+        completedSeconds = completedSeconds || 0;
         if (!checkInTime) return;
 
         var today = new Date();
@@ -2271,20 +2271,28 @@
             );
         }
 
-        var checkInDate = parseTime(checkInTime);
+        // Current session start (this is the active/latest check-in)
+        var checkInDate  = parseTime(checkInTime);
         var checkOutDate = checkOutTime ? parseTime(checkOutTime) : null;
 
         var intervalId = null;
 
         function updateTimer() {
-            const now = new Date(Date.now() + (window.serverOffset || 0));
-            if (checkOutDate && now >= checkOutDate) { now = checkOutDate; clearInterval(intervalId); }
-            const diff = now - checkInDate;
-            if (diff < 0) diff = 0;
+            var now = new Date(Date.now() + (window.serverOffset || 0));
 
-            var hours = Math.floor(diff / (1000 * 60 * 60));
-            var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            var seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            // Clamp now to checkout if session is closed
+            var effectiveNow = (checkOutDate && now >= checkOutDate) ? checkOutDate : now;
+
+            // Seconds elapsed in the active session
+            var activeDiff = Math.max(0, effectiveNow - checkInDate);
+            var activeSeconds = Math.floor(activeDiff / 1000);
+
+            // Total = completed previous sessions + active session
+            var totalSeconds = completedSeconds + activeSeconds;
+
+            var hours   = Math.floor(totalSeconds / 3600);
+            var minutes = Math.floor((totalSeconds % 3600) / 60);
+            var seconds = totalSeconds % 60;
 
             var timeString =
                 String(hours).padStart(2, '0') + ':' +
@@ -2293,17 +2301,15 @@
 
             var element = document.getElementById(timerId);
             if (element) {
-                element.textContent = checkOutDate && now >= checkOutDate
-                    ? 'Worked: ' + timeString
-                    : 'Working: ' + timeString;
+                var isFinished = checkOutDate && now >= checkOutDate;
+                element.textContent = isFinished ? 'Worked: ' + timeString : 'Working: ' + timeString;
             }
 
             // Progress bar
             var progressElement = document.getElementById(progressId);
             if (progressElement) {
                 var totalWorkingSeconds = companyWorkingHours * 3600;
-                var workedSeconds = Math.floor(diff / 1000);
-                var percentage = Math.min((workedSeconds / totalWorkingSeconds) * 100, 100);
+                var percentage = Math.min((totalSeconds / totalWorkingSeconds) * 100, 100);
 
                 progressElement.style.width = percentage + '%';
                 progressElement.setAttribute('aria-valuenow', percentage);
@@ -2317,12 +2323,17 @@
                     progressElement.classList.add('bg-success');
                 }
             }
+
+            // Stop ticking once fully checked out
+            if (checkOutDate && now >= checkOutDate) {
+                clearInterval(intervalId);
+            }
         }
 
         // Initial render
         updateTimer();
 
-        // Start ticking only if not already checked out
+        // Start ticking only if currently active (no checkout)
         if (!checkOutDate || new Date() < checkOutDate) {
             intervalId = setInterval(updateTimer, 1000);
         }
