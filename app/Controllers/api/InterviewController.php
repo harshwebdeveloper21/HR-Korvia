@@ -267,24 +267,32 @@ class InterviewController extends ResourceController
             return $this->failUnauthorized('Unauthorized: Token missing or invalid');
         }
         if ($user->role !== 'admin') {
-            return $this->failForbidden('Forbidden: Only Admin can delete job records');
+            return $this->failForbidden('Forbidden: Only Admin can delete interview records');
         }
+
         $interview = $this->interviewModel->find($id);
 
         if (!$interview) {
             return $this->failNotFound('Interview record not found');
         }
-    
-        if (strtolower($interview['status']) !== 'cancelled') {
-            return $this->failForbidden('Interview can only be deleted if the status is "cancelled"');
-        }
-    
-        // Delete the onboarding entry
-        if ($this->interviewModel->delete($id)) {
-            return $this->respond(['status' => 'success', 'message' => 'Interview entry deleted successfully']);
+
+        $status = strtolower($interview['status']);
+
+        // Scheduled interviews cannot be deleted — they have active/pending activity
+        if ($status === 'scheduled') {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => 'Cannot delete a scheduled interview. Please cancel it first before deleting.'
+            ], ResponseInterface::HTTP_FORBIDDEN);
         }
 
-        return $this->respond(['status' => 'error', 'message' => 'Failed to delete Interview entry'], ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
+        // Both 'cancelled' and 'completed' interviews may be deleted
+        // (Frontend already shows a strong warning for completed interviews)
+        if ($this->interviewModel->delete($id)) {
+            return $this->respond(['status' => 'success', 'message' => 'Interview deleted successfully']);
+        }
+
+        return $this->respond(['status' => 'error', 'message' => 'Failed to delete interview'], ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
     }
     public function getById($id = null)
     {

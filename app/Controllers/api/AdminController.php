@@ -33,7 +33,6 @@ class AdminController extends ResourceController
     protected $stateModel;
 
     public function __construct()
-
     {
         $this->authService = new AuthService(service('request'));
         $this->userModel = new UserModel();
@@ -150,7 +149,7 @@ class AdminController extends ResourceController
                 ->limit(5)
                 ->findAll();
         }
-        
+
         $this->triggerAutoLeaveOnceDaily();
 
         $todayCheckinCheckoutHistory = $this->attendanceModel
@@ -400,7 +399,7 @@ class AdminController extends ResourceController
     //     for ($i = 0; $i < 7; $i++) {
     //         $weekDates[] = date('m-d', strtotime("monday this week +$i days"));
     //     }
-        
+
     //     $birthdayUsers = $this->userInfoModel->select('user_info.*')
     //                 ->join('users', 'users.id = user_info.user_id', 'inner')
     //                 ->where('users.is_deleted', 0)
@@ -498,8 +497,8 @@ class AdminController extends ResourceController
     //         'latestComplaints' => $this->getLatestComplaints($role, $userId),
     //     ]);
     // }
-    
-     
+
+
     public function DashboardData()
     {
         if (!$this->authService->check()) {
@@ -543,6 +542,7 @@ class AdminController extends ResourceController
             ->where('end_date >=', $todayDate)
             ->where('leaves.status', 'approved') // ✅ Fully qualified
             ->findAll();
+
         $todayAttendanceRaw = $this->attendanceModel
             ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')
             ->join('users', 'users.id = attendance.user_id', 'inner')
@@ -560,9 +560,9 @@ class AdminController extends ResourceController
                 $userIds[] = $att['user_id'];
             }
         }
-        
+
         // Sort by check-in time for display order
-        usort($todayAttendance, function($a, $b) {
+        usort($todayAttendance, function ($a, $b) {
             return strcmp($a['check_in_time'], $b['check_in_time']);
         });
         // Leave count for all roles
@@ -656,7 +656,7 @@ class AdminController extends ResourceController
             }
 
             // Sort by check-in time for display order
-            usort($todayAttendance, function($a, $b) {
+            usort($todayAttendance, function ($a, $b) {
                 return strcmp($a['check_in_time'], $b['check_in_time']);
             });
             $attendanceCountThisWeek = $this->attendanceModel
@@ -738,12 +738,12 @@ class AdminController extends ResourceController
         for ($i = 0; $i < 7; $i++) {
             $weekDates[] = date('m-d', strtotime("monday this week +$i days"));
         }
-        
+
         $birthdayUsers = $this->userInfoModel->select('user_info.*')
-                    ->join('users', 'users.id = user_info.user_id', 'inner')
-                    ->where('users.is_deleted', 0)
-                    ->whereIn('DATE_FORMAT(user_info.date_of_birth, "%m-%d")', $weekDates)
-                    ->findAll();
+            ->join('users', 'users.id = user_info.user_id', 'inner')
+            ->where('users.is_deleted', 0)
+            ->whereIn('DATE_FORMAT(user_info.date_of_birth, "%m-%d")', $weekDates)
+            ->findAll();
 
         $currentMonth = date('m');
         $currentYear = date('Y');
@@ -837,21 +837,21 @@ class AdminController extends ResourceController
         ]);
     }
 
-    
+
     private function getLatestComplaints($role, $userId)
     {
         $complaintModel = new \App\Models\ComplaintModel();
         $query = $complaintModel->select('complaints.*, users.username, user_info.profile_image')
-                                ->join('users', 'users.id = complaints.user_id')
-                                ->join('user_info', 'user_info.user_id = users.id', 'left');
-        
+            ->join('users', 'users.id = complaints.user_id')
+            ->join('user_info', 'user_info.user_id = users.id', 'left');
+
         if ($role !== 'admin' && $role !== 'hr') {
             $query->where('complaints.user_id', $userId);
         }
 
         return $query->orderBy('complaints.created_at', 'DESC')
-                     ->limit(5)
-                     ->findAll();
+            ->limit(5)
+            ->findAll();
     }
 
     public function getYearlyPerformanceData()
@@ -907,15 +907,15 @@ class AdminController extends ResourceController
     }
     // day dashbord call
     public function triggerAutoLeaveOnceDaily()
-    {        
+    {
         $today = date('Y-m-d');
-        
+
         $lastRunFile = WRITEPATH . 'auto_leave_last_run.txt';
         $lastRun = file_exists($lastRunFile) ? trim(file_get_contents($lastRunFile)) : '';
-        
+
         // if ($lastRun !== $today) {
-            $this->autoMarkAbsentLeaves();
-            file_put_contents($lastRunFile, $today);
+        $this->autoMarkAbsentLeaves();
+        file_put_contents($lastRunFile, $today);
         // }
     }
 
@@ -952,20 +952,20 @@ class AdminController extends ResourceController
         if ($currentTime < $officeTime) {
             return;
         }
-        
+
         if ($rule['saturday_off_enabled'] == 1) {
             if ($rule['saturday_off_type'] == 'all') {
                 $saturdayPattern = "1, 2, 3, 4, 5";
-            }else if ($rule['saturday_off_type'] == 'alternate-even') {
+            } else if ($rule['saturday_off_type'] == 'alternate-even') {
                 $saturdayPattern = "2, 4";
-            }else if ($rule['saturday_off_type'] == 'alternate-odd') {
+            } else if ($rule['saturday_off_type'] == 'alternate-odd') {
                 $saturdayPattern = "1, 3, 5";
-            }else if ($rule['saturday_off_type'] == 'custom') {
+            } else if ($rule['saturday_off_type'] == 'custom') {
                 $saturdayPattern = $rule['saturday_off_pattern'];
-            }else {
+            } else {
                 $saturdayPattern = "0,0";
             }
-        }else{
+        } else {
             $saturdayPattern = "0,0";
         }
         $offSaturdays = $this->getOffSaturdaysInMonth($saturdayPattern);
@@ -1023,18 +1023,18 @@ class AdminController extends ResourceController
 
                 if (!$existingLeave) {
                     $leaveModel->insert([
-                        'user_id'     => $userId,
-                        'reason'      => 'Auto leave for full-day absence',
-                        'start_date'  => $date,
-                        'end_date'    => $date,
-                        'no_of_day'   => 1,
-                        'leave_id'    => 1,
-                        'status'      => 'approved',
-                        'paid_days'   => 0,
+                        'user_id' => $userId,
+                        'reason' => 'Auto leave for full-day absence',
+                        'start_date' => $date,
+                        'end_date' => $date,
+                        'no_of_day' => 1,
+                        'leave_id' => 1,
+                        'status' => 'approved',
+                        'paid_days' => 0,
                         'unpaid_days' => 1,
-                        'created_by'  => $createdBy,
-                        'created_at'  => date('Y-m-d H:i:s'),
-                        'updated_at'  => date('Y-m-d H:i:s'),
+                        'created_by' => $createdBy,
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
                     ]);
                 }
 
@@ -1055,7 +1055,8 @@ class AdminController extends ResourceController
         $saturdayCount = 0;
 
         for ($day = 1; $day <= 31; $day++) {
-            if (!checkdate($month, $day, $year)) break;
+            if (!checkdate($month, $day, $year))
+                break;
 
             $date = "$year-$month-" . str_pad($day, 2, '0', STR_PAD_LEFT);
             $dayOfWeek = date('w', strtotime($date)); // 6 = Saturday
@@ -1071,11 +1072,12 @@ class AdminController extends ResourceController
         return $offSaturdays;
     }
 
-    public function upload_profile_image_admin(){
+    public function upload_profile_image_admin()
+    {
         $id = $this->request->getPost('user_id');
-        $profileImage = $this->request->getFile('image'); 
+        $profileImage = $this->request->getFile('image');
         $userInfo = $this->userInfoModel->where('user_id', $id)->first();
-        
+
         if (!$userInfo) {
             return $this->response->setJSON([
                 'status' => 'error',
@@ -1099,9 +1101,9 @@ class AdminController extends ResourceController
         $this->userInfoModel->where('user_id', $id)->set([
             'profile_image' => $profileImageName,
         ])->update();
-                $userInfo = session()->get('userInfo');
-                $userInfo['profile_image'] = $profileImageName;
-                session()->set('userInfo', $userInfo);
+        $userInfo = session()->get('userInfo');
+        $userInfo['profile_image'] = $profileImageName;
+        session()->set('userInfo', $userInfo);
         return $this->response->setJSON([
             'status' => 'success',
             'message' => 'Profile image updated successfully.'
@@ -1116,7 +1118,7 @@ class AdminController extends ResourceController
     private function calculateTodayHours($userId)
     {
         $today = date('Y-m-d');
-        
+
         // Get ALL today's attendance records (not just the latest)
         $todayAttendanceRecords = $this->attendanceModel
             ->where('date', $today)
@@ -1127,14 +1129,14 @@ class AdminController extends ResourceController
         // Get company rules for standard working hours
         $companyRulesModel = new CompanyRulesModel();
         $companyRule = $companyRulesModel->orderBy('id', 'DESC')->first();
-        
+
         $standardHoursPerDay = 8.0; // Default 8 hours
         if (!empty($companyRule) && isset($companyRule['working_hours_per_day'])) {
-            $standardHoursPerDay = (float)$companyRule['working_hours_per_day'];
+            $standardHoursPerDay = (float) $companyRule['working_hours_per_day'];
         }
-        
+
         $standardHoursSeconds = $standardHoursPerDay * 3600;
-        
+
         // If no attendance records, return default values
         if (empty($todayAttendanceRecords)) {
             return [
@@ -1147,7 +1149,7 @@ class AdminController extends ResourceController
                 'is_checked_out' => false
             ];
         }
-        
+
         $totalWorkedSeconds = 0;
         $completedHoursSeconds = 0; // Hours from completed check-in/check-out pairs
         $currentTime = date('H:i:s');
@@ -1156,7 +1158,7 @@ class AdminController extends ResourceController
         $isCheckedIn = false;
         $isCheckedOut = false;
         $mealBreakSeconds = 0;
-        
+
         // Default meal break (30 minutes)
         if (!empty($companyRule) && isset($companyRule['lunch_break'])) {
             $mealBreakParts = explode(':', $companyRule['lunch_break']);
@@ -1164,13 +1166,13 @@ class AdminController extends ResourceController
         } else {
             $mealBreakSeconds = 30 * 60; // Default 30 minutes
         }
-        
+
         // Get the latest record (most recent) to determine current status
         // Records are ordered by created_at ASC, so the last one in array is latest
         $latestRecord = end($todayAttendanceRecords);
         $latestRecordIndex = key($todayAttendanceRecords);
         reset($todayAttendanceRecords);
-        
+
         // Determine current check-in/check-out status from latest record
         if ($latestRecord) {
             if (!empty($latestRecord['check_in_time']) && empty($latestRecord['check_out_time'])) {
@@ -1186,42 +1188,42 @@ class AdminController extends ResourceController
                 $latestCheckOutTime = $latestRecord['check_out_time'];
             }
         }
-        
+
         // Process all attendance records to calculate total hours
         $recordIndex = 0;
         foreach ($todayAttendanceRecords as $attendance) {
             $isLatestRecord = ($recordIndex === $latestRecordIndex);
-            
+
             // If this record has both check-in and check-out, it's a completed session
             if (!empty($attendance['check_in_time']) && !empty($attendance['check_out_time'])) {
                 $workHoursSeconds = 0;
-                
+
                 // Calculate actual session duration first to validate stored work_hours
                 $checkInParts = explode(':', $attendance['check_in_time']);
                 $checkOutParts = explode(':', $attendance['check_out_time']);
-                
+
                 $checkInSeconds = ($checkInParts[0] * 3600) + ($checkInParts[1] * 60) + ($checkInParts[2] ?? 0);
                 $checkOutSeconds = ($checkOutParts[0] * 3600) + ($checkOutParts[1] * 60) + ($checkOutParts[2] ?? 0);
-                
+
                 $rawSessionSeconds = max(0, $checkOutSeconds - $checkInSeconds);
-                
+
                 // Try to use stored work_hours if available and valid (already has meal break subtracted)
                 if (!empty($attendance['work_hours']) && $attendance['work_hours'] !== '00:00:00') {
                     // Parse work_hours (format: HH:MM:SS)
                     $workHoursParts = explode(':', $attendance['work_hours']);
                     $storedWorkHoursSeconds = ($workHoursParts[0] * 3600) + ($workHoursParts[1] * 60) + ($workHoursParts[2] ?? 0);
-                    
+
                     // Validate: stored work_hours should be reasonable (not more than raw session, not negative)
                     // If stored value seems wrong, recalculate
                     if ($storedWorkHoursSeconds > 0 && $storedWorkHoursSeconds <= $rawSessionSeconds) {
                         $workHoursSeconds = $storedWorkHoursSeconds;
                     }
                 }
-                
+
                 // If work_hours is missing, zero, or invalid, calculate manually
                 if ($workHoursSeconds <= 0) {
                     $sessionSeconds = $rawSessionSeconds;
-                    
+
                     // Only subtract meal break if total gross day duration is at least 5 hours
                     // Calculate total gross duration for all records
                     $totalGrossDaySeconds = 0;
@@ -1236,58 +1238,57 @@ class AdminController extends ResourceController
                     if ($totalGrossDaySeconds >= (5 * 3600)) {
                         $sessionSeconds = max(0, $sessionSeconds - $mealBreakSeconds);
                     }
-                    
+
                     $workHoursSeconds = $sessionSeconds;
                 }
-                
+
                 // Add to totals
                 $totalWorkedSeconds += $workHoursSeconds;
                 $completedHoursSeconds += $workHoursSeconds;
-            }
-            elseif (!empty($attendance['check_in_time']) && empty($attendance['check_out_time'])) {
+            } elseif (!empty($attendance['check_in_time']) && empty($attendance['check_out_time'])) {
                 // Only process if this is the latest active session
                 if ($isLatestRecord) {
                     // Use DateTime with explicit IST timezone to avoid system timezone issues
                     $tz = new \DateTimeZone('Asia/Kolkata');
                     $checkInDt = new \DateTime($today . ' ' . $attendance['check_in_time'], $tz);
-                    $currentDt  = new \DateTime('now', $tz);
-                    
+                    $currentDt = new \DateTime('now', $tz);
+
                     // Calculate worked seconds for active session (server-accurate)
                     $activeSessionSeconds = max(0, $currentDt->getTimestamp() - $checkInDt->getTimestamp());
-                    
+
                     // Store elapsed at page-load for the frontend counter
                     $elapsedSecondsAtLoad = $activeSessionSeconds;
-                    
+
                     // Don't subtract meal break for active session - show actual elapsed time
                     $totalWorkedSeconds += $activeSessionSeconds;
                 }
             }
-            
+
             $recordIndex++;
         }
-        
+
         // Format hours worked
         $hours = floor($totalWorkedSeconds / 3600);
         $minutes = floor(($totalWorkedSeconds % 3600) / 60);
         $seconds = $totalWorkedSeconds % 60;
         $hoursWorkedFormatted = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
-        
+
         // Calculate remaining hours
         $remainingSeconds = max(0, $standardHoursSeconds - $totalWorkedSeconds);
         $remainingHours = floor($remainingSeconds / 3600);
         $remainingMinutes = floor(($remainingSeconds % 3600) / 60);
         $remainingSecs = $remainingSeconds % 60;
         $remainingHoursFormatted = sprintf('%02d:%02d:%02d', $remainingHours, $remainingMinutes, $remainingSecs);
-        
+
         // Format standard hours
         $standardHoursFormatted = sprintf('%02d:%02d:%02d', floor($standardHoursPerDay), floor(($standardHoursPerDay - floor($standardHoursPerDay)) * 60), 0);
-        
+
         // Compute elapsed seconds using DateTime with IST timezone (fixes UTC system timezone bug)
         $elapsedSecondsAtLoad = 0;
         if ($isCheckedIn && !empty($latestCheckInTime)) {
             $tz = new \DateTimeZone('Asia/Kolkata');
-            $checkInDt  = new \DateTime($today . ' ' . $latestCheckInTime, $tz);
-            $currentDt  = new \DateTime('now', $tz);
+            $checkInDt = new \DateTime($today . ' ' . $latestCheckInTime, $tz);
+            $currentDt = new \DateTime('now', $tz);
             $elapsedSecondsAtLoad = max(0, $currentDt->getTimestamp() - $checkInDt->getTimestamp());
         }
 

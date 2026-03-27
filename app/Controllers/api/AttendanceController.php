@@ -235,6 +235,18 @@ class AttendanceController extends ResourceController
             return $this->respond($response);
         }
 
+         // If user has already checked out or no record exists, create a new check-in record
+        // This allows checking in again after checkout
+
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $employeeInfo  = $userInfoModel->where('user_id', $user->sub)->first();
+        $isRemote      = !empty($employeeInfo['working_location']) &&
+                         strtolower(trim($employeeInfo['working_location'])) === 'remote';
+
+        if ($isRemote) {
+            log_message('info', '🏠 Remote employee check-in (no location required): user_id=' . $user->sub . ' at ' . $timeOnly);
+        }
+
         // If user has already checked out or no record exists, create a new check-in record
         // This allows checking in again after checkout
         $data = [
@@ -1260,8 +1272,14 @@ class AttendanceController extends ResourceController
         // Check location if location settings are configured
         $locationSettingsModel = new LocationSettingsModel();
         $locationSettings = $locationSettingsModel->getSettings();
-        
-        if ($locationSettings && ($locationSettings['latitude'] != 0 || $locationSettings['longitude'] != 0)) {
+
+        // Check if this employee is a remote worker — remote employees skip location validation
+        $userInfoForLocation = new \App\Models\UserInfoModel();
+        $employeeInfo = $userInfoForLocation->where('user_id', $user->sub)->first();
+        $isRemoteEmployee = !empty($employeeInfo['working_location']) &&
+                            strtolower(trim($employeeInfo['working_location'])) === 'remote';
+
+        if (!$isRemoteEmployee && $locationSettings && ($locationSettings['latitude'] != 0 || $locationSettings['longitude'] != 0)) {
             // Location verification is enabled
             if ($userLatitude === null || $userLongitude === null) {
                 return $this->respond([

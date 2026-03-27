@@ -1,9 +1,10 @@
 <?= $this->extend("layout") ?>
 <?= $this->section("content") ?>
 <style>
-     .capitalize-text {
+    .capitalize-text {
         text-transform: capitalize;
     }
+
     @media (max-width: 767px) {
         .attendenceall {
             font-size: 9px !important;
@@ -98,7 +99,8 @@
             width: 57px !important;
         }
     }
-     @media (min-width: 767px) {
+
+    @media (min-width: 767px) {
         .attendenceall {
             width: 191px !important;
         }
@@ -141,17 +143,17 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         const token = localStorage.getItem('token'); // JWT token from login
 
         // Fetch leave types when the page loads
         fetch('/api/interviews', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        })
             .then((response) => response.json())
             .then((responseData) => {
                 if (responseData.status === 'success') {
@@ -178,7 +180,12 @@
                         <td style="display: flex; align-items: center; gap: 8px;">
                             <a href="/interview/display/${interview.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
 
-                            <a href="#" class="text-danger fs-5" title="Delete" data-id="${interview.id}" onclick="deleteLeave(event)"><i class="mdi mdi-delete"></i></a>
+                            <a href="#" class="text-danger fs-5" title="Delete"
+                               data-id="${interview.id}"
+                               data-status="${interview.status}"
+                               onclick="deleteInterview(event)">
+                               <i class="mdi mdi-delete"></i>
+                            </a>
                         </td>
                         </tr>
                     `;
@@ -203,7 +210,7 @@
                 console.error('Error fetching leave types:', error);
             });
     });
-    $(document).on('change', '.status-select', function() {
+    $(document).on('change', '.status-select', function () {
         const token = localStorage.getItem('token'); // JWT token from login
         const interviewId = $(this).data('id');
         const newStatus = $(this).val();
@@ -270,13 +277,13 @@
         };
         payload[csrfName] = csrfHash; // Add CSRF token to body
         fetch(`/api/interviews/${interviewId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            })
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
@@ -326,80 +333,101 @@
 
 
 
-    // Function to handle delete action
-    function deleteLeave(event) {
+    // Function to handle interview delete — shows extra warning for completed interviews
+    function deleteInterview(event) {
         event.preventDefault();
 
-        const interviewId = event.target.closest('a').getAttribute('data-id');
+        const anchor = event.target.closest('a');
+        const interviewId = anchor.getAttribute('data-id');
+        const status = (anchor.getAttribute('data-status') || '').toLowerCase();
         const csrfName = $('meta[name="csrf-token"]').attr('data-name');
         const csrfHash = $('meta[name="csrf-token"]').attr('content');
 
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'You won’t be able to revert this!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
-            buttonsStyling: false,
-            customClass: {
-                confirmButton: 'btn hr-btnbg me-2',
-                cancelButton: 'btn hr-btnbg'
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`/api/interviews/${interviewId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            [csrfName]: csrfHash
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(responseData => {
-                        if (responseData.status === 'success') {
-                            const row = document.querySelector(`tr[data-id="${interviewId}"]`);
-                            if (row) row.remove();
-
-                            Swal.fire({
-                                title: 'Deleted!',
-                                text: 'The interview has been deleted successfully.',
-                                icon: 'success',
-                                buttonsStyling: false,
-                                customClass: {
-                                    confirmButton: 'btn hr-btnbg'
-                                }
-                            });
-                        } else {
-                            const errorMsg = responseData.message || responseData.messages?.error || 'Only admins can delete interviews.';
-                            Swal.fire({
-                                title: 'Error!',
-                                text: errorMsg,
-                                icon: 'error',
-                                buttonsStyling: false,
-                                customClass: {
-                                    confirmButton: 'btn hr-btnbg'
-                                }
-                            });
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error deleting interview:', error);
+        // Helper: actually call the delete API
+        function performDelete() {
+            fetch(`/api/interviews/${interviewId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ [csrfName]: csrfHash })
+            })
+                .then(r => r.json())
+                .then(responseData => {
+                    if (responseData.status === 'success') {
+                        const row = document.querySelector(`tr[data-id="${interviewId}"]`);
+                        if (row) row.remove();
                         Swal.fire({
-                            title: 'Error!',
-                            text: 'An error occurred while deleting the interview.',
+                            title: 'Deleted!',
+                            text: 'The interview has been deleted successfully.',
+                            icon: 'success',
+                            buttonsStyling: false,
+                            customClass: { confirmButton: 'btn hr-btnbg' }
+                        });
+                    } else {
+                        const errorMsg = responseData.message || responseData.messages?.error || 'Only admins can delete interviews.';
+                        Swal.fire({
+                            title: 'Cannot Delete',
+                            text: errorMsg,
                             icon: 'error',
                             buttonsStyling: false,
-                            customClass: {
-                                confirmButton: 'btn hr-btnbg'
-                            }
+                            customClass: { confirmButton: 'btn hr-btnbg' }
                         });
+                    }
+                })
+                .catch(() => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An error occurred while deleting the interview.',
+                        icon: 'error',
+                        buttonsStyling: false,
+                        customClass: { confirmButton: 'btn hr-btnbg' }
                     });
-            }
-        });
+                });
+        }
+
+        if (status === 'completed') {
+            // ⚠️ Completed interview — show strong two-step warning
+            Swal.fire({
+                title: '⚠️ Warning: Completed Interview',
+                html: `<p>This interview has already been <strong>completed</strong>.</p>
+                       <p>Deleting it may affect onboarding and candidate records linked to this interview.</p>
+                       <p><strong>Are you absolutely sure you want to proceed?</strong></p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, I understand — Delete',
+                cancelButtonText: 'No, Keep It',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-danger me-2',
+                    cancelButton: 'btn hr-btnbg'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performDelete();
+                }
+            });
+        } else {
+            // Standard confirmation for scheduled / cancelled
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This interview record will be permanently deleted.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn hr-btnbg me-2',
+                    cancelButton: 'btn hr-btnbg'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performDelete();
+                }
+            });
+        }
     }
 </script>
 <?= $this->endSection() ?>
