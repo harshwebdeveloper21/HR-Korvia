@@ -34,10 +34,10 @@ class EmployeeController extends ResourceController
         $this->authService = Services::auth($this->request); // Inject the request object
         // $this->email = \Config\Services::email();
         $this->emailService = new EmailService(); // Initialize EmailService
-        $this->cityModel        = new CityModel();
-        $this->countryModel     = new CountryModel();
-        $this->stateModel       = new StateModel();
-        $this->departmentModel  = new DepartmentModel();
+        $this->cityModel = new CityModel();
+        $this->countryModel = new CountryModel();
+        $this->stateModel = new StateModel();
+        $this->departmentModel = new DepartmentModel();
         $this->designationModel = new DesignationModel();
         $this->userModel = new UserModel();
         $this->userInfoModel = new UserInfoModel();
@@ -78,7 +78,7 @@ class EmployeeController extends ResourceController
             ]);
         }
     }
-    
+
     public function get_user_details($id = null)
     {
         // Fetch supporting data
@@ -308,10 +308,10 @@ class EmployeeController extends ResourceController
         $db->transStart();
 
         $userId = $this->userModel->insert([
-            'email'    => $data['email'],
+            'email' => $data['email'],
             'username' => $data['firstname'] . ' ' . $data['lastname'],
             'password' => $passwordHash,
-            'role'     => $data['role'] ?? 'employee'
+            'role' => $data['role'] ?? 'employee'
         ]);
 
         if (!$userId) {
@@ -340,26 +340,26 @@ class EmployeeController extends ResourceController
 
         // Prepare user info data
         $userInfoData = [
-            'user_id'         => $userId,
-            'firstname'       => $data['firstname'] ?? '',
-            'lastname'        => $data['lastname'] ?? '',
-            'email'           => $data['email'] ?? '',
-            'gender'          => $data['gender'] ?? '',
-            'date_of_birth'   => $data['date_of_birth'] ?? '',
-            'address_1'       => $data['address_1'] ?? '',
-            'address_2'       => $data['address_2'] ?? '',
-            'state_id'        => $data['state_id'] ?? '',
-            'postcode'        => $data['postcode'] ?? '',
-            'city_id'         => $data['city_id'] ?? '',
-            'country_id'      => $data['country_id'] ?? '',
-            'contact_number'  => $data['contact_number'] ?? '',
-            'employee_id'     => isset($data['employee_id']) ? preg_replace('/[^0-9]/', '', $data['employee_id']) : '',
-            'designation_id'  => $data['designation_id'] ?? '',
-            'department_id'   => $data['department_id'] ?? '',
-            'joining_date'    => $data['joining_date'] ?? '',
+            'user_id' => $userId,
+            'firstname' => $data['firstname'] ?? '',
+            'lastname' => $data['lastname'] ?? '',
+            'email' => $data['email'] ?? '',
+            'gender' => $data['gender'] ?? '',
+            'date_of_birth' => $data['date_of_birth'] ?? '',
+            'address_1' => $data['address_1'] ?? '',
+            'address_2' => $data['address_2'] ?? '',
+            'state_id' => $data['state_id'] ?? '',
+            'postcode' => $data['postcode'] ?? '',
+            'city_id' => $data['city_id'] ?? '',
+            'country_id' => $data['country_id'] ?? '',
+            'contact_number' => $data['contact_number'] ?? '',
+            'employee_id' => isset($data['employee_id']) ? preg_replace('/[^0-9]/', '', $data['employee_id']) : '',
+            'designation_id' => $data['designation_id'] ?? '',
+            'department_id' => $data['department_id'] ?? '',
+            'joining_date' => $data['joining_date'] ?? '',
             'working_location' => $data['working_location'] ?? '',
-            'role'            => $data['role'] ?? 'employee',
-            'salary'          => $data['salary'] ?? '',
+            'role' => $data['role'] ?? 'employee',
+            'salary' => $data['salary'] ?? '',
         ];
 
         if (isset($profileImageName)) {
@@ -379,12 +379,12 @@ class EmployeeController extends ResourceController
         $admins = $userModel->whereIn('role', ['admin', 'hr'])->findAll();
         foreach ($admins as $admin) {
             $notificationModel->insert([
-                'sender_id'    => $user->sub,
+                'sender_id' => $user->sub,
                 'recipient_id' => $admin['id'],
-                'data'         => json_encode([
+                'data' => json_encode([
                     'username' => $data['firstname'] . ' ' . $data['lastname'],
-                    'role'     => $data['role'],
-                    'type'     => 'employee'
+                    'role' => $data['role'],
+                    'type' => 'employee'
                 ]),
                 'is_read' => 0
             ]);
@@ -415,11 +415,11 @@ class EmployeeController extends ResourceController
 
             foreach ($uniqueRecipients as $recipient) {
                 $notificationModel->insert([
-                    'sender_id'    => $employeeId,
+                    'sender_id' => $employeeId,
                     'recipient_id' => $recipient['id'],
-                    'data'         => json_encode([
+                    'data' => json_encode([
                         'username' => $fullName,
-                        'type'     => 'birthday'
+                        'type' => 'birthday'
                     ]),
                     'is_read' => 0
                 ]);
@@ -525,12 +525,12 @@ class EmployeeController extends ResourceController
         $facePhotoName = $userInfo['face_photo'] ?? null; // Keep the old face photo by default
         if ($facePhoto && $facePhoto->isValid() && !$facePhoto->hasMoved()) {
             $newFacePhotoName = 'face_' . $facePhoto->getRandomName();
-            
+
             // Create faces directory if not exists
             if (!is_dir(FCPATH . 'upload/faces/')) {
                 mkdir(FCPATH . 'upload/faces/', 0755, true);
             }
-            
+
             $facePhoto->move(FCPATH . 'upload/faces/', $newFacePhotoName);
 
             // Delete old face photo if exists
@@ -627,7 +627,7 @@ class EmployeeController extends ResourceController
         $builder->where('users.is_deleted', 0);
 
         $builder->orderBy('users.id', 'DESC');
-        
+
 
         $results = $builder->findAll();
 
@@ -636,18 +636,18 @@ class EmployeeController extends ResourceController
         foreach ($results as $row) {
             $employees[] = [
                 'user' => [
-                    'id'    => $row['id'],
+                    'id' => $row['id'],
                     'email' => $row['email'],
-                    'role'  => $row['role'],
-                    'password'  => $row['password'],
+                    'role' => $row['role'],
+                    'password' => $row['password'],
                 ],
                 'user_info' => [
-                    'id'               => $row['user_info_id'],
-                    'firstname'        => $row['firstname'],
-                    'lastname'         => $row['lastname'],
-                    'joining_date'     => $row['joining_date'],
-                    'department_id'    => $row['department_id'],
-                    'department_name'  => $row['department_name'],
+                    'id' => $row['user_info_id'],
+                    'firstname' => $row['firstname'],
+                    'lastname' => $row['lastname'],
+                    'joining_date' => $row['joining_date'],
+                    'department_id' => $row['department_id'],
+                    'department_name' => $row['department_name'],
                     'profile_image_url' => !empty($row['profile_image']) ? base_url('upload/' . $row['profile_image']) : base_url('public/upload/default-profile.jpg'),
                 ]
             ];
@@ -782,7 +782,7 @@ class EmployeeController extends ResourceController
         }
 
         return $this->respond([
-            'status'  => 'success',
+            'status' => 'success',
             'message' => 'Employee and all related data have been permanently deleted.'
         ]);
     }
@@ -793,6 +793,37 @@ class EmployeeController extends ResourceController
         $userId = $user->sub;
         // Pass employee ID to the view
         return view('employee/profile', ['id' => $id, 'employeeId' => $userId,]);
+    }
+
+
+    /**
+     * profileview($id)
+     *
+     * Route: /employee/profile/view/{users.id}
+     *
+     * Receives the users.id (user_id), finds the matching
+     * user_info row, and renders the profile view using user_info.id.
+     */
+    public function profileview($id)
+    {
+        // Look up user_info by users.id (user_id column)
+        $userInfo = $this->userInfoModel
+            ->select('id')
+            ->where('user_id', $id)
+            ->first();
+
+        if (!$userInfo) {
+            return $this->failNotFound('Employee profile not found for user ID: ' . $id);
+        }
+
+        $userInfoId   = $userInfo['id'];                   // user_info.id — what the profile view needs
+        $loggedInUser = $this->authService->user();
+        $employeeId   = $loggedInUser ? $loggedInUser->sub : null;
+
+        return view('employee/profile', [
+            'id'         => $userInfoId,  // user_info.id
+            'employeeId' => $employeeId,  // logged-in user's own users.id
+        ]);
     }
 
     public function details($id)
@@ -823,11 +854,11 @@ class EmployeeController extends ResourceController
         }
 
         // Load related names from reference tables
-        $user['city_name']        = $this->cityModel->find($user['city_id'])['city_name'] ?? 'N/A';
-        $user['state_name']       = $this->stateModel->find($user['state_id'])['state_name'] ?? 'N/A';
-        $user['country_name']     = $this->countryModel->find($user['country_id'])['country_name'] ?? 'N/A';
+        $user['city_name'] = $this->cityModel->find($user['city_id'])['city_name'] ?? 'N/A';
+        $user['state_name'] = $this->stateModel->find($user['state_id'])['state_name'] ?? 'N/A';
+        $user['country_name'] = $this->countryModel->find($user['country_id'])['country_name'] ?? 'N/A';
         $user['designation_name'] = $this->designationModel->find($user['designation_id'])['designation_name'] ?? 'N/A';
-        $user['department_name']  = $this->departmentModel->find($user['department_id'])['department_name'] ?? 'N/A';
+        $user['department_name'] = $this->departmentModel->find($user['department_id'])['department_name'] ?? 'N/A';
 
         $city = $this->cityModel->findAll();
         $state = $this->stateModel->findAll();
@@ -841,7 +872,7 @@ class EmployeeController extends ResourceController
 
         return $this->response->setJSON([
             'success' => true,
-            'data'    => $user,
+            'data' => $user,
             'city' => $city,
             'state' => $state,
             'country' => $country,
@@ -855,8 +886,8 @@ class EmployeeController extends ResourceController
         $request = service('request');
         $input = json_decode($request->getBody(), true);
 
-        $userId          = $input['user_id'] ?? null;
-        $newPassword     = $input['password'] ?? null;
+        $userId = $input['user_id'] ?? null;
+        $newPassword = $input['password'] ?? null;
         $confirmPassword = $input['confirm_password'] ?? null;
 
         if (!$userId || !$newPassword || !$confirmPassword) {
@@ -936,12 +967,12 @@ class EmployeeController extends ResourceController
 
         // Validation rules
         $rules = [
-            'id'        => 'required|is_natural_no_zero',
+            'id' => 'required|is_natural_no_zero',
             'firstname' => 'required|min_length[2]',
             'lastname' => 'permit_empty|min_length[2]',
-            'email'     => 'required|valid_email',
-            'gender'    => 'required|in_list[male,female,other]',
-            'dob'       => 'required|valid_date[Y-m-d]'
+            'email' => 'required|valid_email',
+            'gender' => 'required|in_list[male,female,other]',
+            'dob' => 'required|valid_date[Y-m-d]'
         ];
 
         if (!$this->validate($rules)) {
@@ -952,12 +983,12 @@ class EmployeeController extends ResourceController
             ]);
         }
 
-        $userId   = $input['id'];
-        $email    = $input['email'];
+        $userId = $input['id'];
+        $email = $input['email'];
         $firstname = $input['firstname'];
-        $lastname  = $input['lastname'];
-        $gender    = $input['gender'];
-        $dob       = $input['dob'];
+        $lastname = $input['lastname'];
+        $gender = $input['gender'];
+        $dob = $input['dob'];
 
         // Load models
         $userModel = new \App\Models\UserModel();
@@ -976,12 +1007,12 @@ class EmployeeController extends ResourceController
 
         // Update `user_info` table
         $userInfoModel->where('user_id', $userId)->set([
-            'firstname'     => $firstname,
-            'lastname'      => $lastname,
-            'email'         => $email,
-            'gender'        => $gender,
+            'firstname' => $firstname,
+            'lastname' => $lastname,
+            'email' => $email,
+            'gender' => $gender,
             'date_of_birth' => $dob,
-            'updated_at'    => date('Y-m-d H:i:s')
+            'updated_at' => date('Y-m-d H:i:s')
         ])->update();
 
         $db->transComplete();
@@ -1001,12 +1032,12 @@ class EmployeeController extends ResourceController
     public function get_user_address_data($userId)
     {
 
-        $userInfoModel      = new \App\Models\UserInfoModel();
-        $cityModel          = new \App\Models\CityModel();
-        $stateModel         = new \App\Models\StateModel();
-        $countryModel       = new \App\Models\CountryModel();
-        $designationModel   = new \App\Models\DesignationModel();
-        $departmentModel    = new \App\Models\DepartmentModel();
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $cityModel = new \App\Models\CityModel();
+        $stateModel = new \App\Models\StateModel();
+        $countryModel = new \App\Models\CountryModel();
+        $designationModel = new \App\Models\DesignationModel();
+        $departmentModel = new \App\Models\DepartmentModel();
 
         $user = $userInfoModel->where('user_id', $userId)->first();
 
@@ -1018,13 +1049,13 @@ class EmployeeController extends ResourceController
         }
 
         return $this->response->setJSON([
-            'success'     => true,
-            'user'        => $user,
-            'city'        => $cityModel->findAll(),
-            'state'       => $stateModel->findAll(),
-            'country'     => $countryModel->findAll(),
+            'success' => true,
+            'user' => $user,
+            'city' => $cityModel->findAll(),
+            'state' => $stateModel->findAll(),
+            'country' => $countryModel->findAll(),
             'designation' => $designationModel->findAll(),
-            'department'  => $departmentModel->findAll()
+            'department' => $departmentModel->findAll()
         ]);
     }
     public function update_user_address()
@@ -1032,20 +1063,20 @@ class EmployeeController extends ResourceController
         $data = $this->request->getPost();
 
         $rules = [
-            'user_id'        => 'required|integer',
-            'address_1'      => 'required|min_length[3]',
-            'address_2'      => 'permit_empty',
-            'country_id'     => 'required|integer',
-            'state_id'       => 'required|integer',
-            'city_id'        => 'required|integer',
-            'postcode'       => 'required',
+            'user_id' => 'required|integer',
+            'address_1' => 'required|min_length[3]',
+            'address_2' => 'permit_empty',
+            'country_id' => 'required|integer',
+            'state_id' => 'required|integer',
+            'city_id' => 'required|integer',
+            'postcode' => 'required',
             'contact_number' => 'required|numeric'
         ];
 
         if (!$this->validate($rules)) {
             return $this->response->setJSON([
                 'success' => false,
-                'errors'  => $this->validator->getErrors()
+                'errors' => $this->validator->getErrors()
             ]);
         }
 
@@ -1063,14 +1094,14 @@ class EmployeeController extends ResourceController
 
         // Update address fields
         $userInfoModel->where('user_id', $userId)->set([
-            'address_1'      => $data['address_1'],
-            'address_2'      => $data['address_2'],
-            'country_id'     => $data['country_id'],
-            'state_id'       => $data['state_id'],
-            'city_id'        => $data['city_id'],
-            'postcode'       => $data['postcode'],
+            'address_1' => $data['address_1'],
+            'address_2' => $data['address_2'],
+            'country_id' => $data['country_id'],
+            'state_id' => $data['state_id'],
+            'city_id' => $data['city_id'],
+            'postcode' => $data['postcode'],
             'contact_number' => $data['contact_number'],
-            'updated_at'     => date('Y-m-d H:i:s')
+            'updated_at' => date('Y-m-d H:i:s')
         ])->update();
 
         return $this->response->setJSON([
@@ -1110,39 +1141,39 @@ class EmployeeController extends ResourceController
 
         $rules = [
             'user_id' => [
-                'rules'  => 'required|integer',
+                'rules' => 'required|integer',
                 'errors' => [
                     'required' => 'User ID is required.',
-                    'integer'  => 'Invalid User ID.',
+                    'integer' => 'Invalid User ID.',
                 ],
             ],
             'bank_name' => [
-                'rules'  => 'required',
+                'rules' => 'required',
                 'errors' => [
                     'required' => 'The Bank Name field is required.',
                 ],
             ],
             'acc_number' => [
-                'rules'  => 'required|numeric',
+                'rules' => 'required|numeric',
                 'errors' => [
                     'required' => 'The Account Number field is required.',
-                    'numeric'  => 'The Account Number must contain only digits.',
+                    'numeric' => 'The Account Number must contain only digits.',
                 ],
             ],
             'acc_in_name' => [
-                'rules'  => 'required',
+                'rules' => 'required',
                 'errors' => [
                     'required' => 'The Account Holder Name field is required.',
                 ],
             ],
             'branch_name' => [
-                'rules'  => 'required',
+                'rules' => 'required',
                 'errors' => [
                     'required' => 'The Branch Name field is required.',
                 ],
             ],
             'branch_code' => [
-                'rules'  => 'required',
+                'rules' => 'required',
                 'errors' => [
                     'required' => 'The Branch Code field is required.',
                 ],
@@ -1152,7 +1183,7 @@ class EmployeeController extends ResourceController
         if (!$this->validate($rules)) {
             return $this->response->setJSON([
                 'success' => false,
-                'errors'  => $this->validator->getErrors()
+                'errors' => $this->validator->getErrors()
             ]);
         }
 
@@ -1162,13 +1193,13 @@ class EmployeeController extends ResourceController
         $existing = $model->where('user_id', $data['user_id'])->first();
 
         $bankData = [
-            'user_id'      => $data['user_id'],
-            'bank_name'    => $data['bank_name'],
-            'acc_number'   => $data['acc_number'],
-            'acc_in_name'  => $data['acc_in_name'],
-            'branch_name'  => $data['branch_name'],
-            'branch_code'  => $data['branch_code'],
-            'updated_at'   => date('Y-m-d H:i:s')
+            'user_id' => $data['user_id'],
+            'bank_name' => $data['bank_name'],
+            'acc_number' => $data['acc_number'],
+            'acc_in_name' => $data['acc_in_name'],
+            'branch_name' => $data['branch_name'],
+            'branch_code' => $data['branch_code'],
+            'updated_at' => date('Y-m-d H:i:s')
         ];
 
         if ($existing) {
@@ -1190,21 +1221,21 @@ class EmployeeController extends ResourceController
         $data = $this->request->getPost();
 
         $rules = [
-            'user_id'         => 'required|integer',
-            'employee_id'     => 'required',
-            'department_id'   => 'required|integer',
-            'designation_id'  => 'required|integer',
-            'joining_date'    => 'required|valid_date',
+            'user_id' => 'required|integer',
+            'employee_id' => 'required',
+            'department_id' => 'required|integer',
+            'designation_id' => 'required|integer',
+            'joining_date' => 'required|valid_date',
             'working_location' => 'required',
-            'postcode'        => 'required',
-            'salary'          => 'required|numeric',
-            'role'            => 'required|in_list[admin,employee,hr]'
+            'postcode' => 'required',
+            'salary' => 'required|numeric',
+            'role' => 'required|in_list[admin,employee,hr]'
         ];
 
         if (!$this->validate($rules)) {
             return $this->response->setJSON([
                 'success' => false,
-                'errors'  => $this->validator->getErrors()
+                'errors' => $this->validator->getErrors()
             ]);
         }
 
@@ -1219,15 +1250,15 @@ class EmployeeController extends ResourceController
         }
 
         $model->where('user_id', $data['user_id'])->set([
-            'employee_id'      => $data['employee_id'],
-            'department_id'    => $data['department_id'],
-            'designation_id'   => $data['designation_id'],
-            'joining_date'     => $data['joining_date'],
+            'employee_id' => $data['employee_id'],
+            'department_id' => $data['department_id'],
+            'designation_id' => $data['designation_id'],
+            'joining_date' => $data['joining_date'],
             'working_location' => $data['working_location'],
-            'postcode'         => $data['postcode'],
-            'salary'           => $data['salary'],
-            'role'             => $data['role'],
-            'updated_at'       => date('Y-m-d H:i:s')
+            'postcode' => $data['postcode'],
+            'salary' => $data['salary'],
+            'role' => $data['role'],
+            'updated_at' => date('Y-m-d H:i:s')
         ])->update();
 
         return $this->response->setJSON([

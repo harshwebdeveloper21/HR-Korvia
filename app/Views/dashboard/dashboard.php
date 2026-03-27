@@ -1910,7 +1910,7 @@
 
                         var isRemote = att.working_location && att.working_location.toLowerCase() === 'remote';
                         var rightCol = isRemote
-                            ? `<div class="d-flex flex-column align-items-center justify-content-between" style="height:100%;gap:6px;">
+                           ? `<div class="d-flex flex-column align-items-center justify-content-between" style="height:100%;gap:6px;">
                                    <span style="
                                        background: #fff;
                                        color: #E66136;
@@ -1921,9 +1921,9 @@
                                        border: 1.5px solid #E66136;
                                        white-space: nowrap;
                                    ">&#127968; Work From Home</span>
-                                   <i class="mdi mdi-login fs-4" style="color:#28a745"></i>
+                                   <a href="employee/profile/view/${att.user_id}"> <i class="mdi mdi-login fs-4" style="color:#28a745;margin-left: 80px !important;"></i> </a>
                                </div>`
-                            : `<i class="mdi mdi-login fs-4" style="color:#28a745"></i>`;
+                            : `<a href="employee/profile/view/${att.user_id}"> <i class="mdi mdi-login fs-4" style="color:#28a745"></i> </a>`;
 
                         attendanceHTML += `
                             <div class="wrapper d-flex align-items-center justify-content-between py-2 border-bottom">
