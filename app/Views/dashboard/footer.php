@@ -2,7 +2,7 @@
     <div class="container-fluid">
         <div class="row text-muted">
             <div class="col-6 text-start">
-                <span class="text-center footer-font-size-sm">Copyright © 2025. All rights reserved.</span>
+                <span class="text-center footer-font-size-sm">Copyright © 2026. All rights reserved.</span>
             </div>
             <!-- <div class="col-6 text-end">
                 <ul class="list-inline">

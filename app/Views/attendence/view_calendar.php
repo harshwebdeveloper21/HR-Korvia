@@ -1324,7 +1324,7 @@
                     statusClass = 'half-day';
                 }
 
-                const checkInTime = attendance?.check_in_time || '-';
+                const checkInTime  = attendance?.check_in_time  || '-';
                 const checkOutTime = attendance?.check_out_time || '-';
                 const overtime = attendance?.overtime && attendance.overtime !== '00:00:00' ? ' (OT)' : '';
 
@@ -1619,6 +1619,11 @@
                     `;
                     } else {
                         currentAttendanceRecords.forEach((r, i) => {
+                            // Duration: use backend-computed duration field; null means still active
+                            const durationDisplay = r.duration
+                                ? r.duration
+                                : '<span style="color:#E66136;font-weight:600;">Active…</span>';
+
                             rows += `
                             <tr>
                                 <td>
@@ -1631,8 +1636,8 @@
                                         data-id="${r.id}"
                                         value="${r.check_out_time || ''}">
                                 </td>
-                                <td>${r.work_hours || '-'}</td>
-                                <td>${r.overtime || '-'}</td>
+                                <td>${durationDisplay}</td>
+                                <td>${r.overtime && r.overtime !== '00:00:00' ? r.overtime : '-'}</td>
                             </tr>
                         `;
                         });
