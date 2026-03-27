@@ -552,16 +552,51 @@ class AdminController extends ResourceController
             ->orderBy('attendance.id', 'DESC')
             ->findAll();
 
+        // ── Group all records per user, accumulate completed sessions ──
         $todayAttendance = [];
-        $userIds = [];
+        $byUser = [];
+        // Group raw records by user_id (raw is ordered DESC, so first seen = latest record)
         foreach ($todayAttendanceRaw as $att) {
-            if (!in_array($att['user_id'], $userIds)) {
-                $todayAttendance[] = $att;
-                $userIds[] = $att['user_id'];
+            $byUser[$att['user_id']][] = $att;
+        }
+        foreach ($byUser as $uid => $records) {
+            // Sort ascending so earliest = first record
+            usort($records, function ($a, $b) {
+                return strcmp($a['check_in_time'], $b['check_in_time']);
+            });
+
+            $completedSeconds = 0;
+            $activeRecord = null; // latest record that has no checkout
+
+            foreach ($records as $rec) {
+                if ($rec['check_out_time']) {
+                    // Parse work_hours "HH:MM:SS" → seconds
+                    $parts = explode(':', $rec['check_out_time'] ? ($rec['work_hours'] ?? '00:00:00') : '00:00:00');
+                    if (count($parts) === 3) {
+                        $completedSeconds += ((int)$parts[0] * 3600) + ((int)$parts[1] * 60) + (int)$parts[2];
+                    }
+                } else {
+                    $activeRecord = $rec; // the currently-open session
+                }
             }
+
+            // Use the earliest check-in for display
+            $firstRecord = $records[0];
+            $displayRecord = $activeRecord ?? $firstRecord;
+
+            $todayAttendance[] = [
+                'id'               => $displayRecord['id'],
+                'user_id'          => $displayRecord['user_id'],
+                'check_in_time'    => $firstRecord['check_in_time'],      // earliest check-in
+                'check_out_time'   => $displayRecord['check_out_time'],   // active session checkout (null if still in)
+                'completed_seconds'=> $completedSeconds,                  // seconds from finished sessions
+                'username'         => $displayRecord['username'],
+                'profile_image'    => $displayRecord['profile_image'],
+                'working_location' => $displayRecord['working_location'],
+            ];
         }
 
-        // Sort by check-in time for display order
+        // Sort by earliest check-in time
         usort($todayAttendance, function ($a, $b) {
             return strcmp($a['check_in_time'], $b['check_in_time']);
         });
@@ -646,16 +681,46 @@ class AdminController extends ResourceController
                 ->orderBy('attendance.id', 'DESC')
                 ->findAll();
 
+            // ── Group all records per user, accumulate completed sessions ──
             $todayAttendance = [];
-            $userIds = [];
+            $byUser = [];
             foreach ($todayAttendanceRaw as $att) {
-                if (!in_array($att['user_id'], $userIds)) {
-                    $todayAttendance[] = $att;
-                    $userIds[] = $att['user_id'];
+                $byUser[$att['user_id']][] = $att;
+            }
+            foreach ($byUser as $uid => $records) {
+                usort($records, function ($a, $b) {
+                    return strcmp($a['check_in_time'], $b['check_in_time']);
+                });
+
+                $completedSeconds = 0;
+                $activeRecord = null;
+
+                foreach ($records as $rec) {
+                    if ($rec['check_out_time']) {
+                        $parts = explode(':', $rec['work_hours'] ?? '00:00:00');
+                        if (count($parts) === 3) {
+                            $completedSeconds += ((int)$parts[0] * 3600) + ((int)$parts[1] * 60) + (int)$parts[2];
+                        }
+                    } else {
+                        $activeRecord = $rec;
+                    }
                 }
+
+                $firstRecord = $records[0];
+                $displayRecord = $activeRecord ?? $firstRecord;
+
+                $todayAttendance[] = [
+                    'id'               => $displayRecord['id'],
+                    'user_id'          => $displayRecord['user_id'],
+                    'check_in_time'    => $firstRecord['check_in_time'],
+                    'check_out_time'   => $displayRecord['check_out_time'],
+                    'completed_seconds'=> $completedSeconds,
+                    'username'         => $displayRecord['username'],
+                    'profile_image'    => $displayRecord['profile_image'],
+                    'working_location' => $displayRecord['working_location'],
+                ];
             }
 
-            // Sort by check-in time for display order
             usort($todayAttendance, function ($a, $b) {
                 return strcmp($a['check_in_time'], $b['check_in_time']);
             });
