@@ -133,7 +133,7 @@
         #employee-table_length label select {
             font-size: 14px;
             /* restore font size for the dropdown */
-        }        
+        }
     }
 
     @media (min-width: 768px) and (max-width: 1366px) {}
@@ -198,13 +198,16 @@
                         <input type="hidden" name="password_user_id" id="password_user_id">
                         <label for="password" class="form-label">New Password</label>
                         <input type="password" class="form-control" id="password" name="password" required>
-                        <i class="fa fa-eye toggle-password" toggle="#password" style="position: absolute; top: 38px; right: 15px; cursor: pointer;"></i>
+                        <i class="fa fa-eye toggle-password" toggle="#password"
+                            style="position: absolute; top: 38px; right: 15px; cursor: pointer;"></i>
                     </div>
 
                     <div class="mb-3 position-relative">
                         <label for="confirm_password" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                        <i class="fa fa-eye toggle-password" toggle="#confirm_password" style="position: absolute; top: 38px; right: 15px; cursor: pointer;"></i>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                            required>
+                        <i class="fa fa-eye toggle-password" toggle="#confirm_password"
+                            style="position: absolute; top: 38px; right: 15px; cursor: pointer;"></i>
                     </div>
                 </div>
 
@@ -218,7 +221,7 @@
 
 
 <script>
-    $(document).ready(function() {
+    $(document).ready(function () {
         const token = localStorage.getItem('token');
 
         function capitalizeFirstLetter(string) {
@@ -236,7 +239,7 @@
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
-                success: function(response) {
+                success: function (response) {
                     if (response.status && response.employees) {
                         const employees = response.employees;
                         let tableRows = '';
@@ -256,7 +259,7 @@
                                 const empDept = employee.user_info?.department_name || 'N/A';
                                 const empRole = employee.user?.role ? employee.user.role.charAt(0).toUpperCase() + employee.user.role.slice(1) : 'N/A';
                                 const empJoiningDate = employee.user_info?.joining_date && employee.user_info.joining_date !== '0000-00-00' ? employee.user_info.joining_date : 'N/A';
-                                
+
                                 tableRows += `
                                     <tr data-id="${employee.user.id}">
                                         <td style="display:none;">${employee.user.id}</td>
@@ -366,7 +369,7 @@
                         `);
                     }
                 },
-                error: function() {
+                error: function () {
                     Swal.fire('Error', 'Failed to fetch employee', 'error');
                 }
             });
@@ -380,7 +383,7 @@
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
-                success: function(response) {
+                success: function (response) {
                     if (response.status && response.departments) {
                         let options = `<option value="">All Departments</option>`;
                         response.departments.forEach((dept) => {
@@ -389,14 +392,14 @@
                         $('#departmentFilter').html(options);
                     }
                 },
-                error: function() {
+                error: function () {
                     console.error('Failed to load departments');
                 }
             });
         }
 
         // ✅ Department filter change event
-        $('#departmentFilter').on('change', function() {
+        $('#departmentFilter').on('change', function () {
             const selectedDeptId = $(this).val();
             fetchEmployees(selectedDeptId); // Pass selected department ID
         });
@@ -406,21 +409,33 @@
         fetchEmployees(); // Load all employees initially
 
 
-        $(document).on('click', '.delete-employee', function(e) {
+        $(document).on('click', '.delete-employee', function (e) {
             e.preventDefault();
             const employeeId = $(this).data('id');
+            const employeeName = $(this).closest('tr').find('td:nth-child(2) span').text().trim()
+                || $(this).closest('tr').find('.detail-value').first().text().trim()
+                || 'this employee';
+
+            // ⚠️ Detailed warning listing ALL data that will be permanently erased
             Swal.fire({
-                title: 'Are you sure?',
-                text: 'This action cannot be undone!',
+                title: '⚠️ Permanent Delete Warning',
+                html: `
+                    <div style="text-align:left; font-size:14px; line-height:1.7;">
+                        <p>You are about to <strong>permanently delete</strong> the employee record for:</p>
+                        <p style="font-size:16px; font-weight:700; color:#E66136; margin:6px 0 12px;">👤 ${employeeName || 'Employee #' + employeeId}</p>
+                
+                    </div>
+                `,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
+                confirmButtonText: 'Yes, Delete Everything',
+                cancelButtonText: 'No, Keep Employee',
                 buttonsStyling: false,
                 customClass: {
-                    confirmButton: 'btn hr-btnbg me-2',
+                    confirmButton: 'btn btn-danger me-2',
                     cancelButton: 'btn hr-btnbg',
-                }
+                },
+                width: '520px',
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -430,18 +445,15 @@
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
                         },
-                        success: function(response) {
+                        success: function (response) {
                             if (response.status === 'success') {
-                                // Second Swal with hr-btnbg class for OK button
                                 Swal.fire({
                                     title: 'Deleted!',
-                                    text: response.message,
+                                    text: response.message || 'Employee and all related data have been permanently deleted.',
                                     icon: 'success',
                                     confirmButtonText: 'OK',
-                                    buttonsStyling: false, // IMPORTANT
-                                    customClass: {
-                                        confirmButton: 'btn hr-btnbg'
-                                    }
+                                    buttonsStyling: false,
+                                    customClass: { confirmButton: 'btn hr-btnbg' }
                                 }).then(() => {
                                     $(`tr[data-id="${employeeId}"]`).remove();
                                 });
@@ -452,26 +464,18 @@
                                     icon: 'error',
                                     confirmButtonText: 'OK',
                                     buttonsStyling: false,
-                                    customClass: {
-                                        confirmButton: 'btn hr-btnbg'
-                                    }
+                                    customClass: { confirmButton: 'btn hr-btnbg' }
                                 });
                             }
                         },
-                        error: function(xhr) {
-                            let errorMessage = 'There was an error deleting the employee. Please try again.';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            }
+                        error: function (xhr) {
                             Swal.fire({
                                 title: 'Error!',
-                                text: errorMessage,
+                                text: xhr.responseJSON?.message || 'There was an error deleting the employee.',
                                 icon: 'error',
                                 confirmButtonText: 'OK',
                                 buttonsStyling: false,
-                                customClass: {
-                                    confirmButton: 'btn hr-btnbg'
-                                }
+                                customClass: { confirmButton: 'btn hr-btnbg' }
                             });
                         }
                     });
@@ -480,7 +484,7 @@
         });
 
     });
-    $(document).on('click', '.toggle-password', function() {
+    $(document).on('click', '.toggle-password', function () {
         const input = $($(this).attr('toggle'));
         const type = input.attr('type') === 'password' ? 'text' : 'password';
         input.attr('type', type);
@@ -489,7 +493,7 @@
         $(this).toggleClass('fa-eye fa-eye-slash');
     });
 
-    $(document).on('click', '.open-password-modal', function(e) {
+    $(document).on('click', '.open-password-modal', function (e) {
         e.preventDefault();
         const userId = $(this).data('id');
         const userpss = $(this).data('pass'); // fix here
@@ -502,7 +506,7 @@
         modal.show();
     });
 
-    $('#passwordForm').submit(function(e) {
+    $('#passwordForm').submit(function (e) {
         e.preventDefault();
 
         const userId = $('#password_user_id').val();
@@ -516,17 +520,17 @@
         }
 
         fetch('/api/change-password-user', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: userId,
-                    password: password,
-                    confirm_password: confirmPassword
-                }),
-            })
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                password: password,
+                confirm_password: confirmPassword
+            }),
+        })
             .then((res) => res.json())
             .then((res) => {
                 if (res.status === 'success') {

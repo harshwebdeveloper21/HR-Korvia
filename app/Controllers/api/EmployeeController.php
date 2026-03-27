@@ -711,58 +711,79 @@ class EmployeeController extends ResourceController
             return $this->failUnauthorized('Unauthorized access');
         }
 
-        $db = \Config\Database::connect();
-
-
-        // Check if the user exists
-        $existingUser = $this->userModel->find($id);
-        if (!$existingUser) {
-            return $this->failNotFound('User not found');
+        // Only Admin or HR can delete employees
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            return $this->failForbidden('Forbidden: Only Admin or HR can delete employee records');
         }
 
-        // Check if the user has related records
-        // $relatedTables = [
-        //     'attendance' => 'user_id',
-        //     'leaves' => 'user_id',
-        //     'performance' => 'user_id',
-        //     'payroll' => 'user_id',
-        //     'task' => 'user_id',
-        //     'training' => 'user_id'
-        // ];
+        $db = \Config\Database::connect();
 
-        // foreach ($relatedTables as $table => $column) {
-        //     $count = $db->table($table)->where($column, $id)->countAllResults();
-        //     if ($count > 0) {
-        //         return $this->respond([
-        //             'status' => 'error',
-        //             'message' => "Cannot delete user. Records exist in $table."
-        //         ], 400);
-        //     }
-        // }
+        // Verify employee exists and is not already deleted
+        $existingUser = $db->table('users')->where('id', $id)->where('is_deleted', 0)->get()->getRowArray();
+        if (!$existingUser) {
+            return $this->failNotFound('Employee not found');
+        }
 
-        // Start transaction for safety
+        // ── Start a transaction so everything succeeds or nothing changes ──
         $db->transStart();
 
-        // Delete from user_info
-        // $this->userInfoModel->where('user_id', $id)->delete();
+        // 1. Attendance records
+        $db->table('attendance')->where('user_id', $id)->delete();
 
-        // // Delete from users
-        // $this->userModel->delete($id);
-        // $this->userModel->where('id', $id)->update([
-        //     'is_deleted' => 1
-        // ]);
-        $db->table('users')->where('id', $id)->update([
-            'is_deleted' => 1
-        ]);
+        // 2. Leave records
+        $db->table('leaves')->where('user_id', $id)->delete();
+
+        // 3. Payroll records
+        $db->table('payroll')->where('user_id', $id)->delete();
+
+        // 4. Performance records
+        $db->table('performance')->where('user_id', $id)->delete();
+
+        // 5. Tasks assigned to or created by this employee
+        $db->table('task')->where('user_id', $id)->delete();
+
+        // 6. Sub-tasks
+        $db->table('subtasks')->where('user_id', $id)->delete();
+
+        // 7. Training records
+        $db->table('training')->where('user_id', $id)->delete();
+
+        // 8. Comments
+        $db->table('comments')->where('user_id', $id)->delete();
+
+        // 9. Bank / account details
+        $db->table('account_detail')->where('user_id', $id)->delete();
+
+        // 10. Notifications (both sent and received)
+        $db->table('notifications')->where('sender_id', $id)->orWhere('recipient_id', $id)->delete();
+
+        // 11. Employee of the Month records
+        $db->table('employee_of_month_certificates')->where('user_id', $id)->delete();
+
+        // 12. Push notification subscriptions
+        $db->table('push_subscriptions')->where('user_id', $id)->delete();
+
+        // 13. Remember tokens (sessions)
+        $db->table('remember_tokens')->where('user_id', $id)->delete();
+
+        // 14. Employee reports
+        $db->table('empreport')->where('user_id', $id)->delete();
+
+        // 15. User info (profile)
+        $db->table('user_info')->where('user_id', $id)->delete();
+
+        // 16. Finally — delete the user account itself
+        $db->table('users')->where('id', $id)->delete();
+
         $db->transComplete();
 
         if ($db->transStatus() === false) {
-            return $this->failServerError('Failed to delete user and user info');
+            return $this->failServerError('Failed to delete employee. Transaction rolled back.');
         }
 
         return $this->respond([
-            'status' => 'success',
-            'message' => 'User deleted successfully'
+            'status'  => 'success',
+            'message' => 'Employee and all related data have been permanently deleted.'
         ]);
     }
 
