@@ -2,7 +2,7 @@
 <?= $this->section("content") ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
 <!-- <link rel="stylesheet" href="<? //= base_url('assets/css/jobs.css')
-                                    ?>"> -->
+?>"> -->
 <link rel="stylesheet" href="<?= base_url(
     env("ImagePath") . "assets/css/jobs.css",
 ) ?>">
@@ -90,7 +90,8 @@
     }
 </style>
 <!-- departement -->
-<div class="modal fade" id="adddepartementModal" tabindex="-1" aria-labelledby="adddepartementModalLabel" aria-hidden="true">
+<div class="modal fade" id="adddepartementModal" tabindex="-1" aria-labelledby="adddepartementModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -106,7 +107,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-calendar fs-5"></i></span>
                             </div>
-                            <input type="text" class="form-control" name="department_name" id="department_name" placeholder="Enter Department Name" />
+                            <input type="text" class="form-control" name="department_name" id="department_name"
+                                placeholder="Enter Department Name" />
                         </div>
                         <div class="text-danger mt-1" id="department_name_error"></div>
                     </div>
@@ -140,8 +142,8 @@
                                     <option value="<?= $locateds[
                                         "location_id"
                                     ] ?>"><?= esc(
-    $locateds["job_location"],
-) ?></option>
+                                         $locateds["job_location"],
+                                     ) ?></option>
                                 <?php endforeach; ?>
                             </select>
 
@@ -154,7 +156,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-home-city fs-5"></i></span>
                             </div>
-                            <textarea class="form-control" name="address" id="address" placeholder="Enter Address"></textarea>
+                            <textarea class="form-control" name="address" id="address"
+                                placeholder="Enter Address"></textarea>
                         </div>
                         <small id="address_name_error" class="text-danger"></small> <!-- Error message container -->
                     </div>
@@ -197,8 +200,8 @@
                                     <option value="<?= $country[
                                         "id"
                                     ] ?>"><?= $country[
-    "country_name"
-] ?></option>
+                                         "country_name"
+                                     ] ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -210,7 +213,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-mailbox fs-5"></i></span>
                             </div>
-                            <input type="text" class="form-control" name="postal_code" id="postal_code" placeholder="Enter Postal Code" />
+                            <input type="text" class="form-control" name="postal_code" id="postal_code"
+                                placeholder="Enter Postal Code" />
                         </div>
                         <small id="postal_name_error" class="text-danger"></small> <!-- Error message container -->
                     </div>
@@ -237,7 +241,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-calendar fs-5"></i></span>
                             </div>
-                            <input type="text" class="form-control" name="job_location" id="job_location" placeholder="Enter location Name" />
+                            <input type="text" class="form-control" name="job_location" id="job_location"
+                                placeholder="Enter location Name" />
                         </div>
                         <div id="job_location_error" class="text-danger mt-1" style="font-size: 13px;"></div>
                     </div>
@@ -251,7 +256,7 @@
     <div class="col-12 grid-margin">
         <div class="card">
             <div class="card-body">
-                <!-- <h2 class="text-left">Add Job</h2> -->
+                <!-- <h2 class="text-left">Add JobAdd Job</h2> -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2 class="card-title">Add Job</h2>
                     <a href="/jobview" class="btn hr-btnbg addsmbtnres">
@@ -260,7 +265,8 @@
                 </div>
 
                 <div class="progress mb-4">
-                    <div class="progress-bar  progress-bar-striped progress-bar-animated" role="progressbar" style="width: 33%;" id="progressBar"></div>
+                    <div class="progress-bar  progress-bar-striped progress-bar-animated" role="progressbar"
+                        style="width: 33%;" id="progressBar"></div>
                 </div>
                 <form id="multiStepForm">
                     <input type="hidden" id="id" name="id" value="">
@@ -275,7 +281,8 @@
                                 <div class="input-group">
 
                                     <span class="input-group-text"><i class="mdi mdi-briefcase-outline"></i></span>
-                                    <input type="text" class="form-control" name="job_title" id="job_title" placeholder="Enter job title">
+                                    <input type="text" class="form-control" name="job_title" id="job_title"
+                                        placeholder="Enter job title">
 
                                 </div>
                             </div>
@@ -283,13 +290,17 @@
                                 <label>Description</label>
                                 <div class="input-group">
                                     <!-- <span class="input-group-text"><i class="mdi mdi-text"></i></span> -->
-                                    <textarea class="form-control" name="description" id="description" placeholder="Enter descripetion"></textarea>
+                                    <textarea class="form-control" name="description" id="description"
+                                        placeholder="Enter descripetion"></textarea>
                                 </div>
                             </div>
                             <div class="col-md-6 form-group">
                                 <div class="mb-2 d-flex justify-content-between align-items-center">
                                     <label>Department</label>
-                                    <button type="button" class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white attendenceall" style="background-color: #E66136;font-size:14px" data-bs-toggle="modal" data-bs-target="#adddepartementModal">
+                                    <button type="button"
+                                        class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white attendenceall"
+                                        style="background-color: #E66136;font-size:14px" data-bs-toggle="modal"
+                                        data-bs-target="#adddepartementModal">
                                         <i class="mdi mdi-plus iconfontsize"></i> Add Department
                                     </button>
                                 </div>
@@ -305,8 +316,8 @@
                                             <option value="<?= $department[
                                                 "id"
                                             ] ?>"><?= $department[
-    "department_name"
-] ?></option>
+                                                 "department_name"
+                                             ] ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
@@ -339,7 +350,8 @@
                                             <input type="hidden" name="age" id="age_range_hidden">
 
                                             <div class="text-center mt-2">
-                                                Selected Range: <span class="badge" style="background-color: #E66136;" id="age">18 - 65</span>
+                                                Selected Range: <span class="badge" style="background-color: #E66136;"
+                                                    id="age">18 - 65</span>
                                             </div>
                                         </div>
                                     </div>
@@ -349,18 +361,22 @@
                                     <div class="px-3">
                                         <label style="font-size: 13px;">Gender</label>
                                         <div class="input-group border rounded-1" style="width: 481px;">
-                                            <span class="input-group-text bg-white"><i class="mdi mdi-gender-male-female"></i></span>
+                                            <span class="input-group-text bg-white"><i
+                                                    class="mdi mdi-gender-male-female"></i></span>
                                             <div class="d-flex flex-wrap align-items-center mx-3">
                                                 <div class="form-check mx-4">
-                                                    <input class="form-check-input" type="radio" name="gender" id="male" value="male">
+                                                    <input class="form-check-input" type="radio" name="gender" id="male"
+                                                        value="male">
                                                     <label class="form-check-label" for="male">Male</label>
                                                 </div>
                                                 <div class="form-check mx-4">
-                                                    <input class="form-check-input" type="radio" name="gender" id="female" value="female">
+                                                    <input class="form-check-input" type="radio" name="gender"
+                                                        id="female" value="female">
                                                     <label class="form-check-label" for="female">Female</label>
                                                 </div>
                                                 <div class="form-check mx-4">
-                                                    <input class="form-check-input" type="radio" name="gender" id="other" value="other">
+                                                    <input class="form-check-input" type="radio" name="gender"
+                                                        id="other" value="other">
                                                     <label class="form-check-label" for="other">Other</label>
                                                 </div>
                                             </div>
@@ -395,7 +411,8 @@
                                         <input type="hidden" name="salary_range" id="salary_range_hidden">
 
                                         <div class="text-center mt-2">
-                                            Selected Range: <span class="badge" style="background-color: #E66136;" id="salary_range">1000 - 100000</span>
+                                            Selected Range: <span class="badge" style="background-color: #E66136;"
+                                                id="salary_range">1000 - 100000</span>
                                         </div>
                                     </div>
                                 </div>
@@ -403,8 +420,10 @@
                             <div class="col-md-6 mb-3 form-group">
                                 <label>Experience</label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="mdi mdi-briefcase-check-outline"></i></span>
-                                    <input type="number" class="form-control" name="experience" id="experience" placeholder="Enter experience in years">
+                                    <span class="input-group-text"><i
+                                            class="mdi mdi-briefcase-check-outline"></i></span>
+                                    <input type="number" class="form-control" name="experience" id="experience"
+                                        placeholder="Enter experience in years">
                                 </div>
                             </div>
                         </div>
@@ -412,9 +431,9 @@
                             <div class="col-md-6 mb-3 form-group">
                                 <div class="mb-2 d-flex justify-content-between align-items-center">
                                     <label class="mb-3">Location</label>
-                                    <button type="button" class="btn p-1 btn-sm d-flex align-items-center rounded-pill addbtn-white attendenceall"
-                                        style="background-color: #E66136; font-size:11px"
-                                        data-bs-toggle="modal"
+                                    <button type="button"
+                                        class="btn p-1 btn-sm d-flex align-items-center rounded-pill addbtn-white attendenceall"
+                                        style="background-color: #E66136; font-size:11px" data-bs-toggle="modal"
                                         data-bs-target="#addlocationModal">
                                         <i class="mdi mdi-plus me-2 iconfontsize"></i> ADD LOCATION
                                     </button>
@@ -428,8 +447,8 @@
                                             <option value="<?= $job[
                                                 "location_id"
                                             ] ?>"><?= esc(
-    $job["job_location"],
-) ?></option>
+                                                 $job["job_location"],
+                                             ) ?></option>
                                         <?php endforeach; ?>
                                     </select>
 
@@ -438,7 +457,10 @@
                             <div class="col-md-6 mb-3 form-group">
                                 <div class="mb-2 d-flex justify-content-between align-items-center">
                                     <label>Address</label>
-                                    <button type="button" class="btn p-1 btn-sm d-flex align-items-center rounded-pill addbtn-white attendenceall" style="background-color: #E66136;font-size:11px" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                                    <button type="button"
+                                        class="btn p-1 btn-sm d-flex align-items-center rounded-pill addbtn-white attendenceall"
+                                        style="background-color: #E66136;font-size:11px" data-bs-toggle="modal"
+                                        data-bs-target="#addAddressModal">
                                         <i class="mdi mdi-plus me-2 iconfontsize"></i> ADD ADDRESS
                                     </button>
                                 </div>
@@ -463,7 +485,7 @@
                             </div>
                         </div>
                         <button type="button" class="btn hr-btnbg prev-step addsmbtnres">Previous</button>
-                        <button type="submit" class="btn hr-btnbg float-end addsmbtnres" id="submitBtn">Submit</button>
+                        <button type="submit" class="btn hr-btnbg float-end addsmbtnres" id="mainSubmitBtn">Submit</button>
                     </fieldset>
                 </form>
             </div>
@@ -474,7 +496,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
 
 <script>
-    $(document).ready(function() {
+    $(document).ready(function () {
         let currentStep = 0;
         let steps = $("fieldset");
         let progressBar = $("#progressBar");
@@ -491,7 +513,7 @@
             let isValid = true;
             let inputs = $(steps[step]).find("input, textarea, select");
 
-            inputs.each(function() {
+            inputs.each(function () {
                 let input = $(this);
                 let fieldName = input.attr("name").replace(/_/g, " "); // Convert underscores to spaces for readability
                 let label = input.closest(".col-md-6").find("label").first().text().trim(); // Get the label text
@@ -545,7 +567,7 @@
             return isValid;
         }
 
-        $(".next-step").click(function() {
+        $(".next-step").click(function () {
             if (validateStep(currentStep)) {
                 $(steps[currentStep]).hide();
                 currentStep++;
@@ -554,7 +576,7 @@
             }
         });
 
-        $(".prev-step").click(function() {
+        $(".prev-step").click(function () {
             $(steps[currentStep]).hide();
             currentStep--;
             $(steps[currentStep]).show();
@@ -568,41 +590,51 @@
             "api/job/",
         ) ?>" + jobId : "<?= base_url("api/job") ?>";
         const method = jobId ? 'POST' : 'POST'; // Method for both actions
-        $("#multiStepForm").on("submit", function(e) {
-            e.preventDefault();
-            const ageSlider = document.getElementById("ageSlider");
-            const ageValues = ageSlider.noUiSlider.get();
-            const salarySlider = document.getElementById("salarySlider");
-            const salaryValues = salarySlider.noUiSlider.get();
+        $("#multiStepForm").on("submit", function (e) {
+            e.preventDefault(); // ALWAYS FIRST!
+            
+            try {
+                const ageSlider = document.getElementById("ageSlider");
+                if (ageSlider && ageSlider.noUiSlider) {
+                    const ageValues = ageSlider.noUiSlider.get();
+                    $('#age_range_hidden').val(ageValues[0] + '-' + ageValues[1]);
+                }
+                const salarySlider = document.getElementById("salarySlider");
+                if (salarySlider && salarySlider.noUiSlider) {
+                    const salaryValues = salarySlider.noUiSlider.get();
+                    $('#salary_range_hidden').val(salaryValues[0] + '-' + salaryValues[1]);
+                }
+            } catch (err) {
+                console.warn("Slider error:", err);
+            }
 
-            $('#salary_range_hidden').val(salaryValues[0] + '-' + salaryValues[1]);
             if (!validateStep(currentStep)) return; // Validate last step before submitting
 
-
-            // let token = localStorage.getItem("token");
             let formData = new FormData(this);
             const csrfName = $('meta[name="csrf-token"]').attr('data-name');
             const csrfHash = $('meta[name="csrf-token"]').attr('content');
-            formData.append(csrfName, csrfHash);
+            if (csrfName && csrfHash) {
+                formData.append(csrfName, csrfHash);
+            }
             $('#loader').show();
 
             $.ajax({
                 url: url,
                 type: method,
+                dataType: "json", // Ensure it expects JSON
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    // 'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Bearer ${token}`
                 },
                 processData: false,
                 contentType: false,
                 data: formData,
-                success: function(response) {
+                success: function (response) {
                     $('#loader').hide();
 
                     Swal.fire({
                         icon: "success",
                         title: "Success!",
-                        text: response.message,
+                        text: response.message || "Job saved correctly.",
                         timer: 2000,
                         showConfirmButton: false,
                     }).then(() => {
@@ -610,21 +642,37 @@
                     });
                     $('#multiStepForm')[0].reset();
                     if (isEditMode) {
-                        $('#submitBtn').text('Submit');
+                        $('#mainSubmitBtn').text('Submit');
                         isEditMode = false;
                     }
                 },
-                error: function(xhr) {
+                error: function (xhr) {
                     $('#loader').hide();
-
-                    let errors = xhr.responseJSON.errors;
-                    $.each(errors, function(key, value) {
-                        let inputField = $(`[name="${key}"]`);
-                        inputField.addClass("is-invalid");
-                        if (!inputField.next(".invalid-feedback").length) {
-                            inputField.after(`<div class="invalid-feedback">${value}</div>`);
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        let errors = xhr.responseJSON.errors;
+                        let firstError = "";
+                        $.each(errors, function (key, value) {
+                            if(!firstError) firstError = value;
+                            let inputField = $(`[name="${key}"]`);
+                            if (inputField.length > 0) {
+                                inputField.addClass("is-invalid");
+                                if (!inputField.next(".invalid-feedback").length) {
+                                    inputField.after(`<div class="invalid-feedback">${value}</div>`);
+                                }
+                            } else {
+                                Swal.fire('Validation Error', value, 'error');
+                            }
+                        });
+                        
+                        if (firstError) {
+                            Swal.fire('Validation Error', firstError, 'error');
                         }
-                    });
+                    } else {
+                        let msg = (xhr.responseJSON && xhr.responseJSON.message) ? 
+                                    xhr.responseJSON.message : "Failed to save the job data.";
+                        Swal.fire("Error!", msg, "error");
+                    }
                 },
             });
         });
@@ -645,7 +693,7 @@
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                success: function(responseData) {
+                success: function (responseData) {
                     if (responseData.status === 'success') {
                         const job = responseData.data;
 
@@ -687,7 +735,7 @@
                         $('#ageMinValue').text(ageMin);
                         $('#ageMaxValue').text(ageMax);
                         $('#age').text(`${ageMin} - ${ageMax}`);
-                        $('#submitBtn').text('Update'); // Change button text to "Update"
+                        $('#mainSubmitBtn').text('Update'); // Change button text to "Update"
                         $('.card-title').text('Edit job');
                         jobId = job.id; // Set the department ID for future reference
                         isEditMode = true; // Set edit mode flag
@@ -699,7 +747,7 @@
                         $('#responseMessage').html('<p class="text-danger">job not found.</p>');
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error('Error fetching country:', error);
                     $('#responseMessage').html('<p class="text-danger">Error fetching job.</p>');
                 }
@@ -729,17 +777,17 @@
             step: 500,
             tooltips: false,
             format: {
-                to: function(value) {
+                to: function (value) {
                     return Math.round(value);
                 },
-                from: function(value) {
+                from: function (value) {
                     return Number(value);
                 }
             }
         });
 
         // Update UI values when slider is moved
-        salarySlider.noUiSlider.on("update", function(values) {
+        salarySlider.noUiSlider.on("update", function (values) {
             const minVal = values[0];
             const maxVal = values[1];
             document.getElementById("salary_range").textContent = `${minVal} - ${maxVal}`;
@@ -764,16 +812,16 @@
             step: 1, // Use a small step for age slider
             tooltips: false,
             format: {
-                to: function(value) {
+                to: function (value) {
                     return Math.round(value);
                 },
-                from: function(value) {
+                from: function (value) {
                     return Number(value);
                 }
             }
         });
         // Update displayed age range when slider is moved
-        ageSlider.noUiSlider.on("update", function(values) {
+        ageSlider.noUiSlider.on("update", function (values) {
             document.getElementById("ageMinValue").textContent = values[0];
             document.getElementById("ageMaxValue").textContent = values[1];
             document.getElementById("age").textContent = `${values[0]} - ${values[1]}`;
@@ -781,8 +829,8 @@
         });
     }
 
-    $(document).ready(function() {
-        $("#departmentForm").submit(function(e) {
+    $(document).ready(function () {
+        $("#departmentForm").submit(function (e) {
             e.preventDefault();
 
             $('#department_name_error').text('');
@@ -810,7 +858,7 @@
                 type: "POST",
                 data: $.param(formData), // serialize + CSRF
                 dataType: "json",
-                success: function(response) {
+                success: function (response) {
                     $('#department_name_error').text('');
 
                     if (response.success) {
@@ -842,7 +890,7 @@
                         });
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error("AJAX Error: " + error);
                     let errorMessage = "Something went wrong while adding the department.";
                     if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -859,8 +907,8 @@
         });
     });
 
-    $(document).ready(function() {
-        $("#LocationForm").submit(function(e) {
+    $(document).ready(function () {
+        $("#LocationForm").submit(function (e) {
             e.preventDefault(); // Prevent default form submission
 
             // Clear previous error
@@ -890,7 +938,7 @@
                 type: "POST",
                 data: $.param(formData),
                 dataType: "json",
-                success: function(response) {
+                success: function (response) {
                     if (response.success) {
                         // Append new option to both dropdowns
                         const newOption = `<option value="${response.location.id}" selected>${response.location.job_location}</option>`;
@@ -921,7 +969,7 @@
                         $("#job_location_error").text(response.message || "Something went wrong.");
                     }
                 },
-                error: function(xhr) {
+                error: function (xhr) {
                     const res = xhr.responseJSON;
                     const message = res?.message || "Server error occurred.";
                     $("#job_location_error").text(message);
@@ -931,23 +979,23 @@
     });
 
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         var modalMode = false; // Track if modal is open
 
         // Track when modal opens
-        $('#addAddressModal').on('show.bs.modal', function() {
+        $('#addAddressModal').on('show.bs.modal', function () {
             modalMode = true; // Modal is open
             var selectedLocation = $('#locations_id').val();
             $('#modal_locations_id').val(selectedLocation);
         });
 
         // Track when modal closes
-        $('#addAddressModal').on('hide.bs.modal', function() {
+        $('#addAddressModal').on('hide.bs.modal', function () {
             modalMode = false; // Modal is closed
         });
 
         // Load addresses when location changes
-        $('#locations_id').on('change', function() {
+        $('#locations_id').on('change', function () {
             var locationId = $(this).val();
             $('#modal_locations_id').val(locationId);
 
@@ -966,11 +1014,11 @@
                     location_id: locationId
                 },
                 dataType: "json",
-                success: function(response) {
+                success: function (response) {
                     $('#addresses_id').empty().append('<option value="">Select Address</option>');
 
                     if (response.length > 0) {
-                        $.each(response, function(index, address) {
+                        $.each(response, function (index, address) {
                             $('#addresses_id').append('<option value="' + address.address_id + '">' + address.address + '</option>');
                         });
 
@@ -983,14 +1031,14 @@
                         $('#addresses_id').append('<option value="">No addresses found</option>');
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error("Error fetching addresses:", xhr.responseText);
                 }
             });
         });
 
         // Submit new address from modal
-        $('#addAddressForm').submit(function(e) {
+        $('#addAddressForm').submit(function (e) {
             e.preventDefault();
 
             let addressname = $("#address").val();
@@ -1053,7 +1101,7 @@
                 type: "POST",
                 data: $.param(formData), // serializeArray + CSRF
                 dataType: "json",
-                success: function(response) {
+                success: function (response) {
                     if (response.status === 'success') {
                         Swal.fire({
                             icon: 'success',
@@ -1091,7 +1139,7 @@
                         });
                     }
                 },
-                error: function(xhr) {
+                error: function (xhr) {
                     console.error("Error adding address:", xhr.responseText);
                 }
             });
