@@ -9,6 +9,8 @@ use CodeIgniter\RESTful\ResourceController;
 
 class ComplaintsController extends ResourceController
 {
+    protected $complaintModel;
+    protected $authService;
     protected $userModel;
     protected $notificationModel;
     protected $pushNotificationService;
@@ -28,7 +30,8 @@ class ComplaintsController extends ResourceController
     public function index()
     {
         $user = $this->authService->user();
-        if (!$user) return redirect()->to('/login');
+        if (!$user)
+            return redirect()->to('/login');
 
         // If Admin/HR, they can see all in adminIndex. 
         // Regular users see only their own.
@@ -49,7 +52,8 @@ class ComplaintsController extends ResourceController
     public function create()
     {
         $user = $this->authService->user();
-        if (!$user) return redirect()->to('/login');
+        if (!$user)
+            return redirect()->to('/login');
 
         $userModel = new \App\Models\UserModel();
         $users = [];
@@ -70,14 +74,15 @@ class ComplaintsController extends ResourceController
     public function store()
     {
         $user = $this->authService->user();
-        if (!$user) return $this->failUnauthorized('Please login');
+        if (!$user)
+            return $this->failUnauthorized('Please login');
 
         $validation = \Config\Services::validation();
         $validation->setRules([
-            'name'    => 'required|min_length[3]',
-            'email'   => 'required|valid_email',
-            'mobile'  => 'required|numeric|min_length[10]',
-            'type'    => 'required|in_list[Complaint,Feedback]',
+            'name' => 'required|min_length[3]',
+            'email' => 'required|valid_email',
+            'mobile' => 'required|numeric|min_length[10]',
+            'type' => 'required|in_list[Complaint,Feedback]',
             'subject' => 'required|min_length[5]',
             'message' => 'required|min_length[10]'
         ]);
@@ -101,14 +106,14 @@ class ComplaintsController extends ResourceController
 
         $data = [
             'user_id' => $targetUserId,
-            'name'    => $this->request->getPost('name'),
-            'email'   => $this->request->getPost('email'),
-            'mobile'  => $this->request->getPost('mobile'),
-            'type'    => $this->request->getPost('type'),
+            'name' => $this->request->getPost('name'),
+            'email' => $this->request->getPost('email'),
+            'mobile' => $this->request->getPost('mobile'),
+            'type' => $this->request->getPost('type'),
             'subject' => $this->request->getPost('subject'),
             'message' => $this->request->getPost('message'),
-            'file'    => $fileName,
-            'status'  => $this->request->getPost('status') ?? 'Pending'
+            'file' => $fileName,
+            'status' => $this->request->getPost('status') ?? 'Pending'
         ];
 
         if ($this->complaintModel->insert($data)) {
@@ -135,16 +140,17 @@ class ComplaintsController extends ResourceController
 
         foreach ($recipients as $recipient) {
             // Optional: Skip if sender is one of them (e.g., HR complaining/feedback)
-            if ($recipient['id'] == $senderId) continue;
+            if ($recipient['id'] == $senderId)
+                continue;
 
             $this->notificationModel->insert([
-                'sender_id'    => $senderId,
+                'sender_id' => $senderId,
                 'recipient_id' => $recipient['id'],
-                'data'         => json_encode([
-                    'type'         => strtolower($type), // 'complaint' or 'feedback'
-                    'subject'      => $subject,
-                    'message'      => "New $type: $subject",
-                    'username'     => $senderName,
+                'data' => json_encode([
+                    'type' => strtolower($type), // 'complaint' or 'feedback'
+                    'subject' => $subject,
+                    'message' => "New $type: $subject",
+                    'username' => $senderName,
                     'complaint_id' => $complaintId
                 ]),
                 'is_read' => 0
@@ -152,7 +158,7 @@ class ComplaintsController extends ResourceController
         }
 
         // Send Push Notification to all Admins and HRs
-         $this->pushNotificationService->notifyAdmins(
+        $this->pushNotificationService->notifyAdmins(
             "Employee $type (New Submission)",
             "$senderName has submitted a new " . strtolower($type) . ": " . $subject,
             [
@@ -191,7 +197,8 @@ class ComplaintsController extends ResourceController
         }
 
         $complaint = $this->complaintModel->find($id);
-        if (!$complaint) return redirect()->to('/complaints/admin')->with('error', 'Record not found');
+        if (!$complaint)
+            return redirect()->to('/complaints/admin')->with('error', 'Record not found');
 
         $userModel = new \App\Models\UserModel();
         $users = $userModel->select('id, username, role')->findAll();
@@ -204,17 +211,23 @@ class ComplaintsController extends ResourceController
         ]);
     }
 
-    /**
-     * API: List for DataTables
-     */
     public function list()
     {
+        $user = $this->authService->user();
+        if (!$user)
+            return $this->failUnauthorized();
+
         $type = $this->request->getGet('type');
         $status = $this->request->getGet('status');
         $date_from = $this->request->getGet('date_from');
         $date_to = $this->request->getGet('date_to');
 
-        $data = $this->complaintModel->getFilteredComplaints($type, $status, $date_from, $date_to);
+        $userId = null;
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            $userId = $user->sub;
+        }
+
+        $data = $this->complaintModel->getFilteredComplaints($type, $status, $date_from, $date_to, $userId);
         return $this->respond(['data' => $data]);
     }
 
@@ -224,49 +237,51 @@ class ComplaintsController extends ResourceController
     public function updateComplaint($id = null)
     {
         $user = $this->authService->user();
-        if (!$user) return $this->failUnauthorized();
+        if (!$user)
+            return $this->failUnauthorized();
 
         $complaint = $this->complaintModel->find($id);
-        if (!$complaint) return $this->failNotFound('Record not found');
+        if (!$complaint)
+            return $this->failNotFound('Record not found');
 
-        // Check permission: Admin/HR can update any. User can maybe only update their own if it's still pending?
-        // But user says: "Admin and HR are all access"
         if (!in_array($user->role, ['admin', 'hr']) && $complaint['user_id'] != $user->sub) {
             return $this->failForbidden('You do not have permission to update this record.');
         }
 
-        $data = [
-            'status'       => $this->request->getPost('status'),
-            'admin_remark' => $this->request->getPost('admin_remark')
-        ];
+        $data = [];
 
-        // Handle Resolution File Upload (Admin/HR Only Response)
+        // Admin and HR can update everything
         if (in_array($user->role, ['admin', 'hr'])) {
+            $data = [
+                'status' => $this->request->getPost('status'),
+                'admin_remark' => $this->request->getPost('admin_remark'),
+                'name' => $this->request->getPost('name'),
+                'email' => $this->request->getPost('email'),
+                'mobile' => $this->request->getPost('mobile'),
+                'type' => $this->request->getPost('type'),
+                'subject' => $this->request->getPost('subject'),
+                'message' => $this->request->getPost('message'),
+                'user_id' => $this->request->getPost('user_id') ?? $complaint['user_id']
+            ];
+
             $resolutionFile = $this->request->getFile('resolution_file');
             if ($resolutionFile && $resolutionFile->isValid() && !$resolutionFile->hasMoved()) {
-                // Delete old resolution file if exists
                 if (!empty($complaint['resolution_file'])) {
                     $oldPath = FCPATH . 'uploads/complaints/' . $complaint['resolution_file'];
-                    if (file_exists($oldPath)) unlink($oldPath);
+                    if (file_exists($oldPath))
+                        unlink($oldPath);
                 }
                 $newName = $resolutionFile->getRandomName();
                 $resolutionFile->move(FCPATH . 'uploads/complaints', $newName);
                 $data['resolution_file'] = $newName;
             }
+        } else {
+            // Regular user can maybe update basic fields, but currently no functionality exists for this
+            // We'll leave it empty to prevent unauthorized status changes
+            return $this->failForbidden('Updating is reserved for HR/Admin at this stage.');
         }
 
-        // If Admin/HR, allow editing EVERYTHING
-        if (in_array($user->role, ['admin', 'hr'])) {
-            $data['name']    = $this->request->getPost('name');
-            $data['email']   = $this->request->getPost('email');
-            $data['mobile']  = $this->request->getPost('mobile');
-            $data['type']    = $this->request->getPost('type');
-            $data['subject'] = $this->request->getPost('subject');
-            $data['message'] = $this->request->getPost('message');
-            $data['user_id'] = $this->request->getPost('user_id') ?? $complaint['user_id'];
-        }
-
-        if ($this->complaintModel->update($id, $data)) {
+        if (!empty($data) && $this->complaintModel->update($id, $data)) {
             return $this->respond(['status' => 'success', 'message' => 'Record updated successfully.']);
         }
 
@@ -279,10 +294,12 @@ class ComplaintsController extends ResourceController
     public function deleteComplaint($id = null)
     {
         $user = $this->authService->user();
-        if (!$user) return $this->failUnauthorized();
+        if (!$user)
+            return $this->failUnauthorized();
 
         $complaint = $this->complaintModel->find($id);
-        if (!$complaint) return $this->failNotFound();
+        if (!$complaint)
+            return $this->failNotFound();
 
         // Permissions: User can only delete their own. Admin/HR can delete any.
         $canDelete = false;
@@ -292,12 +309,14 @@ class ComplaintsController extends ResourceController
             $canDelete = true;
         }
 
-        if (!$canDelete) return $this->failForbidden('You do not have permission to delete this record.');
+        if (!$canDelete)
+            return $this->failForbidden('You do not have permission to delete this record.');
 
         // Delete associated file
         if ($complaint['file']) {
             $filePath = FCPATH . 'uploads/complaints/' . $complaint['file'];
-            if (file_exists($filePath)) unlink($filePath);
+            if (file_exists($filePath))
+                unlink($filePath);
         }
 
         if ($this->complaintModel->delete($id)) {
