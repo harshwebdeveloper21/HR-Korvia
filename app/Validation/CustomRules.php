@@ -18,6 +18,10 @@ class CustomRules
             return false; // Both dates are required
         }
 
+        if (isset($data['leave_duration']) && $data['leave_duration'] === 'half_day') {
+            return $noOfDay == 0.5;
+        }
+
         // Calculate the difference in days
         $start = strtotime($data['start_date']);
         $end = strtotime($data['end_date']);

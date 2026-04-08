@@ -977,7 +977,10 @@
                         description: leaveItem.reason || "No reason provided",
                         status: leaveItem.status,
                         created_by: leaveItem.created_by_username,
-                        leave_type: leaveItem.leave_type
+                        leave_type: leaveItem.leave_type,
+                        no_of_day: leaveItem.no_of_day,
+                        leave_duration: leaveItem.leave_duration,
+                        half_day_type: leaveItem.half_day_type
                     }
                 };
             })
@@ -1255,7 +1258,11 @@
         const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
                            'July', 'August', 'September', 'October', 'November', 'December'];
-        const todayDate = today.toISOString().split('T')[0];
+        
+        const tY = today.getFullYear();
+        const tM = String(today.getMonth() + 1).padStart(2, '0');
+        const tD = String(today.getDate()).padStart(2, '0');
+        const todayDate = `${tY}-${tM}-${tD}`;
         
         // Update month title
         const monthTitle = document.getElementById('date-scroll-month-title');
@@ -1266,13 +1273,17 @@
         // Show all days of selected month
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(currentYear, currentMonth - 1, day);
-            const dateStr = date.toISOString().split('T')[0];
+            
+            const mStr = String(currentMonth).padStart(2, '0');
+            const dStr = String(day).padStart(2, '0');
+            const dateStr = `${currentYear}-${mStr}-${dStr}`;
+            
             const dayOfWeek = date.getDay();
             
             // Check if there are leaves on this date
             const hasLeave = allLeaveEvents.some(event => {
-                const eventStart = new Date(event.start).toISOString().split('T')[0];
-                const eventEnd = new Date(event.end).toISOString().split('T')[0];
+                const eventStart = event.start.split('T')[0];
+                const eventEnd = event.end.split('T')[0];
                 return dateStr >= eventStart && dateStr <= eventEnd;
             });
             
@@ -1314,8 +1325,8 @@
         
         // Filter events for selected date
         let filteredEvents = allLeaveEvents.filter(event => {
-            const eventStart = new Date(event.start).toISOString().split('T')[0];
-            const eventEnd = new Date(event.end).toISOString().split('T')[0];
+            const eventStart = event.start.split('T')[0];
+            const eventEnd = event.end.split('T')[0];
             return selectedDate >= eventStart && selectedDate <= eventEnd;
         });
         
@@ -1347,10 +1358,24 @@
             card.className = `mobile-leave-card ${leaveTypeClass}`;
             
             // Calculate duration
+            const eventStartStr = event.start.split('T')[0];
+            const eventEndStr = event.end.split('T')[0];
+            
+            // Format dates simply as DD/MM/YYYY
+            const [sYear, sMonth, sDay] = eventStartStr.split('-');
+            const [eYear, eMonth, eDay] = eventEndStr.split('-');
+            const displayStart = `${sDay}/${sMonth}/${sYear}`;
+            const displayEnd = `${eDay}/${eMonth}/${eYear}`;
+            
             const startDate = new Date(event.start);
             const endDate = new Date(event.end);
-            const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-            const durationText = duration === 1 ? '1 day' : `${duration} days`;
+            const duration = props.no_of_day || Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) || 1;
+            let durationText = duration == '0.5' ? 'Half Day' : (duration == 1 ? '1 day' : `${duration} days`);
+            
+            if (duration == '0.5' && props.half_day_type) {
+                const halfDayText = props.half_day_type === 'first_half' ? 'First Half' : 'Second Half';
+                durationText += ` (${halfDayText})`;
+            }
             
             card.innerHTML = `
                 <div class="mobile-leave-header">
@@ -1364,7 +1389,7 @@
                     <div class="mobile-leave-status ${props.status}">${props.status}</div>
                 </div>
                 <div class="mobile-leave-info">
-                    <strong>Duration:</strong> ${durationText} (${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()})
+                    <strong>Duration:</strong> ${durationText} (${displayStart} - ${displayEnd})
                 </div>
                 <div class="mobile-leave-reason">
                     "${props.description}"
