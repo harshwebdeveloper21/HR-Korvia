@@ -444,8 +444,24 @@
             return new Date(year, month, 0).getDate();
         }
 
-        $('#salary_amount, #tax_deduction, #bonuses, #used_paid_leaves, #total_leaves, #total_halfday_leaves').on('input', function () {
+        function togglePaidLeaveSection() {
+            const leaves = parseFloat($('#total_leaves').val()) || 0;
+            const halfDays = parseFloat($('#total_halfday_leaves').val()) || 0;
+            
+            if (leaves > 0 || halfDays > 0) {
+                $('#paid_leave_section').slideDown();
+            } else {
+                $('#paid_leave_section').slideUp();
+                $('#include_paid_leave').val('');
+                $('#paidLeaveSection').slideUp();
+            }
+        }
+
+        $('#salary_amount, #tax_deduction, #bonuses, #used_paid_leaves, #total_leaves, #total_halfday_leaves').on('input', function() {
             calculateNetSalary();
+            if (this.id === 'total_leaves' || this.id === 'total_halfday_leaves') {
+                togglePaidLeaveSection();
+            }
         });
 
         $('#include_paid_leave').on('change', function () {
@@ -926,14 +942,7 @@
                     $('#total_leaves').val(leaves);
                     $('#total_halfday_leaves').val(halfDays);
 
-                    // Show/hide paid leave section
-                    if (leaves > 0) {
-                        $('#paid_leave_section').slideDown();
-                    } else {
-                        $('#paid_leave_section').slideUp();
-                        $('#include_paid_leave').val('');
-                        $('#paidLeaveSection').slideUp();
-                    }
+                    togglePaidLeaveSection();
                 },
                 error: function () {
                     Swal.fire({
@@ -1078,6 +1087,7 @@
                         data: {
                             user_id: userId,
                             month: monthYear,
+                            salary_amount: parseFloat($('#salary_amount').val()) || 0,
                             total_leaves: parseFloat($('#total_leaves').val()) || 0,
                             total_halfday_leaves: parseFloat($('#total_halfday_leaves').val()) || 0
                         },

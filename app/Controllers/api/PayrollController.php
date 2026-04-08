@@ -2272,8 +2272,14 @@ class PayrollController extends ResourceController
             $holidayDates,
         );
         $workingDays = $workingDaysData["working_days"];
-        $userInfo = (new UserInfoModel())->where("user_id", $userId)->first();
-        $salary = $userInfo["salary"] ?? 0;
+        
+        $manualSalary = $this->request->getPost("salary_amount") ?: $this->request->getGet("salary_amount");
+        if ($manualSalary !== null && (float)$manualSalary > 0) {
+            $salary = (float) $manualSalary;
+        } else {
+            $userInfo = (new UserInfoModel())->where("user_id", $userId)->first();
+            $salary = $userInfo["salary"] ?? 0;
+        }
         $perDay = $workingDays > 0 ? round($salary / $workingDays, 2) : 0;
         $perHour = ($workingDays > 0 && $workingHoursPerDay > 0) ? round($salary / ($workingDays * $workingHoursPerDay), 2) : 0;
 
