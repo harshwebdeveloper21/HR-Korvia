@@ -43,6 +43,7 @@
             margin-top: 10px !important;
         }
     }
+
     /* Salary deduction info icon - match input-group addon style */
     .input-group-append .btn-deduction-info-single,
     .input-group .btn-deduction-info-single {
@@ -56,14 +57,17 @@
         align-items: center;
         justify-content: center;
     }
+
     .input-group .btn-deduction-info-single:hover {
         background-color: #e9ecef;
         color: #d35400;
         border-color: #ced4da;
     }
+
     .input-group .btn-deduction-info-single i {
         font-size: 1.1rem;
     }
+
     /* Single border between input and button */
     #salary_deduction {
         border-right: 0;
@@ -110,7 +114,8 @@
                                 <select class="form-select" name="user_id" id="user_id">
                                     <option value="" disabled selected>Select Employee</option>
                                     <?php foreach ($employees as $employee): ?>
-                                        <option value="<?= $employee["id"] ?>"><?= esc($employee["username"], "html") ?></option>
+                                        <option value="<?= $employee["id"] ?>"><?= esc($employee["username"], "html") ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -122,7 +127,8 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
                                 </div>
-                                <input type="number" class="form-control" name="salary_amount" id="salary_amount" placeholder="Salary Amount" value="0" />
+                                <input type="number" class="form-control" name="salary_amount" id="salary_amount"
+                                    placeholder="Salary Amount" value="0" />
                             </div>
                         </div>
 
@@ -142,7 +148,8 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-airplane fs-5"></i></span>
                                 </div>
-                                <input type="text" class="form-control" id="total_leaves" name="total_leaves" value="0" readonly />
+                                <input type="number" step="0.5" min="0" class="form-control" id="total_leaves"
+                                    name="total_leaves" value="0" />
                             </div>
                         </div>
 
@@ -152,7 +159,8 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-airplane fs-5"></i></span>
                                 </div>
-                                <input type="text" class="form-control" id="total_halfday_leaves" name="total_halfday_leaves" value="0" readonly />
+                                <input type="number" step="0.5" min="0" class="form-control" id="total_halfday_leaves"
+                                    name="total_halfday_leaves" value="0" />
                             </div>
                         </div>
 
@@ -187,8 +195,8 @@
                                             <option value="<?= $type[
                                                 "id"
                                             ] ?>"><?= esc(
-    $type["leave_type"],
-) ?></option>
+                                                 $type["leave_type"],
+                                             ) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
@@ -200,7 +208,8 @@
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="mdi mdi-airplane fs-5"></i></span>
                                     </div>
-                                    <input type="number" id="total_paid_leaves" name="total_paid_leaves" class="form-control" value="0" readonly>
+                                    <input type="number" id="total_paid_leaves" name="total_paid_leaves"
+                                        class="form-control" value="0" readonly>
                                 </div>
                             </div>
 
@@ -208,9 +217,11 @@
                                 <label class="form-label">Remaining Paid Leaves</label>
                                 <div class="input-group">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="mdi mdi-calendar-clock fs-5"></i></span>
+                                        <span class="input-group-text"><i
+                                                class="mdi mdi-calendar-clock fs-5"></i></span>
                                     </div>
-                                    <input type="text" class="form-control" id="remaining_paid_leaves" name="remaining_paid_leaves" readonly />
+                                    <input type="text" class="form-control" id="remaining_paid_leaves"
+                                        name="remaining_paid_leaves" readonly />
                                 </div>
                             </div>
 
@@ -220,10 +231,12 @@
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="mdi mdi-check-circle fs-5"></i></span>
                                     </div>
-                                    <input type="number" class="form-control" id="used_paid_leaves" name="used_paid_leaves" value="0" />
+                                    <input type="number" class="form-control" id="used_paid_leaves"
+                                        name="used_paid_leaves" value="0" />
                                 </div>
                                 <div class="col-md-6 form-group mb-0 d-none" id="halfDayInfo">
-                                    <label class="badge form-label fw-bold p-0 py-0 text-success">Use Paid Leave for Half-Day Absences. eg. 0.5 OR 1.5 OR 2.5 </label>
+                                    <label class="badge form-label fw-bold p-0 py-0 text-success">Use Paid Leave for
+                                        Half-Day Absences. eg. 0.5 OR 1.5 OR 2.5 </label>
                                 </div>
                             </div>
                         </div>
@@ -274,7 +287,8 @@
                             <label class="form-label">Unpaid Leaves</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="mdi mdi-calendar-remove-outline fs-5"></i></span>
+                                    <span class="input-group-text"><i
+                                            class="mdi mdi-calendar-remove-outline fs-5"></i></span>
                                 </div>
                                 <input type="text" class="form-control" id="unpaid_leaves_display" readonly />
                             </div>
@@ -285,19 +299,21 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
                                 </div>
-                                <input type="number" class="form-control" name="tax_deduction" id="tax_deduction" value="0" />
+                                <input type="number" class="form-control" name="tax_deduction" id="tax_deduction"
+                                    value="200" />
                                 <input type="hidden" id="salary_above_tax" name="salary_above_tax">
                             </div>
                         </div>
 
-                        <!-- Overtime Information (shown only if overtime exists) -->
+                        <!-- Overtime Information (show/hide via display: none if needed) -->
                         <div class="col-md-6 form-group overtime-info" style="display: none;">
                             <label class="form-label">Total Overtime Hours</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-clock-plus fs-5"></i></span>
                                 </div>
-                                <input type="text" class="form-control" id="display_overtime_hours" value="0" readonly />
+                                <input type="text" class="form-control" id="display_overtime_hours" value="0"
+                                    readonly />
                             </div>
                         </div>
 
@@ -317,16 +333,19 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
                                 </div>
-                                <input type="number" class="form-control" name="salary_deduction" id="salary_deduction" value="0" readonly />
+                                <input type="number" class="form-control" name="salary_deduction" id="salary_deduction"
+                                    value="0" readonly />
                                 <div class="input-group-append">
-                                    <button type="button" class="btn btn-deduction-info-single" title="Why is this amount deducted?" id="btn_deduction_info" aria-label="View deduction details">
+                                    <button type="button" class="btn btn-deduction-info-single"
+                                        title="Why is this amount deducted?" id="btn_deduction_info"
+                                        aria-label="View deduction details">
                                         <i class="mdi mdi-information-outline"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-md-6 form-group">
+                        <!-- <div class="col-md-6 form-group">
                             <label class="form-label">Bonuses</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
@@ -334,7 +353,7 @@
                                 </div>
                                 <input type="number" class="form-control" name="bonuses" id="bonuses" value="0" />
                             </div>
-                        </div>
+                        </div> -->
 
                         <div class="col-md-6 form-group">
                             <label class="form-label">Net Salary</label>
@@ -382,14 +401,16 @@
 </div>
 
 <!-- Deduction breakdown modal (same as group salary-details) -->
-<div class="modal fade" id="deductionBreakdownModalSingle" tabindex="-1" aria-labelledby="deductionBreakdownModalSingleLabel" aria-hidden="true">
+<div class="modal fade" id="deductionBreakdownModalSingle" tabindex="-1"
+    aria-labelledby="deductionBreakdownModalSingleLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header" style="background:#E66136;color:white;">
                 <h5 class="modal-title" id="deductionBreakdownModalSingleLabel">
                     <i class="mdi mdi-information-outline me-1"></i> Why was this amount deducted?
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
             <div class="modal-body" id="deductionBreakdownBodySingle">
                 <div class="text-center py-4" id="deductionBreakdownLoadingSingle">
@@ -414,7 +435,7 @@
     document.getElementById('month_year').value = currentMonth;
     document.getElementById('month_year').setAttribute('max', currentMonth);
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         function getDaysInCurrentMonth() {
             const monthYear = $('#month_year').val();
             if (!monthYear) return 30;
@@ -423,11 +444,11 @@
             return new Date(year, month, 0).getDate();
         }
 
-        $('#salary_amount, #tax_deduction, #bonuses, #used_paid_leaves').on('input', function() {
+        $('#salary_amount, #tax_deduction, #bonuses, #used_paid_leaves, #total_leaves, #total_halfday_leaves').on('input', function () {
             calculateNetSalary();
         });
 
-        $('#include_paid_leave').on('change', function() {
+        $('#include_paid_leave').on('change', function () {
             if ($(this).val() === 'yes') {
                 $('#paidLeaveSection').slideDown();
             } else {
@@ -437,7 +458,7 @@
             }
         });
 
-        $('#leave_type').on('change', function() {
+        $('#leave_type').on('change', function () {
             const leaveId = $(this).val();
             const userId = $('#user_id').val();
             const monthYear = $('#month_year').val();
@@ -452,12 +473,7 @@
                     user_id: userId,
                     month_year: monthYear
                 },
-                success: function(response) {
-                    $('#total_paid_leaves').val(response.total_leaves);
-                    $('#used_paid_leaves').val(response.used_leaves);
-                    $('#remaining_paid_leaves').val(response.remaining_leaves);
-                    $('#remaining_paid_leaves').attr('data-ogvalue', response.remaining_leaves);
-
+                success: function (response) {
                     const allowHalfDay = response.allow_half_day || false;
                     const usedPaidLeavesInput = $('#used_paid_leaves');
 
@@ -473,9 +489,24 @@
 
                     usedPaidLeavesInput.attr('data-allow-half-day', allowHalfDay);
 
+                    $('#total_paid_leaves').val(response.total_leaves);
+
+                    const monthlyLeaves = parseFloat($('#total_leaves').val()) || 0;
+                    const remainingAvailable = response.remaining_leaves;
+
+                    // Suggest using as many paid leaves as possible to cover monthly leaves taken
+                    const suggestedUsed = isEditMode ? (response.used_leaves || 0) : Math.min(monthlyLeaves, remainingAvailable);
+
+                    $('#used_paid_leaves').val(suggestedUsed);
+
+                    // Update remaining leaves display: Initial Remaining - what we are using now
+                    const finalRemaining = remainingAvailable - suggestedUsed;
+                    $('#remaining_paid_leaves').val(finalRemaining.toFixed(allowHalfDay ? 1 : 0));
+                    $('#remaining_paid_leaves').attr('data-ogvalue', remainingAvailable);
+
                     calculateNetSalary();
                 },
-                error: function() {
+                error: function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -487,7 +518,7 @@
             });
         });
 
-        $('#used_paid_leaves').on('input', function() {
+        $('#used_paid_leaves').on('input', function () {
             const allowHalfDay = $(this).attr('data-allow-half-day') === 'true';
             const ogValue = parseFloat($('#remaining_paid_leaves').attr('data-ogvalue')) || 0;
             let currentValue = parseFloat(this.value) || 0;
@@ -495,25 +526,19 @@
             // If half day is not allowed, ensure only integer values
             if (!allowHalfDay) {
                 currentValue = Math.floor(currentValue);
-                if (this.value !== currentValue.toString()) {
+                if (this.value !== currentValue.toString() && this.value !== "") {
                     this.value = currentValue;
                 }
             }
 
             if (currentValue > ogValue) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid Input',
-                    text: 'You cannot use more than remaining paid leaves',
-                    buttonsStyling: false,
-                    customClass: { confirmButton: 'hr-btnbg' }
-                });
-                this.value = ogValue;
+                // If user enters more than available, cap it
                 currentValue = ogValue;
+                this.value = ogValue;
             }
 
             const remaining = ogValue - currentValue;
-            $('#remaining_paid_leaves').val(remaining < 0 ? 0 : remaining.toFixed(allowHalfDay ? 1 : 0));
+            $('#remaining_paid_leaves').val(remaining.toFixed(allowHalfDay ? 1 : 0));
         });
 
         const token = localStorage.getItem('token');
@@ -521,7 +546,7 @@
         let payrollId = null;
         let isLoadingEditData = false; // Flag to prevent recalculation during initial load
 
-        $('#payrollForm').on('submit', function(e) {
+        $('#payrollForm').on('submit', function (e) {
             e.preventDefault();
 
             $('.invalid-feedback').remove();
@@ -545,7 +570,7 @@
                 data: formData,
                 processData: false,
                 contentType: false,
-                success: function(response) {
+                success: function (response) {
                     $('#loader').hide();
 
                     if (response.status === 'success') {
@@ -570,13 +595,13 @@
                         });
                     }
                 },
-                error: function(xhr) {
+                error: function (xhr) {
                     $('#loader').hide();
 
                     let message = xhr.responseJSON?.message || 'An error occurred';
 
                     if (typeof message === 'object') {
-                        $.each(message, function(key, value) {
+                        $.each(message, function (key, value) {
                             let inputField = $(`[name="${key}"]`);
                             if (inputField.length) {
                                 inputField.addClass('is-invalid');
@@ -618,7 +643,7 @@
                 url: `<?= base_url("api/payroll/") ?>${Id}`,
                 type: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
-                success: function(responseData) {
+                success: function (responseData) {
                     if (responseData.status === 'success' && responseData.data.length > 0) {
                         const payroll = responseData.data[0];
 
@@ -654,7 +679,7 @@
                                         user_id: $('#user_id').val(),
                                         month_year: $('#month_year').val()
                                     },
-                                    success: function(response) {
+                                    success: function (response) {
                                         // Set step attribute based on allow_half_day
                                         const allowHalfDay = response.allow_half_day || false;
                                         const usedPaidLeavesInput = $('#used_paid_leaves');
@@ -747,7 +772,7 @@
                                             method: 'POST',
                                             data: { year: year, month: month },
                                             dataType: 'json',
-                                            success: function(res) {
+                                            success: function (res) {
                                                 $('#working_days_display').val(res.working_days || 0);
 
                                                 // Update unpaid leaves display
@@ -793,7 +818,7 @@
                         isLoadingEditData = false;
                     }
                 },
-                error: function() {
+                error: function () {
                     isLoadingEditData = false; // Reset flag on error
                     Swal.fire({
                         icon: 'error',
@@ -806,7 +831,7 @@
             });
         }
 
-        document.getElementById('user_id').addEventListener('change', function() {
+        document.getElementById('user_id').addEventListener('change', function () {
             const userId = this.value;
 
             if (!userId) return;
@@ -822,7 +847,7 @@
                     }
 
                     // Set tax deduction (can be updated in edit mode)
-                    $('#tax_deduction').val(data.tax ?? 0).data('original-tax', data.tax ?? 0);
+                    $('#tax_deduction').val(data.tax ?? 200).data('original-tax', data.tax ?? 200);
                     $('#salary_above_tax').val(data.salary_above_tax ?? 12000);
 
                     // Store company rules in hidden fields
@@ -853,7 +878,7 @@
                             method: 'POST',
                             data: { year: year, month: month },
                             dataType: 'json',
-                            success: function(res) {
+                            success: function (res) {
                                 $('#working_days_display').val(res.working_days || 0);
                             }
                         });
@@ -874,7 +899,7 @@
                 });
         });
 
-        $('#user_id, #month_year').on('change', function() {
+        $('#user_id, #month_year').on('change', function () {
             // Skip if we're in the middle of loading edit data
             if (isLoadingEditData) return;
 
@@ -894,7 +919,7 @@
                 method: 'POST',
                 data: { user_id: userId, year: year, month: month },
                 dataType: 'json',
-                success: function(res) {
+                success: function (res) {
                     const leaves = res.total_leaves || 0;
                     const halfDays = res.total_half_day_leaves || 0;
 
@@ -910,7 +935,7 @@
                         $('#paidLeaveSection').slideUp();
                     }
                 },
-                error: function() {
+                error: function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -928,7 +953,7 @@
                     method: 'POST',
                     data: { user_id: userId, year: year, month: month },
                     dataType: 'json',
-                    success: function(res) {
+                    success: function (res) {
                         $('#worked_hours').val(res.total_worked_hours || 0);
                         $('#total_overtime_hours').val(res.total_overtime_hours || 0);
 
@@ -942,7 +967,7 @@
 
                         calculateNetSalary();
                     },
-                    error: function() {
+                    error: function () {
                         console.error('Failed to fetch worked hours');
                     }
                 });
@@ -954,12 +979,12 @@
                 method: 'POST',
                 data: { year: year, month: month },
                 dataType: 'json',
-                success: function(res) {
+                success: function (res) {
                     $('#loader').hide();
                     $('#working_days_display').val(res.working_days || 0);
                     calculateNetSalary();
                 },
-                error: function() {
+                error: function () {
                     $('#loader').hide();
                     console.error('Failed to fetch working days');
                     calculateNetSalary();
@@ -985,15 +1010,21 @@
                     month: month,
                     payroll_type: payrollType,
                     salary_amount: baseSalary,
-                    usedPaidLeaves: usedPaidLeaves
+                    usedPaidLeaves: usedPaidLeaves,
+                    total_leaves: parseFloat($('#total_leaves').val()) || 0,
+                    total_halfday_leaves: parseFloat($('#total_halfday_leaves').val()) || 0
                 },
                 dataType: 'json',
-                success: function(res) {
+                success: function (res) {
                     if (res.status !== 'success') return;
 
                     const data = res.data;
                     // Tax from backend calculation
-                    $('#tax_deduction').val(data.tax_deduction);
+                    const calculatedTax = parseFloat(data.tax_deduction);
+                    // If calculated tax is 0 and it's not a manual overwrite, use 200 as default
+                    const finalTax = (calculatedTax > 0) ? calculatedTax : 200;
+                    $('#tax_deduction').val(finalTax);
+
                     $('#working_days_display').val(data.working_days || 0);
                     $('#unpaid_leaves_display').val(data.unpaid_leaves || 0);
 
@@ -1046,10 +1077,12 @@
                         method: 'POST',
                         data: {
                             user_id: userId,
-                            month: monthYear
+                            month: monthYear,
+                            total_leaves: parseFloat($('#total_leaves').val()) || 0,
+                            total_halfday_leaves: parseFloat($('#total_halfday_leaves').val()) || 0
                         },
                         dataType: 'json',
-                        success: function(breakdownRes) {
+                        success: function (breakdownRes) {
                             if (breakdownRes.status !== 'success' || !breakdownRes.data || !breakdownRes.data.summary) {
                                 return;
                             }
@@ -1067,13 +1100,13 @@
                             $('#salary_deduction').val(salaryDeduction.toFixed(2));
 
                             // Net salary: base + overtime - adjusted_deduction - tax + bonuses
-                            const tax = parseFloat(data.tax_deduction || 0);
+                            const tax = parseFloat($('#tax_deduction').val()) || 200;
                             const netSalary = baseSalary + overtimePay - salaryDeduction - tax + bonuses;
                             $('#net_salary').val(netSalary.toFixed(2));
                         }
                     });
                 },
-                error: function() {
+                error: function () {
                     // Fallback to simple calculation
                     simpleCalculateNetSalary();
                 }
@@ -1096,8 +1129,8 @@
             const perHourSalary = perDaySalary / (parseFloat($('#working_hours_per_day').val()) || 8);
             // Tax calculation
             const salaryAboveTax = parseFloat($('#salary_above_tax').val()) || 12000;
-            const taxValue = parseFloat($('#tax_deduction').data('original-tax')) || 0;
-            const taxDeduction = salaryAmount > salaryAboveTax ? taxValue : 0;
+            const taxValue = parseFloat($('#tax_deduction').data('original-tax')) || 200;
+            const taxDeduction = salaryAmount > salaryAboveTax ? taxValue : 200;
             $('#tax_deduction').val(taxDeduction);
             // Leave deduction - account for paid leave covering both full days and half days
             // Calculate how paid leave covers full days and half days
@@ -1146,7 +1179,7 @@
         }
 
         // Deduction info modal (user-wise, same as group view) – works on mobile
-        $(document).on('click', '.btn-deduction-info-single, #btn_deduction_info', function(e) {
+        $(document).on('click', '.btn-deduction-info-single, #btn_deduction_info', function (e) {
             e.preventDefault();
             e.stopPropagation();
             const userId = $('#user_id').val();
@@ -1186,7 +1219,7 @@
                     month: month
                 },
                 dataType: 'json',
-                success: function(res) {
+                success: function (res) {
                     loading.style.display = 'none';
                     if (res.status !== 'success' || !res.data) {
                         content.innerHTML = '<p class="text-danger">Could not load deduction details.</p>';
@@ -1199,21 +1232,21 @@
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong class="text-danger">Leaves (' + (d.leaves.count || 0) + ' day(s))</strong>';
                         if (d.leaves.dates && d.leaves.dates.length) {
                             html += '<ul class="list-unstyled small mb-1" style="max-height:120px;overflow-y:auto;">';
-                            d.leaves.dates.forEach(function(l) { html += '<li>' + (l.label || l.date) + (l.reason ? ' – ' + l.reason : '') + '</li>'; });
+                            d.leaves.dates.forEach(function (l) { html += '<li>' + (l.label || l.date) + (l.reason ? ' – ' + l.reason : '') + '</li>'; });
                             html += '</ul>';
                         }
                         html += '<span class="text-danger">Deduction: ₹' + (d.leaves.deduction_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.absent && d.absent.dates && d.absent.dates.length) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong class="text-warning">Absent (' + d.absent.dates.length + ' day(s))</strong><ul class="list-unstyled small" style="max-height:120px;overflow-y:auto;">';
-                        d.absent.dates.forEach(function(a) { html += '<li>' + (a.label || a.date) + '</li>'; });
+                        d.absent.dates.forEach(function (a) { html += '<li>' + (a.label || a.date) + '</li>'; });
                         html += '</ul></div>';
                     }
                     if (d.half_day && (d.half_day.count > 0 || (d.half_day.dates && d.half_day.dates.length))) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong>Half-day (' + (d.half_day.count || 0) + ')</strong>';
                         if (d.half_day.dates && d.half_day.dates.length) {
                             html += '<ul class="list-unstyled small mb-1" style="max-height:120px;overflow-y:auto;">';
-                            d.half_day.dates.forEach(function(h) {
+                            d.half_day.dates.forEach(function (h) {
                                 var baseLabel = (h.label || h.date);
                                 var worked = h.worked_text ? (' – Worked: ' + h.worked_text) : '';
                                 var missing = h.missing_text ? (' – Deduct: ' + h.missing_text) : '';
@@ -1225,12 +1258,12 @@
                     }
                     if (d.late && d.late.list && d.late.list.length) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong>Late arrival</strong><ul class="list-unstyled small" style="max-height:120px;overflow-y:auto;">';
-                        d.late.list.forEach(function(l) { html += '<li>' + (l.label || l.date) + ' – ' + (l.late_text || l.late_minutes + ' min') + '</li>'; });
+                        d.late.list.forEach(function (l) { html += '<li>' + (l.label || l.date) + ' – ' + (l.late_text || l.late_minutes + ' min') + '</li>'; });
                         html += '</ul><span class="text-danger">Deduction: ₹' + (d.late.deduction_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.overtime && d.overtime.list && d.overtime.list.length) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong class="text-success">Overtime</strong><ul class="list-unstyled small" style="max-height:120px;overflow-y:auto;">';
-                        d.overtime.list.forEach(function(o) { html += '<li>' + (o.label || o.date) + ' – ' + (o.overtime_text || o.overtime_hours + 'h') + '</li>'; });
+                        d.overtime.list.forEach(function (o) { html += '<li>' + (o.label || o.date) + ' – ' + (o.overtime_text || o.overtime_hours + 'h') + '</li>'; });
                         html += '</ul><span class="text-success">Added to salary: ₹' + (d.overtime.pay_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.summary) {
@@ -1243,7 +1276,7 @@
                     content.innerHTML = html;
                     content.style.display = 'block';
                 },
-                error: function() {
+                error: function () {
                     loading.style.display = 'none';
                     content.innerHTML = '<p class="text-danger">Failed to load details.</p>';
                     content.style.display = 'block';

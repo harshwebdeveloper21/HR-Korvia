@@ -18,6 +18,7 @@ use App\Models\AttendanceModel;
 use App\Models\HolidayCalendarModel;
 use App\Services\AuthService;
 use CodeIgniter\HTTP\ResponseInterface;
+use App\Models\EmployeeLeaveModel;
 use App\Traits\CompanyRuleTrait;
 
 class PayrollController extends ResourceController
@@ -694,13 +695,18 @@ class PayrollController extends ResourceController
         $workingDaysData = $this->getWorkingDaysData($month, $year, $rules, $holidayDates);
         $workingDays = $workingDaysData["working_days"];
 
-        $totalLeaves = $this->countMonthlyLeaves(
-            $userId,
-            "$year-" . str_pad($month, 2, "0", STR_PAD_LEFT),
-            $rules,
-            $leaveModel,
-            $holidayDates,
-        );
+        $totalLeavesInput = $this->request->getPost("total_leaves");
+        if ($totalLeavesInput !== null) {
+            $totalLeaves = (float) $totalLeavesInput;
+        } else {
+            $totalLeaves = $this->countMonthlyLeaves(
+                $userId,
+                "$year-" . str_pad($month, 2, "0", STR_PAD_LEFT),
+                $rules,
+                $leaveModel,
+                $holidayDates,
+            );
+        }
 
         // Half-days – fetch rows so we can base deduction on missing hours (using gross worked time).
         $halfDayRows = $attendanceModel
@@ -715,22 +721,27 @@ class PayrollController extends ResourceController
             ? (float) $rules["working_hours_per_day"]
             : 8.0;
 
-        $halfDays = 0;
-        foreach ($halfDayRows as $row) {
-            // Use gross worked hours from check-in/out to decide if it is truly a half‑day.
-            $displayWorkedSeconds = 0;
-            if (!empty($row["check_in_time"]) && !empty($row["check_out_time"])) {
-                $inTs = strtotime($row["date"] . " " . $row["check_in_time"]);
-                $outTs = strtotime($row["date"] . " " . $row["check_out_time"]);
-                if ($outTs > $inTs) {
-                    $displayWorkedSeconds = $outTs - $inTs;
+        $halfDaysInput = $this->request->getPost("total_halfday_leaves");
+        if ($halfDaysInput !== null) {
+            $halfDays = (float) $halfDaysInput;
+        } else {
+            $halfDays = 0;
+            foreach ($halfDayRows as $row) {
+                // Use gross worked hours from check-in/out to decide if it is truly a half‑day.
+                $displayWorkedSeconds = 0;
+                if (!empty($row["check_in_time"]) && !empty($row["check_out_time"])) {
+                    $inTs = strtotime($row["date"] . " " . $row["check_in_time"]);
+                    $outTs = strtotime($row["date"] . " " . $row["check_out_time"]);
+                    if ($outTs > $inTs) {
+                        $displayWorkedSeconds = $outTs - $inTs;
+                    }
                 }
-            }
-            $displayWorkedHours = $displayWorkedSeconds / 3600;
+                $displayWorkedHours = $displayWorkedSeconds / 3600;
 
-            // Count as half‑day only when gross worked hours are clearly below a full day
-            if ($displayWorkedHours + 0.01 < $fullDayHoursRule) {
-                $halfDays++;
+                // Count as half‑day only when gross worked hours are clearly below a full day
+                if ($displayWorkedHours + 0.01 < $fullDayHoursRule) {
+                    $halfDays++;
+                }
             }
         }
 
@@ -1032,12 +1043,30 @@ class PayrollController extends ResourceController
         $attendanceModel = new AttendanceModel();
         // Get number_of_leaves for selected leave type
         $leaveType = $leaveTypeModel->find($leaveId);
-        $totalLeaves = $leaveType ? (int) $leaveType["number_of_leaves"] : 0;
+        $totalLeaves = 0;
 
-        $usedPaidLeaves = $payrollModel
+        if ($leaveId == 1 || $leaveId == 2) { // Paid or Casual
+            $employeeLeaveModel = new EmployeeLeaveModel();
+            $employeeBalance = $employeeLeaveModel->where('employee_id', $userId)->first();
+            if ($employeeBalance) {
+                $totalLeaves = ($leaveId == 1) ? $employeeBalance['paid_leave'] : $employeeBalance['casual_leave'];
+            } else {
+                $totalLeaves = $leaveType ? (int) $leaveType["number_of_leaves"] : 0;
+            }
+        } else {
+            $totalLeaves = $leaveType ? (int) $leaveType["number_of_leaves"] : 0;
+        }
+
+        $usedPaidLeavesTotal = $payrollModel
             ->where("user_id", $userId)
             ->where("leave_type", $leaveId)
-            ->like("month_year", $monthYear)
+            ->selectSum("used_paid_leaves")
+            ->first();
+        
+        $monthUsed = $payrollModel
+            ->where("user_id", $userId)
+            ->where("leave_type", $leaveId)
+            ->where("month_year", $monthYear)
             ->selectSum("used_paid_leaves")
             ->first();
         // Used leaves for selected leave_id
@@ -1047,27 +1076,19 @@ class PayrollController extends ResourceController
         //     ->selectSum('no_of_day')
         //     ->first();
 
-        $usedCount = isset($usedPaidLeaves["used_paid_leaves"])
-            ? (float) $usedPaidLeaves["used_paid_leaves"]
+        $totalUsedCount = isset($usedPaidLeavesTotal["used_paid_leaves"])
+            ? (float) $usedPaidLeavesTotal["used_paid_leaves"]
             : 0;
 
-        // Fetch last payroll
-        $lastPayroll = $payrollModel
-            ->where("user_id", $userId)
-            ->orderBy("created_at", "DESC")
-            ->first();
+        $currentMonthUsed = isset($monthUsed["used_paid_leaves"])
+            ? (float) $monthUsed["used_paid_leaves"]
+            : 0;
 
-        // Determine remaining
-        if ($lastPayroll && $lastPayroll["leave_type"] == $leaveId) {
-            // Same leave type → reuse previous remaining
-            $previousRemaining = (float) $lastPayroll["remaining_paid_leaves"];
-            $remaining = $previousRemaining;
-        } else {
-            // Different leave type → calculate remaining as total - used
-            $remaining = $totalLeaves - $usedCount;
-            if ($remaining < 0) {
-                $remaining = 0;
-            }
+        // Remaining balance AFTER all past usages but BEFORE this month's draft (if any)
+        // If we are editing, we should probably exclude this month's saved value from "used" to get "remaining available"
+        $remaining = $totalLeaves - ($totalUsedCount - $currentMonthUsed);
+        if ($remaining < 0) {
+            $remaining = 0;
         }
         $halfDays = $attendanceModel
             ->where("user_id", $userId)
@@ -1083,7 +1104,7 @@ class PayrollController extends ResourceController
 
         return $this->response->setJSON([
             "total_leaves" => $totalLeaves,
-            "used_leaves" => $usedCount,
+            "used_leaves" => $currentMonthUsed,
             "remaining_leaves" => $remaining,
             "total_half_day_leaves" => $halfDays,
             "allow_half_day" => $allowHalfDay,
@@ -2424,8 +2445,21 @@ class PayrollController extends ResourceController
             ];
         }
 
-        $totalLeaves = $this->countMonthlyLeaves($userId, $month, $rules, $leaveModel, $holidayDates);
-        $halfDayCount = count($halfDayDates);
+        $totalLeavesInput = $this->request->getPost("total_leaves") ?: $this->request->getGet("total_leaves");
+        if ($totalLeavesInput !== null) {
+            $totalLeaves = (float) $totalLeavesInput;
+        } else {
+            $totalLeaves = $this->countMonthlyLeaves($userId, $month, $rules, $leaveModel, $holidayDates);
+        }
+
+        $halfDaysInput = $this->request->getPost("total_halfday_leaves") ?: $this->request->getGet("total_halfday_leaves");
+        if ($halfDaysInput !== null) {
+            $halfDayCount = (float) $halfDaysInput;
+            $halfDayMissingHoursTotal = $halfDayCount * ($workingHoursPerDay / 2);
+        } else {
+            $halfDayCount = count($halfDayDates);
+        }
+
         $totalLateMinutes = array_sum(array_column($lateList, "late_minutes"));
         $lateDeduction = round(($totalLateMinutes / 60) * $perHour, 2);
         $leaveDeduction = $totalLeaves * $perDay;
