@@ -368,14 +368,12 @@
     leaveInputs.forEach(input => {
       const row = input.closest('tr');
       // if (input.dataset.month !== currentMonth) input.disabled = true;
-      input.disabled = true;
       input.addEventListener('input', () => updateRowCalculations(row));
     });
 
     halfDayInputs.forEach(input => {
       const row = input.closest('tr');
       // if (input.dataset.month !== currentMonth) input.disabled = true;
-      input.disabled = true;
       input.addEventListener('input', () => updateRowCalculations(row));
     });
 
