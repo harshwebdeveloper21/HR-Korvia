@@ -175,10 +175,20 @@ class LeaveController extends ResourceController
         }
 
         // Calculate no_of_day
-        if (isset($data['start_date']) && isset($data['end_date'])) {
+        if (isset($data['leave_duration']) && $data['leave_duration'] === 'half_day') {
+            $data['no_of_day'] = '0.5';
+            $data['end_date'] = $data['start_date'];
+        } elseif (isset($data['start_date']) && isset($data['end_date'])) {
             $startDate = strtotime($data['start_date']);
             $endDate = strtotime($data['end_date']);
-            $data['no_of_day'] = (string) (($endDate - $startDate) / 86400 + 1);
+            if ($startDate && $endDate) {
+                $data['no_of_day'] = (string) (($endDate - $startDate) / 86400 + 1);
+            }
+        }
+
+        if (empty($data['leave_duration']) || $data['leave_duration'] !== 'half_day') {
+            $data['leave_duration'] = 'full_day';
+            $data['half_day_type'] = null;
         }
 
         // Default status if not set

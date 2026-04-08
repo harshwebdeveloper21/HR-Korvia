@@ -208,7 +208,10 @@
                                 extendedProps: {
                                     user: `${leave.firstname}`,
                                     description: leaveItem.reason || "No reason provided",
-                                    status: leaveItem.status
+                                    status: leaveItem.status,
+                                    no_of_day: leaveItem.no_of_day,
+                                    leave_duration: leaveItem.leave_duration,
+                                    half_day_type: leaveItem.half_day_type
                                 }
                             };
                         })

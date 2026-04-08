@@ -9,7 +9,7 @@ class LeaveModel extends Model
     protected $table = 'leaves';
     protected $primaryKey = 'id';
     protected $allowedFields = [
-       'firstname', 'user_id', 'start_date', 'end_date', 'no_of_day', 'reason','leave_id','created_by','status'
+       'firstname', 'user_id', 'start_date', 'end_date', 'no_of_day', 'reason','leave_id','created_by','status', 'leave_duration', 'half_day_type'
     ];
     protected $useTimestamps = true;
 

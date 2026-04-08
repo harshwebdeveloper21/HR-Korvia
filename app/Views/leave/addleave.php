@@ -112,12 +112,36 @@
                             <textarea class="form-control" name="reason" placeholder="Enter Reason" rows="4"></textarea>
                         </div>
 
+                        <!-- Leave Duration -->
+                        <div class="col-md-6">
+                            <label class="form-label leave-sm-emp">Duration</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-clock-outline fs-5"></i></span>
+                                <select class="form-select" name="leave_duration" id="leave_duration">
+                                    <option value="full_day" selected>Full Day</option>
+                                    <option value="half_day">Half Day</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Half Day Type -->
+                        <div class="col-md-6 d-none" id="half_day_type_container">
+                            <label class="form-label leave-sm-emp">Half Day Type</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-clock-fast fs-5"></i></span>
+                                <select class="form-select" name="half_day_type" id="half_day_type">
+                                    <option value="first_half">First Half</option>
+                                    <option value="second_half">Second Half</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <!-- No. of Days -->
                         <div class="col-md-6">
                             <label class="form-label leave-sm-emp">No. of Days</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-calendar-range fs-5"></i></span>
-                                <input type="number" class="form-control" name="no_of_day" placeholder="Enter Number of Days" />
+                                <input type="number" class="form-control" name="no_of_day" id="no_of_day" placeholder="Enter Number of Days" step="0.5" />
                             </div>
                         </div>
 
@@ -135,7 +159,7 @@
                             <label class="form-label leave-sm-emp">End Date</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-calendar fs-5"></i></span>
-                                <input type="date" class="form-control" name="end_date" />
+                                <input type="date" class="form-control" name="end_date" id="end_date" />
                             </div>
                         </div>
                         <?php if ($role == 'admin' || $role == 'hr') : ?>
@@ -172,6 +196,37 @@
     document.addEventListener("DOMContentLoaded", function() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById("start_date").setAttribute("min", today);
+        
+        const leaveDuration = document.getElementById('leave_duration');
+        const halfDayTypeContainer = document.getElementById('half_day_type_container');
+        const noOfDaysInput = document.getElementById('no_of_day');
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+
+        leaveDuration.addEventListener('change', function() {
+            if (this.value === 'half_day') {
+                halfDayTypeContainer.classList.remove('d-none');
+                noOfDaysInput.value = '0.5';
+                noOfDaysInput.setAttribute('readonly', 'true');
+                if (startDateInput.value) {
+                    endDateInput.value = startDateInput.value;
+                }
+                endDateInput.setAttribute('readonly', 'true');
+                // Reset styling if it was invalid before
+                endDateInput.classList.remove('is-invalid');
+                noOfDaysInput.classList.remove('is-invalid');
+            } else {
+                halfDayTypeContainer.classList.add('d-none');
+                noOfDaysInput.removeAttribute('readonly');
+                endDateInput.removeAttribute('readonly');
+            }
+        });
+
+        startDateInput.addEventListener('change', function() {
+            if (leaveDuration.value === 'half_day') {
+                endDateInput.value = this.value;
+            }
+        });
     });
     $(document).ready(function () {
     const token = localStorage.getItem('token'); // JWT token
