@@ -433,6 +433,98 @@ class LeaveController extends ResourceController
         return $this->respond(['status' => 'success', 'message' => 'Leave status updated successfully']);
     }
 
+    /**
+     * API: Employee cancels their own pending leave request.
+     */
+    public function cancelLeave($leaveId)
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized();
+        }
+
+        $leave = $this->leaveModel->find($leaveId);
+        if (!$leave) {
+            return $this->failNotFound('Leave request not found');
+        }
+
+        // Must be their own leave
+        if ($leave['user_id'] != $user->sub) {
+            return $this->failForbidden('You can only cancel your own leave requests.');
+        }
+
+        // Must be pending
+        if (strtolower($leave['status']) !== 'pending') {
+            return $this->failForbidden('Only pending leave requests can be cancelled. Current status: ' . $leave['status']);
+        }
+
+        if ($this->leaveModel->update($leaveId, ['status' => 'cancelled'])) {
+            return $this->respond(['status' => 'success', 'message' => 'Leave request cancelled successfully']);
+        }
+
+        return $this->fail('Failed to cancel leave.');
+    }
+
+    /**
+     * API: Employee updates their own pending leave request dates.
+     */
+    public function updateDates($leaveId)
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized();
+        }
+
+        $leave = $this->leaveModel->find($leaveId);
+        if (!$leave) {
+            return $this->failNotFound('Leave request not found');
+        }
+
+        // Must be their own leave
+        if ($leave['user_id'] != $user->sub) {
+            return $this->failForbidden('You can only update your own leave requests.');
+        }
+
+        // Must be pending
+        if (strtolower($leave['status']) !== 'pending') {
+            return $this->failForbidden('Strictly only pending leave requests can be updated.');
+        }
+
+        $data = $this->request->getJSON(true);
+        $startDate = $data['start_date'] ?? null;
+        $endDate = $data['end_date'] ?? null;
+
+        if (!$startDate || !$endDate) {
+            return $this->fail('Start date and end date are required');
+        }
+
+        // Recalculate duration
+        $start = strtotime($startDate);
+        $end = strtotime($endDate);
+        if ($start > $end) {
+            return $this->fail('Start date cannot be after end date.');
+        }
+        
+        $noOfDays = (string) (($end - $start) / 86400 + 1);
+        
+        $updateData = [
+            'start_date' => $startDate,
+            'end_date'   => $endDate,
+            'no_of_day'  => $noOfDays,
+        ];
+
+        if ($this->leaveModel->update($leaveId, $updateData)) {
+            return $this->respond([
+                'status' => 'success', 
+                'message' => 'Leave dates updated successfully',
+                'no_of_day' => $noOfDays
+            ]);
+        }
+
+        return $this->fail('Failed to update leave.');
+    }
+
+
     public function add()
     {
         $validation = \Config\Services::validation();
