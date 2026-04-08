@@ -305,26 +305,26 @@
                             </div>
                         </div>
 
-                        <!-- Overtime Information (show/hide via display: none if needed) -->
-                        <div class="col-md-6 form-group overtime-info" style="display: none;">
-                            <label class="form-label">Total Overtime Hours</label>
+                        <!-- Overtime Information (Not used) -->
+                        <div class="col-md-6 form-group overtime-info" style="display: none !important;">
+                            <!-- <label class="form-label">Total Overtime Hours</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-clock-plus fs-5"></i></span>
                                 </div>
                                 <input type="text" class="form-control" id="display_overtime_hours" value="0"
                                     readonly />
-                            </div>
+                            </div> -->
                         </div>
 
-                        <div class="col-md-6 form-group overtime-info" style="display: none;">
-                            <label class="form-label">Overtime Pay</label>
+                        <div class="col-md-6 form-group overtime-info" style="display: none !important;">
+                            <!-- <label class="form-label">Overtime Pay</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
                                 </div>
                                 <input type="text" class="form-control" id="display_overtime_pay" value="0" readonly />
-                            </div>
+                            </div> -->
                         </div>
 
                         <div class="col-md-6 form-group">
@@ -1064,20 +1064,11 @@
                         $('#presentDaysInfo').hide();
                     }
 
-                    // Overtime from backend calc
+                    // Overtime from backend calc (Disabled as per user request)
                     let overtimePay = 0;
-                    if (data.overtime_pay && parseFloat(data.overtime_pay) > 0) {
-                        overtimePay = parseFloat(data.overtime_pay);
-                        $('#overtime_pay').val(overtimePay);
-                        $('#total_overtime_hours').val(data.total_overtime_hours || 0);
-                        $('#display_overtime_hours').val((data.total_overtime_hours || 0) + ' hours');
-                        $('#display_overtime_pay').val('₹' + overtimePay.toFixed(2));
-                        $('.overtime-info').show();
-                    } else {
-                        $('#overtime_pay').val(0);
-                        $('#total_overtime_hours').val(0);
-                        $('.overtime-info').hide();
-                    }
+                    $('#overtime_pay').val(0);
+                    $('#total_overtime_hours').val(0);
+                    $('.overtime-info').hide();
 
                     // SECOND CALL: use the same breakdown API that powers the popup
                     // so salary_deduction exactly equals the popup's total_deduction.
@@ -1159,6 +1150,10 @@
             $('#unpaid_leaves_display').val(unpaidFullDays);
             $('#working_days_display').val(daysInMonth);
             let netSalary = salaryAmount - taxDeduction - totalDeduction + bonuses;
+            // Overtime is disabled
+            const overtimePay = 0;
+            const totalOvertimeHours = 0;
+            $('.overtime-info').hide();
             // Payroll type specific info
             if (payrollType === 'hourly') {
                 $('#payrollTypeInfo').show();

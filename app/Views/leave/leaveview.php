@@ -8,9 +8,11 @@
     .fc-event-time {
         display: none;
     }
+
     .capitalize-text {
         text-transform: capitalize;
     }
+
     .fc-event-title {
         text-transform: capitalize;
     }
@@ -20,14 +22,17 @@
         transition: all 0.2s ease;
         cursor: pointer;
     }
+
     .employee-item:hover {
         background-color: #f8f9fa;
     }
+
     .employee-item.active {
         background-color: #e3f2fd;
         border-left: 3px solid #2196F3;
         font-weight: 600;
     }
+
     .employee-item.active .profile-pic {
         border: 2px solid #2196F3;
     }
@@ -37,6 +42,7 @@
         position: relative;
         min-height: 400px;
     }
+
     .calendar-loading::after {
         content: '';
         position: absolute;
@@ -55,23 +61,30 @@
     .skeleton {
         animation: skeleton-loading 1s linear infinite alternate;
     }
+
     @keyframes skeleton-loading {
-        0% { background-color: hsl(200, 20%, 80%); }
-        100% { background-color: hsl(200, 20%, 95%); }
+        0% {
+            background-color: hsl(200, 20%, 80%);
+        }
+
+        100% {
+            background-color: hsl(200, 20%, 95%);
+        }
     }
+
     .skeleton-item {
         height: 60px;
         margin-bottom: 8px;
         border-radius: 4px;
     }
-    
+
     /* View Mode Styles */
     .view-mode-toggle {
         display: flex;
         gap: 8px;
         margin-bottom: 15px;
     }
-    
+
     .view-mode-btn {
         flex: 1;
         padding: 8px 16px;
@@ -86,53 +99,53 @@
         gap: 6px;
         font-weight: 500;
     }
-    
+
     .view-mode-btn:hover {
         border-color: #e66136;
         background: #f8f9fa;
     }
-    
+
     .view-mode-btn.active {
         border-color: #e66136;
         background: #e66136;
         color: white;
     }
-    
+
     .view-mode-btn i {
         font-size: 16px;
     }
-    
+
     /* Unified View Containers */
     .calendar-view-container {
         display: none;
     }
-    
+
     .calendar-view-container.active {
         display: block;
     }
-    
+
     .datewise-view-container {
         display: none;
     }
-    
+
     .datewise-view-container.active {
         display: block;
     }
-    
+
     /* Employee Sidebar */
     .employee-sidebar {
         background: white;
         border-radius: 8px;
         padding: 15px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     .employee-sidebar h5 {
         font-size: 16px;
         margin-bottom: 15px;
         color: #333;
     }
-    
+
     /* Unified Filter Section */
     .unified-filters {
         background: #f8f9fa;
@@ -140,18 +153,18 @@
         border-radius: 8px;
         margin-bottom: 15px;
     }
-    
+
     .filter-row {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
     }
-    
+
     .filter-col {
         flex: 1;
         min-width: 150px;
     }
-    
+
     .filter-label {
         font-size: 12px;
         font-weight: 600;
@@ -159,34 +172,34 @@
         margin-bottom: 5px;
         display: block;
     }
-    
+
     /* Date Scroll Container */
     .date-scroll-wrapper {
         background: white;
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 15px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     .date-scroll-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 10px;
     }
-    
+
     .date-scroll-title {
         font-size: 14px;
         font-weight: 600;
         color: #333;
     }
-    
+
     .date-nav-buttons {
         display: flex;
         gap: 5px;
     }
-    
+
     .date-nav-btn {
         padding: 4px 8px;
         background: white;
@@ -195,12 +208,12 @@
         cursor: pointer;
         transition: all 0.2s ease;
     }
-    
+
     .date-nav-btn:hover {
         background: #f8f9fa;
         border-color: #e66136;
     }
-    
+
     .date-scroll-container {
         display: flex;
         gap: 10px;
@@ -210,21 +223,21 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
     }
-    
+
     .date-scroll-container::-webkit-scrollbar {
         height: 6px;
     }
-    
+
     .date-scroll-container::-webkit-scrollbar-track {
         background: #f1f1f1;
         border-radius: 10px;
     }
-    
+
     .date-scroll-container::-webkit-scrollbar-thumb {
         background: #888;
         border-radius: 10px;
     }
-    
+
     .date-card {
         min-width: 60px;
         flex-shrink: 0;
@@ -236,47 +249,47 @@
         cursor: pointer;
         transition: all 0.3s ease;
     }
-    
+
     .date-card.active {
         border-color: #e66136;
         background: #e7f3ff;
-        box-shadow: 0 4px 8px rgba(0,123,255,0.2);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
     }
-    
+
     .date-card.today {
         border-color: #28a745;
     }
-    
+
     .date-card.has-leave {
         background-color: #fff8e1;
     }
-    
+
     .date-card-day {
         font-size: 12px;
         color: #666;
         text-transform: uppercase;
         margin-bottom: 5px;
     }
-    
+
     .date-card-number {
         font-size: 24px;
         font-weight: bold;
         color: #333;
         margin-bottom: 5px;
     }
-    
+
     .date-card-indicator {
         width: 6px;
         height: 6px;
         border-radius: 50%;
         margin: 3px auto 0;
     }
-    
+
     /* Mobile Leave Cards */
     .mobile-leave-list {
         margin-top: 20px;
     }
-    
+
     .mobile-leave-card {
         background: white;
         border: 1px solid #dee2e6;
@@ -287,53 +300,53 @@
         cursor: pointer;
         transition: all 0.2s ease;
     }
-    
+
     .mobile-leave-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-    
+
     .mobile-leave-card.sick-leave {
         border-left-color: #28a745;
-    }    
-    
+    }
+
     .mobile-leave-card.vacation-leave {
         border-left-color: #d3c75e;
     }
-    
+
     .mobile-leave-card.casual-leave {
         border-left-color: #b97058ff;
     }
-    
+
     .mobile-leave-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 8px;
     }
-    
+
     .mobile-leave-employee {
         display: flex;
         align-items: center;
         gap: 10px;
     }
-    
+
     .mobile-leave-employee img {
         width: 40px;
         height: 40px;
         border-radius: 50%;
         object-fit: cover;
     }
-    
+
     .mobile-leave-name {
         font-weight: bold;
         font-size: 14px;
     }
-    
+
     .mobile-leave-type {
         font-size: 12px;
         /* color: #666; */
     }
-    
+
     .mobile-leave-status {
         padding: 4px 10px;
         border-radius: 5px;
@@ -341,122 +354,127 @@
         font-weight: bold;
         text-transform: capitalize;
     }
-    
+
     .mobile-leave-status.pending {
         background-color: #ffc107;
         color: #000;
     }
-    
+
     .mobile-leave-status.approved {
         background-color: #28a745;
         color: white;
     }
-    
+
     .mobile-leave-status.rejected {
         background-color: #dc3545;
         color: white;
     }
-    
+
+    .mobile-leave-status.cancelled {
+        background-color: #6c757d;
+        color: white;
+    }
+
     .mobile-leave-info {
         font-size: 12px;
         /* color: #666; */
         margin-top: 5px;
     }
-    
+
     .mobile-leave-reason {
         font-size: 13px;
         /* color: #333; */
         margin-top: 5px;
         font-style: italic;
     }
-    
+
     /* Tablet Styles (768px - 1024px) */
     @media (max-width: 1024px) and (min-width: 769px) {
         .employee-sidebar {
             max-width: 250px;
         }
-        
+
         .filter-col {
             min-width: 120px;
         }
-        
+
         .date-card {
             min-width: 55px;
         }
     }
-    
+
     /* Mobile Styles (max-width: 768px) */
     @media (max-width: 768px) {
         .card-body {
             padding: 12px;
         }
-        
+
         .d-md-flex.justify-content-between {
             flex-direction: column;
             align-items: flex-start !important;
             gap: 10px;
         }
-        
+
         .d-md-flex.justify-content-between .card-title {
             font-size: 18px !important;
         }
-        
+
         .d-md-flex.justify-content-between a {
             width: 100%;
         }
-        
+
         .view-mode-btn {
             font-size: 13px;
             padding: 6px 12px;
         }
-        
+
         .filter-row {
             gap: 8px;
         }
-        
+
         .filter-col {
             min-width: 100%;
         }
-        
+
         .employee-sidebar {
             padding: 12px;
         }
-        
+
         .date-card {
             min-width: 50px;
             padding: 6px;
         }
-        
+
         .date-card-number {
             font-size: 20px;
         }
     }
-    
+
     /* Small Mobile Styles (max-width: 480px) */
     @media (max-width: 480px) {
         .view-mode-btn {
             font-size: 12px;
             padding: 5px 8px;
         }
-        
+
         .view-mode-btn span {
             display: none;
         }
-        
+
         .date-card {
             min-width: 45px;
             padding: 5px;
         }
-        
+
         .date-card-day {
             font-size: 10px;
         }
-        
+
         .date-card-number {
             font-size: 18px;
         }
     }
-    
+
     /* Collapsible Toggle Styles */
     .collapsible-toggle {
         cursor: pointer;
@@ -469,22 +487,22 @@
         border-radius: 5px;
         margin-bottom: 10px;
     }
-    
+
     .collapsible-toggle i {
         transition: transform 0.3s ease;
     }
-    
+
     .collapsible-toggle.collapsed i {
         transform: rotate(-90deg);
     }
-    
+
     .collapsible-content {
         max-height: 1000px;
         overflow: hidden;
         transition: max-height 0.3s ease, opacity 0.3s ease;
         opacity: 1;
     }
-    
+
     .collapsible-content.collapsed {
         max-height: 0;
         opacity: 0;
@@ -514,9 +532,9 @@
                         <button class="view-mode-btn" data-view="calendar" id="calendar-view-btn">
                             <i class="mdi mdi-calendar"></i>
                             <span>Calendar View</span>
-                        </button>                        
+                        </button>
                     </div>
-                    
+
                     <!-- Unified Filters (for Date-wise view) - Collapsible -->
                     <div class="collapsible-toggle collapsed" onclick="toggleSection('leave-filters')">
                         <i class="fas fa-chevron-down"></i>
@@ -615,7 +633,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Date-wise View Container -->
                     <div class="datewise-view-container active" id="datewise-view">
                         <div class="row">
@@ -632,7 +650,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Date Scroll and Leave List -->
                             <div class="col-12 col-lg-9">
                                 <!-- Date Scroll -->
@@ -655,7 +673,7 @@
                                         <!-- Dates will be rendered here -->
                                     </div>
                                 </div>
-                                
+
                                 <!-- Leave List -->
                                 <div id="unified-leave-list" class="mobile-leave-list">
                                     <!-- Leave cards will be rendered here -->
@@ -689,13 +707,39 @@
                         <option value="pending">Pending</option>
                         <option value="approved">Approved</option>
                         <option value="rejected">Rejected</option>
+                        <option value="cancelled">Cancelled</option>
                     </select>
-                    <span id="leaveStatusText" class="capitalize-text mt-2" style="display: none;"></span>
+                    <span id="leaveStatusText" class="capitalize-text fw-bold mt-2" style="display: none;"></span>
+                </div>
+
+                <!-- Date adjustment for employees (Pending only) -->
+                <div id="employeeEditSection"
+                    style="display: none; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+                    <h6 class="text-primary mb-3"><i class="mdi mdi-calendar-edit me-1"></i> Update Dates</h6>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label small">Start Date</label>
+                            <input type="date" id="leaveEditStart" class="form-control">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label small">End Date</label>
+                            <input type="date" id="leaveEditEnd" class="form-control">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn hr-btnbg" data-bs-dismiss="modal">Close</button>
-                <button type="button" id="updateLeaveStatus" class="btn hr-btnbg" style="display: none;">Update Status</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+                <!-- Admin/HR Button -->
+                <button type="button" id="updateLeaveStatus" class="btn hr-btnbg" style="display: none;">Update
+                    Status</button>
+
+                <!-- Employee Buttons -->
+                <button type="button" id="cancelLeaveBtn" class="btn btn-danger" style="display: none;">Cancel
+                    Leave</button>
+                <button type="button" id="saveLeaveChangesBtn" class="btn btn-primary" style="display: none;">Save
+                    Changes</button>
             </div>
         </div>
     </div>
@@ -710,11 +754,11 @@
     function toggleSection(sectionName) {
         const section = document.getElementById(sectionName + '-section');
         const toggle = section.previousElementSibling;
-        
+
         section.classList.toggle('collapsed');
         toggle.classList.toggle('collapsed');
     }
-    
+
     let calendar;
     let userRole = null;
     let cachedLeaveData = null;
@@ -725,22 +769,22 @@
     let currentMonth = new Date().getMonth() + 1;
     let currentYear = new Date().getFullYear();
     let currentViewMode = 'datewise'; // 'calendar' or 'datewise'
-    
+
     // View Mode Toggle Functions
     function switchViewMode(mode) {
         currentViewMode = mode;
-        
+
         // Update button states
         document.querySelectorAll('.view-mode-btn').forEach(btn => {
             btn.classList.remove('active');
         });
         document.querySelector(`[data-view="${mode}"]`).classList.add('active');
-        
+
         // Show/hide view containers
         document.getElementById('calendar-view').classList.remove('active');
         document.getElementById('datewise-view').classList.remove('active');
         document.getElementById('datewise-filters').style.display = 'none';
-        
+
         if (mode === 'calendar') {
             document.getElementById('calendar-view').classList.add('active');
             // Refresh calendar
@@ -752,7 +796,7 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const calendarEl = document.getElementById('calendar');
 
         calendar = new FullCalendar.Calendar(calendarEl, {
@@ -765,10 +809,10 @@
             contentHeight: 'auto',
             locale: 'en',
             events: [],
-            eventClick: function(info) {
+            eventClick: function (info) {
                 showLeaveModal(info.event);
             },
-            eventDidMount: function(info) {
+            eventDidMount: function (info) {
                 tippy(info.el, {
                     content: `<strong>${info.event.title}</strong><br>${info.event.extendedProps.description}`,
                     placement: 'top',
@@ -776,7 +820,7 @@
                     allowHTML: true
                 });
             },
-            loading: function(isLoading) {
+            loading: function (isLoading) {
                 toggleCalendarLoading(isLoading);
             }
         });
@@ -786,18 +830,18 @@
         // Fetch data in parallel
         Promise.all([fetchLeaveData(), fetchEmployees()])
             .catch(error => console.error('Error loading initial data:', error));
-            
+
         // Initialize view mode toggles
         document.getElementById('calendar-view-btn').addEventListener('click', () => switchViewMode('calendar'));
         document.getElementById('datewise-view-btn').addEventListener('click', () => switchViewMode('datewise'));
-        
+
         // Initialize unified filters
         initializeUnifiedFilters();
-        
+
         // Initialize date navigation
         initializeDateNavigation();
     });
-    
+
     function initializeUnifiedFilters() {
         // Populate year dropdown
         const yearSelect = document.getElementById('unified-year-select');
@@ -810,16 +854,16 @@
                 yearSelect.appendChild(option);
             }
         }
-        
+
         // Set current month
         const monthSelect = document.getElementById('unified-month-select');
         if (monthSelect) {
             monthSelect.value = String(currentMonth).padStart(2, '0');
         }
-        
+
         // Show employee filter only for HR/Admin (will be updated when role is fetched)
         updateEmployeeFilterVisibility();
-        
+
         // Add event listeners
         if (monthSelect) {
             monthSelect.addEventListener('change', (e) => {
@@ -828,7 +872,7 @@
                 renderDatewiseView();
             });
         }
-        
+
         if (yearSelect) {
             yearSelect.addEventListener('change', (e) => {
                 currentYear = parseInt(e.target.value);
@@ -837,19 +881,19 @@
             });
         }
     }
-    
+
     function updateEmployeeFilterVisibility() {
         const filterContainer = document.getElementById('unified-employee-filter-container');
         if (filterContainer && (userRole === 'admin' || userRole === 'hr')) {
             filterContainer.style.display = 'block';
         }
     }
-    
+
     function initializeDateNavigation() {
         const prevBtn = document.getElementById('date-nav-prev');
         const nextBtn = document.getElementById('date-nav-next');
         const todayBtn = document.getElementById('date-nav-today');
-        
+
         if (prevBtn) {
             prevBtn.addEventListener('click', () => {
                 const container = document.getElementById('unified-date-scroll');
@@ -858,7 +902,7 @@
                 }
             });
         }
-        
+
         if (nextBtn) {
             nextBtn.addEventListener('click', () => {
                 const container = document.getElementById('unified-date-scroll');
@@ -867,12 +911,12 @@
                 }
             });
         }
-        
+
         if (todayBtn) {
             todayBtn.addEventListener('click', () => {
                 selectedDate = new Date().toISOString().split('T')[0];
                 renderDatewiseView();
-                
+
                 // Scroll to today's date
                 setTimeout(() => {
                     const activeCard = document.querySelector('.date-card.active');
@@ -896,12 +940,40 @@
         // Show/hide status controls based on user role
         if (userRole === 'employee') {
             $('#leaveStatus').hide();
-            $('#leaveStatusText').text(event.extendedProps.status).show();
+            let status = event.extendedProps.status || 'pending';
+            // Capitalize first letter for display
+            status = status.charAt(0).toUpperCase() + status.slice(1);
+            $('#leaveStatusText')
+                .text(status)
+                .show();
             $('#updateLeaveStatus').hide();
+
+            // Handle Employee Self-Management (Pending only)
+            if (event.extendedProps.status.toLowerCase() === 'pending') {
+                $('#cancelLeaveBtn').show();
+                $('#employeeEditSection').show();
+                $('#saveLeaveChangesBtn').show();
+
+                // Set initial date values for editing
+                const sDate = event.start.split('T')[0];
+                const eDate = event.end.split('T')[0];
+                $('#leaveEditStart').val(sDate);
+                $('#leaveEditEnd').val(eDate);
+            } else {
+                $('#cancelLeaveBtn').hide();
+                $('#employeeEditSection').hide();
+                $('#saveLeaveChangesBtn').hide();
+            }
         } else {
             $('#leaveStatus').show();
             $('#leaveStatusText').hide();
+            $('#leaveStatus').val(event.extendedProps.status || 'pending');
             $('#updateLeaveStatus').show();
+
+            // Hide employee-specific actions for Admin/HR
+            $('#cancelLeaveBtn').hide();
+            $('#employeeEditSection').hide();
+            $('#saveLeaveChangesBtn').hide();
         }
     }
 
@@ -930,14 +1002,14 @@
             url: apiUrl,
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` },
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     cachedLeaveData = response.data; // Cache the data
                     userRole = response.role;
                     updateCalendarEvents(response.data);
                 }
             },
-            error: function(error) {
+            error: function (error) {
                 console.error('Error fetching leaves:', error);
                 Swal.fire({
                     icon: 'error',
@@ -946,7 +1018,7 @@
                     confirmButtonText: 'OK'
                 });
             },
-            complete: function() {
+            complete: function () {
                 isLoading = false;
             }
         });
@@ -985,10 +1057,10 @@
                 };
             })
         );
-        
+
         allLeaveEvents = events;
         calendar.addEventSource(events);
-        
+
         // Update datewise view if in that mode
         if (currentViewMode === 'datewise') {
             renderDatewiseView();
@@ -1012,7 +1084,7 @@
             url: '/api/leave',
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` },
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     userRole = response.role;
                     renderEmployeeList(response.data);
@@ -1020,7 +1092,7 @@
                     updateEmployeeFilterVisibility();
                 }
             },
-            error: function(error) {
+            error: function (error) {
                 console.error('Error fetching employees:', error);
             }
         });
@@ -1041,14 +1113,14 @@
                     </div>
                 </li>
             `);
-            allItem.on('click', function() {
+            allItem.on('click', function () {
                 selectEmployee($(this), null);
             });
             employeeList.append(allItem);
         }
 
         // Render individual employees
-        employees.forEach(function(employee) {
+        employees.forEach(function (employee) {
             let imageUrl = employee.profile_image
                 ? `/upload/${employee.profile_image}`
                 : `${baseImagePath}upload/default-profile.jpg`;
@@ -1062,24 +1134,24 @@
                 </li>
             `);
 
-            employeeItem.on('click', function() {
+            employeeItem.on('click', function () {
                 selectEmployee($(this), employee.id);
             });
 
             employeeList.append(employeeItem);
         });
-        
+
         // Populate unified employee filter
         populateUnifiedEmployeeFilter(employees);
     }
-    
+
     function renderDatewiseEmployeeList(employees) {
         const employeeList = document.getElementById('datewise-employee-list');
         if (!employeeList) return;
-        
+
         employeeList.innerHTML = '';
         const baseImagePath = "<?= base_url(env('ImagePath')) ?>";
-        
+
         // Show "All Employees" option for admin/hr
         if (userRole === 'admin' || userRole === 'hr') {
             const allItem = document.createElement('li');
@@ -1096,13 +1168,13 @@
             });
             employeeList.appendChild(allItem);
         }
-        
+
         // Render individual employees
         employees.forEach(employee => {
             const imageUrl = employee.profile_image
                 ? `/upload/${employee.profile_image}`
                 : `${baseImagePath}upload/default-profile.jpg`;
-            
+
             const item = document.createElement('li');
             item.className = 'list-group-item employee-item p-1';
             item.dataset.id = employee.id;
@@ -1118,39 +1190,39 @@
             employeeList.appendChild(item);
         });
     }
-    
+
     function populateUnifiedEmployeeFilter(employees) {
         const unifiedFilter = document.getElementById('unified-employee-filter');
         if (!unifiedFilter) return;
-        
+
         // Only populate if user is HR or Admin
         if (userRole !== 'admin' && userRole !== 'hr') {
             return;
         }
-        
+
         unifiedFilter.innerHTML = '<option value="">All Employees</option>';
-        
+
         employees.forEach(employee => {
             const option = document.createElement('option');
             option.value = employee.id;
             option.textContent = employee.firstname;
             unifiedFilter.appendChild(option);
         });
-        
+
         // Add change event listener
         unifiedFilter.addEventListener('change', (e) => {
             currentEmployeeId = e.target.value || null;
             renderDatewiseLeavesForDate();
         });
     }
-    
+
     function selectDatewiseEmployee(element, employeeId) {
         // Update active state
         document.querySelectorAll('#datewise-employee-list .employee-item').forEach(item => {
             item.classList.remove('active');
         });
         element.classList.add('active');
-        
+
         currentEmployeeId = employeeId;
         renderDatewiseLeavesForDate();
     }
@@ -1173,7 +1245,7 @@
         }
     }
 
-    $('#updateLeaveStatus').click(function() {
+    $('#updateLeaveStatus').click(function () {
         const token = localStorage.getItem('token');
         const leaveId = $('#leaveId').val();
 
@@ -1201,7 +1273,7 @@
             data: JSON.stringify(data),
             contentType: "application/json",
             headers: { 'Authorization': `Bearer ${token}` },
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     Swal.fire({
                         icon: 'success',
@@ -1224,7 +1296,7 @@
                     });
                 }
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 console.error('Error updating leave status:', xhr);
                 let errorMessage = 'There was an error. Check console for details.';
                 if (xhr.responseJSON?.messages?.error) {
@@ -1239,75 +1311,153 @@
             }
         });
     });
-   
+
+    $('#cancelLeaveBtn').click(function () {
+        const leaveId = $('#leaveId').val();
+        const token = localStorage.getItem('token');
+
+        // Close the details modal immediately
+        $('#leaveModal').modal('hide');
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You want to cancel this leave request!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, cancel it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/api/leave/cancel/${leaveId}`,
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            Swal.fire('Cancelled!', response.message, 'success').then(() => {
+                                cachedLeaveData = null;
+                                // Wait a tiny bit and fetch then re-render
+                                fetchLeaveData(currentEmployeeId).then(() => {
+                                    if (currentViewMode === 'datewise') {
+                                        renderDatewiseView();
+                                    }
+                                });
+                            });
+                        }
+                    },
+                    error: function (xhr) {
+                        Swal.fire('Error', xhr.responseJSON?.message || 'Failed to cancel leave', 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // Save Date Changes Functionality
+    $('#saveLeaveChangesBtn').click(function () {
+        const leaveId = $('#leaveId').val();
+        const token = localStorage.getItem('token');
+        const startDate = $('#leaveEditStart').val();
+        const endDate = $('#leaveEditEnd').val();
+
+        if (!startDate || !endDate) {
+            Swal.fire('Error', 'Dates are required', 'error');
+            return;
+        }
+
+        // Close the details modal immediately
+        $('#leaveModal').modal('hide');
+
+        $.ajax({
+            url: `/api/leave/update-dates/${leaveId}`,
+            method: 'POST',
+            data: JSON.stringify({ start_date: startDate, end_date: endDate }),
+            contentType: "application/json",
+            headers: { 'Authorization': `Bearer ${token}` },
+            success: function (response) {
+                if (response.status === 'success') {
+                    $('#leaveModal').modal('hide');
+                    Swal.fire('Updated!', response.message, 'success').then(() => {
+                        cachedLeaveData = null;
+                        fetchLeaveData(currentEmployeeId);
+                    });
+                }
+            },
+            error: function (xhr) {
+                Swal.fire('Error', xhr.responseJSON?.message || 'Failed to update leave dates', 'error');
+            }
+        });
+    });
+
     // Date-wise view rendering functions
     function renderDatewiseView() {
         renderDatewiseDateScroll();
         renderDatewiseLeavesForDate();
     }
-    
+
     function renderDatewiseDateScroll() {
         const container = document.getElementById('unified-date-scroll');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         const today = new Date();
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        
+
         const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-        
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+
         const tY = today.getFullYear();
         const tM = String(today.getMonth() + 1).padStart(2, '0');
         const tD = String(today.getDate()).padStart(2, '0');
         const todayDate = `${tY}-${tM}-${tD}`;
-        
+
         // Update month title
         const monthTitle = document.getElementById('date-scroll-month-title');
         if (monthTitle) {
             monthTitle.textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
         }
-        
+
         // Show all days of selected month
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(currentYear, currentMonth - 1, day);
-            
+
             const mStr = String(currentMonth).padStart(2, '0');
             const dStr = String(day).padStart(2, '0');
             const dateStr = `${currentYear}-${mStr}-${dStr}`;
-            
+
             const dayOfWeek = date.getDay();
-            
+
             // Check if there are leaves on this date
             const hasLeave = allLeaveEvents.some(event => {
                 const eventStart = event.start.split('T')[0];
                 const eventEnd = event.end.split('T')[0];
                 return dateStr >= eventStart && dateStr <= eventEnd;
             });
-            
+
             const dateCard = document.createElement('div');
             dateCard.className = 'date-card';
             if (dateStr === selectedDate) dateCard.classList.add('active');
             if (dateStr === todayDate) dateCard.classList.add('today');
             if (hasLeave) dateCard.classList.add('has-leave');
-            
+
             dateCard.innerHTML = `
                 <div class="date-card-day">${weekdays[dayOfWeek]}</div>
                 <div class="date-card-number">${day}</div>
                 ${hasLeave ? '<div class="date-card-indicator" style="background-color: #007bff;"></div>' : ''}
             `;
-            
+
             dateCard.addEventListener('click', () => {
                 selectedDate = dateStr;
                 renderDatewiseDateScroll();
                 renderDatewiseLeavesForDate();
             });
-            
+
             container.appendChild(dateCard);
         }
-        
+
         // Scroll to active card
         setTimeout(() => {
             const activeCard = container.querySelector('.date-card.active');
@@ -1316,67 +1466,67 @@
             }
         }, 100);
     }
-    
+
     function renderDatewiseLeavesForDate() {
         const container = document.getElementById('unified-leave-list');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         // Filter events for selected date
         let filteredEvents = allLeaveEvents.filter(event => {
             const eventStart = event.start.split('T')[0];
             const eventEnd = event.end.split('T')[0];
             return selectedDate >= eventStart && selectedDate <= eventEnd;
         });
-        
+
         // Filter by employee if selected
         if (currentEmployeeId) {
             filteredEvents = filteredEvents.filter(event => event.extendedProps.user_id == currentEmployeeId);
         }
-        
+
         if (filteredEvents.length === 0) {
             container.innerHTML = '<div class="alert alert-info text-center">No leaves on this date</div>';
             return;
         }
-        
+
         const baseImagePath = "<?= base_url(env('ImagePath')) ?>";
-        
+
         filteredEvents.forEach(event => {
             const props = event.extendedProps;
-            const imageUrl = props.profile_image 
-                ? `/upload/${props.profile_image}` 
+            const imageUrl = props.profile_image
+                ? `/upload/${props.profile_image}`
                 : `${baseImagePath}upload/default-profile.jpg`;
-            
+
             // Determine leave type class
             let leaveTypeClass = 'casual-leave';
             if (props.leave_type === 'Sick Leave') leaveTypeClass = 'sick-leave';
             else if (props.leave_type === 'Paid Leave') leaveTypeClass = 'paid-leave';
             else if (props.leave_type === 'Vacation Leave') leaveTypeClass = 'vacation-leave';
-            
+
             const card = document.createElement('div');
             card.className = `mobile-leave-card ${leaveTypeClass}`;
-            
+
             // Calculate duration
             const eventStartStr = event.start.split('T')[0];
             const eventEndStr = event.end.split('T')[0];
-            
+
             // Format dates simply as DD/MM/YYYY
             const [sYear, sMonth, sDay] = eventStartStr.split('-');
             const [eYear, eMonth, eDay] = eventEndStr.split('-');
             const displayStart = `${sDay}/${sMonth}/${sYear}`;
             const displayEnd = `${eDay}/${eMonth}/${eYear}`;
-            
+
             const startDate = new Date(event.start);
             const endDate = new Date(event.end);
             const duration = props.no_of_day || Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) || 1;
             let durationText = duration == '0.5' ? 'Half Day' : (duration == 1 ? '1 day' : `${duration} days`);
-            
+
             if (duration == '0.5' && props.half_day_type) {
                 const halfDayText = props.half_day_type === 'first_half' ? 'First Half' : 'Second Half';
                 durationText += ` (${halfDayText})`;
             }
-            
+
             card.innerHTML = `
                 <div class="mobile-leave-header">
                     <div class="mobile-leave-employee">
@@ -1395,11 +1545,11 @@
                     "${props.description}"
                 </div>
             `;
-            
+
             card.addEventListener('click', () => {
                 showLeaveModal(event);
             });
-            
+
             container.appendChild(card);
         });
     }
