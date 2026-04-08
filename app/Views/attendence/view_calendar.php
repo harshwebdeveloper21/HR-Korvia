@@ -1324,9 +1324,9 @@
                     statusClass = 'half-day';
                 }
 
-                const checkInTime  = attendance?.check_in_time  || '-';
+                const checkInTime = attendance?.check_in_time || '-';
                 const checkOutTime = attendance?.check_out_time || '-';
-                const overtime = attendance?.overtime && attendance.overtime !== '00:00:00' ? ' (OT)' : '';
+                const overtime = attendance?.overtime && attendance.overtime !== '00:00:00' ? '' : '';
 
                 const employeeCard = document.createElement('div');
                 employeeCard.className = 'mobile-employee-card';

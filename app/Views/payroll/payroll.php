@@ -122,7 +122,7 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
                                 </div>
-                                <input type="number" class="form-control" name="salary_amount" id="salary_amount" placeholder="Salary Amount" value="0" readonly />
+                                <input type="number" class="form-control" name="salary_amount" id="salary_amount" placeholder="Salary Amount" value="0" />
                             </div>
                         </div>
 
@@ -342,7 +342,7 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
                                 </div>
-                                <input type="number" class="form-control" name="net_salary" id="net_salary" value="0" readonly />
+                                <input type="number" class="form-control" name="net_salary" id="net_salary" value="0" />
                             </div>
                         </div>
 
