@@ -517,6 +517,9 @@
                 <div class="d-md-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title">Leave Calendar</h4>
                     <div class="d-md-flex gap-2">
+                        <a href="/manage-leaves" id="manage-leaves-btn" class="btn hr-btnbg" style="display: none;">
+                            <i class="mdi mdi-format-list-bulleted icon-leave-size"></i> Total Employee Leaves
+                        </a>
                         <a href="/addleave" class="btn hr-btnbg">
                             <i class="mdi mdi-plus icon-leave-size"></i>Add Leave
                         </a>
@@ -934,6 +937,11 @@
         const filterContainer = document.getElementById('unified-employee-filter-container');
         if (filterContainer && (userRole === 'admin' || userRole === 'hr')) {
             filterContainer.style.display = 'block';
+        }
+        
+        const manageLeavesBtn = document.getElementById('manage-leaves-btn');
+        if (manageLeavesBtn && (userRole === 'admin' || userRole === 'hr')) {
+            manageLeavesBtn.style.display = 'block';
         }
     }
 
