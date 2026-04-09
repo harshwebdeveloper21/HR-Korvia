@@ -371,7 +371,8 @@
     }
 
     .mobile-leave-status.cancelled {
-        background-color: #6c757d;
+        background-color: #dc3545;
+        /* Red background for cancelled */
         color: white;
     }
 
@@ -533,6 +534,10 @@
                             <i class="mdi mdi-calendar"></i>
                             <span>Calendar View</span>
                         </button>
+                        <button class="view-mode-btn" data-view="cancelled" id="cancelled-view-btn">
+                            <i class="mdi mdi-cancel"></i>
+                            <span>Cancelled View</span>
+                        </button>
                     </div>
 
                     <!-- Unified Filters (for Date-wise view) - Collapsible -->
@@ -681,6 +686,32 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Cancelled Leaves View Container -->
+                    <div class="cancelled-view-container" id="cancelled-view" style="display: none;">
+                        <div class="row">
+                            <!-- Employee Sidebar (for larger screens in cancelled view) -->
+                            <div class="col-12 col-lg-3 mb-3 d-none d-lg-block">
+                                <div class="employee-sidebar">
+                                    <h5>Team Employees</h5>
+                                    <hr style="border-top: 1px solid #c9c4c1; width: 100%;">
+                                    <div class="scrollable-container">
+                                        <ul class="list-group" id="cancelled-employee-list">
+                                            <!-- Will be populated by JS -->
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cancelled Leave List -->
+                            <div class="col-12 col-lg-9">
+                                <h5 class="mb-3 mt-2"><i class="mdi mdi-cancel text-danger"></i> Cancelled Leaves</h5>
+                                <div id="cancelled-leave-list" class="mobile-leave-list">
+                                    <!-- Leave cards will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -783,15 +814,24 @@
         // Show/hide view containers
         document.getElementById('calendar-view').classList.remove('active');
         document.getElementById('datewise-view').classList.remove('active');
+        if (document.getElementById('cancelled-view')) document.getElementById('cancelled-view').classList.remove('active');
         document.getElementById('datewise-filters').style.display = 'none';
 
         if (mode === 'calendar') {
             document.getElementById('calendar-view').classList.add('active');
             // Refresh calendar
             if (calendar) calendar.render();
+        } else if (mode === 'cancelled') {
+            if (document.getElementById('cancelled-view')) {
+                document.getElementById('cancelled-view').classList.add('active');
+                document.getElementById('cancelled-view').style.display = 'block';
+            }
+            document.getElementById('datewise-filters').style.display = 'block';
+            renderCancelledView();
         } else {
             document.getElementById('datewise-view').classList.add('active');
             document.getElementById('datewise-filters').style.display = 'block';
+            if (document.getElementById('cancelled-view')) document.getElementById('cancelled-view').style.display = 'none';
             renderDatewiseView();
         }
     }
@@ -834,6 +874,7 @@
         // Initialize view mode toggles
         document.getElementById('calendar-view-btn').addEventListener('click', () => switchViewMode('calendar'));
         document.getElementById('datewise-view-btn').addEventListener('click', () => switchViewMode('datewise'));
+        document.getElementById('cancelled-view-btn').addEventListener('click', () => switchViewMode('cancelled'));
 
         // Initialize unified filters
         initializeUnifiedFilters();
@@ -864,12 +905,15 @@
         // Show employee filter only for HR/Admin (will be updated when role is fetched)
         updateEmployeeFilterVisibility();
 
-        // Add event listeners
         if (monthSelect) {
             monthSelect.addEventListener('change', (e) => {
                 currentMonth = parseInt(e.target.value);
                 if (calendar) calendar.gotoDate(new Date(currentYear, currentMonth - 1, 1));
-                renderDatewiseView();
+                if (currentViewMode === 'datewise') {
+                    renderDatewiseView();
+                } else if (currentViewMode === 'cancelled') {
+                    renderCancelledView();
+                }
             });
         }
 
@@ -877,7 +921,11 @@
             yearSelect.addEventListener('change', (e) => {
                 currentYear = parseInt(e.target.value);
                 if (calendar) calendar.gotoDate(new Date(currentYear, currentMonth - 1, 1));
-                renderDatewiseView();
+                if (currentViewMode === 'datewise') {
+                    renderDatewiseView();
+                } else if (currentViewMode === 'cancelled') {
+                    renderCancelledView();
+                }
             });
         }
     }
@@ -1059,11 +1107,14 @@
         );
 
         allLeaveEvents = events;
+
         calendar.addEventSource(events);
 
-        // Update datewise view if in that mode
+        // Update view mode
         if (currentViewMode === 'datewise') {
             renderDatewiseView();
+        } else if (currentViewMode === 'cancelled') {
+            renderCancelledView();
         }
     }
 
@@ -1089,6 +1140,7 @@
                     userRole = response.role;
                     renderEmployeeList(response.data);
                     renderDatewiseEmployeeList(response.data);
+                    renderCancelledEmployeeList(response.data);
                     updateEmployeeFilterVisibility();
                 }
             },
@@ -1212,7 +1264,11 @@
         // Add change event listener
         unifiedFilter.addEventListener('change', (e) => {
             currentEmployeeId = e.target.value || null;
-            renderDatewiseLeavesForDate();
+            if (currentViewMode === 'datewise') {
+                renderDatewiseLeavesForDate();
+            } else if (currentViewMode === 'cancelled') {
+                renderCancelledView();
+            }
         });
     }
 
@@ -1432,8 +1488,8 @@
 
             // Check if there are leaves on this date
             const hasLeave = allLeaveEvents.some(event => {
-                const eventStart = event.start.split('T')[0];
-                const eventEnd = event.end.split('T')[0];
+                const eventStart = event.start.substring(0, 10);
+                const eventEnd = event.end.substring(0, 10);
                 return dateStr >= eventStart && dateStr <= eventEnd;
             });
 
@@ -1475,8 +1531,8 @@
 
         // Filter events for selected date
         let filteredEvents = allLeaveEvents.filter(event => {
-            const eventStart = event.start.split('T')[0];
-            const eventEnd = event.end.split('T')[0];
+            const eventStart = event.start.substring(0, 10);
+            const eventEnd = event.end.substring(0, 10);
             return selectedDate >= eventStart && selectedDate <= eventEnd;
         });
 
@@ -1508,8 +1564,8 @@
             card.className = `mobile-leave-card ${leaveTypeClass}`;
 
             // Calculate duration
-            const eventStartStr = event.start.split('T')[0];
-            const eventEndStr = event.end.split('T')[0];
+            const eventStartStr = event.start.substring(0, 10);
+            const eventEndStr = event.end.substring(0, 10);
 
             // Format dates simply as DD/MM/YYYY
             const [sYear, sMonth, sDay] = eventStartStr.split('-');
@@ -1540,6 +1596,133 @@
                 </div>
                 <div class="mobile-leave-info">
                     <strong>Duration:</strong> ${durationText} (${displayStart} - ${displayEnd})
+                </div>
+                <div class="mobile-leave-reason">
+                    "${props.description}"
+                </div>
+            `;
+
+            card.addEventListener('click', () => {
+                showLeaveModal(event);
+            });
+
+            container.appendChild(card);
+        });
+    }
+
+    function renderCancelledEmployeeList(employees) {
+        const employeeList = document.getElementById('cancelled-employee-list');
+        if (!employeeList) return;
+
+        employeeList.innerHTML = '';
+        const baseImagePath = "<?= base_url(env('ImagePath')) ?>";
+
+        // Show "All Employees" option for admin/hr
+        if (userRole === 'admin' || userRole === 'hr') {
+            const allItem = document.createElement('li');
+            allItem.className = 'list-group-item employee-item active';
+            allItem.dataset.id = '';
+            allItem.innerHTML = `
+                <div class="team-member">
+                    <img src="${baseImagePath}upload/group2.jpg" alt="All Employee" class="profile-pic bg-light">
+                    <div><strong class="employee-name">All</strong></div>
+                </div>
+            `;
+            allItem.addEventListener('click', () => {
+                selectCancelledEmployee(allItem, null);
+            });
+            employeeList.appendChild(allItem);
+        }
+
+        // Render individual employees
+        employees.forEach(employee => {
+            const imageUrl = employee.profile_image
+                ? `/upload/${employee.profile_image}`
+                : `${baseImagePath}upload/default-profile.jpg`;
+
+            const item = document.createElement('li');
+            item.className = 'list-group-item employee-item p-1';
+            item.dataset.id = employee.id;
+            item.innerHTML = `
+                <div class="team-member capitalize-text">
+                    <img src="${imageUrl}" alt="${employee.firstname}" class="profile-pic">
+                    <div><strong class="employee-name">${employee.firstname}</strong></div>
+                </div>
+            `;
+            item.addEventListener('click', () => {
+                selectCancelledEmployee(item, employee.id);
+            });
+            employeeList.appendChild(item);
+        });
+    }
+
+    function selectCancelledEmployee(element, employeeId) {
+        document.querySelectorAll('#cancelled-employee-list .employee-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        element.classList.add('active');
+        currentEmployeeId = employeeId;
+        renderCancelledView();
+    }
+
+    function renderCancelledView() {
+        const container = document.getElementById('cancelled-leave-list');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        // Filter events for selected month AND year
+        let filteredEvents = allLeaveEvents.filter(event => {
+            if (event.extendedProps.status.toLowerCase() !== 'cancelled') return false;
+
+            const eventStartStr = event.start.substring(0, 10);
+            const [sYear, sMonth, sDay] = eventStartStr.split('-');
+
+            return parseInt(sMonth) === currentMonth && parseInt(sYear) === currentYear;
+        });
+
+        // Filter by employee if selected
+        if (currentEmployeeId) {
+            filteredEvents = filteredEvents.filter(event => event.extendedProps.user_id == currentEmployeeId);
+        }
+
+        if (filteredEvents.length === 0) {
+            container.innerHTML = '<div class="alert alert-info text-center">No cancelled leaves found</div>';
+            return;
+        }
+
+        const baseImagePath = "<?= base_url(env('ImagePath')) ?>";
+
+        filteredEvents.forEach(event => {
+            const props = event.extendedProps;
+            const imageUrl = props.profile_image
+                ? `/upload/${props.profile_image}`
+                : `${baseImagePath}upload/default-profile.jpg`;
+
+            const card = document.createElement('div');
+            card.className = `mobile-leave-card cancelled-leave`;
+            card.style.borderLeftColor = '#dc3545'; // Setting explicitly to a soft red for cancelled
+
+            const eventStartStr = event.start.substring(0, 10);
+            const eventEndStr = event.end.substring(0, 10);
+            const [sYear, sMonth, sDay] = eventStartStr.split('-');
+            const [eYear, eMonth, eDay] = eventEndStr.split('-');
+            const displayStart = `${sDay}/${sMonth}/${sYear}`;
+            const displayEnd = `${eDay}/${eMonth}/${eYear}`;
+
+            card.innerHTML = `
+                <div class="mobile-leave-header">
+                    <div class="mobile-leave-employee">
+                        <img src="${imageUrl}" alt="${props.user}">
+                        <div>
+                            <div class="mobile-leave-name capitalize-text">${props.user}</div>
+                            <div class="mobile-leave-type">${props.leave_type}</div>
+                        </div>
+                    </div>
+                    <div class="mobile-leave-status cancelled">Cancelled</div>
+                </div>
+                <div class="mobile-leave-info">
+                    <strong>Dates:</strong> ${displayStart} - ${displayEnd}
                 </div>
                 <div class="mobile-leave-reason">
                     "${props.description}"

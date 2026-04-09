@@ -1088,16 +1088,30 @@
                                 return;
                             }
                             const sum = breakdownRes.data.summary;
-                            const rawDeduction = parseFloat(sum.total_deduction || 0);
-
-                            // Adjust deduction for paid leaves entered on this form:
-                            // each paid leave unit (1 = full day, 0.5 = half-day) covers one per-day salary.
+                            
+                            // Adjust deduction based strictly on the manual form inputs
+                            // This ensures that when HR modifies "Total Leaves Taken" to 0, deduction goes to 0!
+                            const totalLeavesInput = parseFloat($('#total_leaves').val()) || 0;
+                            const totalHalfDaysInput = parseFloat($('#total_halfday_leaves').val()) || 0;
                             const usedPaidLeavesForm = parseFloat($('#used_paid_leaves').val()) || 0;
+
                             const perDayFromSummary = parseFloat(sum.per_day_salary || 0) ||
                                 (data.working_days > 0 ? (baseSalary / data.working_days) : 0);
-                            const paidLeaveCredit = usedPaidLeavesForm * perDayFromSummary;
+                                
+                            const fullDaysCoveredByPaidLeave = Math.min(Math.floor(usedPaidLeavesForm), totalLeavesInput);
+                            const halfDaysCoveredByPaidLeave = (usedPaidLeavesForm - fullDaysCoveredByPaidLeave) * 2;
 
-                            const salaryDeduction = Math.max(rawDeduction - paidLeaveCredit, 0);
+                            const unpaidFullDays = Math.max(totalLeavesInput - fullDaysCoveredByPaidLeave, 0);
+                            const unpaidHalfDays = Math.max(totalHalfDaysInput - halfDaysCoveredByPaidLeave, 0);
+
+                            const halfDayDeduction = unpaidHalfDays * (perDayFromSummary / 2);
+                            const fullDayDeduction = unpaidFullDays * perDayFromSummary;
+
+                            const salaryDeduction = fullDayDeduction + halfDayDeduction;
+
+                            // Sync unpaid leaves display again to match the inputs perfectly
+                            $('#unpaid_leaves_display').val(unpaidFullDays);
+
                             $('#salary_deduction').val(salaryDeduction.toFixed(2));
 
                             // Net salary: base + overtime - adjusted_deduction - tax + bonuses
