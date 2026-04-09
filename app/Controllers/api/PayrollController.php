@@ -364,19 +364,14 @@ class PayrollController extends ResourceController
                 ],
             ],
             "tax_deduction" => [
-                "rules" => "required|decimal",
+                // permit_empty so a 0 value (or missing field) passes cleanly
+                "rules" => "permit_empty|decimal",
                 "errors" => [
-                    "required" => "Tax Deduction is required.",
                     "decimal" => "Tax Deduction must be a valid decimal value.",
                 ],
             ],
-            "bonuses" => [
-                "rules" => "required|decimal",
-                "errors" => [
-                    "required" => "Bonuses is required.",
-                    "decimal" => "Bonuses must be a valid decimal value.",
-                ],
-            ],
+            // "bonuses" is intentionally omitted — the field is not rendered in the
+            // Edit Payroll form, so requiring it always caused a 400 Bad Request.
             "net_salary" => [
                 "rules" => "required|decimal",
                 "errors" => [

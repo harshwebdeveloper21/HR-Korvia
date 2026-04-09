@@ -665,7 +665,7 @@ class LeaveController extends ResourceController
     }
 
 
-    public function index()
+    public function manage_index()
     {
         $user = $this->authService->check();
         if (!$user || !in_array($user->role, ['admin', 'hr'])) {
