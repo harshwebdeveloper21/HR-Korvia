@@ -1954,99 +1954,32 @@ class PayrollController extends ResourceController
                 $emp["tax_amount"] > 0 ? "₹" . $emp["tax_amount"] : "No Tax";
 
             if ($payroll) {
-                $emp["used_paid_leaves"] = $payroll["used_paid_leaves"] ?? 0;
-                $emp["tax_deduction"] = $payroll["tax_deduction"];
-                // Recalculate leaves and half_days from attendance (so absent on holiday e.g. Jan 26 is not counted)
-                $totalLeaves = $this->countMonthlyLeaves(
-                    $emp["user_id"],
-                    sprintf("%04d-%02d", $year, $monthNum),
-                    $rules,
-                    $leaveModel,
-                    $holidayDates,
-                );
-                $halfDayRows = $attendanceModel
-                    ->select("work_hours, status, date, check_in_time, check_out_time")
-                    ->where("user_id", $emp["user_id"])
-                    ->where("status", "half-day")
-                    ->where("date >=", $startOfMonth)
-                    ->where("date <=", $endOfMonth)
-                    ->findAll();
-                $halfDaysCount = count($halfDayRows);
-                $emp["leaves"] = $totalLeaves;
-                $emp["half_days"] = $halfDaysCount;
-                $usedPaidLeaves = (float) $emp["used_paid_leaves"];
-                $fullDaysCoveredByPaidLeave = min(floor($usedPaidLeaves), $totalLeaves);
-                $halfDaysCoveredByPaidLeave = ($usedPaidLeaves - $fullDaysCoveredByPaidLeave) * 2;
-                $unpaidFullDays = max($totalLeaves - $fullDaysCoveredByPaidLeave, 0);
-                $fullDayDeduction = $unpaidFullDays * $emp["per_day"];
+                // ── Use STORED payroll values directly ───────────────────────────────────
+                // Recalculating from attendance here causes mismatches when the payroll was
+                // saved via "Add Payroll" with custom/manually-entered deduction values.
+                // The Source of Truth is the payroll record itself.
+                $emp["leaves"]               = (float) ($payroll["total_leaves"]        ?? 0);
+                $emp["half_days"]            = (float) ($payroll["total_half_day"]       ?? 0);
+                $emp["used_paid_leaves"]     = (float) ($payroll["used_paid_leaves"]     ?? 0);
+                $emp["salary_deduction"]     = round((float) ($payroll["salary_deduction"] ?? 0), 2);
+                $emp["tax_deduction"]        = round((float) ($payroll["tax_deduction"]   ?? 0), 2);
+                $emp["net_salary"]           = round((float) ($payroll["net_salary"]      ?? 0), 2);
+                $emp["overtime_pay"]         = round((float) ($payroll["overtime_pay"]    ?? 0), 2);
+                $emp["total_overtime_hours"] = (float) ($payroll["total_overtime_hours"]  ?? 0);
+                $emp["late_deduction"]       = 0;
 
-                // Half-day deduction based on missing hours (same logic as breakdown)
-                $halfDayMissingHoursTotal = 0.0;
-                foreach ($halfDayRows as $row) {
-                    // Use gross worked hours from check-in/out so it matches attendance & breakdown
-                    $displayWorkedSeconds = 0;
-                    if (!empty($row["check_in_time"]) && !empty($row["check_out_time"])) {
-                        $inTs = strtotime(substr($row["date"], 0, 10) . " " . $row["check_in_time"]);
-                        $outTs = strtotime(substr($row["date"], 0, 10) . " " . $row["check_out_time"]);
-                        if ($outTs > $inTs) {
-                            $displayWorkedSeconds = $outTs - $inTs;
-                        }
-                    }
+                // base_deduction is used by the JS front-end so it can re-compute deduction
+                // correctly when the user edits leave/half-day inputs on this page.
+                // base_deduction = gross leave/half-day deduction BEFORE any paid-leave credit.
+                $paidLeaveCredit          = $emp["used_paid_leaves"] * $emp["per_day"];
+                $emp["base_deduction"]    = round($emp["salary_deduction"] + $paidLeaveCredit, 2);
 
-                    $displayWorkedHours = $displayWorkedSeconds / 3600;
-                    // If gross worked hours are at least a full day, don't treat as half‑day at all
-                    $fullDayHoursRule = isset($rules["working_hours_per_day"])
-                        ? (float) $rules["working_hours_per_day"]
-                        : 8.0;
-                    if ($displayWorkedHours + 0.01 >= $fullDayHoursRule) {
-                        continue;
-                    }
-
-                    $requiredHours = $workingHoursPerDay > 0 ? $workingHoursPerDay : $fullDayHoursRule;
-                    $missingHours = max($requiredHours - $displayWorkedHours, 0);
-                    $halfDayMissingHoursTotal += $missingHours;
-                }
-
-                $perHourRateForHalfDay = $workingDays > 0 && $workingHoursPerDay > 0
-                    ? $emp["salary"] / ($workingDays * $workingHoursPerDay)
-                    : 0;
-                $halfDayDeduction = $perHourRateForHalfDay > 0
-                    ? round($halfDayMissingHoursTotal * $perHourRateForHalfDay, 2)
-                    : 0;
-
-                $leaveHalfDeduction = $fullDayDeduction + $halfDayDeduction;
-                // Late arrival is tracked for info only – NOT deducted from salary
-                $lateDeduction = 0;
-                $overtimePay = (float) ($payroll["overtime_pay"] ?? 0);
-                if ($workingDays > 0 && $workingHoursPerDay > 0) {
-                    if (($rules["enable_overtime"] ?? 0) == 1 && $overtimePay <= 0) {
-                        $otResult = $attendanceModel
-                            ->select("SUM(TIME_TO_SEC(overtime)) AS overtime_seconds")
-                            ->where("user_id", $emp["user_id"])
-                            ->where("date >=", $startOfMonth)
-                            ->where("date <=", $endOfMonth)
-                            ->first();
-                        $overtimeSeconds = (int) ($otResult["overtime_seconds"] ?? 0);
-                        if ($overtimeSeconds > 0) {
-                            $overtimeHours = round($overtimeSeconds / 3600, 2);
-                            $hourlyRate = $emp["salary"] / ($workingDays * $workingHoursPerDay);
-                            $multiplier = ($rules["overtime_rate_type"] ?? "multiplier") === "multiplier"
-                                ? ($rules["overtime_multiplier"] ?? 1.5) : 1;
-                            $overtimePay = round($overtimeHours * $hourlyRate * $multiplier, 2);
-                        }
-                    }
-                }
-                $emp["late_deduction"] = 0; // late arrival not deducted
-                $baseFullDayDeduction = $totalLeaves * $emp["per_day"];
-                $baseLeaveHalfDeduction = $baseFullDayDeduction + $halfDayDeduction;
-                $emp["base_deduction"] = round($baseLeaveHalfDeduction, 2);
-                $emp["overtime_pay"] = $overtimePay;
-                $emp["total_overtime_hours"] = (float) ($payroll["total_overtime_hours"] ?? 0);
-                $emp["salary_deduction"] = round($leaveHalfDeduction, 2);
-                $emp["net_salary"] = round(
-                    $emp["salary"] + $overtimePay - $emp["salary_deduction"] - $emp["tax_deduction"],
-                    2,
-                );
+                // Override tax display to match the stored tax_deduction (may differ from the
+                // fresh rule-based tax_amount calculated above if salary/rules changed).
+                $emp["tax_amount"] = $emp["tax_deduction"];
+                $emp["tax"]        = $emp["tax_amount"] > 0
+                    ? "₹" . number_format($emp["tax_amount"], 2)
+                    : "No Tax";
             } else {
                 $totalLeaves = $this->countMonthlyLeaves(
                     $emp["user_id"],
