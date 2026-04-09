@@ -770,8 +770,9 @@ class PayrollController extends ResourceController
             ->first();
         $overtimeSeconds = $overtimeResult["overtime_seconds"] ?? 0;
 
-        // Late deduction (same as group salary-details)
+        // Late arrival is tracked for info purposes only – NOT deducted from salary
         $lateDeduction = 0;
+        $totalLateMinutes = 0;
         if ($workingDays > 0 && ($rules["working_hours_per_day"] ?? 8) > 0) {
             $lateResult = $attendanceModel
                 ->select("COALESCE(SUM(late_minutes), 0) AS total_late_minutes")
@@ -781,8 +782,7 @@ class PayrollController extends ResourceController
                 ->where("status !=", "half-day")
                 ->first();
             $totalLateMinutes = (int) ($lateResult["total_late_minutes"] ?? 0);
-            $perHourRate = $baseSalary / ($workingDays * ($rules["working_hours_per_day"] ?? 8));
-            $lateDeduction = round(($totalLateMinutes / 60) * $perHourRate, 2);
+            // $lateDeduction intentionally remains 0 – late arrival does not affect salary
         }
 
         switch ($payrollType) {
@@ -818,12 +818,12 @@ class PayrollController extends ResourceController
                     ($workingDays * ($rules["working_hours_per_day"] ?? 8));
 
                 $missingHours = max($expectedHours - $workedHours, 0);
-                $deduction = $missingHours * $perHourRate + $lateDeduction;
+                $deduction = $missingHours * $perHourRate; // late arrival excluded
                 break;
 
             case "daily":
                 $perDayRate = $baseSalary / $workingDays;
-                $deduction = $unpaidLeaves * $perDayRate + $lateDeduction;
+                $deduction = $unpaidLeaves * $perDayRate; // late arrival excluded
                 break;
 
             case "monthly":
@@ -864,7 +864,7 @@ class PayrollController extends ResourceController
                     ? round($halfDayMissingHoursTotal * $perHourRateForHalfDay, 2)
                     : 0;
 
-                $deduction = $fullDayDeduction + $halfDayDeduction + $lateDeduction;
+                $deduction = $fullDayDeduction + $halfDayDeduction; // late arrival excluded
                 break;
         }
 
@@ -2007,19 +2007,10 @@ class PayrollController extends ResourceController
                     : 0;
 
                 $leaveHalfDeduction = $fullDayDeduction + $halfDayDeduction;
+                // Late arrival is tracked for info only – NOT deducted from salary
                 $lateDeduction = 0;
                 $overtimePay = (float) ($payroll["overtime_pay"] ?? 0);
                 if ($workingDays > 0 && $workingHoursPerDay > 0) {
-                    $perHourRate = $emp["salary"] / ($workingDays * $workingHoursPerDay);
-                    $lateResult = $attendanceModel
-                        ->select("COALESCE(SUM(late_minutes), 0) AS total_late_minutes")
-                        ->where("user_id", $emp["user_id"])
-                        ->where("date >=", $startOfMonth)
-                        ->where("date <=", $endOfMonth)
-                        ->where("status !=", "half-day")
-                        ->first();
-                    $totalLateMinutes = (int) ($lateResult["total_late_minutes"] ?? 0);
-                    $lateDeduction = round(($totalLateMinutes / 60) * $perHourRate, 2);
                     if (($rules["enable_overtime"] ?? 0) == 1 && $overtimePay <= 0) {
                         $otResult = $attendanceModel
                             ->select("SUM(TIME_TO_SEC(overtime)) AS overtime_seconds")
@@ -2037,13 +2028,13 @@ class PayrollController extends ResourceController
                         }
                     }
                 }
-                $emp["late_deduction"] = $lateDeduction;
+                $emp["late_deduction"] = 0; // late arrival not deducted
                 $baseFullDayDeduction = $totalLeaves * $emp["per_day"];
                 $baseLeaveHalfDeduction = $baseFullDayDeduction + $halfDayDeduction;
-                $emp["base_deduction"] = round($baseLeaveHalfDeduction + $lateDeduction, 2);
+                $emp["base_deduction"] = round($baseLeaveHalfDeduction, 2);
                 $emp["overtime_pay"] = $overtimePay;
                 $emp["total_overtime_hours"] = (float) ($payroll["total_overtime_hours"] ?? 0);
-                $emp["salary_deduction"] = round($leaveHalfDeduction + $lateDeduction, 2);
+                $emp["salary_deduction"] = round($leaveHalfDeduction, 2);
                 $emp["net_salary"] = round(
                     $emp["salary"] + $overtimePay - $emp["salary_deduction"] - $emp["tax_deduction"],
                     2,
@@ -2111,21 +2102,11 @@ class PayrollController extends ResourceController
 
                 $leaveHalfDeduction = $fullDayDeduction + $halfDayDeduction;
 
+                // Late arrival is tracked for info only – NOT deducted from salary
                 $lateDeduction = 0;
                 $overtimePay = 0;
                 $overtimeSeconds = 0;
                 if ($workingDays > 0 && $workingHoursPerDay > 0) {
-                    $perHourRate = $emp["salary"] / ($workingDays * $workingHoursPerDay);
-                    $lateResult = $attendanceModel
-                        ->select("COALESCE(SUM(late_minutes), 0) AS total_late_minutes")
-                        ->where("user_id", $emp["user_id"])
-                        ->where("date >=", $startOfMonth)
-                        ->where("date <=", $endOfMonth)
-                        ->where("status !=", "half-day")
-                        ->first();
-                    $totalLateMinutes = (int) ($lateResult["total_late_minutes"] ?? 0);
-                    $lateDeduction = round(($totalLateMinutes / 60) * $perHourRate, 2);
-
                     if (($rules["enable_overtime"] ?? 0) == 1) {
                         $otResult = $attendanceModel
                             ->select("SUM(TIME_TO_SEC(overtime)) AS overtime_seconds")
@@ -2144,13 +2125,13 @@ class PayrollController extends ResourceController
                     }
                 }
 
-                $emp["late_deduction"] = $lateDeduction;
+                $emp["late_deduction"] = 0; // late arrival not deducted
                 $baseFullDayDeduction = $totalLeaves * $emp["per_day"];
                 $baseLeaveHalfDeduction = $baseFullDayDeduction + $halfDayDeduction;
-                $emp["base_deduction"] = round($baseLeaveHalfDeduction + $lateDeduction, 2);
+                $emp["base_deduction"] = round($baseLeaveHalfDeduction, 2);
                 $emp["overtime_pay"] = $overtimePay;
                 $emp["total_overtime_hours"] = round($overtimeSeconds / 3600, 2);
-                $emp["salary_deduction"] = round($leaveHalfDeduction + $lateDeduction, 2);
+                $emp["salary_deduction"] = round($leaveHalfDeduction, 2);
                 $emp["tax_deduction"] = $emp["tax_amount"];
                 $emp["net_salary"] = round(
                     $emp["salary"] + $overtimePay - $emp["salary_deduction"] - $emp["tax_deduction"],
@@ -2501,7 +2482,7 @@ class PayrollController extends ResourceController
                 "late" => ["list" => $lateList, "total_minutes" => $totalLateMinutes, "deduction_amount" => $lateDeduction],
                 "overtime" => ["list" => $overtimeList, "total_hours" => $overtimeHours, "pay_amount" => $overtimePay],
                 "summary" => [
-                    "total_deduction" => round($leaveDeduction + $halfDayDeduction + $lateDeduction, 2),
+                    "total_deduction" => round($leaveDeduction + $halfDayDeduction, 2), // late arrival excluded
                     "overtime_added" => $overtimePay,
                     "per_day_salary" => $perDay,
                     "per_hour_salary" => $perHour,

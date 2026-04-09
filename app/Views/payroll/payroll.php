@@ -1262,9 +1262,9 @@
                         html += '<span class="text-danger">Deduction: ₹' + (d.half_day.deduction_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.late && d.late.list && d.late.list.length) {
-                        html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong>Late arrival</strong><ul class="list-unstyled small" style="max-height:120px;overflow-y:auto;">';
-                        d.late.list.forEach(function (l) { html += '<li>' + (l.label || l.date) + ' – ' + (l.late_text || l.late_minutes + ' min') + '</li>'; });
-                        html += '</ul><span class="text-danger">Deduction: ₹' + (d.late.deduction_amount || 0).toFixed(2) + '</span></div>';
+                        html += '<div class="breakdown-section" style="border-left:3px solid #adb5bd;padding-left:0.75rem;margin-bottom:1rem;"><strong class="text-muted">Late Arrival (info only – not deducted)</strong><ul class="list-unstyled small" style="max-height:120px;overflow-y:auto;">';
+                        d.late.list.forEach(function (l) { html += '<li class="text-muted">' + (l.label || l.date) + ' – ' + (l.late_text || l.late_minutes + ' min') + '</li>'; });
+                        html += '</ul><span class="text-muted small">(No salary deduction for late arrivals)</span></div>';
                     }
                     if (d.overtime && d.overtime.list && d.overtime.list.length) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong class="text-success">Overtime</strong><ul class="list-unstyled small" style="max-height:120px;overflow-y:auto;">';
@@ -1272,11 +1272,11 @@
                         html += '</ul><span class="text-success">Added to salary: ₹' + (d.overtime.pay_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.summary) {
-                        html += '<hr><div class="fw-bold"><span>Total deduction (leaves + half-day + late):</span> <span class="text-danger">₹' + (d.summary.total_deduction || 0).toFixed(2) + '</span></div>';
+                        html += '<hr><div class="fw-bold"><span>Total deduction (leaves + half-day):</span> <span class="text-danger">₹' + (d.summary.total_deduction || 0).toFixed(2) + '</span></div>';
                         if (d.summary.overtime_added > 0) html += '<div class="fw-bold"><span>Overtime added:</span> <span class="text-success">₹' + d.summary.overtime_added.toFixed(2) + '</span></div>';
                     }
-                    if (!d.leaves?.count && !d.absent?.dates?.length && !d.half_day?.count && !d.late?.list?.length && !d.overtime?.list?.length) {
-                        html += '<p class="text-muted">No leaves, absent, late, or overtime in this month.</p>';
+                    if (!d.leaves?.count && !d.absent?.dates?.length && !d.half_day?.count && !d.overtime?.list?.length) {
+                        html += '<p class="text-muted">No leaves, absent, or overtime in this month.</p>';
                     }
                     content.innerHTML = html;
                     content.style.display = 'block';

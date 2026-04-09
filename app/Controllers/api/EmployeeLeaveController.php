@@ -26,24 +26,6 @@ class EmployeeLeaveController extends BaseController
     /**
      * Display the Manage Leaves page. (Admin & HR only)
      */
-    public function index()
-    {
-        $user = $this->authService->check();
-        if (!$user || !in_array($user->role, ['admin', 'hr'])) {
-            return redirect()->to('/login');
-        }
-
-        // Fetch all active employees for the dropdown
-        $employees = $this->userModel->where('is_deleted', 0)
-                                      ->whereIn('role', ['employee', 'hr'])
-                                      ->findAll();
-
-        return view('leave/manage_leaves', [
-            'employees' => $employees,
-            'role'      => $user->role
-        ]);
-    }
-
     /**
      * API: Get all employee leave balances.
      */
@@ -55,12 +37,12 @@ class EmployeeLeaveController extends BaseController
         }
 
         $data = $this->employeeLeaveModel->getAllWithEmployeeInfo();
-        
+
         // Calculate remaining leaves for each record
         foreach ($data as &$row) {
             $paidUsed = $this->employeeLeaveModel->getUsedLeavesByType($row['employee_id'], 'Paid Leave');
             $casualUsed = $this->employeeLeaveModel->getUsedLeavesByType($row['employee_id'], 'Casual Leave');
-            
+
             $row['paid_used'] = $paidUsed;
             $row['casual_used'] = $casualUsed;
             $row['paid_remaining'] = $row['paid_leave'] - $paidUsed;
@@ -72,7 +54,7 @@ class EmployeeLeaveController extends BaseController
 
         return $this->respond([
             'status' => 'success',
-            'data'   => $data
+            'data' => $data
         ]);
     }
 
@@ -87,8 +69,8 @@ class EmployeeLeaveController extends BaseController
         }
 
         $rules = [
-            'employee_id'  => 'required|is_not_unique[users.id]',
-            'paid_leave'   => 'required|decimal',
+            'employee_id' => 'required|is_not_unique[users.id]',
+            'paid_leave' => 'required|decimal',
             'casual_leave' => 'required|decimal',
         ];
 
@@ -97,10 +79,10 @@ class EmployeeLeaveController extends BaseController
         }
 
         $data = [
-            'employee_id'  => $this->request->getVar('employee_id'),
-            'paid_leave'   => $this->request->getVar('paid_leave'),
+            'employee_id' => $this->request->getVar('employee_id'),
+            'paid_leave' => $this->request->getVar('paid_leave'),
             'casual_leave' => $this->request->getVar('casual_leave'),
-            'created_by'   => $user->sub,
+            'created_by' => $user->sub,
         ];
 
         // Check if record exists
@@ -115,7 +97,7 @@ class EmployeeLeaveController extends BaseController
         }
 
         return $this->respond([
-            'status'  => 'success',
+            'status' => 'success',
             'message' => $message
         ]);
     }
@@ -137,7 +119,7 @@ class EmployeeLeaveController extends BaseController
 
         return $this->respond([
             'status' => 'success',
-            'data'   => $record
+            'data' => $record
         ]);
     }
 }
