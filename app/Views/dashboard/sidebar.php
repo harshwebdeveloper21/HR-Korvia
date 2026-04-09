@@ -100,7 +100,7 @@ $role = $user ? $user->role : null;
         </a>
         <div class="collapse" id="cha-rts">
           <ul class="nav flex-column sub-menu">
-            <li class="nav-item"> <a class="nav-link" href="/manage-leaves">Manage Balance</a></li>
+            <!-- <li class="nav-item"> <a class="nav-link" href="/manage-leaves">Manage Balance</a></li> -->
             <li class="nav-item"> <a class="nav-link" href="/leaveview">Manage Leaves</a></li>
             <li class="nav-item"> <a class="nav-link" href="/addleave">Add Leaves</a></li>
           </ul>
