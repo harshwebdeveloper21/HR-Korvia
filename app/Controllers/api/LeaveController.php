@@ -198,12 +198,12 @@ class LeaveController extends ResourceController
 
         // Validation
         $validationRules = [
-            'user_id'    => 'required',
-            'leave_id'   => 'required',
+            'user_id' => 'required',
+            'leave_id' => 'required',
             'start_date' => 'required|valid_date[Y-m-d]',
-            'end_date'   => 'required|valid_date[Y-m-d]|check_end_date[start_date]',
-            'reason'     => 'required',
-            'no_of_day'  => 'required|validate_no_of_day[start_date,end_date]',
+            'end_date' => 'required|valid_date[Y-m-d]|check_end_date[start_date]',
+            'reason' => 'required',
+            'no_of_day' => 'required|validate_no_of_day[start_date,end_date]',
         ];
 
         $validationMessages = [
@@ -238,7 +238,7 @@ class LeaveController extends ResourceController
 
         if ($this->leaveModel->insert($data)) {
             $leaveId = $this->leaveModel->getInsertID();
-            
+
             // Send notifications (internal and push)
             try {
                 $this->sendLeaveNotification($data, $leaveId);
@@ -371,14 +371,14 @@ class LeaveController extends ResourceController
         $userModel2 = new UserModel();
 
         $employeeUser = $userModel2->find($leave['user_id']);
-        $updatedBy    = $userModel2->find($userId);
-        $updaterName  = $updatedBy['username'] ?? 'HR/Admin';
+        $updatedBy = $userModel2->find($userId);
+        $updaterName = $updatedBy['username'] ?? 'HR/Admin';
 
         // Human-readable status message
         $statusLabel = match (strtolower($status)) {
             'approved' => 'approved ✅',
             'rejected' => 'rejected ❌',
-            default    => 'moved to pending 🕐',
+            default => 'moved to pending 🕐',
         };
 
         $notifMessage = 'Your leave request from ' . $leave['start_date'] . ' to ' . $leave['end_date']
@@ -386,17 +386,17 @@ class LeaveController extends ResourceController
 
         // 1. ── In-App (database) notification ──
         $notificationModel->insert([
-            'sender_id'    => $userId,
+            'sender_id' => $userId,
             'recipient_id' => $leave['user_id'],
-            'data'         => json_encode([
-                'username'   => $employeeUser['username'] ?? 'Employee',
-                'type'       => 'leave_status',
-                'message'    => $notifMessage,
-                'status'     => $status,
-                'leave_id'   => $leaveId,
+            'data' => json_encode([
+                'username' => $employeeUser['username'] ?? 'Employee',
+                'type' => 'leave_status',
+                'message' => $notifMessage,
+                'status' => $status,
+                'leave_id' => $leaveId,
                 'start_date' => $leave['start_date'],
-                'end_date'   => $leave['end_date'],
-                'url'        => base_url('/leaveview'),
+                'end_date' => $leave['end_date'],
+                'url' => base_url('/leaveview'),
             ]),
             'is_read' => 0,
         ]);
@@ -409,14 +409,14 @@ class LeaveController extends ResourceController
                 $pushTitle,
                 $notifMessage,
                 [
-                    'type'       => 'leave_status',
-                    'leave_id'   => $leaveId,
-                    'status'     => $status,
+                    'type' => 'leave_status',
+                    'leave_id' => $leaveId,
+                    'status' => $status,
                     'start_date' => $leave['start_date'],
-                    'end_date'   => $leave['end_date'],
+                    'end_date' => $leave['end_date'],
                     'no_of_days' => $leave['no_of_day'] ?? 1,
                     'updated_by' => $updaterName,
-                    'url'        => base_url('/leaveview'),
+                    'url' => base_url('/leaveview'),
                 ]
             );
         } catch (\Exception $e) {
@@ -426,7 +426,7 @@ class LeaveController extends ResourceController
 
         // Update leave status
         $leaveModel->update($leaveId, [
-            'status'     => $status,
+            'status' => $status,
             'created_by' => $userId,
         ]);
 
@@ -504,18 +504,18 @@ class LeaveController extends ResourceController
         if ($start > $end) {
             return $this->fail('Start date cannot be after end date.');
         }
-        
+
         $noOfDays = (string) (($end - $start) / 86400 + 1);
-        
+
         $updateData = [
             'start_date' => $startDate,
-            'end_date'   => $endDate,
-            'no_of_day'  => $noOfDays,
+            'end_date' => $endDate,
+            'no_of_day' => $noOfDays,
         ];
 
         if ($this->leaveModel->update($leaveId, $updateData)) {
             return $this->respond([
-                'status' => 'success', 
+                'status' => 'success',
                 'message' => 'Leave dates updated successfully',
                 'no_of_day' => $noOfDays
             ]);
@@ -593,22 +593,22 @@ class LeaveController extends ResourceController
     {
         $userModel = new \App\Models\UserModel();
         $notificationModel = new \App\Models\NotificationModel();
-        
+
         $sender = $userModel->find($data['user_id']);
         $senderName = $sender['username'] ?? 'Employee';
-        
+
         log_message('info', '🔔 [sendLeaveNotification] Starting notification process for leave #' . $leaveId . ' (User: ' . $senderName . ')');
 
         // 1. Internal Notifications (Database)
         $recipients = $userModel->whereIn('role', ['admin', 'hr'])->where('is_deleted', 0)->findAll();
-        
+
         foreach ($recipients as $recipient) {
             $notificationModel->insert([
-                'sender_id'    => $data['user_id'],
+                'sender_id' => $data['user_id'],
                 'recipient_id' => $recipient['id'],
-                'data'         => json_encode([
+                'data' => json_encode([
                     'username' => $senderName,
-                    'type'     => 'leave',
+                    'type' => 'leave',
                     'leave_id' => $leaveId
                 ]),
                 'is_read' => 0
@@ -618,7 +618,7 @@ class LeaveController extends ResourceController
         // 2. Push Notification to Admin/HR
         try {
             $notificationSettingsModel = new \App\Models\NotificationSettingsModel();
-            
+
             // Safe check for settings
             $shouldNotify = true;
             try {
@@ -629,9 +629,9 @@ class LeaveController extends ResourceController
 
             if ($shouldNotify) {
                 $leaveStart = $data['start_date'] ?? '';
-                $leaveEnd   = $data['end_date'] ?? '';
-                $noOfDays   = $data['no_of_day'] ?? 1;
-                
+                $leaveEnd = $data['end_date'] ?? '';
+                $noOfDays = $data['no_of_day'] ?? 1;
+
                 // Fetch leave type name
                 $leaveTypeName = 'Leave';
                 try {
@@ -645,17 +645,17 @@ class LeaveController extends ResourceController
                 }
 
                 log_message('info', '🔔 [sendLeaveNotification] Sending push notification to admins/HR');
-                
+
                 $this->pushNotificationService->notifyAdmins(
                     'Employee Leave Request (New Application)',
                     $senderName . ' has requested ' . $leaveTypeName . ' from ' . $leaveStart . ' to ' . $leaveEnd . ' (' . $noOfDays . ' day' . ($noOfDays > 1 ? 's' : '') . '). Reason: ' . ($data['reason'] ?? 'Not specified'),
                     [
-                        'type'        => 'leave_request',
-                        'user_id'     => $data['user_id'],
-                        'username'    => $senderName,
-                        'leave_id'    => $leaveId,
-                        'leave_type'  => $leaveTypeName,
-                        'url'         => base_url('/leaveview')
+                        'type' => 'leave_request',
+                        'user_id' => $data['user_id'],
+                        'username' => $senderName,
+                        'leave_id' => $leaveId,
+                        'leave_type' => $leaveTypeName,
+                        'url' => base_url('/leaveview')
                     ]
                 );
             }
@@ -663,4 +663,24 @@ class LeaveController extends ResourceController
             log_message('error', '🔔 [sendLeaveNotification] Push notification failed: ' . $e->getMessage());
         }
     }
+
+
+    public function index()
+    {
+        $user = $this->authService->check();
+        if (!$user || !in_array($user->role, ['admin', 'hr'])) {
+            return redirect()->to('/login');
+        }
+
+        // Fetch all active employees for the dropdown
+        $employees = $this->userModel->where('is_deleted', 0)
+            ->whereIn('role', ['employee', 'hr'])
+            ->findAll();
+
+        return view('leave/manage_leaves', [
+            'employees' => $employees,
+            'role' => $user->role
+        ]);
+    }
+
 }
