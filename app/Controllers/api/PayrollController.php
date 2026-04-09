@@ -1937,6 +1937,14 @@ class PayrollController extends ResourceController
             $emp["is_saved"] = $payroll ? true : false;
             $emp["days_in_month"] = $workingDays;
             $emp["hours_in_month"] = $totalWorkHours;
+
+            // If a payroll record already exists for this month, use its saved salary_amount
+            // (the value entered when payroll was created, e.g. ₹100,000) instead of the
+            // employee profile salary from user_info (which may be a different/default value).
+            if ($payroll && !empty($payroll["salary_amount"]) && (float)$payroll["salary_amount"] > 0) {
+                $emp["salary"] = (float) $payroll["salary_amount"];
+            }
+
             $emp["per_day"] = round($emp["salary"] / $workingDays, 2);
             $emp["per_hour"] = round($emp["salary"] / ($workingDays * $workingHoursPerDay), 2);
 
@@ -2164,7 +2172,6 @@ class PayrollController extends ResourceController
         $payrollModel = new \App\Models\PayrollModel();
         $companyRulesModel = new \App\Models\CompanyRulesModel();
         $rules = $companyRulesModel->first();
-        $skipped = [];
 
         foreach ($employeeIds as $index => $empId) {
             $existing = $payrollModel
@@ -2172,45 +2179,40 @@ class PayrollController extends ResourceController
                 ->where("month_year", $month)
                 ->first();
 
-            if ($existing) {
-                $skipped[] = $empId;
-                continue;
-            }
-            $taxDeduction =
-                $salaries[$index] > $rules["salary_above_tax"]
-                    ? $rules["tax"]
-                    : 0;
+            // Determine tax deduction: preserve existing tax_deduction if record already
+            // exists (may have been customised via Add Payroll), otherwise calculate it.
+            $taxDeduction = $existing
+                ? $existing["tax_deduction"]
+                : ($salaries[$index] > $rules["salary_above_tax"] ? $rules["tax"] : 0);
 
             $data = [
-                "user_id" => $empId,
-                "month_year" => $month,
-                "salary_amount" => $salaries[$index],
-                "total_leaves" => $leaves[$index],
-                "total_half_day" => $half_day[$index],
-                "used_paid_leaves" => $paid_leave[$index] ?? 0,
-                "salary_deduction" => $deductions[$index],
-                "tax_deduction" => $taxDeduction,
-                "net_salary" => $netSalaries[$index],
-                "overtime_pay" => isset($overtime_pay[$index]) ? (float) $overtime_pay[$index] : 0,
-                "total_overtime_hours" => isset($total_overtime_hours[$index]) ? (float) $total_overtime_hours[$index] : 0,
-                "created_at" => date("Y-m-d H:i:s"),
-                "payment_date" => date("Y-m-d H:i:s"),
-                "payment_status" => "Paid",
+                "user_id"             => $empId,
+                "month_year"          => $month,
+                "salary_amount"       => $salaries[$index],
+                "total_leaves"        => $leaves[$index],
+                "total_half_day"      => $half_day[$index],
+                "used_paid_leaves"    => $paid_leave[$index] ?? 0,
+                "salary_deduction"    => $deductions[$index],
+                "tax_deduction"       => $taxDeduction,
+                "net_salary"          => $netSalaries[$index],
+                "overtime_pay"        => isset($overtime_pay[$index]) ? (float) $overtime_pay[$index] : 0,
+                "total_overtime_hours"=> isset($total_overtime_hours[$index]) ? (float) $total_overtime_hours[$index] : 0,
+                "payment_date"        => $existing ? $existing["payment_date"] : date("Y-m-d H:i:s"),
+                "payment_status"      => $existing ? $existing["payment_status"] : "Paid",
             ];
 
-            $payrollModel->insert($data);
-        }
-
-        if (!empty($skipped)) {
-            return $this->response->setJSON([
-                "status" => "partial",
-                "message" => "Some employees were already saved and skipped.",
-                "skipped_ids" => $skipped,
-            ]);
+            if ($existing) {
+                // Update existing record with latest calculated values from salary-details page
+                $data["id"] = $existing["id"];
+                $payrollModel->save($data);
+            } else {
+                $data["created_at"] = date("Y-m-d H:i:s");
+                $payrollModel->insert($data);
+            }
         }
 
         return $this->response->setJSON([
-            "status" => "success",
+            "status"  => "success",
             "message" => "Payroll data saved successfully for all employees.",
         ]);
     }

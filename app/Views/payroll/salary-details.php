@@ -2,9 +2,10 @@
 <?= $this->extend("layout") ?>
 <?= $this->section("content") ?>
 <style>
-   .capitalize-text {
-        text-transform: capitalize;
-    }
+  .capitalize-text {
+    text-transform: capitalize;
+  }
+
   .salary-manage {
     display: flex;
   }
@@ -54,12 +55,25 @@
       right: 20px !important;
     }
   }
-  #deductionBreakdownModal .breakdown-section { border-left: 3px solid #E66136; padding-left: 0.75rem; margin-bottom: 1rem; }
-  #deductionBreakdownModal .breakdown-list { max-height: 120px; overflow-y: auto; }
-  #deductionBreakdownModal .summary-row { font-weight: 600; }
+
+  #deductionBreakdownModal .breakdown-section {
+    border-left: 3px solid #E66136;
+    padding-left: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  #deductionBreakdownModal .breakdown-list {
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  #deductionBreakdownModal .summary-row {
+    font-weight: 600;
+  }
 </style>
 <!-- Deduction breakdown modal -->
-<div class="modal fade" id="deductionBreakdownModal" tabindex="-1" aria-labelledby="deductionBreakdownModalLabel" aria-hidden="true">
+<div class="modal fade" id="deductionBreakdownModal" tabindex="-1" aria-labelledby="deductionBreakdownModalLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header" style="background:#E66136;color:white;">
@@ -95,8 +109,8 @@
               // Default to last month
               $lastMonth = date("Y-m", strtotime("first day of last month"));
               ?>
-              <input type="month" id="salaryMonth" name="salaryMonth" class="form-control form-control-sm salary-control-size"
-                value="<?= esc($month ?? $lastMonth) ?>"
+              <input type="month" id="salaryMonth" name="salaryMonth"
+                class="form-control form-control-sm salary-control-size" value="<?= esc($month ?? $lastMonth) ?>"
                 max="<?= $currentMonth ?>" />
             </div>
             <div class="slarypadding">
@@ -109,13 +123,13 @@
 
         <!-- Save All Form -->
         <form action="<?= base_url(
-            "/api/payroll/saveAll",
+          "/api/payroll/saveAll",
         ) ?>" method="post" class="individual-save-form">
           <?= csrf_field() ?>
           <input type="hidden" name="month" value="<?= $month ?>">
           <div class="text-end d-flex gap-2 justify-content-end">
             <button type="submit" class="btn hr-btnbg save-all">
-              <i class="mdi mdi-content-save-all-outline me-1 iconfontsize"></i>Save All
+              <i class="mdi mdi-content-save-all-outline me-1 iconfontsize"></i>Update All
             </button>
           </div>
           <div class="table-responsive">
@@ -137,30 +151,28 @@
               <tbody>
                 <?php foreach ($employees as $index => $emp): ?>
                   <tr data-overtime-pay="<?= esc($emp['overtime_pay'] ?? 0) ?>"
-                      data-late-deduction="<?= esc($emp['late_deduction'] ?? 0) ?>"
-                      data-base-deduction="<?= esc($emp['base_deduction'] ?? $emp['salary_deduction']) ?>"
-                      data-per-day="<?= esc($emp['per_day']) ?>">
+                    data-late-deduction="<?= esc($emp['late_deduction'] ?? 0) ?>"
+                    data-base-deduction="<?= esc($emp['base_deduction'] ?? $emp['salary_deduction']) ?>"
+                    data-per-day="<?= esc($emp['per_day']) ?>">
                     <td>
                       <a href="/employee/profile/<?= $emp[
-                          "id"
+                        "id"
                       ] ?>" class="text-decoration-none text-dark">
                         <div style="display: flex; align-items: center; gap: 10px;">
                           <?php if (!empty($emp["profile_image"])) { ?>
                             <img src="/upload/<?= !empty($emp["profile_image"])
-                                ? esc($emp["profile_image"])
-                                : "default-profile.jpg" ?>"
-                              alt="Profile"
+                              ? esc($emp["profile_image"])
+                              : "default-profile.jpg" ?>" alt="Profile"
                               style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                             <span class="capitalize-text"><?= esc(
-                                $emp["firstname"],
+                              $emp["firstname"],
                             ) ?></span>
                           <?php } else { ?>
                             <img src="/public/upload/<?= !empty(
-                                $emp["profile_image"]
+                              $emp["profile_image"]
                             )
-                                ? esc($emp["profile_image"])
-                                : "default-profile.jpg" ?>"
-                              alt="Profile"
+                              ? esc($emp["profile_image"])
+                              : "default-profile.jpg" ?>" alt="Profile"
                               style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                             <span><?= esc($emp["firstname"]) ?></span>
                           <?php } ?>
@@ -170,99 +182,92 @@
                     <td>₹<?= number_format($emp["salary"], 2) ?></td>
                     <td>
                       <input type="number" name="leaves[]" class="form-control form-control-sm leave-input"
-                        value="<?= $emp["leaves"] ?>" min="0"
-                        data-index="<?= $index ?>"
-                        data-salary="<?= $emp["salary"] ?>"
-                        data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-days="<?= $emp["days_in_month"] ?>"
-                        data-month="<?= date("Y-m", strtotime($month)) ?>">
+                        value="<?= $emp["leaves"] ?>" min="0" data-index="<?= $index ?>"
+                        data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
+                        data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
                     </td>
                     <td>
                       <input type="number" name="half_day[]" class="form-control form-control-sm half_day-input"
-                        value="<?= $emp["half_days"] ?>" min="0"
-                        data-index="<?= $index ?>"
-                        data-salary="<?= $emp["salary"] ?>"
-                        data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-days="<?= $emp["days_in_month"] ?>"
-                        data-month="<?= date("Y-m", strtotime($month)) ?>">
+                        value="<?= $emp["half_days"] ?>" min="0" data-index="<?= $index ?>"
+                        data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
+                        data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
                     </td>
                     <td>
                       <input type="number" name="paid_leave[]" class="form-control form-control-sm paid-leave-input"
                         value="<?= $emp["used_paid_leaves"] ??
-                            0 ?>" min="0" step="0.5"
-                        data-index="<?= $index ?>"
-                        data-salary="<?= $emp["salary"] ?>"
-                        data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-days="<?= $emp["days_in_month"] ?>"
-                        data-leaves="<?= $emp["leaves"] ?>"
-                        data-halfdays="<?= $emp["half_days"] ?>"
+                          0 ?>" min="0" step="0.5" data-index="<?= $index ?>" data-salary="<?= $emp["salary"] ?>"
+                        data-tax="<?= $emp["tax_amount"] ?? 0 ?>" data-days="<?= $emp["days_in_month"] ?>"
+                        data-leaves="<?= $emp["leaves"] ?>" data-halfdays="<?= $emp["half_days"] ?>"
                         data-month="<?= date("Y-m", strtotime($month)) ?>">
                     </td>
-                    <td>₹<?= number_format($emp["per_day"], 2) ?><br><small class="text-muted">₹<?= number_format($emp["per_hour"] ?? ($emp["per_day"] / 8), 2) ?>/hr</small></td>
+                    <td>₹<?= number_format($emp["per_day"], 2) ?><br><small
+                        class="text-muted">₹<?= number_format($emp["per_hour"] ?? ($emp["per_day"] / 8), 2) ?>/hr</small>
+                    </td>
                     <td><?= esc($emp["tax"]) ?></td>
                     <td class="deduction-cell">
                       <span>₹<?= number_format($emp["salary_deduction"], 2) ?></span>
-                      <button type="button" class="btn btn-sm btn-link p-0 ms-1 btn-deduction-info" title="Why is this amount deducted?"
-                        data-user-id="<?= $emp["user_id"] ?>"
-                        data-month="<?= esc($month) ?>"
-                        data-name="<?= esc($emp["firstname"] ?? '') ?>">
+                      <button type="button" class="btn btn-sm btn-link p-0 ms-1 btn-deduction-info"
+                        title="Why is this amount deducted?" data-user-id="<?= $emp["user_id"] ?>"
+                        data-month="<?= esc($month) ?>" data-name="<?= esc($emp["firstname"] ?? '') ?>">
                         <i class="mdi mdi-information-outline text-primary" style="font-size:1.1rem;"></i>
                       </button>
                     </td>
                     <td class="net-salary-cell">₹<?= number_format(
-                        $emp["net_salary"],
-                        2,
+                      $emp["net_salary"],
+                      2,
                     ) ?></td>
 
                     <!-- Hidden Inputs -->
                     <input type="hidden" name="employee_id[]" value="<?= $emp[
-                        "id"
+                      "id"
                     ] ?>">
                     <input type="hidden" name="salary[]" value="<?= $emp[
-                        "salary"
+                      "salary"
                     ] ?>">
                     <input type="hidden" name="deduction[]" class="deduction-input" value="<?= $emp[
-                        "salary_deduction"
+                      "salary_deduction"
                     ] ?>">
                     <input type="hidden" name="net_salary[]" class="net-salary-input" value="<?= $emp[
-                        "net_salary"
+                      "net_salary"
                     ] ?>">
-                    <input type="hidden" name="overtime_pay[]" class="overtime-pay-input" value="<?= $emp["overtime_pay"] ?? 0 ?>">
-                    <input type="hidden" name="total_overtime_hours[]" class="total-overtime-hours-input" value="<?= $emp["total_overtime_hours"] ?? 0 ?>">
-                    <input type="hidden" name="half_day[]" value="<?= $emp[
-                        "half_days"
-                    ] ?>">
+                    <input type="hidden" name="overtime_pay[]" class="overtime-pay-input"
+                      value="<?= $emp["overtime_pay"] ?? 0 ?>">
+                    <input type="hidden" name="total_overtime_hours[]" class="total-overtime-hours-input"
+                      value="<?= $emp["total_overtime_hours"] ?? 0 ?>">
+
 
                     <!-- Per Row Save -->
                     <td>
                       <input type="hidden" class="single-employee-id" value="<?= $emp[
-                          "id"
+                        "id"
                       ] ?>">
                       <input type="hidden" class="single-salary" value="<?= $emp[
-                          "salary"
+                        "salary"
                       ] ?>">
                       <input type="hidden" class="single-leave-input" value="<?= $emp[
-                          "leaves"
+                        "leaves"
                       ] ?>">
                       <input type="hidden" class="single-halfday-input" value="<?= $emp[
-                          "half_days"
+                        "half_days"
                       ] ?>">
                       <input type="hidden" class="single-paid-leave-input" value="<?= $emp[
-                          "used_paid_leaves"
+                        "used_paid_leaves"
                       ] ?? 0 ?>">
                       <input type="hidden" class="single-deduction-input" value="<?= $emp[
-                          "salary_deduction"
+                        "salary_deduction"
                       ] ?>">
                       <input type="hidden" class="single-net-salary-input" value="<?= $emp[
-                          "net_salary"
+                        "net_salary"
                       ] ?>">
                       <input type="hidden" class="single-month" value="<?= $month ?>">
 
                       <?php if (!empty($emp["is_saved"])): ?>
-                        <span class="badge bg-success btn-sm rounded">Saved</span>
+                        <button type="button" class="btn btn-sm btn-save-single" data-id="<?= $emp["user_id"] ?>"
+                          style="background-color:#28a745;color:white">
+                          <i class="mdi mdi-content-save"></i> Update
+                        </button>
                       <?php else: ?>
-                        <button type="button" class="btn btn-sm btn-save-single"
-                          data-id="<?= $emp["user_id"] ?>"
+                        <button type="button" class="btn btn-sm btn-save-single" data-id="<?= $emp["user_id"] ?>"
                           style="background-color:#E66136;color:white">
                           <i class="mdi mdi-content-save"></i> Save
                         </button>
@@ -280,7 +285,7 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     const now = new Date();
     // Set to last month by default
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -291,11 +296,11 @@
     // Month filter event listener
     const salaryMonthInput = document.getElementById('salaryMonth');
     if (salaryMonthInput) {
-      salaryMonthInput.addEventListener('change', function() {
+      salaryMonthInput.addEventListener('change', function () {
         const selectedMonth = this.value;
         if (selectedMonth) {
           window.location.href = `<?= base_url(
-              "/payroll/salary-details",
+            "/payroll/salary-details",
           ) ?>?month=${selectedMonth}`;
         }
       });
@@ -384,7 +389,7 @@
     });
 
     document.querySelectorAll('.btn-save-single').forEach(btn => {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', function () {
         const row = this.closest('tr');
         const employeeId = this.dataset.id;
         const salary = row.querySelector('input[name="salary[]"]').value;
@@ -398,24 +403,24 @@
         const month = row.querySelector('.single-month').value;
 
         fetch("<?= base_url("/api/payroll/save") ?>", {
-            method: "POST",
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'X-CSRF-TOKEN': "<?= csrf_hash() ?>"
-            },
-            body: new URLSearchParams({
-              employee_id: employeeId,
-              month: month,
-              salary: salary,
-              leaves: leaves,
-              half_day: halfDay,
-              paid_leave: paidLeave,
-              deduction: deduction,
-              net_salary: netSalary,
-              overtime_pay: overtimePay,
-              total_overtime_hours: totalOvertimeHours
-            })
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-TOKEN': "<?= csrf_hash() ?>"
+          },
+          body: new URLSearchParams({
+            employee_id: employeeId,
+            month: month,
+            salary: salary,
+            leaves: leaves,
+            half_day: halfDay,
+            paid_leave: paidLeave,
+            deduction: deduction,
+            net_salary: netSalary,
+            overtime_pay: overtimePay,
+            total_overtime_hours: totalOvertimeHours
           })
+        })
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
@@ -461,13 +466,13 @@
       const modalInstance = new bootstrap.Modal(modal);
       modalInstance.show();
       fetch("<?= base_url('api/payroll/get-deduction-breakdown') ?>", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRF-TOKEN': "<?= csrf_hash() ?>"
-          },
-          body: new URLSearchParams({ user_id: userId, month: month })
-        })
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRF-TOKEN': "<?= csrf_hash() ?>"
+        },
+        body: new URLSearchParams({ user_id: userId, month: month })
+      })
         .then(r => r.json())
         .then(res => {
           loading.style.display = 'none';
@@ -534,7 +539,7 @@
     }
 
     var salaryDetailsDeductionLastTouch = 0;
-    document.addEventListener('touchend', function(e) {
+    document.addEventListener('touchend', function (e) {
       const btn = e.target.closest('.btn-deduction-info');
       if (!btn) return;
       e.preventDefault();
@@ -542,7 +547,7 @@
       salaryDetailsDeductionLastTouch = Date.now();
       openSalaryDetailsDeductionModal(btn);
     }, { passive: false });
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       const btn = e.target.closest('.btn-deduction-info');
       if (!btn) return;
       e.preventDefault();
@@ -554,5 +559,3 @@
 </script>
 
 <?= $this->endSection() ?>
-
-
