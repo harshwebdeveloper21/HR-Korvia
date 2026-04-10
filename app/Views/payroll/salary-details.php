@@ -290,6 +290,9 @@
     // Set to last month by default
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const currentMonth = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+    document.querySelectorAll('#payroll-table tbody tr').forEach(row => {
+      ensureBaseDeduction(row);
+    });
 
 
 
@@ -347,14 +350,12 @@
       const initialHalfDays = parseFloat(row.dataset.initialHalfDays || '0') || 0;
       let baseDeduction = parseFloat(row.dataset.baseDeduction) || 0;
       const lateDeduction = parseFloat(row.dataset.lateDeduction) || 0;
-      if (leaves !== initialLeaves || halfDays !== initialHalfDays) {
-        baseDeduction = (leaves * perDay) + (halfDays * (perDay / 2)) + lateDeduction;
-      }
+      baseDeduction = (leaves * perDay) + (halfDays * (perDay / 2)) + lateDeduction;
 
       const paidLeaveCredit = usedPaidLeaves * perDay;
       const salaryDeduction = Math.max(baseDeduction - paidLeaveCredit, 0);
       const overtimePay = parseFloat(row.dataset.overtimePay) || 0;
-      const netSalary = salary - salaryDeduction - tax + overtimePay;
+      const netSalary = salary - salaryDeduction - tax;
 
       const deductionSpan = row.querySelector('.deduction-cell span');
       if (deductionSpan) deductionSpan.textContent = '₹' + salaryDeduction.toFixed(2);

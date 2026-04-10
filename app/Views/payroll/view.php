@@ -142,7 +142,80 @@
                 <button type="button" class="btn hr-btnbg" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn hr-btnbg" id="openSalaryPage">OK</button>
             </div>
+        </div>
+    </div>
+</div>
 
+<!-- Yearly Salary Slip Modal -->
+<div class="modal fade" id="yearlySlipModal" tabindex="-1" aria-labelledby="yearlySlipLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="yearlySlipLabel">Download Yearly Salary Slips</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="yearlySlipForm">
+                    <div class="mb-3">
+                        <label for="yearlyEmployee" class="form-label">Select Employee</label>
+                        <select id="yearlyEmployee" class="form-select select2" required style="width: 100%;">
+                            <option value="">Select Employee</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="yearlyYear" class="form-label">Select Year</label>
+                        <select id="yearlyYear" class="form-select" required>
+                            <?php
+                            $currentYear = date("Y");
+                            for ($i = 0; $i < 5; $i++) {
+                                $year = $currentYear - $i;
+                                echo "<option value=\"$year\">$year</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="startMonth" class="form-label">Start Month</label>
+                            <select id="startMonth" class="form-select" required>
+                                <option value="01">January</option>
+                                <option value="02">February</option>
+                                <option value="03">March</option>
+                                <option value="04">April</option>
+                                <option value="05">May</option>
+                                <option value="06">June</option>
+                                <option value="07">July</option>
+                                <option value="08">August</option>
+                                <option value="09">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="endMonth" class="form-label">End Month</label>
+                            <select id="endMonth" class="form-select" required>
+                                <option value="01">January</option>
+                                <option value="02">February</option>
+                                <option value="03">March</option>
+                                <option value="04">April</option>
+                                <option value="05">May</option>
+                                <option value="06">June</option>
+                                <option value="07">July</option>
+                                <option value="08">August</option>
+                                <option value="09">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12" selected>December</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn hr-btnbg" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn hr-btnbg" id="downloadYearlySlips">Download</button>
+            </div>
         </div>
     </div>
 </div>
@@ -168,8 +241,8 @@
                             <button type="button" id="downloadMultipleBtn" class="btn hr-btnbg attendenceall" style="white-space:nowrap;">
                                 <i class="mdi mdi-download iconfontsize"></i> Download Selected
                             </button>
-                            <button class="btn hr-btnbg attendenceall" id="groupsalary">
-                                <i class="mdi mdi-plus iconfontsize"></i> Group Salary
+                            <button class="btn hr-btnbg attendenceall" id="yearlySlipBtn">
+                                <i class="mdi mdi-download iconfontsize"></i> Yearly Slip
                             </button>
                             <a href="/payroll" class="btn hr-btnbg attendenceall">
                                 <i class="mdi mdi-plus iconfontsize"></i> Add Payroll
@@ -688,6 +761,122 @@
                         }
                     });
                 }
+            });
+        });
+
+        // Yearly Slip Modal Logic
+        const yearlySlipModal = new bootstrap.Modal(document.getElementById('yearlySlipModal'));
+        
+        function updateAvailableMonths() {
+            const year = $('#yearlyYear').val();
+            const startMonthSelect = $('#startMonth');
+            const endMonthSelect = $('#endMonth');
+            
+            if (year === '2026') {
+                const allowedMonths = ['01', '02', '03'];
+                
+                [startMonthSelect, endMonthSelect].forEach(select => {
+                    select.find('option').each(function() {
+                        const val = $(this).val();
+                        if (allowedMonths.includes(val)) {
+                            $(this).prop('disabled', false);
+                        } else {
+                            $(this).prop('disabled', true);
+                        }
+                    });
+                    
+                    // Reset if current value is now disabled
+                    if (!allowedMonths.includes(select.val())) {
+                        select.val(select.attr('id') === 'endMonth' ? '03' : '01');
+                    }
+                });
+            } else {
+                [startMonthSelect, endMonthSelect].forEach(select => {
+                    select.find('option').prop('disabled', false);
+                });
+            }
+        }
+
+        $('#yearlyYear').on('change', updateAvailableMonths);
+
+        $('#yearlySlipBtn').on('click', function() {
+            yearlySlipModal.show();
+            fetchEmployeesForYearly();
+            updateAvailableMonths(); // Initialize on modal open
+        });
+
+        function fetchEmployeesForYearly() {
+            $.ajax({
+                url: '<?= base_url("/api/payroll/getEmployees") ?>',
+                type: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        let options = '<option value="">Select Employee</option>';
+                        response.data.forEach(emp => {
+                            options += `<option value="${emp.user_id}">${emp.firstname} ${emp.lastname}</option>`;
+                        });
+                        $('#yearlyEmployee').html(options);
+                    }
+                }
+            });
+        }
+
+        $('#downloadYearlySlips').on('click', function() {
+            const userId = $('#yearlyEmployee').val();
+            const year = $('#yearlyYear').val();
+            const startMonth = $('#startMonth').val();
+            const endMonth = $('#endMonth').val();
+
+            if (!userId || !year || !startMonth || !endMonth) {
+                Swal.fire('Error', 'Please select all required fields', 'error');
+                return;
+            }
+
+            if (parseInt(startMonth) > parseInt(endMonth)) {
+                Swal.fire('Error', 'Start month cannot be after end month', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Preparing your slips...',
+                html: 'This may take a moment.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch('<?= base_url("/api/payroll/downloadYearly") ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    user_id: userId, 
+                    year: year,
+                    start_month: startMonth,
+                    end_month: endMonth
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('No payroll records found for this year');
+                return response.blob();
+            })
+            .then(blob => {
+                Swal.close();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `salary_slips_${year}_${userId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                yearlySlipModal.hide();
+            })
+            .catch(error => {
+                Swal.close();
+                Swal.fire('Error', error.message, 'error');
             });
         });
     });

@@ -105,13 +105,20 @@ class AuthController extends ResourceController
     {
         $user = $this->authService->user();
 
-        if ($user) {
-            $this->userModel->update($user->sub, [
+        $userId = null;
+        if (is_object($user)) {
+            $userId = $user->sub ?? $user->id ?? null;
+        } elseif (is_array($user)) {
+            $userId = $user['sub'] ?? $user['id'] ?? null;
+        }
+
+        if ($userId) {
+            $this->userModel->update($userId, [
                 "chat_status" => "offline",
             ]);
 
             $pushSubscriptionModel = new \App\Models\PushSubscriptionModel();
-            $pushSubscriptionModel->where("user_id", $user->sub)->delete();
+            $pushSubscriptionModel->where("user_id", $userId)->delete();
         }
 
         $this->authService->logout();
@@ -138,7 +145,14 @@ class AuthController extends ResourceController
         $newPassword = $this->request->getVar("new_password");
 
         // Validate current password
-        $userRecord = $this->userModel->find($user->sub);
+        $userId = null;
+        if (is_object($user)) {
+            $userId = $user->sub ?? $user->id ?? null;
+        } elseif (is_array($user)) {
+            $userId = $user['sub'] ?? $user['id'] ?? null;
+        }
+        
+        $userRecord = $this->userModel->find($userId);
         if (!password_verify($currentPassword, $userRecord["password"])) {
             return $this->failValidationErrors(
                 "Current password is incorrect.",
@@ -154,7 +168,7 @@ class AuthController extends ResourceController
 
         // Update password
         $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
-        $this->userModel->update($user->sub, ["password" => $hashedPassword]);
+        $this->userModel->update($userId, ["password" => $hashedPassword]);
 
         return $this->respond([
             "status" => "success",
@@ -171,7 +185,20 @@ class AuthController extends ResourceController
             );
         }
 
-        $userId = $user->sub; // Or use session
+        $userId = null;
+        if (is_object($user)) {
+            $userId = $user->sub ?? $user->id ?? null;
+        } elseif (is_array($user)) {
+            $userId = $user['sub'] ?? $user['id'] ?? null;
+        }
+
+        if (!$userId) {
+             return $this->respond(
+                ["status" => "error", "message" => "Invalid user payload"],
+                400,
+            );
+        }
+
         $this->userModel->update($userId, [
             "last_activity" => date("Y-m-d H:i:s"),
         ]);
