@@ -897,7 +897,7 @@ class PayrollController extends ResourceController
         }
 
         $netSalary = max(
-            $baseSalary + $overtimePay - $deduction - $taxDeduction,
+            $baseSalary - $deduction - $taxDeduction,
             0,
         );
 
@@ -1376,227 +1376,34 @@ class PayrollController extends ResourceController
     {
         $user = $this->authService->check();
         if (!$user) {
-            return $this->failUnauthorized(
-                "Unauthorized: Token missing or invalid",
-            );
+            return $this->failUnauthorized("Unauthorized: Token missing or invalid");
         }
 
-        // Check if user is admin or hr
         $role = session()->get("role");
         if (!in_array($role, ["admin", "hr"])) {
-            return $this->failForbidden(
-                "Only admin and hr can download multiple slips",
-            );
+            return $this->failForbidden("Only admin and hr can download multiple slips");
         }
 
         $input = $this->request->getJSON();
         $payrollIds = $input->payroll_ids ?? [];
-        $month = $input->month ?? null;
+        $month = $input->month ?? date("Y-m");
 
         if (empty($payrollIds)) {
             return $this->failValidationErrors("Payroll IDs are required");
         }
 
-        $payrollModel = new PayrollModel();
-        $userInfoModel = new UserInfoModel();
-        $companyModel = new CompanyLogoModel();
-        $designationModel = new DesignationModel();
-        $departmentModel = new DepartmentModel();
-        $onboardingModel = new OnboardingModel();
-        $attendanceModel = new AttendanceModel();
-        $companyRulesModel = new CompanyRulesModel();
-
-        $successCount = 0;
-        $failedCount = 0;
-        $slipsHtml = [];
-
-        foreach ($payrollIds as $payrollId) {
-            try {
-                $payroll = $payrollModel->find($payrollId);
-
-                if (!$payroll) {
-                    $failedCount++;
-                    continue;
-                }
-
-                // Get user info (employee details)
-                $userInfo = $userInfoModel
-                    ->where("user_id", $payroll["user_id"])
-                    ->first();
-                if (!$userInfo) {
-                    $failedCount++;
-                    continue;
-                }
-
-                // Get designation name
-                $designation = $designationModel->find(
-                    $userInfo["designation_id"],
-                );
-
-                // Get department name
-                $department = $departmentModel->find(
-                    $userInfo["department_id"],
-                );
-
-                $onboarding = $onboardingModel
-                    ->where("job_id", $userInfo["job_id"])
-                    ->first();
-
-                // Get latest company info (logo, name, address)
-                $company = $companyModel->orderBy("id", "DESC")->first();
-                $companyLogoBase64 = "";
-                if ($company && !empty($company["logo_img"])) {
-                    $companyLogoPath =
-                        FCPATH . "upload/" . $company["logo_img"];
-                    if (file_exists($companyLogoPath)) {
-                        $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
-                        $data = file_get_contents($companyLogoPath);
-                        $companyLogoBase64 =
-                            "data:image/" .
-                            $type .
-                            ";base64," .
-                            base64_encode($data);
-                    }
-                }
-
-                // Calculate working days and leave details from payroll month_year
-                $monthYear = $payroll["month_year"];
-                [$year, $monthNum] = explode("-", $monthYear);
-
-                $rules = $companyRulesModel->first();
-
-                // Get working days data
-                $workingDaysData = $this->getWorkingDaysData(
-                    (int) $monthNum,
-                    (int) $year,
-                    $rules,
-                    [],
-                );
-                $workingDays = $workingDaysData["working_days"];
-
-                // Get attendance data for the month
-                $startOfMonth =
-                    "$year-" . str_pad($monthNum, 2, "0", STR_PAD_LEFT) . "-01";
-                $endOfMonth = date("Y-m-t", strtotime($startOfMonth));
-
-                $attendanceData = $attendanceModel
-                    ->where("user_id", $payroll["user_id"])
-                    ->where("date >=", $startOfMonth)
-                    ->where("date <=", $endOfMonth)
-                    ->findAll();
-
-                $presentDays = 0;
-                $absentDays = 0;
-                $halfDays = 0;
-                $paidLeaves = 0;
-                $unpaidLeaves = 0;
-
-                foreach ($attendanceData as $att) {
-                    $status = strtolower($att["status"]);
-                    if ($status === "present") {
-                        $presentDays++;
-                    } elseif ($status === "absent") {
-                        $absentDays++;
-                    } elseif ($status === "half-day" || $status === "halfday") {
-                        $halfDays++;
-                    } elseif ($status === "paid leave") {
-                        $paidLeaves++;
-                    } elseif ($status === "unpaid leave") {
-                        $unpaidLeaves++;
-                    }
-                }
-
-                // Calculate earnings and deductions
-                $baseSalary = floatval($payroll["salary_amount"]);
-                $allowances = floatval($payroll["allowances"] ?? 0);
-                $bonus = floatval($payroll["bonus"] ?? 0);
-                $tax = floatval($payroll["tax_amount"] ?? 0);
-                $salaryDeduction = floatval($payroll["salary_deduction"] ?? 0);
-                $otherDeductions = floatval($payroll["deductions"] ?? 0);
-                $totalLeaves = $payroll["total_leaves"] ?? 0;
-                $usedPaidLeaves = $payroll["used_paid_leaves"] ?? 0;
-
-                $totalEarnings = $baseSalary + $allowances + $bonus;
-                $totalDeductions = $tax + $salaryDeduction + $otherDeductions;
-                $netSalary = floatval($payroll["net_salary"]);
-
-                // Build calculated data array
-                $calculatedData = [
-                    "working_days" => $workingDays,
-                    "present_days" => $presentDays,
-                    "absent_days" => $absentDays,
-                    "total_leaves" => $totalLeaves,
-                    "used_paid_leaves" => $usedPaidLeaves,
-                    "unpaid_leaves" => $unpaidLeaves,
-                    "half_days" => $halfDays,
-                    "worked_hours" => $payroll["worked_hours"] ?? 0,
-                    "total_overtime_hours" =>
-                        $payroll["total_overtime_hours"] ?? 0,
-                    "total_earnings" => $totalEarnings,
-                    "salary_deduction" => $salaryDeduction,
-                    "total_deductions" => $totalDeductions,
-                ];
-
-                // Combine all data to pass to view
-                $slipData = [
-                    "payroll" => $payroll,
-                    "user" => $userInfo,
-                    "designation" => $designation,
-                    "department" => $department,
-                    "company" => $company,
-                    "companyLogoBase64" => $companyLogoBase64,
-                    "onboarding" => $onboarding,
-                    "calculatedData" => $calculatedData,
-                ];
-
-                // Render the slip HTML
-                $slipHtml = view("payroll/salary_slip", $slipData);
-                $slipsHtml[] = $slipHtml;
-                $successCount++;
-            } catch (\Exception $e) {
-                log_message(
-                    "error",
-                    "Failed to generate slip for payroll ID " .
-                        $payrollId .
-                        ": " .
-                        $e->getMessage(),
-                );
-                $failedCount++;
-                continue;
-            }
-        }
-
-        if (empty($slipsHtml)) {
+        $pdfOutput = $this->generateCombinedSlipPdf($payrollIds);
+        
+        if (!$pdfOutput) {
             return $this->fail("No salary slips could be generated");
         }
 
-        // Generate PDF with all slips
-        try {
-            $combinedHtml = implode($slipsHtml);
+        $filename = "salary-slips-" . $month . ".pdf";
 
-            $dompdf = new \Dompdf\Dompdf([
-                "isRemoteEnabled" => true,
-                "isHtml5ParserEnabled" => true,
-                "isFontSubsettingEnabled" => true,
-            ]);
-
-            $dompdf->loadHtml($combinedHtml);
-            $dompdf->setPaper("A4", "portrait");
-            $dompdf->render();
-
-            $filename = "salary-slips-" . ($month ?? date("Y-m")) . ".pdf";
-
-            return $this->response
-                ->setContentType("application/pdf")
-                ->setBody($dompdf->output())
-                ->setHeader(
-                    "Content-Disposition",
-                    'attachment; filename="' . $filename . '"',
-                );
-        } catch (\Exception $e) {
-            log_message("error", "PDF generation failed: " . $e->getMessage());
-            return $this->fail("Failed to generate PDF: " . $e->getMessage());
-        }
+        return $this->response
+            ->setContentType("application/pdf")
+            ->setBody($pdfOutput)
+            ->setHeader("Content-Disposition", 'attachment; filename="' . $filename . '"');
     }
 
     public function downloadSlip($id)
@@ -1949,28 +1756,35 @@ class PayrollController extends ResourceController
                 $emp["tax_amount"] > 0 ? "₹" . $emp["tax_amount"] : "No Tax";
 
             if ($payroll) {
-                // ── Use STORED payroll values directly ───────────────────────────────────
-                // Recalculating from attendance here causes mismatches when the payroll was
-                // saved via "Add Payroll" with custom/manually-entered deduction values.
-                // The Source of Truth is the payroll record itself.
+                // ── Load payroll values ──────────────────────────────────────────────
                 $emp["leaves"]               = (float) ($payroll["total_leaves"]        ?? 0);
                 $emp["half_days"]            = (float) ($payroll["total_half_day"]       ?? 0);
                 $emp["used_paid_leaves"]     = (float) ($payroll["used_paid_leaves"]     ?? 0);
-                $emp["salary_deduction"]     = round((float) ($payroll["salary_deduction"] ?? 0), 2);
+                
+                // For the management page, we ensure deductions match the counts shown to fix 
+                // inconsistencies (e.g., leaves=1 but deduction=0).
+                $suggestedBaseDed = ($emp["leaves"] * $emp["per_day"]) + ($emp["half_days"] * ($emp["per_day"] / 2));
+                $paidLeaveCredit  = $emp["used_paid_leaves"] * $emp["per_day"];
+                
+                $storedDed = (float) ($payroll["salary_deduction"] ?? 0);
+                // Override if stored deduction is 0 but leaves/half-days exist
+                if ($storedDed == 0 && ($emp["leaves"] > 0 || $emp["half_days"] > 0)) {
+                    $emp["salary_deduction"] = round(max($suggestedBaseDed - $paidLeaveCredit, 0), 2);
+                } else {
+                    $emp["salary_deduction"] = round($storedDed, 2);
+                }
+
                 $emp["tax_deduction"]        = round((float) ($payroll["tax_deduction"]   ?? 0), 2);
-                $emp["net_salary"]           = round((float) ($payroll["net_salary"]      ?? 0), 2);
                 $emp["overtime_pay"]         = round((float) ($payroll["overtime_pay"]    ?? 0), 2);
                 $emp["total_overtime_hours"] = (float) ($payroll["total_overtime_hours"]  ?? 0);
                 $emp["late_deduction"]       = 0;
 
-                // base_deduction is used by the JS front-end so it can re-compute deduction
-                // correctly when the user edits leave/half-day inputs on this page.
-                // base_deduction = gross leave/half-day deduction BEFORE any paid-leave credit.
-                $paidLeaveCredit          = $emp["used_paid_leaves"] * $emp["per_day"];
-                $emp["base_deduction"]    = round($emp["salary_deduction"] + $paidLeaveCredit, 2);
+                // base_deduction is used by JS for re-computation.
+                $emp["base_deduction"] = round($emp["salary_deduction"] + $paidLeaveCredit, 2);
+                
+                // Recalculate net salary based on updated components
+                $emp["net_salary"] = round($emp["salary"] - $emp["salary_deduction"] - $emp["tax_deduction"], 2);
 
-                // Override tax display to match the stored tax_deduction (may differ from the
-                // fresh rule-based tax_amount calculated above if salary/rules changed).
                 $emp["tax_amount"] = $emp["tax_deduction"];
                 $emp["tax"]        = $emp["tax_amount"] > 0
                     ? "₹" . number_format($emp["tax_amount"], 2)
@@ -2070,7 +1884,7 @@ class PayrollController extends ResourceController
                 $emp["salary_deduction"] = round($leaveHalfDeduction, 2);
                 $emp["tax_deduction"] = $emp["tax_amount"];
                 $emp["net_salary"] = round(
-                    $emp["salary"] + $overtimePay - $emp["salary_deduction"] - $emp["tax_deduction"],
+                    $emp["salary"] - $emp["salary_deduction"] - $emp["tax_deduction"],
                     2,
                 );
             }
@@ -2470,5 +2284,168 @@ class PayrollController extends ResourceController
                 "message" => "Salary saved for the employee.",
             ]);
         }
+    }
+    private function generateCombinedSlipPdf(array $payrollIds)
+    {
+        $payrollModel = new PayrollModel();
+        $userInfoModel = new UserInfoModel();
+        $companyModel = new CompanyLogoModel();
+        $designationModel = new DesignationModel();
+        $departmentModel = new DepartmentModel();
+        $onboardingModel = new OnboardingModel();
+        $attendanceModel = new AttendanceModel();
+        $companyRulesModel = new CompanyRulesModel();
+
+        $slipsHtml = [];
+
+        foreach ($payrollIds as $payrollId) {
+            try {
+                $payroll = $payrollModel->find($payrollId);
+                if (!$payroll) continue;
+
+                $userInfo = $userInfoModel->where("user_id", $payroll["user_id"])->first();
+                if (!$userInfo) continue;
+
+                $designation = $designationModel->find($userInfo["designation_id"]);
+                $department = $departmentModel->find($userInfo["department_id"]);
+                $onboarding = $onboardingModel->where("job_id", $userInfo["job_id"])->first();
+                $company = $companyModel->orderBy("id", "DESC")->first();
+                
+                $companyLogoBase64 = "";
+                if ($company && !empty($company["logo_img"])) {
+                    $companyLogoPath = FCPATH . "upload/" . $company["logo_img"];
+                    if (file_exists($companyLogoPath)) {
+                        $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
+                        $data = file_get_contents($companyLogoPath);
+                        $companyLogoBase64 = "data:image/" . $type . ";base64," . base64_encode($data);
+                    }
+                }
+
+                $monthYear = $payroll["month_year"];
+                [$year, $monthNum] = explode("-", $monthYear);
+                $rules = $companyRulesModel->first();
+                
+                $workingDaysData = $this->getWorkingDaysData((int)$monthNum, (int)$year, $rules, []);
+                $workingDays = $workingDaysData["working_days"];
+
+                $startOfMonth = "$year-" . str_pad($monthNum, 2, "0", STR_PAD_LEFT) . "-01";
+                $endOfMonth = date("Y-m-t", strtotime($startOfMonth));
+                $attendanceData = $attendanceModel->where("user_id", $payroll["user_id"])
+                    ->where("date >=", $startOfMonth)->where("date <=", $endOfMonth)->findAll();
+
+                $presentDays = 0; $absentDays = 0; $halfDays = 0; $unpaidLeaves = 0;
+                foreach ($attendanceData as $att) {
+                    $status = strtolower($att["status"]);
+                    if ($status === "present") $presentDays++;
+                    elseif ($status === "absent") $absentDays++;
+                    elseif ($status === "half-day" || $status === "halfday") $halfDays++;
+                    elseif ($status === "unpaid leave") $unpaidLeaves++;
+                }
+
+                $baseSalary = floatval($payroll["salary_amount"]);
+                $totalEarnings = $baseSalary + floatval($payroll["overtime_pay"] ?? 0) + floatval($payroll["bonuses"] ?? 0);
+                $totalDeductions = floatval($payroll["salary_deduction"] ?? 0) + floatval($payroll["tax_deduction"] ?? 0);
+
+                $calculatedData = [
+                    "working_days" => $workingDays, "present_days" => $presentDays, "absent_days" => $absentDays,
+                    "total_leaves" => $payroll["total_leaves"] ?? 0, "used_paid_leaves" => $payroll["used_paid_leaves"] ?? 0,
+                    "unpaid_leaves" => $unpaidLeaves, "half_days" => $halfDays,
+                    "worked_hours" => $payroll["worked_hours"] ?? 0, "total_overtime_hours" => $payroll["total_overtime_hours"] ?? 0,
+                    "total_earnings" => $totalEarnings, "total_deductions" => $totalDeductions,
+                    "salary_deduction" => $payroll["salary_deduction"] ?? 0,
+                ];
+
+                $slipData = [
+                    "payroll" => $payroll, "user" => $userInfo, "designation" => $designation,
+                    "department" => $department, "company" => $company, "companyLogoBase64" => $companyLogoBase64,
+                    "onboarding" => $onboarding, "calculatedData" => $calculatedData,
+                ];
+
+                $slipsHtml[] = view("payroll/salary_slip", $slipData);
+            } catch (\Exception $e) {
+                log_message("error", "Failed to generate slip: " . $e->getMessage());
+            }
+        }
+
+        if (empty($slipsHtml)) return null;
+
+        try {
+            $dompdf = new \Dompdf\Dompdf([
+                "isRemoteEnabled" => true,
+                "isHtml5ParserEnabled" => true,
+                "isFontSubsettingEnabled" => true,
+            ]);
+            $dompdf->loadHtml(implode($slipsHtml));
+            $dompdf->setPaper("A4", "portrait");
+            $dompdf->render();
+            return $dompdf->output();
+        } catch (\Exception $e) {
+            log_message("error", "PDF generation failed: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getEmployees()
+    {
+        $user = $this->authService->check();
+        if (!$user || !in_array($user->role, ['admin', 'hr'])) {
+            return $this->failUnauthorized('Unauthorized');
+        }
+
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $employees = $userInfoModel->select('user_id, firstname, lastname')
+                                   ->orderBy('firstname', 'ASC')
+                                   ->findAll();
+        
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data' => $employees
+        ]);
+    }
+
+    public function downloadYearly()
+    {
+        $userAuth = $this->authService->check();
+        if (!$userAuth || !in_array($userAuth->role, ['admin', 'hr'])) {
+            return $this->failUnauthorized('Unauthorized');
+        }
+
+        $input = $this->request->getJSON();
+        $userId = $input->user_id ?? null;
+        $year = $input->year ?? null;
+        $startMonth = $input->start_month ?? '01';
+        $endMonth = $input->end_month ?? '12';
+
+        if (!$userId || !$year) {
+            return $this->failValidationErrors('User ID and Year are required');
+        }
+
+        $startStr = "$year-" . str_pad($startMonth, 2, "0", STR_PAD_LEFT);
+        $endStr = "$year-" . str_pad($endMonth, 2, "0", STR_PAD_LEFT);
+
+        $payrollModel = new \App\Models\PayrollModel();
+        $payrolls = $payrollModel->where('user_id', $userId)
+                                ->where('month_year >=', $startStr)
+                                ->where('month_year <=', $endStr)
+                                ->orderBy('month_year', 'ASC')
+                                ->findAll();
+
+        if (empty($payrolls)) {
+            return $this->failNotFound('No payroll records found for this range');
+        }
+
+        $payrollIds = array_column($payrolls, 'id');
+        $filename = "salary-slips-$startStr-to-$endStr.pdf";
+
+        $pdfOutput = $this->generateCombinedSlipPdf($payrollIds);
+        
+        if (!$pdfOutput) {
+            return $this->fail("No salary slips could be generated");
+        }
+
+        return $this->response
+            ->setContentType("application/pdf")
+            ->setBody($pdfOutput)
+            ->setHeader("Content-Disposition", 'attachment; filename="' . $filename . '"');
     }
 }
