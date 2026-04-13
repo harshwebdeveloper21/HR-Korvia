@@ -36,7 +36,7 @@
             margin-top: 8px !important;
             margin-bottom: 5px !important;
         }
-        
+
         .dataTables_length {
             margin-left: .1rem !important;
             margin-bottom: .5rem !important;
@@ -117,7 +117,7 @@
             width: 57px !important;
         }
 
-        #payrollMonthFilter{
+        #payrollMonthFilter {
             width: 100% !important;
         }
     }
@@ -235,15 +235,19 @@
                             $lastMonth = $now->format("Y-m");
                             $currentMonth = date("Y-m");
                             ?>
-                            <input type="month" id="payrollMonthFilter" name="payrollMonth" class="form-control w-auto" 
-                                value="<?= esc($_GET["month"] ?? $lastMonth) ?>"
-                                max="<?= $currentMonth ?>" />
-                            <button type="button" id="downloadMultipleBtn" class="btn hr-btnbg attendenceall" style="white-space:nowrap;">
+                            <input type="month" id="payrollMonthFilter" name="payrollMonth" class="form-control w-auto"
+                                value="<?= esc($_GET["month"] ?? $lastMonth) ?>" max="<?= $currentMonth ?>" />
+                            <button type="button" id="downloadMultipleBtn" class="btn hr-btnbg attendenceall"
+                                style="white-space:nowrap;">
                                 <i class="mdi mdi-download iconfontsize"></i> Download Selected
+                            </button>
+                            <button class="btn hr-btnbg attendenceall" id="groupsalary">
+                                <i class="mdi mdi-plus iconfontsize"></i> Group Salary
                             </button>
                             <button class="btn hr-btnbg attendenceall" id="yearlySlipBtn">
                                 <i class="mdi mdi-download iconfontsize"></i> Yearly Slip
                             </button>
+
                             <a href="/payroll" class="btn hr-btnbg attendenceall">
                                 <i class="mdi mdi-plus iconfontsize"></i> Add Payroll
                             </a>
@@ -281,7 +285,8 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="listDeductionBreakdownModalLabel"><i class="mdi mdi-information-outline me-1"></i> Why was this amount deducted?</h5>
+                <h5 class="modal-title" id="listDeductionBreakdownModalLabel"><i
+                        class="mdi mdi-information-outline me-1"></i> Why was this amount deducted?</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -294,7 +299,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    $(document).ready(function() {
+    $(document).ready(function () {
         // Get last month as default
         const now = new Date();
         now.setMonth(now.getMonth() - 1);
@@ -310,7 +315,7 @@
             monthFilter.value = selectedMonth;
         }
 
-        $('#groupsalary').on('click', function() {
+        $('#groupsalary').on('click', function () {
             // Use last month as default for Group Salary
             const currentNow = new Date();
             currentNow.setMonth(currentNow.getMonth() - 1);
@@ -320,7 +325,7 @@
 
         // Month filter change event
         if (monthFilter) {
-            monthFilter.addEventListener('change', function() {
+            monthFilter.addEventListener('change', function () {
                 const month = this.value;
                 if (month) {
                     window.location.href = `/payrollview?month=${month}`;
@@ -350,7 +355,7 @@
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                success: function(response) {
+                success: function (response) {
                     if (response.status === 'success' && response.data) {
                         const payrolls = response.data;
                         let tableRows = '';
@@ -458,19 +463,19 @@
                                 [6, 'desc']
                             ],
                             columnDefs: [{
-                                    targets: 0, // checkbox column
-                                    orderable: false,
-                                    searchable: false
-                                },
-                                {
-                                    targets: 6,
-                                    visible: false
-                                },
-                                {
-                                    targets: 8, // mobile expand column
-                                    orderable: false,
-                                    searchable: false
-                                }
+                                targets: 0, // checkbox column
+                                orderable: false,
+                                searchable: false
+                            },
+                            {
+                                targets: 6,
+                                visible: false
+                            },
+                            {
+                                targets: 8, // mobile expand column
+                                orderable: false,
+                                searchable: false
+                            }
                             ],
                             language: {
                                 search: "",
@@ -490,7 +495,7 @@
                         Swal.fire('Error', 'Failed to load payroll records', 'error');
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     Swal.fire('Error', 'Failed to fetch payroll records', 'error');
                 }
             });
@@ -510,7 +515,7 @@
 
             // Check all functionality
             if (checkAllCheckbox) {
-                checkAllCheckbox.addEventListener('change', function() {
+                checkAllCheckbox.addEventListener('change', function () {
                     document.querySelectorAll('.payroll-checkbox').forEach(checkbox => {
                         checkbox.checked = this.checked;
                     });
@@ -519,7 +524,7 @@
             }
 
             // Individual checkbox logic
-            $(document).on('change', '.payroll-checkbox', function() {
+            $(document).on('change', '.payroll-checkbox', function () {
                 const allCheckboxes = document.querySelectorAll('.payroll-checkbox');
                 const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
                 const someChecked = Array.from(allCheckboxes).some(cb => cb.checked);
@@ -533,7 +538,7 @@
 
             // Download multiple slips functionality
             if (downloadMultipleBtn) {
-                downloadMultipleBtn.addEventListener('click', function() {
+                downloadMultipleBtn.addEventListener('click', function () {
                     const selectedCheckboxes = document.querySelectorAll('.payroll-checkbox:checked');
                     const selectedPayrollIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
 
@@ -558,17 +563,17 @@
                     });
 
                     // Send request to download multiple slips
-                    fetch("<?= base_url("/api/payroll/downloadMultipleByIds",) ?>", {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({
-                                payroll_ids: selectedPayrollIds,
-                                month: selectedMonth
-                            })
+                    fetch("<?= base_url("/api/payroll/downloadMultipleByIds", ) ?>", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            payroll_ids: selectedPayrollIds,
+                            month: selectedMonth
                         })
+                    })
                         .then(response => {
                             if (!response.ok) {
                                 throw new Error('Failed to download salary slips');
@@ -641,7 +646,7 @@
                 },
                 data: { user_id: userId, month: month },
                 dataType: 'json',
-                success: function(res) {
+                success: function (res) {
                     loading.style.display = 'none';
                     if (res.status !== 'success' || !res.data) {
                         content.innerHTML = '<p class="text-muted">No breakdown available.</p>';
@@ -654,21 +659,21 @@
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong>Leaves</strong>';
                         if (d.leaves.dates && d.leaves.dates.length) {
                             html += '<ul class="list-unstyled small mb-1" style="max-height:120px;overflow-y:auto;">';
-                            d.leaves.dates.forEach(function(l) { html += '<li>' + (l.label || l.date) + '</li>'; });
+                            d.leaves.dates.forEach(function (l) { html += '<li>' + (l.label || l.date) + '</li>'; });
                             html += '</ul>';
                         }
                         html += '<span class="text-danger">Deduction: ₹' + (d.leaves.deduction_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.absent && d.absent.dates && d.absent.dates.length) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong>Absent</strong><ul class="list-unstyled small mb-1" style="max-height:120px;overflow-y:auto;">';
-                        d.absent.dates.forEach(function(a) { html += '<li>' + (a.label || a.date) + '</li>'; });
+                        d.absent.dates.forEach(function (a) { html += '<li>' + (a.label || a.date) + '</li>'; });
                         html += '</ul><span class="text-danger">Deduction: ₹' + (d.absent.deduction_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.half_day && d.half_day.count > 0) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong>Half-day</strong>';
                         if (d.half_day.dates && d.half_day.dates.length) {
                             html += '<ul class="list-unstyled small mb-1" style="max-height:120px;overflow-y:auto;">';
-                            d.half_day.dates.forEach(function(h) {
+                            d.half_day.dates.forEach(function (h) {
                                 var baseLabel = (h.label || h.date);
                                 var worked = h.worked_text ? (' – Worked: ' + h.worked_text) : '';
                                 var missing = h.missing_text ? (' – Deduct: ' + h.missing_text) : '';
@@ -680,12 +685,12 @@
                     }
                     if (d.late && d.late.list && d.late.list.length) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong>Late arrival</strong><ul class="list-unstyled small" style="max-height:120px;overflow-y:auto;">';
-                        d.late.list.forEach(function(l) { html += '<li>' + (l.label || l.date) + ' – ' + (l.late_text || l.late_minutes + ' min') + '</li>'; });
+                        d.late.list.forEach(function (l) { html += '<li>' + (l.label || l.date) + ' – ' + (l.late_text || l.late_minutes + ' min') + '</li>'; });
                         html += '</ul><span class="text-danger">Deduction: ₹' + (d.late.deduction_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.overtime && d.overtime.list && d.overtime.list.length) {
                         html += '<div class="breakdown-section" style="border-left:3px solid #E66136;padding-left:0.75rem;margin-bottom:1rem;"><strong class="text-success">Overtime</strong><ul class="list-unstyled small" style="max-height:120px;overflow-y:auto;">';
-                        d.overtime.list.forEach(function(o) { html += '<li>' + (o.label || o.date) + ' – ' + (o.overtime_text || o.overtime_hours + 'h') + '</li>'; });
+                        d.overtime.list.forEach(function (o) { html += '<li>' + (o.label || o.date) + ' – ' + (o.overtime_text || o.overtime_hours + 'h') + '</li>'; });
                         html += '</ul><span class="text-success">Added to salary: ₹' + (d.overtime.pay_amount || 0).toFixed(2) + '</span></div>';
                     }
                     if (d.summary) {
@@ -698,7 +703,7 @@
                     content.innerHTML = html;
                     content.style.display = 'block';
                 },
-                error: function() {
+                error: function () {
                     loading.style.display = 'none';
                     content.innerHTML = '<p class="text-danger">Failed to load details.</p>';
                     content.style.display = 'block';
@@ -708,14 +713,14 @@
 
         // Deduction: handle both touchend (mobile) and click (desktop), avoid double-open
         var listDeductionLastTouch = 0;
-        $(document).on('touchend', '.payroll-deduction-info', function(e) {
+        $(document).on('touchend', '.payroll-deduction-info', function (e) {
             e.preventDefault();
             e.stopPropagation();
             listDeductionLastTouch = Date.now();
             var $el = $(e.target).closest('.payroll-deduction-info');
             if ($el.length) openListDeductionModal($el);
         });
-        $(document).on('click', '.payroll-deduction-info', function(e) {
+        $(document).on('click', '.payroll-deduction-info', function (e) {
             e.preventDefault();
             e.stopPropagation();
             if (Date.now() - listDeductionLastTouch < 400) return; // already opened by touchend
@@ -723,7 +728,7 @@
         });
 
         // Handle delete action
-        $(document).on('click', '.delete-payroll', function(e) {
+        $(document).on('click', '.delete-payroll', function (e) {
             e.preventDefault();
             const payrollId = $(this).data('id');
             Swal.fire({
@@ -747,7 +752,7 @@
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
                         },
-                        success: function(response) {
+                        success: function (response) {
                             if (response.status === 'success') {
                                 Swal.fire('Deleted!', 'The payroll record has been deleted.', 'success').then(() => {
                                     $(`tr[data-id="${payrollId}"]`).remove();
@@ -756,7 +761,7 @@
                                 Swal.fire('Error!', 'Failed to delete the payroll record.', 'error');
                             }
                         },
-                        error: function() {
+                        error: function () {
                             Swal.fire('Error!', 'There was an error deleting the payroll record.', 'error');
                         }
                     });
@@ -766,17 +771,17 @@
 
         // Yearly Slip Modal Logic
         const yearlySlipModal = new bootstrap.Modal(document.getElementById('yearlySlipModal'));
-        
+
         function updateAvailableMonths() {
             const year = $('#yearlyYear').val();
             const startMonthSelect = $('#startMonth');
             const endMonthSelect = $('#endMonth');
-            
+
             if (year === '2026') {
                 const allowedMonths = ['01', '02', '03'];
-                
+
                 [startMonthSelect, endMonthSelect].forEach(select => {
-                    select.find('option').each(function() {
+                    select.find('option').each(function () {
                         const val = $(this).val();
                         if (allowedMonths.includes(val)) {
                             $(this).prop('disabled', false);
@@ -784,7 +789,7 @@
                             $(this).prop('disabled', true);
                         }
                     });
-                    
+
                     // Reset if current value is now disabled
                     if (!allowedMonths.includes(select.val())) {
                         select.val(select.attr('id') === 'endMonth' ? '03' : '01');
@@ -799,7 +804,7 @@
 
         $('#yearlyYear').on('change', updateAvailableMonths);
 
-        $('#yearlySlipBtn').on('click', function() {
+        $('#yearlySlipBtn').on('click', function () {
             yearlySlipModal.show();
             fetchEmployeesForYearly();
             updateAvailableMonths(); // Initialize on modal open
@@ -810,7 +815,7 @@
                 url: '<?= base_url("/api/payroll/getEmployees") ?>',
                 type: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
-                success: function(response) {
+                success: function (response) {
                     if (response.status === 'success') {
                         let options = '<option value="">Select Employee</option>';
                         response.data.forEach(emp => {
@@ -822,7 +827,7 @@
             });
         }
 
-        $('#downloadYearlySlips').on('click', function() {
+        $('#downloadYearlySlips').on('click', function () {
             const userId = $('#yearlyEmployee').val();
             const year = $('#yearlyYear').val();
             const startMonth = $('#startMonth').val();
@@ -851,33 +856,33 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ 
-                    user_id: userId, 
+                body: JSON.stringify({
+                    user_id: userId,
                     year: year,
                     start_month: startMonth,
                     end_month: endMonth
                 })
             })
-            .then(response => {
-                if (!response.ok) throw new Error('No payroll records found for this year');
-                return response.blob();
-            })
-            .then(blob => {
-                Swal.close();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `salary_slips_${year}_${userId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-                yearlySlipModal.hide();
-            })
-            .catch(error => {
-                Swal.close();
-                Swal.fire('Error', error.message, 'error');
-            });
+                .then(response => {
+                    if (!response.ok) throw new Error('No payroll records found for this year');
+                    return response.blob();
+                })
+                .then(blob => {
+                    Swal.close();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `salary_slips_${year}_${userId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    yearlySlipModal.hide();
+                })
+                .catch(error => {
+                    Swal.close();
+                    Swal.fire('Error', error.message, 'error');
+                });
         });
     });
 </script>

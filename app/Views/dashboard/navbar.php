@@ -640,39 +640,49 @@ $role = $user ? $user->role : null;
         }
     }
 
-    // Define logout function - simple synchronous version
+    // Define logout function - wait for API response before redirecting
     function logout() {
         console.log('Logout function called');
 
-        // Immediately disable the link to prevent double-clicks
+        // Immediately disable the link and show loading state
         const logoutLinks = document.querySelectorAll('.logout-link');
         logoutLinks.forEach(link => {
             link.style.pointerEvents = 'none';
             link.style.opacity = '0.5';
+            link.innerHTML = '<i class="mdi mdi-loading mdi-spin me-2"></i>Signing Out...';
         });
 
-        // Get token before clearing
         const token = localStorage.getItem('token');
-
-        // Clear token from localStorage immediately
         localStorage.removeItem('token');
 
-        // Call logout API (fire and forget - don't wait for response)
+        const redirectToLogin = () => {
+            console.log('Redirecting to login...');
+            window.location.href = '/login';
+        };
+
         if (token) {
+            // Call logout API and wait for it
             fetch('/api/logout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + token
                 }
-            }).catch(function(err) {
+            })
+            .then(() => {
+                console.log('Logout API success');
+                redirectToLogin();
+            })
+            .catch((err) => {
                 console.error('Logout API error:', err);
+                redirectToLogin(); // Still redirect even if API fails
             });
+            
+            // Safety timeout: redirect anyway if API takes too long (> 2 seconds)
+            setTimeout(redirectToLogin, 2000);
+        } else {
+            redirectToLogin();
         }
-
-        // Immediately redirect to login
-        console.log('Redirecting to login...');
-        window.location.href = '/login';
 
         return false;
     }

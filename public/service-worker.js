@@ -42,13 +42,23 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - serve from cache, fallback to network with error handling
 self.addEventListener('fetch', (event) => {
+  // Skip cross-origin requests and non-GET requests if needed, 
+  // but for now let's just add the catch block to prevent crashes.
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
         // Return cached version or fetch from network
-        return response || fetch(event.request);
+        return response || fetch(event.request).catch((error) => {
+          console.warn('Fetch failed for:', event.request.url, error);
+          // Return a failure response instead of rejecting, or could return a cached offline page
+          return new Response('Network error occurred. Please check your connection.', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({ 'Content-Type': 'text/plain' })
+          });
+        });
       })
   );
 });

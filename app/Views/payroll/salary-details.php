@@ -103,7 +103,7 @@
 
           <?php $role = session()->get("role"); ?>
           <?php if ($role !== "employee"): ?>
-            <div class="slarypadding">
+            <div class="slarypadding d-flex gap-2">
               <?php
               $currentMonth = date("Y-m");
               // Default to last month
@@ -140,7 +140,10 @@
                   <th>Base Salary</th>
                   <th>Leaves</th>
                   <th>Half-day</th>
-                  <th>Paid Leave</th>
+                  <th>Used Paid Leave</th>
+                  <th>Used Sick Leave</th>
+                  <th>Rem. Paid Leave</th>
+                  <th>Rem. Sick Leave</th>
                   <th>Per-Day Salary</th>
                   <th>Tax</th>
                   <th>Salary Deduction</th>
@@ -194,12 +197,20 @@
                     </td>
                     <td>
                       <input type="number" name="paid_leave[]" class="form-control form-control-sm paid-leave-input"
-                        value="<?= $emp["used_paid_leaves"] ??
-                          0 ?>" min="0" step="0.5" data-index="<?= $index ?>" data-salary="<?= $emp["salary"] ?>"
-                        data-tax="<?= $emp["tax_amount"] ?? 0 ?>" data-days="<?= $emp["days_in_month"] ?>"
-                        data-leaves="<?= $emp["leaves"] ?>" data-halfdays="<?= $emp["half_days"] ?>"
-                        data-month="<?= date("Y-m", strtotime($month)) ?>">
+                        value="<?= $emp["used_paid_leaves"] ?? 0 ?>" min="0" step="0.5" data-index="<?= $index ?>"
+                        data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
+                        data-allocated="<?= $emp['remaining_paid_leaves'] ?? 0 ?>"
+                        data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
                     </td>
+                    <td>
+                      <input type="number" name="sick_leave[]" class="form-control form-control-sm sick-leave-input"
+                        value="<?= $emp["used_sick_leaves"] ?? 0 ?>" min="0" step="0.5" data-index="<?= $index ?>"
+                        data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
+                        data-allocated="<?= $emp['remaining_casual_leaves'] ?? 0 ?>"
+                        data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
+                    </td>
+                    <td class="rem-paid-leave"><?= esc(($emp['remaining_paid_leaves'] ?? 0) - ($emp['used_paid_leaves'] ?? 0)) ?></td>
+                    <td class="rem-sick-leave"><?= esc(($emp['remaining_casual_leaves'] ?? 0) - ($emp['used_sick_leaves'] ?? 0)) ?></td>
                     <td>₹<?= number_format($emp["per_day"], 2) ?><br><small
                         class="text-muted">₹<?= number_format($emp["per_hour"] ?? ($emp["per_day"] / 8), 2) ?>/hr</small>
                     </td>
@@ -253,6 +264,9 @@
                       <input type="hidden" class="single-paid-leave-input" value="<?= $emp[
                         "used_paid_leaves"
                       ] ?? 0 ?>">
+                      <input type="hidden" class="single-sick-leave-input" value="<?= $emp[
+                        "used_sick_leaves"
+                      ] ?? 0 ?>">
                       <input type="hidden" class="single-deduction-input" value="<?= $emp[
                         "salary_deduction"
                       ] ?>">
@@ -284,14 +298,58 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('exportExcelBtn').addEventListener('click', function () {
+      const month = document.getElementById('salaryMonth').value || 'Payroll';
+      const table = document.getElementById('payroll-table');
+      const rows = Array.from(table.querySelectorAll('tr'));
+
+      const data = rows.map(row => {
+        const cells = Array.from(row.querySelectorAll('th, td'));
+        // Skip last column (Action)
+        return cells.slice(0, -1).map(cell => {
+          const input = cell.querySelector('input');
+          if (input) {
+            return input.value;
+          }
+          // Remove currency symbols and formatting if possible for better excel data
+          let text = cell.innerText.split('\n')[0].trim();
+          if (text.startsWith('₹')) text = text.replace('₹', '').replace(/,/g, '');
+          return text;
+        });
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Salary Details");
+      XLSX.writeFile(wb, `Salary_Details_${month}.xlsx`);
+    });
+
+    // Bulk Validation for "Update All"
+    const form = document.querySelector('.individual-save-form');
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        const invalidFields = form.querySelectorAll('.is-invalid');
+        if (invalidFields.length > 0) {
+          e.preventDefault();
+          Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Please correct leave balances before updating. Used leave cannot exceed total allocated balance.'
+          });
+        }
+      });
+    }
+
     const now = new Date();
     // Set to last month by default
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const currentMonth = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
     document.querySelectorAll('#payroll-table tbody tr').forEach(row => {
       ensureBaseDeduction(row);
+      updateRowCalculations(row);
     });
 
 
@@ -312,18 +370,21 @@
     const leaveInputs = document.querySelectorAll('.leave-input');
     const halfDayInputs = document.querySelectorAll('.half_day-input');
     const paidLeaveInputs = document.querySelectorAll('.paid-leave-input');
+    const sickLeaveInputs = document.querySelectorAll('.sick-leave-input');
 
     function ensureBaseDeduction(row) {
       if (row.dataset.baseDeductionInitialized) return;
       const leaveInput = row.querySelector('.leave-input');
       const halfInput = row.querySelector('.half_day-input');
       const paidLeaveInput = row.querySelector('.paid-leave-input');
+      const sickLeaveInput = row.querySelector('.sick-leave-input');
       const perDay = parseFloat(row.dataset.perDay) || (parseFloat(leaveInput.dataset.salary) / parseInt(leaveInput.dataset.days));
       const initialDeduction = parseFloat(row.querySelector('.deduction-input').value) || 0;
       const initialPaidLeaves = parseFloat(paidLeaveInput.value) || 0;
+      const initialSickLeaves = parseFloat(sickLeaveInput.value) || 0;
       let baseDeduction = parseFloat(row.dataset.baseDeduction) || 0;
       if (!baseDeduction) {
-        baseDeduction = initialDeduction + (initialPaidLeaves * perDay);
+        baseDeduction = initialDeduction + ((initialPaidLeaves + initialSickLeaves) * perDay);
       }
       row.dataset.baseDeduction = baseDeduction.toFixed(2);
       row.dataset.initialLeaves = (parseFloat(leaveInput.value) || 0).toString();
@@ -335,10 +396,12 @@
       const leaveInput = row.querySelector('.leave-input');
       const halfInput = row.querySelector('.half_day-input');
       const paidLeaveInput = row.querySelector('.paid-leave-input');
+      const sickLeaveInput = row.querySelector('.sick-leave-input');
 
       const leaves = parseFloat(leaveInput.value) || 0;
       const halfDays = parseFloat(halfInput.value) || 0;
       const usedPaidLeaves = parseFloat(paidLeaveInput.value) || 0;
+      const usedSickLeaves = parseFloat(sickLeaveInput.value) || 0;
       const salary = parseFloat(leaveInput.dataset.salary);
       const tax = parseFloat(leaveInput.dataset.tax);
       const daysInMonth = parseInt(leaveInput.dataset.days);
@@ -352,13 +415,40 @@
       const lateDeduction = parseFloat(row.dataset.lateDeduction) || 0;
       baseDeduction = (leaves * perDay) + (halfDays * (perDay / 2)) + lateDeduction;
 
-      const paidLeaveCredit = usedPaidLeaves * perDay;
+      const paidLeaveCredit = (usedPaidLeaves + usedSickLeaves) * perDay;
       const salaryDeduction = Math.max(baseDeduction - paidLeaveCredit, 0);
       const overtimePay = parseFloat(row.dataset.overtimePay) || 0;
-      const netSalary = salary - salaryDeduction - tax;
+      const totalAdjustment = overtimePay - salaryDeduction - tax;
+      const netSalary = salary + totalAdjustment;
+
+      // Update Remaining Balances and Validation
+      const allocatedPaid = parseFloat(paidLeaveInput.dataset.allocated) || 0;
+      const allocatedSick = parseFloat(sickLeaveInput.dataset.allocated) || 0;
+      
+      const remPaid = allocatedPaid - usedPaidLeaves;
+      const remSick = allocatedSick - usedSickLeaves;
+
+      const remPaidCell = row.querySelector('.rem-paid-leave');
+      const remSickCell = row.querySelector('.rem-sick-leave');
+      
+      if (remPaidCell) remPaidCell.textContent = Math.max(0, remPaid);
+      if (remSickCell) remSickCell.textContent = Math.max(0, remSick);
+
+      if (remPaid < 0) {
+        paidLeaveInput.classList.add('is-invalid');
+      } else {
+        paidLeaveInput.classList.remove('is-invalid');
+      }
+
+      if (remSick < 0) {
+        sickLeaveInput.classList.add('is-invalid');
+      } else {
+        sickLeaveInput.classList.remove('is-invalid');
+      }
 
       const deductionSpan = row.querySelector('.deduction-cell span');
       if (deductionSpan) deductionSpan.textContent = '₹' + salaryDeduction.toFixed(2);
+
       row.querySelector('.net-salary-cell').textContent = '₹' + netSalary.toFixed(2);
       row.querySelector('.deduction-input').value = salaryDeduction.toFixed(2);
       row.querySelector('.net-salary-input').value = netSalary.toFixed(2);
@@ -367,6 +457,7 @@
       row.querySelector('.single-leave-input').value = leaves;
       row.querySelector('.single-halfday-input').value = halfDays;
       row.querySelector('.single-paid-leave-input').value = usedPaidLeaves;
+      row.querySelector('.single-sick-leave-input').value = usedSickLeaves;
       row.querySelector('.single-deduction-input').value = salaryDeduction.toFixed(2);
       row.querySelector('.single-net-salary-input').value = netSalary.toFixed(2);
     }
@@ -389,6 +480,11 @@
       input.addEventListener('input', () => updateRowCalculations(row));
     });
 
+    sickLeaveInputs.forEach(input => {
+      const row = input.closest('tr');
+      input.addEventListener('input', () => updateRowCalculations(row));
+    });
+
     document.querySelectorAll('.btn-save-single').forEach(btn => {
       btn.addEventListener('click', function () {
         const row = this.closest('tr');
@@ -397,11 +493,22 @@
         const leaves = row.querySelector('.leave-input').value;
         const halfDay = row.querySelector('.half_day-input').value;
         const paidLeave = row.querySelector('.paid-leave-input').value || 0;
+        const sickLeave = row.querySelector('.sick-leave-input').value || 0;
         const deduction = row.querySelector('.deduction-input').value;
         const netSalary = row.querySelector('.net-salary-input').value;
         const overtimePay = (row.querySelector('.overtime-pay-input') && row.querySelector('.overtime-pay-input').value) || 0;
         const totalOvertimeHours = (row.querySelector('.total-overtime-hours-input') && row.querySelector('.total-overtime-hours-input').value) || 0;
         const month = row.querySelector('.single-month').value;
+
+        // Validation Check
+        if (row.querySelector('.is-invalid')) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: 'Used leave cannot exceed total allocated leave balance.'
+          });
+          return;
+        }
 
         fetch("<?= base_url("/api/payroll/save") ?>", {
           method: "POST",
@@ -416,6 +523,7 @@
             leaves: leaves,
             half_day: halfDay,
             paid_leave: paidLeave,
+            sick_leave: sickLeave,
             deduction: deduction,
             net_salary: netSalary,
             overtime_pay: overtimePay,
