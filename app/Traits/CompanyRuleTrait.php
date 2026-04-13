@@ -135,6 +135,9 @@ trait CompanyRuleTrait
             }
         }
 
+
+
+
         return (float) $total;
     }
 }
