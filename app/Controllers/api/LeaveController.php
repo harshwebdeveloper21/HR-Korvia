@@ -43,7 +43,7 @@ class LeaveController extends ResourceController
             // ✅ Admin: Fetch all HR and Employee leave records OR a specific user's leave if requested
             $users = $userModel->whereIn('role', ['employee', 'hr']);
             if ($requestedUserId) {
-                $users = $users->where('id', $requestedUserId);
+                $users = $users->where('user_id', $requestedUserId);
             }
             // $users = $users->where('is_deleted', 0);
             $users = $users->findAll();
@@ -53,7 +53,7 @@ class LeaveController extends ResourceController
                 ->join('leave_type', 'leaves.leave_id = leave_type.id', 'left');
 
             if ($requestedUserId) {
-                $leaveRecords = $leaveRecords->where('leaves.user_id', $users[0]['user_id']);
+                $leaveRecords = $leaveRecords->where('leaves.user_id', $requestedUserId);
             }
 
             $leaveRecords = $leaveRecords->findAll();
@@ -61,7 +61,7 @@ class LeaveController extends ResourceController
             // ✅ HR: Fetch their own leave + all employee leave records OR specific user if requested
             $users = $userModel->whereIn('role', ['employee', 'hr']);
             if ($requestedUserId) {
-                $users = $users->where('id', $requestedUserId);
+                $users = $users->where('user_id', $requestedUserId);
             }
             // $users = $users->where('is_deleted', 0);
             $users = $users->findAll();
@@ -73,7 +73,7 @@ class LeaveController extends ResourceController
 
 
             if ($requestedUserId) {
-                $leaveRecords = $leaveRecords->where('leaves.user_id', $users[0]['user_id']);
+                $leaveRecords = $leaveRecords->where('leaves.user_id', $requestedUserId);
             }
 
             $leaveRecords = $leaveRecords->findAll();
