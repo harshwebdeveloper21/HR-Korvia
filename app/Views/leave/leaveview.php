@@ -880,10 +880,11 @@
                 if (!userId && leaveId) {
                     const fallbackEvent = allLeaveEvents.find(e => e.id == leaveId);
                     if (fallbackEvent && fallbackEvent.extendedProps && fallbackEvent.extendedProps.user_id) {
-                        userId = fallbackEvent.extendedProps.user_id;
+                        userId = String(fallbackEvent.extendedProps.user_id);
                     }
                 }
 
+                // Step 1: Select the employee (this re-filters allLeaveEvents for that user)
                 if (userId) {
                     const empItem = $(`.employee-item[data-id="${userId}"]`);
                     if (empItem.length > 0) {
@@ -891,39 +892,46 @@
                     }
                 }
 
+                // Step 2: After employee selection rebuilds events, find & navigate to the leave
                 if (leaveId) {
-                    const targetEventData = allLeaveEvents.find(e => e.id == leaveId);
-                    if (targetEventData) {
-                        selectedDate = targetEventData.start.substring(0, 10);
-                        const d = new Date(selectedDate);
-                        currentMonth = d.getMonth() + 1;
-                        currentYear = d.getFullYear();
-
-                        const monthSelect = document.getElementById('unified-month-select');
-                        if (monthSelect) monthSelect.value = String(currentMonth).padStart(2, '0');
-                        const yearSelect = document.getElementById('unified-year-select');
-                        if (yearSelect) yearSelect.value = currentYear;
-
-                        if (calendar) calendar.gotoDate(d);
-                    }
-
+                    // Give selectEmployee time to repopulate allLeaveEvents
                     setTimeout(() => {
-                        const targetEvent = calendar.getEventById(leaveId);
-                        if (targetEvent) {
-                            showLeaveModal(targetEvent);
-                        } else if (targetEventData) {
-                            showLeaveModal({
-                                id: targetEventData.id,
-                                extendedProps: targetEventData.extendedProps,
-                                start: targetEventData.start,
-                                end: targetEventData.end
-                            });
+                        const targetEventData = allLeaveEvents.find(e => e.id == leaveId);
+
+                        if (targetEventData) {
+                            selectedDate = targetEventData.start.substring(0, 10);
+                            const d = new Date(selectedDate);
+                            currentMonth = d.getMonth() + 1;
+                            currentYear = d.getFullYear();
+
+                            const monthSelect = document.getElementById('unified-month-select');
+                            if (monthSelect) monthSelect.value = String(currentMonth).padStart(2, '0');
+                            const yearSelect = document.getElementById('unified-year-select');
+                            if (yearSelect) yearSelect.value = currentYear;
+
+                            if (calendar) calendar.gotoDate(d);
+
+                            // Step 3: Render date view for the specific date
+                            if (currentViewMode === 'datewise') {
+                                renderDatewiseView();
+                            }
                         }
 
-                        if (currentViewMode === 'datewise') {
-                            renderDatewiseView();
-                        }
-                    }, 500);
+                        // Step 4: Open leave modal
+                        setTimeout(() => {
+                            const liveEvent = calendar.getEventById(leaveId);
+                            if (liveEvent) {
+                                showLeaveModal(liveEvent);
+                            } else if (targetEventData) {
+                                showLeaveModal({
+                                    id: targetEventData.id,
+                                    extendedProps: targetEventData.extendedProps,
+                                    start: targetEventData.start,
+                                    end: targetEventData.end
+                                });
+                            }
+                        }, 300);
+                    }, 200);
                 }
             })
             .catch(error => console.error('Error loading initial data:', error));
@@ -1154,7 +1162,7 @@
                     backgroundColor: backgroundColor,
                     extendedProps: {
                         user: leave.firstname || leaveItem.firstname,
-                        user_id: leave.id || leave.user_id,
+                        user_id: leave.user_id || leave.id,
                         profile_image: leave.profile_image,
                         description: leaveItem.reason || "No reason provided",
                         status: leaveItem.status,
@@ -1240,7 +1248,7 @@
                 : `${baseImagePath}upload/default-profile.jpg`;
 
             let employeeItem = $(`
-                <li class="list-group-item employee-item p-1" data-id="${employee.id}">
+                <li class="list-group-item employee-item p-1" data-id="${employee.user_id}">
                     <div class="team-member capitalize-text">
                         <img src="${imageUrl}" alt="${employee.firstname}" class="profile-pic">
                         <div><strong class="employee-name">${employee.firstname}</strong></div>
@@ -1249,7 +1257,7 @@
             `);
 
             employeeItem.on('click', function () {
-                selectEmployee($(this), employee.id);
+                selectEmployee($(this), employee.user_id);
             });
 
             employeeList.append(employeeItem);
@@ -1291,7 +1299,7 @@
 
             const item = document.createElement('li');
             item.className = 'list-group-item employee-item p-1';
-            item.dataset.id = employee.id;
+            item.dataset.id = employee.user_id;
             item.innerHTML = `
                 <div class="team-member capitalize-text">
                     <img src="${imageUrl}" alt="${employee.firstname}" class="profile-pic">
@@ -1299,7 +1307,7 @@
                 </div>
             `;
             item.addEventListener('click', () => {
-                selectDatewiseEmployee(item, employee.id);
+                selectDatewiseEmployee(item, employee.user_id);
             });
             employeeList.appendChild(item);
         });
@@ -1318,7 +1326,7 @@
 
         employees.forEach(employee => {
             const option = document.createElement('option');
-            option.value = employee.id;
+            option.value = employee.user_id;
             option.textContent = employee.firstname;
             unifiedFilter.appendChild(option);
         });
@@ -1356,7 +1364,7 @@
         if (cachedLeaveData && !employeeId) {
             updateCalendarEvents(cachedLeaveData);
         } else if (cachedLeaveData && employeeId) {
-            const filteredData = cachedLeaveData.filter(emp => emp.id == employeeId);
+            const filteredData = cachedLeaveData.filter(emp => emp.user_id == employeeId);
             updateCalendarEvents(filteredData);
         } else {
             fetchLeaveData(employeeId);
@@ -1704,7 +1712,7 @@
 
             const item = document.createElement('li');
             item.className = 'list-group-item employee-item p-1';
-            item.dataset.id = employee.id;
+            item.dataset.id = employee.user_id;
             item.innerHTML = `
                 <div class="team-member capitalize-text">
                     <img src="${imageUrl}" alt="${employee.firstname}" class="profile-pic">
@@ -1712,7 +1720,7 @@
                 </div>
             `;
             item.addEventListener('click', () => {
-                selectCancelledEmployee(item, employee.id);
+                selectCancelledEmployee(item, employee.user_id);
             });
             employeeList.appendChild(item);
         });
