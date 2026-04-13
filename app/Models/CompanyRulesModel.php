@@ -37,6 +37,7 @@ class CompanyRulesModel extends Model
         'overtime_multiplier',
         'overtime_rate_type',
         'min_overtime_count_in_minutes',
+        'sandwich_leave',
         'created_at',
         'updated_at',
     ];
