@@ -609,7 +609,8 @@ class LeaveController extends ResourceController
                 'data' => json_encode([
                     'username' => $senderName,
                     'type' => 'leave',
-                    'leave_id' => $leaveId
+                    'leave_id' => $leaveId,
+                    'user_id' => $data['user_id']
                 ]),
                 'is_read' => 0
             ]);

@@ -508,6 +508,7 @@ $role = $user ? $user->role : null;
                             data-task-id="${data.task_id ?? ''}"
                             data-subtask-id="${data.subtask_id ?? ''}"
                             data-user-id="${data.user_id ?? ''}"
+                            data-leave-id="${data.leave_id ?? ''}"
                             data-candidate-id="${data.candidate_id ?? ''}">
                                 <div class="preview-thumbnail">
                                     <i class="mdi ${icon} m-auto text-dark"></i>
@@ -534,6 +535,8 @@ $role = $user ? $user->role : null;
 
         const notificationId = $(this).data('id');
         const type = $(this).data('type');
+        const leaveId = $(this).data('leave-id');
+        const userId = $(this).data('user-id');
 
         // First mark as read
         $.ajax({
@@ -584,7 +587,14 @@ $role = $user ? $user->role : null;
                         break;
                     case 'leave':
                     case 'leave_status':
-                        window.location.href = '<?= base_url('/leaveview') ?>';
+                        let url = '<?= base_url('/leaveview') ?>';
+                        let params = new URLSearchParams();
+                        if (userId) params.append('user_id', userId);
+                        if (leaveId) params.append('leave_id', leaveId);
+                        if (params.toString()) {
+                            url += '?' + params.toString();
+                        }
+                        window.location.href = url;
                         break;
                         <?php if ($role !== 'employee') : ?>
 
