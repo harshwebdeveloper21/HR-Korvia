@@ -13,7 +13,7 @@ trait CompanyRuleTrait
     protected function isWorkingDay(DateTime $date, array $rules): bool
     {
         $dayOfWeek = (int) $date->format('w'); // 0=Sunday, 6=Saturday
-        $day       = (int) $date->format('j'); // Day of month (1–31)
+        $day = (int) $date->format('j'); // Day of month (1–31)
 
         if ($dayOfWeek === 0 && ($rules['sunday_off'] ?? 0) == 1) {
             return false;
@@ -68,10 +68,10 @@ trait CompanyRuleTrait
         array $rules,
         $leaveModel,
         array $holidayDates = []
-    ): int {
+    ): float {
         $startOfMonth = new DateTime($month . '-01');
-        $endOfMonth   = new DateTime(date('Y-m-t', strtotime($month . '-01')));
-        $holidaySet   = array_flip($holidayDates);
+        $endOfMonth = new DateTime(date('Y-m-t', strtotime($month . '-01')));
+        $holidaySet = array_flip($holidayDates);
 
         $attendanceModel = new AttendanceModel();
         $presentOrHalfDay = $attendanceModel
@@ -89,23 +89,28 @@ trait CompanyRuleTrait
             ->where('end_date >=', $startOfMonth->format('Y-m-d'))
             ->findAll();
 
-        $total = 0;
+        $total = 0.0;
         $countedDates = [];
 
         foreach ($leaves as $leave) {
 
             $start = new DateTime($leave['start_date']);
-            $end   = new DateTime($leave['end_date']);
+            $end = new DateTime($leave['end_date']);
 
-            if ($start < $startOfMonth) $start = clone $startOfMonth;
-            if ($end > $endOfMonth)     $end   = clone $endOfMonth;
+            if ($start < $startOfMonth)
+                $start = clone $startOfMonth;
+            if ($end > $endOfMonth)
+                $end = clone $endOfMonth;
+
+            $isHalfDay = isset($leave['leave_duration']) && $leave['leave_duration'] === 'half_day';
 
             while ($start <= $end) {
 
                 $dateStr = $start->format('Y-m-d');
-                if ($this->isWorkingDay($start, $rules) && !isset($holidaySet[$dateStr])) {
+                // Sandwich leaves: include weekends if they fall within an approved leave range.
+                if (!isset($holidaySet[$dateStr])) {
                     if (!isset($presentOrHalfDayDates[$dateStr]) && !isset($countedDates[$dateStr])) {
-                        $total++;
+                        $total += $isHalfDay ? 0.5 : 1;
                         $countedDates[$dateStr] = true;
                     }
                 }
@@ -125,11 +130,11 @@ trait CompanyRuleTrait
             $dateStr = $absence['date'];
             if ($this->isWorkingDay(new DateTime($dateStr), $rules) && !isset($holidaySet[$dateStr])) {
                 if (!isset($presentOrHalfDayDates[$dateStr]) && !isset($countedDates[$dateStr])) {
-                    $total++;
+                    $total += 1;
                 }
             }
         }
 
-        return $total;
+        return (float) $total;
     }
 }
