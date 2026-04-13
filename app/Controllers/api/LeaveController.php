@@ -191,6 +191,29 @@ class LeaveController extends ResourceController
             $data['half_day_type'] = null;
         }
 
+        // --- Sandwich Leave Logic ---
+        if (isset($data['start_date']) && isset($data['end_date']) && (!isset($data['leave_duration']) || $data['leave_duration'] !== 'half_day')) {
+            $startDayOfWeek = date('N', strtotime($data['start_date']));
+            $endDayOfWeek = date('N', strtotime($data['end_date']));
+
+            // If leave ends on Friday, automatically include Saturday and Sunday
+            if ($endDayOfWeek == 5) {
+                $data['end_date'] = date('Y-m-d', strtotime($data['end_date'] . ' + 2 days'));
+            }
+            // If leave starts on Monday, automatically include the preceding Saturday and Sunday
+            if ($startDayOfWeek == 1) {
+                $data['start_date'] = date('Y-m-d', strtotime($data['start_date'] . ' - 2 days'));
+            }
+
+            // Recalculate duration
+            $start = strtotime($data['start_date']);
+            $end = strtotime($data['end_date']);
+            if ($start && $end) {
+                $calc = ($end - $start) / 86400 + 1;
+                $data['no_of_day'] = (string) max(1, $calc);
+            }
+        }
+
         // Default status if not set
         if (empty($data['status'])) {
             $data['status'] = 'Pending';
@@ -505,7 +528,22 @@ class LeaveController extends ResourceController
             return $this->fail('Start date cannot be after end date.');
         }
 
-        $noOfDays = (string) (($end - $start) / 86400 + 1);
+        // --- Sandwich Leave Logic ---
+        $startDayOfWeek = date('N', $start);
+        $endDayOfWeek = date('N', $end);
+
+        // If leave ends on Friday, automatically include Saturday and Sunday
+        if ($endDayOfWeek == 5) {
+            $endDate = date('Y-m-d', strtotime($endDate . ' + 2 days'));
+            $end = strtotime($endDate);
+        }
+        // If leave starts on Monday, automatically include the preceding Saturday and Sunday
+        if ($startDayOfWeek == 1) {
+            $startDate = date('Y-m-d', strtotime($startDate . ' - 2 days'));
+            $start = strtotime($startDate);
+        }
+
+        $noOfDays = (string) max(1, (($end - $start) / 86400 + 1));
 
         $updateData = [
             'start_date' => $startDate,
