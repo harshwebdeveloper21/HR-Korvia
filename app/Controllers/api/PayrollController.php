@@ -453,9 +453,9 @@ class PayrollController extends ResourceController
             );
         }
 
-        if ($user->role !== "admin") {
+        if (!in_array($user->role, ["admin", "hr"])) {
             return $this->failForbidden(
-                "Forbidden: Only Admin can delete payroll records",
+                "Forbidden: Only Admin and HR can delete payroll records",
             );
         }
 
@@ -916,7 +916,7 @@ class PayrollController extends ResourceController
                 "worked_hours" => $workedHours,
                 "per_hour_salary" => round(
                     $baseSalary /
-                        ($workingDays * ($rules["working_hours_per_day"] ?? 8)),
+                    ($workingDays * ($rules["working_hours_per_day"] ?? 8)),
                     2,
                 ),
                 "total_overtime_hours" => round($overtimeSeconds / 3600, 2),
@@ -1011,8 +1011,9 @@ class PayrollController extends ResourceController
         }
         $countHalfDays = 0;
         if (
-            isset($rules["saturday_half_day_enabled"]) && 
-            $rules['saturday_half_day_enabled'] == 1) {
+            isset($rules["saturday_half_day_enabled"]) &&
+            $rules['saturday_half_day_enabled'] == 1
+        ) {
             $countHalfDays = count(explode(",", $rules['saturday_half_day_pattern']));
             // $workingDays -= $countHalfDays;
         }
@@ -1057,7 +1058,7 @@ class PayrollController extends ResourceController
             ->where("leave_type", $leaveId)
             ->selectSum("used_paid_leaves")
             ->first();
-        
+
         $monthUsed = $payrollModel
             ->where("user_id", $userId)
             ->where("leave_type", $leaveId)
@@ -1326,9 +1327,9 @@ class PayrollController extends ResourceController
                 log_message(
                     "error",
                     "Failed to generate slip for employee " .
-                        $empId .
-                        ": " .
-                        $e->getMessage(),
+                    $empId .
+                    ": " .
+                    $e->getMessage(),
                 );
                 $failedCount++;
                 continue;
@@ -1393,7 +1394,7 @@ class PayrollController extends ResourceController
         }
 
         $pdfOutput = $this->generateCombinedSlipPdf($payrollIds);
-        
+
         if (!$pdfOutput) {
             return $this->fail("No salary slips could be generated");
         }
@@ -1570,10 +1571,10 @@ class PayrollController extends ResourceController
             ->setHeader(
                 "Content-Disposition",
                 'attachment; filename="salary-slip-' .
-                    $username .
-                    "-" .
-                    $id .
-                    '.pdf"',
+                $username .
+                "-" .
+                $id .
+                '.pdf"',
             );
     }
 
@@ -1730,6 +1731,8 @@ class PayrollController extends ResourceController
             ->where('users.is_deleted', 0)
             ->whereIn('user_info.role', ['employee', 'hr'])
             ->findAll();
+
+        $employeeLeaveModel = new \App\Models\EmployeeLeaveModel();
         foreach ($employees as &$emp) {
             // Get existing payroll if saved
             $payroll = $payrollModel
@@ -1743,7 +1746,7 @@ class PayrollController extends ResourceController
             // If a payroll record already exists for this month, use its saved salary_amount
             // (the value entered when payroll was created, e.g. ₹100,000) instead of the
             // employee profile salary from user_info (which may be a different/default value).
-            if ($payroll && !empty($payroll["salary_amount"]) && (float)$payroll["salary_amount"] > 0) {
+            if ($payroll && !empty($payroll["salary_amount"]) && (float) $payroll["salary_amount"] > 0) {
                 $emp["salary"] = (float) $payroll["salary_amount"];
             }
 
@@ -1757,15 +1760,16 @@ class PayrollController extends ResourceController
 
             if ($payroll) {
                 // ── Load payroll values ──────────────────────────────────────────────
-                $emp["leaves"]               = (float) ($payroll["total_leaves"]        ?? 0);
-                $emp["half_days"]            = (float) ($payroll["total_half_day"]       ?? 0);
-                $emp["used_paid_leaves"]     = (float) ($payroll["used_paid_leaves"]     ?? 0);
-                
+                $emp["leaves"] = (float) ($payroll["total_leaves"] ?? 0);
+                $emp["half_days"] = (float) ($payroll["total_half_day"] ?? 0);
+                $emp["used_paid_leaves"] = (float) ($payroll["used_paid_leaves"] ?? 0);
+                $emp["used_sick_leaves"] = (float) ($payroll["used_sick_leaves"] ?? 0);
+
                 // For the management page, we ensure deductions match the counts shown to fix 
                 // inconsistencies (e.g., leaves=1 but deduction=0).
                 $suggestedBaseDed = ($emp["leaves"] * $emp["per_day"]) + ($emp["half_days"] * ($emp["per_day"] / 2));
-                $paidLeaveCredit  = $emp["used_paid_leaves"] * $emp["per_day"];
-                
+                $paidLeaveCredit = ($emp["used_paid_leaves"] + $emp["used_sick_leaves"]) * $emp["per_day"];
+
                 $storedDed = (float) ($payroll["salary_deduction"] ?? 0);
                 // Override if stored deduction is 0 but leaves/half-days exist
                 if ($storedDed == 0 && ($emp["leaves"] > 0 || $emp["half_days"] > 0)) {
@@ -1774,19 +1778,19 @@ class PayrollController extends ResourceController
                     $emp["salary_deduction"] = round($storedDed, 2);
                 }
 
-                $emp["tax_deduction"]        = round((float) ($payroll["tax_deduction"]   ?? 0), 2);
-                $emp["overtime_pay"]         = round((float) ($payroll["overtime_pay"]    ?? 0), 2);
-                $emp["total_overtime_hours"] = (float) ($payroll["total_overtime_hours"]  ?? 0);
-                $emp["late_deduction"]       = 0;
+                $emp["tax_deduction"] = round((float) ($payroll["tax_deduction"] ?? 0), 2);
+                $emp["overtime_pay"] = round((float) ($payroll["overtime_pay"] ?? 0), 2);
+                $emp["total_overtime_hours"] = (float) ($payroll["total_overtime_hours"] ?? 0);
+                $emp["late_deduction"] = 0;
 
                 // base_deduction is used by JS for re-computation.
                 $emp["base_deduction"] = round($emp["salary_deduction"] + $paidLeaveCredit, 2);
-                
+
                 // Recalculate net salary based on updated components
-                $emp["net_salary"] = round($emp["salary"] - $emp["salary_deduction"] - $emp["tax_deduction"], 2);
+                $emp["net_salary"] = round($emp["salary"] - $emp["salary_deduction"] - $emp["tax_deduction"] + ($emp["overtime_pay"] ?? 0), 2);
 
                 $emp["tax_amount"] = $emp["tax_deduction"];
-                $emp["tax"]        = $emp["tax_amount"] > 0
+                $emp["tax"] = $emp["tax_amount"] > 0
                     ? "₹" . number_format($emp["tax_amount"], 2)
                     : "No Tax";
             } else {
@@ -1801,6 +1805,7 @@ class PayrollController extends ResourceController
 
                 $emp["leaves"] = $totalLeaves;
                 $emp["used_paid_leaves"] = $usedPaidLeaves;
+                $emp["used_sick_leaves"] = 0;
 
                 $halfDayRows = $attendanceModel
                     ->select("work_hours, status, date, check_in_time, check_out_time")
@@ -1811,8 +1816,8 @@ class PayrollController extends ResourceController
                     ->findAll();
                 $emp["half_days"] = count($halfDayRows);
 
-                $fullDaysCoveredByPaidLeave = min(floor($usedPaidLeaves), $totalLeaves);
-                $halfDaysCoveredByPaidLeave = ($usedPaidLeaves - $fullDaysCoveredByPaidLeave) * 2;
+                $fullDaysCoveredByPaidLeave = min(floor($usedPaidLeaves + $emp["used_sick_leaves"]), $totalLeaves);
+                $halfDaysCoveredByPaidLeave = ($usedPaidLeaves + $emp["used_sick_leaves"] - $fullDaysCoveredByPaidLeave) * 2;
                 $unpaidFullDays = max($totalLeaves - $fullDaysCoveredByPaidLeave, 0);
                 $unpaidHalfDays = max($emp["half_days"] - $halfDaysCoveredByPaidLeave, 0);
 
@@ -1884,10 +1889,18 @@ class PayrollController extends ResourceController
                 $emp["salary_deduction"] = round($leaveHalfDeduction, 2);
                 $emp["tax_deduction"] = $emp["tax_amount"];
                 $emp["net_salary"] = round(
-                    $emp["salary"] - $emp["salary_deduction"] - $emp["tax_deduction"],
+                    $emp["salary"] - $emp["salary_deduction"] - $emp["tax_deduction"] + ($emp["overtime_pay"] ?? 0),
                     2,
                 );
             }
+
+            // Fetch leave balances for display (dynamic fetch)
+            $leaveBalance = $employeeLeaveModel->where('employee_id', $emp['user_id'])->first();
+            $emp['remaining_paid_leaves'] = $leaveBalance['paid_leave'] ?? 0;
+            $emp['remaining_casual_leaves'] = $leaveBalance['casual_leave'] ?? 0;
+
+            // Calculate Total Adjustment (Additions - Deductions)
+            $emp['total_adjustment'] = ($emp['overtime_pay'] ?? 0) - ($emp['salary_deduction'] ?? 0) - ($emp['tax_deduction'] ?? 0);
         }
 
         return view("payroll/salary-details", [
@@ -1905,6 +1918,7 @@ class PayrollController extends ResourceController
         $leaves = $request->getPost("leaves");
         $half_day = $request->getPost("half_day");
         $paid_leave = $request->getPost("paid_leave");
+        $sick_leave = $request->getPost("sick_leave") ?? [];
         $deductions = $request->getPost("deduction");
         $netSalaries = $request->getPost("net_salary");
         $overtime_pay = $request->getPost("overtime_pay");
@@ -1928,19 +1942,20 @@ class PayrollController extends ResourceController
                 : ($salaries[$index] > $rules["salary_above_tax"] ? $rules["tax"] : 0);
 
             $data = [
-                "user_id"             => $empId,
-                "month_year"          => $month,
-                "salary_amount"       => $salaries[$index],
-                "total_leaves"        => $leaves[$index],
-                "total_half_day"      => $half_day[$index],
-                "used_paid_leaves"    => $paid_leave[$index] ?? 0,
-                "salary_deduction"    => $deductions[$index],
-                "tax_deduction"       => $taxDeduction,
-                "net_salary"          => $netSalaries[$index],
-                "overtime_pay"        => isset($overtime_pay[$index]) ? (float) $overtime_pay[$index] : 0,
-                "total_overtime_hours"=> isset($total_overtime_hours[$index]) ? (float) $total_overtime_hours[$index] : 0,
-                "payment_date"        => $existing ? $existing["payment_date"] : date("Y-m-d H:i:s"),
-                "payment_status"      => $existing ? $existing["payment_status"] : "Paid",
+                "user_id" => $empId,
+                "month_year" => $month,
+                "salary_amount" => $salaries[$index],
+                "total_leaves" => $leaves[$index],
+                "total_half_day" => $half_day[$index],
+                "used_paid_leaves" => $paid_leave[$index] ?? 0,
+                "used_sick_leaves" => $sick_leave[$index] ?? 0,
+                "salary_deduction" => $deductions[$index],
+                "tax_deduction" => $taxDeduction,
+                "net_salary" => $netSalaries[$index],
+                "overtime_pay" => isset($overtime_pay[$index]) ? (float) $overtime_pay[$index] : 0,
+                "total_overtime_hours" => isset($total_overtime_hours[$index]) ? (float) $total_overtime_hours[$index] : 0,
+                "payment_date" => $existing ? $existing["payment_date"] : date("Y-m-d H:i:s"),
+                "payment_status" => $existing ? $existing["payment_status"] : "Paid",
             ];
 
             if ($existing) {
@@ -1954,7 +1969,7 @@ class PayrollController extends ResourceController
         }
 
         return $this->response->setJSON([
-            "status"  => "success",
+            "status" => "success",
             "message" => "Payroll data saved successfully for all employees.",
         ]);
     }
@@ -1997,9 +2012,9 @@ class PayrollController extends ResourceController
             $holidayDates,
         );
         $workingDays = $workingDaysData["working_days"];
-        
+
         $manualSalary = $this->request->getPost("salary_amount") ?: $this->request->getGet("salary_amount");
-        if ($manualSalary !== null && (float)$manualSalary > 0) {
+        if ($manualSalary !== null && (float) $manualSalary > 0) {
             $salary = (float) $manualSalary;
         } else {
             $userInfo = (new UserInfoModel())->where("user_id", $userId)->first();
@@ -2166,8 +2181,10 @@ class PayrollController extends ResourceController
         foreach ($leaveApplications as $lv) {
             $start = $lv["start_date"];
             $end = $lv["end_date"];
-            if ($start < $startOfMonth) $start = $startOfMonth;
-            if ($end > $endOfMonth) $end = $endOfMonth;
+            if ($start < $startOfMonth)
+                $start = $startOfMonth;
+            if ($end > $endOfMonth)
+                $end = $endOfMonth;
             $leaveList[] = [
                 "start_date" => $start,
                 "end_date" => $end,
@@ -2254,6 +2271,7 @@ class PayrollController extends ResourceController
             "total_leaves" => $this->request->getPost("leaves"),
             "total_half_day" => $this->request->getPost("half_day"),
             "used_paid_leaves" => $this->request->getPost("paid_leave") ?? 0,
+            "used_sick_leaves" => $this->request->getPost("sick_leave") ?? 0,
             "salary_deduction" => $this->request->getPost("deduction"),
             "tax_deduction" => $taxDeduction,
             "net_salary" => $this->request->getPost("net_salary"),
@@ -2301,16 +2319,18 @@ class PayrollController extends ResourceController
         foreach ($payrollIds as $payrollId) {
             try {
                 $payroll = $payrollModel->find($payrollId);
-                if (!$payroll) continue;
+                if (!$payroll)
+                    continue;
 
                 $userInfo = $userInfoModel->where("user_id", $payroll["user_id"])->first();
-                if (!$userInfo) continue;
+                if (!$userInfo)
+                    continue;
 
                 $designation = $designationModel->find($userInfo["designation_id"]);
                 $department = $departmentModel->find($userInfo["department_id"]);
                 $onboarding = $onboardingModel->where("job_id", $userInfo["job_id"])->first();
                 $company = $companyModel->orderBy("id", "DESC")->first();
-                
+
                 $companyLogoBase64 = "";
                 if ($company && !empty($company["logo_img"])) {
                     $companyLogoPath = FCPATH . "upload/" . $company["logo_img"];
@@ -2324,8 +2344,8 @@ class PayrollController extends ResourceController
                 $monthYear = $payroll["month_year"];
                 [$year, $monthNum] = explode("-", $monthYear);
                 $rules = $companyRulesModel->first();
-                
-                $workingDaysData = $this->getWorkingDaysData((int)$monthNum, (int)$year, $rules, []);
+
+                $workingDaysData = $this->getWorkingDaysData((int) $monthNum, (int) $year, $rules, []);
                 $workingDays = $workingDaysData["working_days"];
 
                 $startOfMonth = "$year-" . str_pad($monthNum, 2, "0", STR_PAD_LEFT) . "-01";
@@ -2333,13 +2353,20 @@ class PayrollController extends ResourceController
                 $attendanceData = $attendanceModel->where("user_id", $payroll["user_id"])
                     ->where("date >=", $startOfMonth)->where("date <=", $endOfMonth)->findAll();
 
-                $presentDays = 0; $absentDays = 0; $halfDays = 0; $unpaidLeaves = 0;
+                $presentDays = 0;
+                $absentDays = 0;
+                $halfDays = 0;
+                $unpaidLeaves = 0;
                 foreach ($attendanceData as $att) {
                     $status = strtolower($att["status"]);
-                    if ($status === "present") $presentDays++;
-                    elseif ($status === "absent") $absentDays++;
-                    elseif ($status === "half-day" || $status === "halfday") $halfDays++;
-                    elseif ($status === "unpaid leave") $unpaidLeaves++;
+                    if ($status === "present")
+                        $presentDays++;
+                    elseif ($status === "absent")
+                        $absentDays++;
+                    elseif ($status === "half-day" || $status === "halfday")
+                        $halfDays++;
+                    elseif ($status === "unpaid leave")
+                        $unpaidLeaves++;
                 }
 
                 $baseSalary = floatval($payroll["salary_amount"]);
@@ -2347,18 +2374,29 @@ class PayrollController extends ResourceController
                 $totalDeductions = floatval($payroll["salary_deduction"] ?? 0) + floatval($payroll["tax_deduction"] ?? 0);
 
                 $calculatedData = [
-                    "working_days" => $workingDays, "present_days" => $presentDays, "absent_days" => $absentDays,
-                    "total_leaves" => $payroll["total_leaves"] ?? 0, "used_paid_leaves" => $payroll["used_paid_leaves"] ?? 0,
-                    "unpaid_leaves" => $unpaidLeaves, "half_days" => $halfDays,
-                    "worked_hours" => $payroll["worked_hours"] ?? 0, "total_overtime_hours" => $payroll["total_overtime_hours"] ?? 0,
-                    "total_earnings" => $totalEarnings, "total_deductions" => $totalDeductions,
+                    "working_days" => $workingDays,
+                    "present_days" => $presentDays,
+                    "absent_days" => $absentDays,
+                    "total_leaves" => $payroll["total_leaves"] ?? 0,
+                    "used_paid_leaves" => $payroll["used_paid_leaves"] ?? 0,
+                    "unpaid_leaves" => $unpaidLeaves,
+                    "half_days" => $halfDays,
+                    "worked_hours" => $payroll["worked_hours"] ?? 0,
+                    "total_overtime_hours" => $payroll["total_overtime_hours"] ?? 0,
+                    "total_earnings" => $totalEarnings,
+                    "total_deductions" => $totalDeductions,
                     "salary_deduction" => $payroll["salary_deduction"] ?? 0,
                 ];
 
                 $slipData = [
-                    "payroll" => $payroll, "user" => $userInfo, "designation" => $designation,
-                    "department" => $department, "company" => $company, "companyLogoBase64" => $companyLogoBase64,
-                    "onboarding" => $onboarding, "calculatedData" => $calculatedData,
+                    "payroll" => $payroll,
+                    "user" => $userInfo,
+                    "designation" => $designation,
+                    "department" => $department,
+                    "company" => $company,
+                    "companyLogoBase64" => $companyLogoBase64,
+                    "onboarding" => $onboarding,
+                    "calculatedData" => $calculatedData,
                 ];
 
                 $slipsHtml[] = view("payroll/salary_slip", $slipData);
@@ -2367,7 +2405,8 @@ class PayrollController extends ResourceController
             }
         }
 
-        if (empty($slipsHtml)) return null;
+        if (empty($slipsHtml))
+            return null;
 
         try {
             $dompdf = new \Dompdf\Dompdf([
@@ -2394,9 +2433,9 @@ class PayrollController extends ResourceController
 
         $userInfoModel = new \App\Models\UserInfoModel();
         $employees = $userInfoModel->select('user_id, firstname, lastname')
-                                   ->orderBy('firstname', 'ASC')
-                                   ->findAll();
-        
+            ->orderBy('firstname', 'ASC')
+            ->findAll();
+
         return $this->response->setJSON([
             'status' => 'success',
             'data' => $employees
@@ -2425,10 +2464,10 @@ class PayrollController extends ResourceController
 
         $payrollModel = new \App\Models\PayrollModel();
         $payrolls = $payrollModel->where('user_id', $userId)
-                                ->where('month_year >=', $startStr)
-                                ->where('month_year <=', $endStr)
-                                ->orderBy('month_year', 'ASC')
-                                ->findAll();
+            ->where('month_year >=', $startStr)
+            ->where('month_year <=', $endStr)
+            ->orderBy('month_year', 'ASC')
+            ->findAll();
 
         if (empty($payrolls)) {
             return $this->failNotFound('No payroll records found for this range');
@@ -2438,7 +2477,7 @@ class PayrollController extends ResourceController
         $filename = "salary-slips-$startStr-to-$endStr.pdf";
 
         $pdfOutput = $this->generateCombinedSlipPdf($payrollIds);
-        
+
         if (!$pdfOutput) {
             return $this->fail("No salary slips could be generated");
         }
