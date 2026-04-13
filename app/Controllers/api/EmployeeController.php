@@ -440,6 +440,16 @@ class EmployeeController extends ResourceController
             return $this->failServerError('User creation failed due to email error.');
         }
 
+        // Initialize employee leaves if provided
+        if (isset($data['remaining_paid_leave']) || isset($data['remaining_sick_leave'])) {
+            $employeeLeaveModel = new \App\Models\EmployeeLeaveModel();
+            $employeeLeaveModel->insert([
+                'employee_id' => $userId,
+                'paid_leave' => $data['remaining_paid_leave'] ?? 0,
+                'casual_leave' => $data['remaining_sick_leave'] ?? 0
+            ]);
+        }
+
         $db->transComplete();
 
         return $this->respondCreated(['message' => 'Employee created successfully!']);
@@ -584,6 +594,34 @@ class EmployeeController extends ResourceController
             'face_photo' => $facePhotoName, // Update face photo for biometric attendance
             'salary' => $data['salary'] ?? '',
         ])->update();
+
+        // Update employee leaves if provided
+        if (isset($data['remaining_paid_leave']) || isset($data['remaining_sick_leave'])) {
+            $employeeLeaveModel = new \App\Models\EmployeeLeaveModel();
+            $leaveData = [];
+            if (isset($data['remaining_paid_leave'])) {
+                $leaveData['paid_leave'] = $data['remaining_paid_leave'];
+            }
+            if (isset($data['remaining_sick_leave'])) {
+                $leaveData['casual_leave'] = $data['remaining_sick_leave']; // Wait, the model uses 'casual_leave' for sick leave? Or sick_leave? Let me check the db column.
+            }
+            // wait, PayrollController maps remaining_casual_leaves to casual_leave. So sick leave is casual_leave. Let me just set both.
+            
+            $existingLeave = $employeeLeaveModel->where('employee_id', $id)->first();
+            if ($existingLeave) {
+                $employeeLeaveModel->update($existingLeave['id'], [
+                    'paid_leave' => $data['remaining_paid_leave'] ?? $existingLeave['paid_leave'],
+                    'casual_leave' => $data['remaining_sick_leave'] ?? $existingLeave['casual_leave'] // mapping sick leave to casual_leave based on existing code
+                ]);
+            } else {
+                $employeeLeaveModel->insert([
+                    'employee_id' => $id,
+                    'paid_leave' => $data['remaining_paid_leave'] ?? 0,
+                    'casual_leave' => $data['remaining_sick_leave'] ?? 0
+                ]);
+            }
+        }
+
         $emailService = new EmailService();
         // Send email if password is changed
         if ($passwordChanged && $originalPassword) {
@@ -606,9 +644,10 @@ class EmployeeController extends ResourceController
 
         // Build query with join
         $builder = $this->userModel
-            ->select('users.*, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, department.department_name, department.id as department_id')
+            ->select('users.*, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, department.department_name, department.id as department_id, employee_leaves.paid_leave, employee_leaves.casual_leave')
             ->join('user_info', 'user_info.user_id = users.id')
-            ->join('department', 'department.id = user_info.department_id', 'left');
+            ->join('department', 'department.id = user_info.department_id', 'left')
+            ->join('employee_leaves', 'employee_leaves.employee_id = users.id', 'left');
 
         // Role-based filtering
         if ($role === 'admin') {
@@ -646,6 +685,8 @@ class EmployeeController extends ResourceController
                     'firstname' => $row['firstname'],
                     'lastname' => $row['lastname'],
                     'joining_date' => $row['joining_date'],
+                    'remaining_paid_leave' => $row['paid_leave'] ?? 0,
+                    'remaining_sick_leave' => $row['casual_leave'] ?? 0,
                     'department_id' => $row['department_id'],
                     'department_name' => $row['department_name'],
                     'profile_image_url' => !empty($row['profile_image']) ? base_url('upload/' . $row['profile_image']) : base_url('public/upload/default-profile.jpg'),
@@ -684,6 +725,17 @@ class EmployeeController extends ResourceController
             $userInfo['face_photo'] = base_url('upload/faces/' . $userInfo['face_photo']);
         } else {
             $userInfo['face_photo'] = null;
+        }
+
+        // Fetch leave balances for display (dynamic fetch)
+        $employeeLeaveModel = new \App\Models\EmployeeLeaveModel();
+        $leaveBalance = $employeeLeaveModel->where('employee_id', $id)->first();
+        if ($leaveBalance) {
+            $userInfo['remaining_paid_leave'] = $leaveBalance['paid_leave'] ?? 0;
+            $userInfo['remaining_sick_leave'] = $leaveBalance['casual_leave'] ?? 0;
+        } else {
+            $userInfo['remaining_paid_leave'] = 0; // Default values
+            $userInfo['remaining_sick_leave'] = 0;
         }
 
         return $this->respond([

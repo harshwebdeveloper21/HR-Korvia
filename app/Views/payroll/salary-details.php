@@ -494,6 +494,7 @@
           'X-CSRF-TOKEN': "<?= csrf_hash() ?>"
         },
         body: new URLSearchParams({
+          "<?= csrf_token() ?>": "<?= csrf_hash() ?>",
           employee_id: employeeId,
           month: month,
           salary: salary,

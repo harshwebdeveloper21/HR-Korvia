@@ -2261,8 +2261,10 @@ class PayrollController extends ResourceController
         $payrollModel = new PayrollModel();
         $companyRulesModel = new \App\Models\CompanyRulesModel();
         $rules = $companyRulesModel->first();
+        $salaryAboveTax = $rules["salary_above_tax"] ?? PHP_INT_MAX;
+        $tax = $rules["tax"] ?? 0;
         $taxDeduction =
-            $salary > $rules["salary_above_tax"] ? $rules["tax"] : 0;
+            $salary > $salaryAboveTax ? $tax : 0;
 
         $data = [
             "user_id" => $userId,
