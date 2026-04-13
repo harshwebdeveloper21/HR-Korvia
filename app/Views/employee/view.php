@@ -170,7 +170,8 @@
                                 <th class="desktop-only-col">Email</th>
                                 <th class="desktop-only-col">Department</th>
                                 <th class="desktop-only-col">Role</th>
-                                <th class="desktop-only-col">Joining Date</th>
+                                <th class="desktop-only-col">Rem. Paid Leave</th>
+                                <th class="desktop-only-col">Rem. Sick Leave</th>
                                 <th class="desktop-only-col">Action</th>
                                 <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
@@ -258,7 +259,8 @@
                                 const empEmail = employee.user?.email || 'N/A';
                                 const empDept = employee.user_info?.department_name || 'N/A';
                                 const empRole = employee.user?.role ? employee.user.role.charAt(0).toUpperCase() + employee.user.role.slice(1) : 'N/A';
-                                const empJoiningDate = employee.user_info?.joining_date && employee.user_info.joining_date !== '0000-00-00' ? employee.user_info.joining_date : 'N/A';
+                                const empRemPaid = employee.user_info?.remaining_paid_leave !== undefined ? employee.user_info.remaining_paid_leave : 0;
+                                const empRemSick = employee.user_info?.remaining_sick_leave !== undefined ? employee.user_info.remaining_sick_leave : 0;
 
                                 tableRows += `
                                     <tr data-id="${employee.user.id}">
@@ -288,8 +290,12 @@
                                                         <span class="detail-value">${empRole}</span>
                                                     </div>
                                                     <div class="detail-row">
-                                                        <span class="detail-label">Joining Date:</span>
-                                                        <span class="detail-value">${empJoiningDate}</span>
+                                                        <span class="detail-label">Rem. Paid Leave:</span>
+                                                        <span class="detail-value">${empRemPaid}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Rem. Sick Leave:</span>
+                                                        <span class="detail-value">${empRemSick}</span>
                                                     </div>
                                                     <div class="detail-actions">
                                                         <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="btn btn-sm btn-secondary open-password-modal" title="Password"><i class="fa fa-key"></i> Password</a>
@@ -303,7 +309,8 @@
                                         <td class="desktop-only-col">${empEmail}</td>
                                         <td class="desktop-only-col">${empDept}</td>
                                         <td class="desktop-only-col">${empRole}</td>
-                                        <td class="desktop-only-col">${empJoiningDate}</td>
+                                        <td class="desktop-only-col">${empRemPaid}</td>
+                                        <td class="desktop-only-col">${empRemSick}</td>
                                         <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
                                             <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="text-primary fs-5 open-password-modal" title="Password">
                                                 <i class="fa fa-key" aria-hidden="true"></i>

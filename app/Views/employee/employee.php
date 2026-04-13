@@ -1,8 +1,8 @@
 <?= $this->extend("layout") ?>
 <?= $this->section("content") ?>
 <link rel="stylesheet" href="<?= base_url(
-                                    env("ImagePath") . "assets/css/multistepform.css",
-                                ) ?>">
+    env("ImagePath") . "assets/css/multistepform.css",
+) ?>">
 <style>
     @media (max-width: 767px) {
 
@@ -51,7 +51,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-earth fs-5"></i></span>
                             </div>
-                            <input type="text" id="state_name" name="state_name" class="form-control" placeholder="Enter State Name" />
+                            <input type="text" id="state_name" name="state_name" class="form-control"
+                                placeholder="Enter State Name" />
                         </div>
                         <div id="state_name_error" class="invalid-feedback d-block mt-1 text-danger"></div>
                     </div>
@@ -79,7 +80,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-city fs-5"></i></span>
                             </div>
-                            <input type="text" class="form-control" name="city_name" id="city_name" placeholder="Enter city Name" />
+                            <input type="text" class="form-control" name="city_name" id="city_name"
+                                placeholder="Enter city Name" />
 
                         </div>
                         <div id="city_name_error" class="invalid-feedback d-block text-danger mt-1"></div>
@@ -124,7 +126,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-earth fs-5"></i></span>
                             </div>
-                            <input type="text" id="country_name" name="country_name" class="form-control" placeholder="Enter Country Name" />
+                            <input type="text" id="country_name" name="country_name" class="form-control"
+                                placeholder="Enter Country Name" />
                         </div>
                         <div id="country_name_error" class="invalid-feedback d-block text-danger mt-1"></div>
                     </div>
@@ -136,7 +139,8 @@
     </div>
 </div>
 <!-- designation -->
-<div class="modal fade" id="addDesignationModal" tabindex="-1" aria-labelledby="addDesignationModalLabel" aria-hidden="true">
+<div class="modal fade" id="addDesignationModal" tabindex="-1" aria-labelledby="addDesignationModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -168,7 +172,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-calendar fs-5"></i></span>
                             </div>
-                            <input type="text" class="form-control" name="designation_name" id="designation_name" placeholder="Enter Designation Name" />
+                            <input type="text" class="form-control" name="designation_name" id="designation_name"
+                                placeholder="Enter Designation Name" />
 
                         </div>
                         <div id="designationError" class="text-danger mt-1"></div>
@@ -182,7 +187,8 @@
 </div>
 <!-- departement -->
 
-<div class="modal fade" id="adddepartementModal" tabindex="-1" aria-labelledby="adddepartementModalLabel" aria-hidden="true">
+<div class="modal fade" id="adddepartementModal" tabindex="-1" aria-labelledby="adddepartementModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -198,7 +204,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="mdi mdi-calendar fs-5"></i></span>
                             </div>
-                            <input type="text" class="form-control" name="department_name" id="department_name" placeholder="Enter Department Name" />
+                            <input type="text" class="form-control" name="department_name" id="department_name"
+                                placeholder="Enter Department Name" />
                         </div>
                         <div class="text-danger mt-1" id="department_name_error"></div>
                     </div>
@@ -218,8 +225,8 @@
                     <h4 class="card-title">Add Employee</h4>
                     <div class="d-flex">
                         <a href="<?= base_url(
-                                        "/empview",
-                                    ) ?>" class="btn hr-btnbg">
+                            "/empview",
+                        ) ?>" class="btn hr-btnbg">
                             <i class="mdi mdi-list iconfontsize"></i> All Employee
                         </a>
                     </div>
@@ -245,7 +252,8 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="mdi mdi-account fs-5"></i></span>
                                         </div>
-                                        <input type="text" class="form-control" name="firstname" id="firstname" placeholder="Enter your first name" />
+                                        <input type="text" class="form-control" name="firstname" id="firstname"
+                                            placeholder="Enter your first name" />
                                     </div>
                                     <div class="error" id="firstname-Error"></div>
                                 </div>
@@ -255,9 +263,11 @@
                                     <label>Last Name</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-account-multiple fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-account-multiple fs-5"></i></span>
                                         </div>
-                                        <input type="text" class="form-control" name="lastname" id="lastname" placeholder="Enter your last name" />
+                                        <input type="text" class="form-control" name="lastname" id="lastname"
+                                            placeholder="Enter your last name" />
                                     </div>
                                     <div class="error" id="lastname-Error"></div>
                                 </div>
@@ -269,9 +279,11 @@
                                     <label>Email</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-email-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-email-outline fs-5"></i></span>
                                         </div>
-                                        <input type="text" class="form-control" name="email" id="email" placeholder="Enter your email address" autocomplete="off" />
+                                        <input type="text" class="form-control" name="email" id="email"
+                                            placeholder="Enter your email address" autocomplete="off" />
                                     </div>
                                     <div class="error" id="email-Error"></div>
                                 </div>
@@ -281,9 +293,11 @@
                                     <label>Password</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-lock-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-lock-outline fs-5"></i></span>
                                         </div>
-                                        <input type="password" class="form-control" id="password" name="password" placeholder="Enter a secure password" autocomplete="off" />
+                                        <input type="password" class="form-control" id="password" name="password"
+                                            placeholder="Enter a secure password" autocomplete="off" />
                                     </div>
                                     <div class="error" id="password-Error"></div>
                                 </div>
@@ -294,14 +308,17 @@
                                 <div class="form-group">
                                     <label>Gender</label>
                                     <div class="input-group border rounded-1">
-                                        <span class="input-group-text bg-white"><i class="mdi mdi-gender-male-female"></i></span>
+                                        <span class="input-group-text bg-white"><i
+                                                class="mdi mdi-gender-male-female"></i></span>
                                         <div class="d-flex flex-wrap align-items-center ms-3">
                                             <div class="form-check m-0 mx-4 p-0">
-                                                <input class="form-check-input" type="radio" name="gender" id="gender_male" value="male" checked>
+                                                <input class="form-check-input" type="radio" name="gender"
+                                                    id="gender_male" value="male" checked>
                                                 <label class="form-check-label mb-0" for="male">Male</label>
                                             </div>
                                             <div class="form-check m-0 mx-4 p-0">
-                                                <input class="form-check-input" type="radio" name="gender" id="gender_female" value="female">
+                                                <input class="form-check-input" type="radio" name="gender"
+                                                    id="gender_female" value="female">
                                                 <label class="form-check-label mb-0" for="female">Female</label>
                                             </div>
                                         </div>
@@ -315,11 +332,46 @@
                                     <label>Date of Birth</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-calendar-today fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-calendar-today fs-5"></i></span>
                                         </div>
-                                        <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" placeholder="Enter your birth date" />
+                                        <input type="date" class="form-control" id="date_of_birth" name="date_of_birth"
+                                            placeholder="Enter your birth date" />
                                     </div>
                                     <div class="error" id="date_of_birth-Error"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Remaining Paid Leave</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-calendar-plus fs-5"></i></span>
+                                        </div>
+                                        <input type="number" step="0.5" class="form-control" id="remaining_paid_leave"
+                                            name="remaining_paid_leave" placeholder="Enter remaining paid leave"
+                                            value="0" />
+                                    </div>
+                                    <div class="error" id="remaining_paid_leave-Error"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Remaining Sick Leave</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-calendar-plus fs-5"></i></span>
+                                        </div>
+                                        <input type="number" step="0.5" class="form-control" id="remaining_sick_leave"
+                                            name="remaining_sick_leave" placeholder="Enter remaining sick leave"
+                                            value="0" />
+                                    </div>
+                                    <div class="error" id="remaining_sick_leave-Error"></div>
                                 </div>
                             </div>
                         </div>
@@ -338,7 +390,8 @@
                                 <div class="form-group">
                                     <label>Address 1</label>
                                     <div class="input-group">
-                                        <textarea class="form-control" name="address_1" id="address_1" placeholder="Enter your primary address" rows="5"></textarea>
+                                        <textarea class="form-control" name="address_1" id="address_1"
+                                            placeholder="Enter your primary address" rows="5"></textarea>
                                     </div>
                                     <div class="error" id="address_1-Error"></div>
                                 </div>
@@ -347,7 +400,8 @@
                                 <div class="form-group">
                                     <label>Address 2</label>
                                     <div class="input-group">
-                                        <textarea class="form-control" name="address_2" id="address_2" placeholder="Enter your secondary address (optional)" rows="5"></textarea>
+                                        <textarea class="form-control" name="address_2" id="address_2"
+                                            placeholder="Enter your secondary address (optional)" rows="5"></textarea>
                                     </div>
                                     <div class="error" id="address_2-Error"></div>
                                 </div>
@@ -359,7 +413,10 @@
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>State</label>
-                                        <button type="button" class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white" style="background-color: #E66136;font-size:14px" data-bs-toggle="modal" data-bs-target="#addStateModal">
+                                        <button type="button"
+                                            class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white"
+                                            style="background-color: #E66136;font-size:14px" data-bs-toggle="modal"
+                                            data-bs-target="#addStateModal">
                                             <i class="mdi mdi-plus"></i> Add State
                                         </button>
                                     </div>
@@ -381,7 +438,10 @@
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>Country</label>
-                                        <button type="button" class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white" style="background-color: #E66136;font-size:14px" data-bs-toggle="modal" data-bs-target="#addCountryModal">
+                                        <button type="button"
+                                            class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white"
+                                            style="background-color: #E66136;font-size:14px" data-bs-toggle="modal"
+                                            data-bs-target="#addCountryModal">
                                             <i class="mdi mdi-plus"></i> Add Country
                                         </button>
                                     </div>
@@ -395,7 +455,8 @@
                                                 $countries
                                                 as $country
                                             ): ?>
-                                                <option value="<?= $country["id"] ?>"><?= $country["country_name"] ?></option>
+                                                <option value="<?= $country["id"] ?>"><?= $country["country_name"] ?>
+                                                </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -409,7 +470,10 @@
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>City</label>
-                                        <button type="button" class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white" style="background-color: #E66136;font-size:14px" data-bs-toggle="modal" data-bs-target="#addCityModal">
+                                        <button type="button"
+                                            class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white"
+                                            style="background-color: #E66136;font-size:14px" data-bs-toggle="modal"
+                                            data-bs-target="#addCityModal">
                                             <i class="mdi mdi-plus"></i> Add City
                                         </button>
                                     </div>
@@ -432,9 +496,11 @@
                                     <label>Postcode</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-mailbox-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-mailbox-outline fs-5"></i></span>
                                         </div>
-                                        <input type="text" class="form-control" name="postcode" id="postcode" placeholder="Enter your postcode/ZIP code" />
+                                        <input type="text" class="form-control" name="postcode" id="postcode"
+                                            placeholder="Enter your postcode/ZIP code" />
                                     </div>
                                     <div class="error" id="postcode-Error"></div>
                                 </div>
@@ -444,17 +510,21 @@
                                     <label>Contact Number</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-phone-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-phone-outline fs-5"></i></span>
                                         </div>
-                                        <input type="number" class="form-control" id="contact_number" name="contact_number" placeholder="Enter your phone number" />
+                                        <input type="number" class="form-control" id="contact_number"
+                                            name="contact_number" placeholder="Enter your phone number" />
                                     </div>
                                     <div class="error" id="contact_number-Error"></div>
                                 </div>
                             </div>
                         </div>
                         <div class="form-group text-end">
-                            <button type="button" class="btn hr-btnbg prev-step interviewsmbtn" id="prev2" style="display: none;">Previous</button>
-                            <button type="button" class="btn hr-btnbg next-step interviewsmbtn" id="next2" style="display: none;">Next</button>
+                            <button type="button" class="btn hr-btnbg prev-step interviewsmbtn" id="prev2"
+                                style="display: none;">Previous</button>
+                            <button type="button" class="btn hr-btnbg next-step interviewsmbtn" id="next2"
+                                style="display: none;">Next</button>
 
                         </div>
                     </div>
@@ -468,7 +538,8 @@
                                     <label>Employee ID</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-badge-account-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-badge-account-outline fs-5"></i></span>
                                         </div>
                                         <!-- <input type="text" class="form-control" name="employee_id" id="employee_id" readonly /> -->
                                         <!-- Employee ID (Visible to User) -->
@@ -486,7 +557,10 @@
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>Department</label>
-                                        <button type="button" class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white" style="background-color: #E66136;font-size:14px" data-bs-toggle="modal" data-bs-target="#adddepartementModal">
+                                        <button type="button"
+                                            class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white"
+                                            style="background-color: #E66136;font-size:14px" data-bs-toggle="modal"
+                                            data-bs-target="#adddepartementModal">
                                             <i class="mdi mdi-plus"></i> Add Department
                                         </button>
                                     </div>
@@ -500,7 +574,9 @@
                                                 $departments
                                                 as $department
                                             ): ?>
-                                                <option value="<?= $department["id"] ?>"><?= $department["department_name"] ?></option>
+                                                <option value="<?= $department["id"] ?>">
+                                                    <?= $department["department_name"] ?>
+                                                </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -514,14 +590,18 @@
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>Designation</label>
-                                        <button type="button" class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white" style="background-color: #E66136;font-size:14px" data-bs-toggle="modal" data-bs-target="#addDesignationModal">
+                                        <button type="button"
+                                            class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white"
+                                            style="background-color: #E66136;font-size:14px" data-bs-toggle="modal"
+                                            data-bs-target="#addDesignationModal">
                                             <i class="mdi mdi-plus"></i> Add Designation
                                         </button>
                                     </div>
 
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-briefcase-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-briefcase-outline fs-5"></i></span>
                                         </div>
                                         <select class="form-select" name="designation_id" id="designation_id">
                                             <option value="">Select Designation</option>
@@ -529,7 +609,9 @@
                                                 $designations
                                                 as $designation
                                             ): ?>
-                                                <option value="<?= $designation["id"] ?>"><?= $designation["designation_name"] ?></option>
+                                                <option value="<?= $designation["id"] ?>">
+                                                    <?= $designation["designation_name"] ?>
+                                                </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -541,9 +623,11 @@
                                     <label>Joining Date</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-calendar-check-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-calendar-check-outline fs-5"></i></span>
                                         </div>
-                                        <input type="date" class="form-control" id="joining_date" name="joining_date" placeholder="Select your Joining Date" />
+                                        <input type="date" class="form-control" id="joining_date" name="joining_date"
+                                            placeholder="Select your Joining Date" />
                                     </div>
                                     <div class="error" id="joining_date-Error"></div>
                                 </div>
@@ -555,7 +639,8 @@
                                     <label>Working Location</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-map-marker-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-map-marker-outline fs-5"></i></span>
                                         </div>
                                         <select class="form-select" id="working_location" name="working_location">
                                             <option value="">Select Working Location</option>
@@ -571,29 +656,36 @@
                                     <label>Salary</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
+                                            <span class="input-group-text"><i
+                                                    class="mdi mdi-currency-inr fs-5"></i></span>
                                         </div>
-                                        <input type="number" class="form-control" id="salary" name="salary" placeholder="Enter your phone number" value="0" />
+                                        <input type="number" class="form-control" id="salary" name="salary"
+                                            placeholder="Enter your phone number" value="0" />
                                     </div>
                                     <div class="error" id="salary-Error"></div>
                                 </div>
                             </div>
                         </div>
+
                         <div class="row">
                             <input type="hidden" name="role" value="employee">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Profile Image</label>
-                                    <input type="file" name="profile_image" class="file-upload-default profile_image" id="file-upload" style="display: none;" />
+                                    <input type="file" name="profile_image" class="file-upload-default profile_image"
+                                        id="file-upload" style="display: none;" />
                                     <div class="input-group col-xs-12">
-                                        <input type="text" class="form-control file-upload-info" disabled placeholder="Upload Image" id="file-name" />
+                                        <input type="text" class="form-control file-upload-info" disabled
+                                            placeholder="Upload Image" id="file-name" />
                                         <span class="input-group-append">
-                                            <button class="file-upload-browse btnbg" type="button" onclick="document.getElementById('file-upload').click();">
+                                            <button class="file-upload-browse btnbg" type="button"
+                                                onclick="document.getElementById('file-upload').click();">
                                                 Upload
                                             </button>
                                         </span>
                                     </div>
-                                    <img id="profile-preview" class="profile_image" src="" alt="Profile Image" style="max-width: 100px; display: none;">
+                                    <img id="profile-preview" class="profile_image" src="" alt="Profile Image"
+                                        style="max-width: 100px; display: none;">
                                     <!-- <div class="error" id="profile_image-Error"></div>
                                     <label>Role</label>
                                     <div class="input-group">
@@ -611,28 +703,37 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Face Photo <small class="text-muted">(For Biometric Attendance)</small></label>
-                                    <input type="file" name="face_photo" class="file-upload-default" id="face-photo-upload" accept="image/*" style="display: none;" />
+                                    <label>Face Photo <small class="text-muted">(For Biometric
+                                            Attendance)</small></label>
+                                    <input type="file" name="face_photo" class="file-upload-default"
+                                        id="face-photo-upload" accept="image/*" style="display: none;" />
                                     <div class="input-group col-xs-12">
-                                        <input type="text" class="form-control file-upload-info" disabled placeholder="Upload Face Photo" id="face-photo-name" />
+                                        <input type="text" class="form-control file-upload-info" disabled
+                                            placeholder="Upload Face Photo" id="face-photo-name" />
                                         <span class="input-group-append">
-                                            <button class="file-upload-browse btnbg" type="button" onclick="document.getElementById('face-photo-upload').click();">
+                                            <button class="file-upload-browse btnbg" type="button"
+                                                onclick="document.getElementById('face-photo-upload').click();">
                                                 Upload
                                             </button>
                                         </span>
                                     </div>
-                                    <img id="face-photo-preview" src="" alt="Face Photo" style="max-width: 100px; display: none; border-radius: 8px;">
+                                    <img id="face-photo-preview" src="" alt="Face Photo"
+                                        style="max-width: 100px; display: none; border-radius: 8px;">
                                     <div class="error" id="face_photo-Error"></div>
-                                    <small class="text-muted d-block mt-1">Upload a clear front-facing photo for face recognition check-in.</small>
+                                    <small class="text-muted d-block mt-1">Upload a clear front-facing photo for face
+                                        recognition check-in.</small>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group text-end">
-                        <button type="button" class="btn hr-btnbg prev-step interviewsmbtn" id="prev3" style="display: none;">Previous</button>
-                        <button type="submit" class="btn hr-btnbg submit-form interviewsmbtn" id="submitForm" style="display: none;">Submit</button>
-                        <button type="button" class="btn btn-warning interviewsmbtn" id="updateForm" style="display: none;">Update</button>
+                        <button type="button" class="btn hr-btnbg prev-step interviewsmbtn" id="prev3"
+                            style="display: none;">Previous</button>
+                        <button type="submit" class="btn hr-btnbg submit-form interviewsmbtn" id="submitForm"
+                            style="display: none;">Submit</button>
+                        <button type="button" class="btn btn-warning interviewsmbtn" id="updateForm"
+                            style="display: none;">Update</button>
                     </div>
                 </form>
                 <div class="error" id="form_error" style="display: none;"></div>
@@ -642,14 +743,14 @@
     </div>
 </div>
 <script>
-    document.getElementById('file-upload').addEventListener('change', function(event) {
+    document.getElementById('file-upload').addEventListener('change', function (event) {
         let file = event.target.files[0];
         if (file) {
             document.getElementById('file-name').value = file.name; // Set file name in input field
 
             // Show preview
             let reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 let imgPreview = document.getElementById('profile-preview');
                 imgPreview.src = e.target.result;
                 imgPreview.style.display = 'block'; // Show image preview
@@ -659,13 +760,13 @@
     });
 
     // Face photo upload handler
-    document.getElementById('face-photo-upload').addEventListener('change', function(event) {
+    document.getElementById('face-photo-upload').addEventListener('change', function (event) {
         let file = event.target.files[0];
         if (file) {
             document.getElementById('face-photo-name').value = file.name;
 
             let reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 let imgPreview = document.getElementById('face-photo-preview');
                 imgPreview.src = e.target.result;
                 imgPreview.style.display = 'block';
@@ -773,7 +874,7 @@
             data.append('country_id', $('#country_id_main').val() || '');
             formData.append('country_id', $('#country_id_main').val() || '');
         } else if (step === 3) {
-            let fields = ['employee_id', 'salary', 'designation_id', 'department_id', 'joining_date', 'working_location', 'role'];
+            let fields = ['employee_id', 'salary', 'designation_id', 'department_id', 'joining_date', 'working_location', 'role', 'remaining_paid_leave', 'remaining_sick_leave'];
             fields.forEach(field => {
                 data.append(field, $('#' + field).val());
                 formData.append(field, $('#' + field).val());
@@ -798,7 +899,7 @@
             data: data,
             processData: false,
             contentType: false,
-            success: function(response) {
+            success: function (response) {
                 if (response.status) {
                     callback(true);
                 } else {
@@ -812,7 +913,7 @@
                     callback(false);
                 }
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Validation Error',
@@ -829,8 +930,8 @@
     }
 
 
-    $('#next1').click(function() {
-        validateStep(1, function(isValid) {
+    $('#next1').click(function () {
+        validateStep(1, function (isValid) {
             if (isValid) {
                 currentStep++;
                 showStep(currentStep);
@@ -839,8 +940,8 @@
         });
     });
 
-    $('#next2').click(function() {
-        validateStep(2, function(isValid) {
+    $('#next2').click(function () {
+        validateStep(2, function (isValid) {
             if (isValid) {
                 currentStep++;
                 showStep(currentStep);
@@ -849,14 +950,14 @@
         });
     });
 
-    $('#prev2, #prev3').click(function() {
+    $('#prev2, #prev3').click(function () {
         currentStep--;
         showStep(currentStep);
         updateProgress(currentStep);
     });
 
-    $(document).ready(function() {
-        $(document).on('click', '#submitForm', function(e) {
+    $(document).ready(function () {
+        $(document).on('click', '#submitForm', function (e) {
             e.preventDefault();
             let myform = document.getElementById("multistepForm");
 
@@ -871,7 +972,7 @@
                 let csrfTokenName = '<?= csrf_token() ?>';
                 let csrfTokenValue = $('#csrfToken').val();
                 fd.append(csrfTokenName, csrfTokenValue);
-                validateStep(3, function(isValid) {
+                validateStep(3, function (isValid) {
                     if (isValid) {
                         $('#loader').show();
 
@@ -884,7 +985,7 @@
                             data: fd,
                             contentType: false,
                             processData: false,
-                            success: function(response) {
+                            success: function (response) {
                                 $('#loader').hide();
 
                                 if (response.message) {
@@ -911,7 +1012,7 @@
                                     }
                                 }
                             },
-                            error: function(xhr) {
+                            error: function (xhr) {
                                 $('#loader').hide();
 
                                 let response = xhr.responseJSON;
@@ -951,11 +1052,11 @@
         });
     });
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         showStep(currentStep);
     });
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         const token = localStorage.getItem('token'); // JWT token from login
 
         // Fetch the last employee ID and increment it
@@ -965,7 +1066,7 @@
             headers: {
                 'Authorization': `Bearer ${token}`
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.status) {
                     let lastEmployeeId = parseInt(response.employee_id);
                     let newEmployeeId = lastEmployeeId + 1;
@@ -977,7 +1078,7 @@
                     $('#employee_id_display').val(newFormattedId); // For UI display
                 }
             },
-            error: function() {
+            error: function () {
                 Swal.fire({
                     icon: 'error',
                     title: 'Fetch Failed',
@@ -994,7 +1095,7 @@
         });
     });
 
-    $(document).ready(function() {
+    $(document).ready(function () {
 
         const params = new URLSearchParams(window.location.search);
         let userId = params.get('id');
@@ -1015,7 +1116,7 @@
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
-                success: function(response) {
+                success: function (response) {
                     if (response.user && response.user_info) {
                         const user = response.user;
                         const userInfo = response.user_info;
@@ -1051,10 +1152,12 @@
                         $('#emp_type').val(userInfo.emp_type);
                         $('#role').val(userInfo.role);
                         $('#salary').val(userInfo.salary);
+                        $('#remaining_paid_leave').val(userInfo.remaining_paid_leave);
+                        $('#remaining_sick_leave').val(userInfo.remaining_sick_leave);
 
                         if (userInfo.profile_image) {
                             console.log("Profile Image URL:", userInfo.profile_image); // Debugging
-                            $('.profile_image').attr('src', userInfo.profile_image).on('error', function() {
+                            $('.profile_image').attr('src', userInfo.profile_image).on('error', function () {
                                 console.error("Image failed to load:", userInfo.profile_image);
                             }).show();
                         } else {
@@ -1083,7 +1186,7 @@
                     }
 
                 },
-                error: function() {
+                error: function () {
                     $('#form_error').text('Error fetching employee data.').show();
                 }
             });
@@ -1092,12 +1195,12 @@
         }
     });
 
-    $(document).ready(function() {
-        $('#updateForm').click(function(e) {
+    $(document).ready(function () {
+        $('#updateForm').click(function (e) {
             e.preventDefault();
             const userId = $('#id').val();
 
-            validateStep(3, function(isValid) {
+            validateStep(3, function (isValid) {
                 if (isValid) {
                     let formData = new FormData($('#multistepForm')[0]);
                     let csrfTokenName = '<?= csrf_token() ?>';
@@ -1114,7 +1217,7 @@
                         data: formData,
                         contentType: false,
                         processData: false,
-                        success: function(response) {
+                        success: function (response) {
                             $('#loader').hide();
 
                             if (response.message) {
@@ -1145,7 +1248,7 @@
                                 });
                             }
                         },
-                        error: function() {
+                        error: function () {
                             $('#loader').hide();
 
                             Swal.fire({
@@ -1166,8 +1269,8 @@
         });
     });
 
-    $(document).ready(function() {
-        $("#countryForm").submit(function(e) {
+    $(document).ready(function () {
+        $("#countryForm").submit(function (e) {
             e.preventDefault();
 
             const countryName = $("#country_name").val().trim();
@@ -1188,7 +1291,7 @@
                 headers: {
                     Authorization: "Bearer " + token
                 },
-                success: function(response) {
+                success: function (response) {
                     if (response.status === "success") {
                         Swal.fire({
                             icon: "success",
@@ -1216,7 +1319,7 @@
                         });
                     }
                 },
-                error: function(xhr) {
+                error: function (xhr) {
                     let res = xhr.responseJSON;
                     if (res?.errors?.country_name) {
                         errorContainer.text(res.errors.country_name);
@@ -1238,8 +1341,8 @@
         });
     });
 
-    $(document).ready(function() {
-        $("#stateForm").submit(function(e) {
+    $(document).ready(function () {
+        $("#stateForm").submit(function (e) {
             e.preventDefault();
 
             let stateName = $("#state_name").val().trim();
@@ -1260,7 +1363,7 @@
                 headers: {
                     Authorization: "Bearer " + token
                 },
-                success: function(response) {
+                success: function (response) {
                     if (response.status === "success") {
                         Swal.fire({
                             icon: "success",
@@ -1286,7 +1389,7 @@
                         });
                     }
                 },
-                error: function(xhr) {
+                error: function (xhr) {
                     const res = xhr.responseJSON;
                     if (res?.errors?.state_name) {
                         errorContainer.text(res.errors.state_name);
@@ -1308,8 +1411,8 @@
         });
     });
 
-    $(document).ready(function() {
-        $("#cityForm").submit(function(e) {
+    $(document).ready(function () {
+        $("#cityForm").submit(function (e) {
             e.preventDefault();
 
             let cityName = $("#city_name").val().trim();
@@ -1344,7 +1447,7 @@
                 headers: {
                     Authorization: "Bearer " + token // if required
                 },
-                success: function(response) {
+                success: function (response) {
                     if (response.status === "success") {
                         Swal.fire({
                             icon: "success",
@@ -1371,7 +1474,7 @@
                         });
                     }
                 },
-                error: function(xhr) {
+                error: function (xhr) {
                     const res = xhr.responseJSON;
                     if (res?.errors?.city_name) {
                         $("#city_name_error").text(res.errors.city_name);
@@ -1393,8 +1496,8 @@
         });
     });
 
-    $(document).ready(function() {
-        $("#departmentForm").submit(function(e) {
+    $(document).ready(function () {
+        $("#departmentForm").submit(function (e) {
             e.preventDefault();
 
             $('#department_name_error').text('');
@@ -1413,7 +1516,7 @@
                 type: "POST",
                 data: formData,
                 dataType: "json",
-                success: function(response) {
+                success: function (response) {
                     $('#department_name_error').text('');
 
                     if (response.success) {
@@ -1441,7 +1544,7 @@
                         });
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error("AJAX Error: " + error);
                     let errorMessage = "Something went wrong while adding the department.";
                     if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -1458,7 +1561,7 @@
         });
     });
 
-    $("#designationForm").submit(function(e) {
+    $("#designationForm").submit(function (e) {
         e.preventDefault();
         var formData = $(this).serialize();
 
@@ -1470,7 +1573,7 @@
             type: "POST",
             data: formData,
             dataType: "json",
-            success: function(response) {
+            success: function (response) {
                 if (response.success) {
                     $("#designation_id").append(
                         `<option value="${response.designation.id}" selected>
@@ -1504,7 +1607,7 @@
                     });
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error("AJAX Error: " + error);
                 let errorMessage = "Something went wrong while adding the department.";
                 if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -1520,22 +1623,22 @@
         });
     });
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         const token = localStorage.getItem('token');
-        
+
         // Check if we're creating a new employee (not editing)
         const params = new URLSearchParams(window.location.search);
         let userId = params.get('id');
-        
+
         if (!userId) {
             const pathParts = window.location.pathname.split('/');
             var temp_id = pathParts[pathParts.length - 1];
             if (!isNaN(temp_id) && !isNaN(parseFloat(temp_id))) {
                 userId = temp_id;
             }
-            
+
         }
-        
+
         // Only auto-populate for new employees
         if (!userId) {
             autoPopulateLocationAndDate();
@@ -1545,38 +1648,38 @@
     });
 
     function autoPopulateLocationAndDate() {
-        const token = localStorage.getItem('token');        
-        
+        const token = localStorage.getItem('token');
+
         $.ajax({
             url: '<?= base_url("api/location/detect") ?>',
             type: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
             },
-            success: function(response) {                
+            success: function (response) {
                 if (response.status && response.data) {
                     const data = response.data;
-                    
+
                     // Set country, state, and city if found
                     if (data.matched_ids.country_id) {
                         $('#country_id_main').val(data.matched_ids.country_id).trigger('change');
                     }
-                    
+
                     if (data.matched_ids.state_id) {
                         $('#state_id_main').val(data.matched_ids.state_id).trigger('change');
                     }
-                    
+
                     if (data.matched_ids.city_id) {
                         $('#city_id').val(data.matched_ids.city_id).trigger('change');
                     }
-                    
+
                     // Show success notification
-                    if (data.matched_ids.country_id || data.matched_ids.state_id || data.matched_ids.city_id) {                        
+                    if (data.matched_ids.country_id || data.matched_ids.state_id || data.matched_ids.city_id) {
                     }
                 }
             },
-            error: function(xhr) {                
-                console.error('Location detection failed:', xhr);                
+            error: function (xhr) {
+                console.error('Location detection failed:', xhr);
             }
         });
     }
