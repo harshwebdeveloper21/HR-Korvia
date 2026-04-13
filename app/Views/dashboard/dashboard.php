@@ -809,7 +809,7 @@
 
 
                                             <div class="col-6 col-md-3 grid-margin smtopmring">
-                                                <div class="card shadow-sm border-0 rounded-4 h-100 bg-inverse-warning smheghit" style="cursor: pointer;" onclick="window.location.href='/empview'">
+                                                <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/empview'">
                                                     <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                         <!-- First row: Title only -->
                                                         <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Employees</p>
@@ -841,7 +841,7 @@
 
                                         <div class="<?= $columnClass ?> grid-margin smtopmring">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-danger-subtle smheghit" style="cursor: pointer;" onclick="window.location.href='/leaveview'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/leaveview'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Leaves</p>
@@ -863,7 +863,7 @@
 
                                         <div class="<?= $columnClass ?> grid-margin smmargin">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-success-subtle smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Attendance</p>
@@ -886,7 +886,7 @@
 
                                         <div class="<?= $columnClassNew ?> grid-margin smmargin">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-inverse-success smheghit" style="cursor: pointer;" onclick="window.location.href='/taskview'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/taskview'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Tasks</p>
@@ -932,7 +932,7 @@
 
 
                                             <div class="col-6 col-md-3 grid-margin smtopmring">
-                                                <div class="card shadow-sm border-0 rounded-4 h-100 bg-inverse-warning smheghit" style="cursor: pointer;" onclick="window.location.href='/empview'">
+                                                <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/empview'">
                                                     <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                         <!-- First row: Title only -->
                                                         <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Employees</p>
@@ -963,7 +963,7 @@
 
                                         <div class="<?= $columnClass ?> grid-margin smtopmring">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-danger-subtle smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Leaves</p>
@@ -984,7 +984,7 @@
 
                                         <div class="<?= $columnClass ?> grid-margin smmargin">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-success-subtle smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Attendance</p>
@@ -1005,7 +1005,7 @@
 
                                         <div class="<?= $columnClassNew ?> grid-margin smmargin">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-inverse-success smheghit" style="cursor: pointer;" onclick="window.location.href='/taskview'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/taskview'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Tasks</p>
@@ -1049,7 +1049,7 @@
 
 
                                             <div class="col-6 col-md-3 grid-margin smtopmring">
-                                                <div class="card shadow-sm border-0 rounded-4 h-100 bg-inverse-warning smheghit" style="cursor: pointer;" onclick="window.location.href='/empview'">
+                                                <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/empview'">
                                                     <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                         <!-- First row: Title only -->
                                                         <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Employees</p>
@@ -1082,7 +1082,7 @@
                                         <!-- Number of Leaves Section -->
                                         <div class="<?= $columnClass ?> grid-margin smtopmring">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-danger-subtle smheghit" style="cursor: pointer;" onclick="window.location.href='/leaveview'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/leaveview'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Leaves</p>
@@ -1104,7 +1104,7 @@
 
                                         <div class="<?= $columnClass ?> grid-margin smmargin">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-success-subtle smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Attendance</p>
@@ -1127,7 +1127,7 @@
 
                                         <div class="<?= $columnClassNew ?> grid-margin smmargin">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-inverse-success smheghit" style="cursor: pointer;" onclick="window.location.href='/taskview'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/taskview'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Tasks</p>

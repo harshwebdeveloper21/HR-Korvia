@@ -89,7 +89,8 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn  hr-btnbg" data-bs-dismiss="modal">Close</button>
-                <button type="button" id="updateLeaveStatus" class="btn  hr-btnbg" style="display: none;">Update Status</button>
+                <button type="button" id="updateLeaveStatus" class="btn  hr-btnbg" style="display: none;">Update
+                    Status</button>
             </div>
         </div>
     </div>
@@ -100,7 +101,7 @@
     let calendar; // Define globally
     let userRole = null; // Store user role globally
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const calendarEl = document.getElementById('calendar');
 
         calendar = new FullCalendar.Calendar(calendarEl, { // ✅ Use global variable
@@ -112,14 +113,14 @@
             },
             locale: 'en',
             events: [], // Events will be dynamically added
-            eventClick: function(info) {
+            eventClick: function (info) {
                 $('#leaveModal').modal('show');
                 $('#leaveId').val(info.event.id);
                 $('#leaveUser').text(info.event.extendedProps.user);
                 $('#leaveReason').text(info.event.extendedProps.description);
                 $('#leaveStatus').val(info.event.extendedProps.status);
                 $('#updateLeaveStatus').data('event', info.event);
-                
+
                 // Show/hide status controls based on user role
                 if (userRole === 'employee') {
                     // Hide dropdown and button, show read-only text
@@ -133,7 +134,7 @@
                     $('#updateLeaveStatus').show();
                 }
             },
-            eventDidMount: function(info) {
+            eventDidMount: function (info) {
                 tippy(info.el, {
                     content: `<strong>${info.event.title}</strong><br>${info.event.extendedProps.description}`,
                     placement: 'top',
@@ -157,7 +158,7 @@
             headers: {
                 'Authorization': `Bearer ${token}`
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     console.log("Leave Data:", response.data);
 
@@ -223,7 +224,7 @@
                     console.error('Failed to fetch leave data:', response.message);
                 }
             },
-            error: function(error) {
+            error: function (error) {
                 console.error('Error fetching leaves:', error);
             }
         });
@@ -239,7 +240,7 @@
             headers: {
                 'Authorization': `Bearer ${token}`
             },
-            success: function(response) {
+            success: function (response) {
                 console.log('Employee API Response:', response); // ✅ Debugging
 
                 if (response.status === 'success') {
@@ -249,7 +250,7 @@
                     employeeList.empty();
 
 
-                    employees.forEach(function(employee) {
+                    employees.forEach(function (employee) {
                         let employeeItem = `
                             <li class="list-group-item">
                                 <div class="team-member d-flex align-items-center">
@@ -271,13 +272,13 @@
                     console.log('Error fetching employees:', response.message);
                 }
             },
-            error: function() {
+            error: function () {
                 console.log('An error occurred while fetching employees.');
             }
         });
     }
 
-    $('#updateLeaveStatus').click(function() {
+    $('#updateLeaveStatus').click(function () {
         const token = localStorage.getItem('token');
         const leaveId = $('#leaveId').val(); // Get leave ID
 
@@ -309,7 +310,7 @@
             headers: {
                 'Authorization': `Bearer ${token}`
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     Swal.fire({
                         icon: 'success',
@@ -344,7 +345,7 @@
                     });
                 }
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 console.error('Error updating leave status:', xhr);
 
                 let errorMessage = 'There was an error. Check console for details.';

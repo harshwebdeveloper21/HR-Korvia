@@ -872,6 +872,44 @@
 
         // Fetch data in parallel
         Promise.all([fetchLeaveData(), fetchEmployees()])
+            .then(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                let userId = urlParams.get('user_id');
+                const leaveId = urlParams.get('leave_id');
+                
+                if (!userId && leaveId) {
+                    const fallbackEvent = allLeaveEvents.find(e => e.id == leaveId);
+                    if (fallbackEvent && fallbackEvent.extendedProps && fallbackEvent.extendedProps.user_id) {
+                        userId = fallbackEvent.extendedProps.user_id;
+                    }
+                }
+
+                if (userId) {
+                    const empItem = $(`.employee-item[data-id="${userId}"]`);
+                    if (empItem.length > 0) {
+                        selectEmployee(empItem, userId);
+                    }
+                }
+                
+                if (leaveId) {
+                    setTimeout(() => {
+                        const targetEvent = calendar.getEventById(leaveId);
+                        if (targetEvent) {
+                            showLeaveModal(targetEvent);
+                        } else {
+                            const fallbackEvent = allLeaveEvents.find(e => e.id == leaveId);
+                            if (fallbackEvent) {
+                                showLeaveModal({
+                                    id: fallbackEvent.id,
+                                    extendedProps: fallbackEvent.extendedProps,
+                                    start: fallbackEvent.start,
+                                    end: fallbackEvent.end
+                                });
+                            }
+                        }
+                    }, 500); 
+                }
+            })
             .catch(error => console.error('Error loading initial data:', error));
 
         // Initialize view mode toggles
