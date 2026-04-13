@@ -120,6 +120,7 @@ class CompanyRulesController extends BaseController
 
             // working days configuration
             'include_holidays_in_working_days' => ($data['include_holidays_in_working_days'] === true) ? 1 : 0,
+            'sandwich_leave' => ($data['sandwich_leave'] === true) ? 1 : 0,
 
             // PF Configuration
             // 'enable_pf' => isset($data['enable_pf']) ? 1 : 0,

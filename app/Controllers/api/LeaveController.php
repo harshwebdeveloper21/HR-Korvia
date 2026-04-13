@@ -192,7 +192,11 @@ class LeaveController extends ResourceController
         }
 
         // --- Sandwich Leave Logic ---
-        if (isset($data['start_date']) && isset($data['end_date']) && (!isset($data['leave_duration']) || $data['leave_duration'] !== 'half_day')) {
+        $companyRulesModel = new \App\Models\CompanyRulesModel();
+        $rules = $companyRulesModel->first();
+        $isSandwichLeaveEnabled = $rules ? (bool) $rules['sandwich_leave'] : false;
+
+        if ($isSandwichLeaveEnabled && isset($data['start_date']) && isset($data['end_date']) && (!isset($data['leave_duration']) || $data['leave_duration'] !== 'half_day')) {
             $startDayOfWeek = date('N', strtotime($data['start_date']));
             $endDayOfWeek = date('N', strtotime($data['end_date']));
 
@@ -529,18 +533,24 @@ class LeaveController extends ResourceController
         }
 
         // --- Sandwich Leave Logic ---
-        $startDayOfWeek = date('N', $start);
-        $endDayOfWeek = date('N', $end);
+        $companyRulesModel = new \App\Models\CompanyRulesModel();
+        $rules = $companyRulesModel->first();
+        $isSandwichLeaveEnabled = $rules ? (bool) $rules['sandwich_leave'] : false;
 
-        // If leave ends on Friday, automatically include Saturday and Sunday
-        if ($endDayOfWeek == 5) {
-            $endDate = date('Y-m-d', strtotime($endDate . ' + 2 days'));
-            $end = strtotime($endDate);
-        }
-        // If leave starts on Monday, automatically include the preceding Saturday and Sunday
-        if ($startDayOfWeek == 1) {
-            $startDate = date('Y-m-d', strtotime($startDate . ' - 2 days'));
-            $start = strtotime($startDate);
+        if ($isSandwichLeaveEnabled) {
+            $startDayOfWeek = date('N', $start);
+            $endDayOfWeek = date('N', $end);
+
+            // If leave ends on Friday, automatically include Saturday and Sunday
+            if ($endDayOfWeek == 5) {
+                $endDate = date('Y-m-d', strtotime($endDate . ' + 2 days'));
+                $end = strtotime($endDate);
+            }
+            // If leave starts on Monday, automatically include the preceding Saturday and Sunday
+            if ($startDayOfWeek == 1) {
+                $startDate = date('Y-m-d', strtotime($startDate . ' - 2 days'));
+                $start = strtotime($startDate);
+            }
         }
 
         $noOfDays = (string) max(1, (($end - $start) / 86400 + 1));
