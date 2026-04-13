@@ -876,7 +876,7 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 let userId = urlParams.get('user_id');
                 const leaveId = urlParams.get('leave_id');
-                
+
                 if (!userId && leaveId) {
                     const fallbackEvent = allLeaveEvents.find(e => e.id == leaveId);
                     if (fallbackEvent && fallbackEvent.extendedProps && fallbackEvent.extendedProps.user_id) {
@@ -890,24 +890,40 @@
                         selectEmployee(empItem, userId);
                     }
                 }
-                
+
                 if (leaveId) {
+                    const targetEventData = allLeaveEvents.find(e => e.id == leaveId);
+                    if (targetEventData) {
+                        selectedDate = targetEventData.start.substring(0, 10);
+                        const d = new Date(selectedDate);
+                        currentMonth = d.getMonth() + 1;
+                        currentYear = d.getFullYear();
+
+                        const monthSelect = document.getElementById('unified-month-select');
+                        if (monthSelect) monthSelect.value = String(currentMonth).padStart(2, '0');
+                        const yearSelect = document.getElementById('unified-year-select');
+                        if (yearSelect) yearSelect.value = currentYear;
+
+                        if (calendar) calendar.gotoDate(d);
+                    }
+
                     setTimeout(() => {
                         const targetEvent = calendar.getEventById(leaveId);
                         if (targetEvent) {
                             showLeaveModal(targetEvent);
-                        } else {
-                            const fallbackEvent = allLeaveEvents.find(e => e.id == leaveId);
-                            if (fallbackEvent) {
-                                showLeaveModal({
-                                    id: fallbackEvent.id,
-                                    extendedProps: fallbackEvent.extendedProps,
-                                    start: fallbackEvent.start,
-                                    end: fallbackEvent.end
-                                });
-                            }
+                        } else if (targetEventData) {
+                            showLeaveModal({
+                                id: targetEventData.id,
+                                extendedProps: targetEventData.extendedProps,
+                                start: targetEventData.start,
+                                end: targetEventData.end
+                            });
                         }
-                    }, 500); 
+
+                        if (currentViewMode === 'datewise') {
+                            renderDatewiseView();
+                        }
+                    }, 500);
                 }
             })
             .catch(error => console.error('Error loading initial data:', error));
@@ -976,7 +992,7 @@
         if (filterContainer && (userRole === 'admin' || userRole === 'hr')) {
             filterContainer.style.display = 'block';
         }
-        
+
         const manageLeavesBtn = document.getElementById('manage-leaves-btn');
         if (manageLeavesBtn && (userRole === 'admin' || userRole === 'hr')) {
             manageLeavesBtn.style.display = 'block';
