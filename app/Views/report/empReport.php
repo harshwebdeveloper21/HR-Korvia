@@ -123,7 +123,7 @@
                 <?php
                 $currentYear = date('Y');
                 for ($i = $currentYear; $i >= $currentYear - 10; $i--): ?>
-                    <option value="<?= $i ?>" <?= $i == $currentYear ? 'selected' : '' ?>><?= $i ?></option>
+                    <option value="<?= $i ?>"><?= $i ?></option>
                 <?php endfor; ?>
             </select>
         </div>
@@ -256,6 +256,8 @@
         let employeeId = document.getElementById("user_id").value;
         let year = document.getElementById("year").value;
         let month = document.getElementById("month").value;
+        let joiningFrom = document.getElementById("joining_from").value;
+        let joiningTo = document.getElementById("joining_to").value;
 
         clearValidationMessages();
 
@@ -268,16 +270,30 @@
                 'Authorization': `Bearer ${token}`,
             },
             data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>', // Add CSRF token here
+                ...getCSRFData(),
                 department_id: departmentId,
                 employee_id: employeeId,
-                joining_from: document.getElementById("joining_from").value,
-                joining_to: document.getElementById("joining_to").value,
+                joining_from: joiningFrom,
+                joining_to: joiningTo,
                 year: year,
                 month: month
             },
             dataType: "json",
             success: function(response) {
+                refreshCSRF(response);
+                console.log("Employee report payload:", {
+                    department_id: departmentId,
+                    employee_id: employeeId,
+                    joining_from: joiningFrom,
+                    joining_to: joiningTo,
+                    year: year,
+                    month: month
+                });
+                console.log("Employee report response counts:", {
+                    tableRows: Array.isArray(response?.tableData) ? response.tableData.length : 0,
+                    chartLabels: Array.isArray(response?.chartData?.labels) ? response.chartData.labels.length : 0,
+                    totalEmployees: response?.summary?.total_employees ?? 0
+                });
                 // Ensure the response contains the necessary data
                 if (response && response.tableData && Array.isArray(response.tableData)) {
                     populateTable(response.tableData);                   

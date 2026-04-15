@@ -176,6 +176,7 @@
 <script>
     let leaveChartInstance = null;
     let leaveDataTable = null;
+    let leaveReportRequestId = 0;
 
     // ── CSRF token store (refreshed after every AJAX response) ──
     let csrfTokenName  = '<?= csrf_token() ?>';
@@ -219,32 +220,63 @@
         document.querySelectorAll('.leave-validation-msg').forEach(m => m.remove());
     }
 
+    function getLeaveReportFilters() {
+        return {
+            department_id: document.getElementById('department_id').value,
+            employee_id: document.getElementById('user_id').value,
+            leave_type: document.getElementById('leave_type').value,
+            status: document.getElementById('status').value,
+            year: document.getElementById('year').value,
+            month: document.getElementById('month').value,
+            start_date: document.getElementById('start_date').value,
+            end_date: document.getElementById('end_date').value
+        };
+    }
+
+    function resetLeaveReportState() {
+        const tbody = document.getElementById('leave-table-body');
+        const tableSection = document.getElementById('table-section');
+        const chartCanvas = document.getElementById('leaveChart');
+
+        if (leaveDataTable) {
+            leaveDataTable.clear();
+            leaveDataTable.destroy();
+            leaveDataTable = null;
+        }
+
+        tbody.innerHTML = '';
+        tableSection.style.display = 'none';
+
+        if (leaveChartInstance instanceof Chart) {
+            leaveChartInstance.destroy();
+            leaveChartInstance = null;
+        }
+
+        chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+    }
+
     /* ── Fetch ───────────────────────────────────────────────────── */
     function fetchLeaveReport() {
-        const employeeId = document.getElementById('user_id').value;
-        const leaveType = document.getElementById('leave_type').value;
-        const status = document.getElementById('status').value;
-        const year = document.getElementById('year').value;
-        const month = document.getElementById('month').value;
-        const startDate = document.getElementById('start_date').value;
-        const endDate = document.getElementById('end_date').value;
-
+        const requestId = ++leaveReportRequestId;
+        const filters = getLeaveReportFilters();
         clearValidationMessages();
+        resetLeaveReportState();
 
         $.ajax({
             url: '<?= site_url("report/fetchLeaveReport") ?>',
             type: 'POST',
+            dataType: 'json',
             data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
-                employee_id: employeeId,
-                leave_type: leaveType,
-                status: status,
-                year: year,
-                month: month,
-                start_date: startDate,
-                end_date: endDate
+                ...getCSRFData(),
+                ...filters
             },
             success: function (response) {
+                if (requestId !== leaveReportRequestId) {
+                    return;
+                }
+
+                refreshCSRF(response);
+
                 if (response && response.tableData && Array.isArray(response.tableData)) {
                     populateTable(response.tableData);
                     document.getElementById('table-section').style.display = 'block';
@@ -257,6 +289,9 @@
                 }
             },
             error: function (xhr) {
+                if (requestId !== leaveReportRequestId) {
+                    return;
+                }
                 console.error('Leave report error:', xhr.responseText);
             }
         });
@@ -300,6 +335,7 @@
             info: true,
             responsive: false,   // ← false prevents the responsive crash loop
             pageLength: 10,
+            displayStart: 0,
             language: {
                 search: 'Search leaves:',
                 lengthMenu: 'Show _MENU_ entries',

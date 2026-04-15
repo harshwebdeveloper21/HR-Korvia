@@ -733,6 +733,9 @@
                 <input type="hidden" id="csrf_token_name" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
                 <input type="hidden" id="leaveId">
                 <p><strong>Employee:</strong> <span id="leaveUser" class="capitalize-text"></span></p>
+                <p><strong>Start Date:</strong> <span id="leaveStartDate"></span></p>
+                <p><strong>End Date:</strong> <span id="leaveEndDate"></span></p>
+                <p><strong>Total Days:</strong> <span id="leaveTotalDays"></span></p>
                 <p><strong>Reason:</strong> <span id="leaveReason" class="capitalize-text"></span></p>
                 <p><strong>Created By:</strong> <span id="created_by" class="capitalize-text"></span></p>
                 <div class="d-flex" id="statusContainer">
@@ -1050,6 +1053,27 @@
         $('#leaveModal').modal('show');
         $('#leaveId').val(event.id);
         $('#leaveUser').text(event.extendedProps.user);
+
+        // Set start and end dates
+        const sDate = event.extendedProps.actual_start ||
+            (typeof event.start === 'string'
+                ? event.start.split('T')[0]
+                : event.start.getFullYear() + '-' + String(event.start.getMonth() + 1).padStart(2, '0') + '-' + String(event.start.getDate()).padStart(2, '0')
+            );
+
+        const eDate = event.extendedProps.actual_end ||
+            (typeof event.end === 'string'
+                ? event.end.split('T')[0]
+                : event.end.getFullYear() + '-' + String(event.end.getMonth() + 1).padStart(2, '0') + '-' + String(event.end.getDate()).padStart(2, '0')
+            );
+        $('#leaveStartDate').text(sDate);
+        $('#leaveEndDate').text(eDate);
+        
+        // Set total days
+        const totalDays = event.extendedProps.no_of_day;
+        const daysText = totalDays == '0.5' ? 'Half Day' : (totalDays == 1 ? '1 Day' : totalDays + ' Days');
+        $('#leaveTotalDays').text(daysText);
+
         $('#leaveReason').text(event.extendedProps.description);
         $('#created_by').text(event.extendedProps.created_by || 'Unknown');
         $('#leaveStatus').val(event.extendedProps.status);
@@ -1072,9 +1096,7 @@
                 $('#employeeEditSection').show();
                 $('#saveLeaveChangesBtn').show();
 
-                // Set initial date values for editing
-                const sDate = event.start.split('T')[0];
-                const eDate = event.end.split('T')[0];
+                // Set initial date values for editing using the same robust logic as above
                 $('#leaveEditStart').val(sDate);
                 $('#leaveEditEnd').val(eDate);
             } else {
@@ -1083,7 +1105,19 @@
                 $('#saveLeaveChangesBtn').hide();
             }
         } else {
-            $('#leaveStatus').show();
+            // Build status options dynamically to ensure 'cancelled' only appears when appropriate
+            let statusSelect = $('#leaveStatus');
+            statusSelect.empty();
+            statusSelect.append('<option value="pending">Pending</option>');
+            statusSelect.append('<option value="approved">Approved</option>');
+            statusSelect.append('<option value="rejected">Rejected</option>');
+
+            // For HR/Admin, only show 'cancelled' if it was already cancelled
+            if (event.extendedProps.status.toLowerCase() === 'cancelled') {
+                statusSelect.append('<option value="cancelled">Cancelled</option>');
+            }
+
+            statusSelect.show();
             $('#leaveStatusText').hide();
             $('#leaveStatus').val(event.extendedProps.status || 'pending');
             $('#updateLeaveStatus').show();
@@ -1168,6 +1202,8 @@
                         status: leaveItem.status,
                         created_by: leaveItem.created_by_username,
                         leave_type: leaveItem.leave_type,
+                        actual_start: leaveItem.start_date,
+                        actual_end: leaveItem.end_date,
                         no_of_day: leaveItem.no_of_day,
                         leave_duration: leaveItem.leave_duration,
                         half_day_type: leaveItem.half_day_type
@@ -1333,42 +1369,52 @@
 
         // Add change event listener
         unifiedFilter.addEventListener('change', (e) => {
-            currentEmployeeId = e.target.value || null;
-            if (currentViewMode === 'datewise') {
-                renderDatewiseLeavesForDate();
-            } else if (currentViewMode === 'cancelled') {
-                renderCancelledView();
+            applyEmployeeFilter(e.target.value || null);
+        });
+    }
+
+    // Unified function to apply employee filter across all views and sidebars
+    function applyEmployeeFilter(employeeId) {
+        currentEmployeeId = employeeId;
+
+        // 1. Update active state in all employee lists
+        document.querySelectorAll('.employee-item').forEach(item => {
+            if (item.dataset.id == (employeeId || '')) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
             }
         });
-    }
 
-    function selectDatewiseEmployee(element, employeeId) {
-        // Update active state
-        document.querySelectorAll('#datewise-employee-list .employee-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        element.classList.add('active');
+        // 2. Sync the unified filter dropdown
+        const unifiedFilter = document.getElementById('unified-employee-filter');
+        if (unifiedFilter) {
+            unifiedFilter.value = employeeId || '';
+        }
 
-        currentEmployeeId = employeeId;
-        renderDatewiseLeavesForDate();
-    }
-
-    function selectEmployee($element, employeeId) {
-        // Update active state
-        $('.employee-item').removeClass('active');
-        $element.addClass('active');
-
-        currentEmployeeId = employeeId;
-
-        // Filter cached data if available, otherwise fetch
-        if (cachedLeaveData && !employeeId) {
-            updateCalendarEvents(cachedLeaveData);
-        } else if (cachedLeaveData && employeeId) {
-            const filteredData = cachedLeaveData.filter(emp => emp.user_id == employeeId);
-            updateCalendarEvents(filteredData);
+        // 3. Update the data source and refresh views
+        if (cachedLeaveData) {
+            if (!employeeId) {
+                updateCalendarEvents(cachedLeaveData);
+            } else {
+                const filteredData = cachedLeaveData.filter(emp => emp.user_id == employeeId);
+                updateCalendarEvents(filteredData);
+            }
         } else {
             fetchLeaveData(employeeId);
         }
+    }
+
+    function selectDatewiseEmployee(element, employeeId) {
+        applyEmployeeFilter(employeeId);
+    }
+
+    function selectEmployee($element, employeeId) {
+        applyEmployeeFilter(employeeId);
+    }
+
+    function selectCancelledEmployee(element, employeeId) {
+        applyEmployeeFilter(employeeId);
     }
 
     $('#updateLeaveStatus').click(function () {

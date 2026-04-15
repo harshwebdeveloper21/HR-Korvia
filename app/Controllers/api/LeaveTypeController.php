@@ -3,214 +3,117 @@
 namespace App\Controllers\Api;
 
 use CodeIgniter\Controller;
-use CodeIgniter\RESTful\ResourceController;
+use App\Models\UserModel;
 use App\Models\LeaveTypeModel;
-use App\Services\AuthService;
-use CodeIgniter\HTTP\ResponseInterface;
 
-class LeaveTypeController extends ResourceController
+use App\Models\LeaveModel;
+
+class LeaveReportController extends Controller
 {
-    private $leaveTypeModel;
-    private $authService;
-
-    public function __construct()
-    {
-        $this->leaveTypeModel = new LeaveTypeModel();
-        $this->authService = new AuthService(service('request'));
-    }
-
-    // Create Department
     public function create()
     {
-        // Check user authorization
-        $user = $this->authService->check();
-        if (!$user) {
-            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        $userModel = new \App\Models\UserModel();
+        $employees = $userModel->whereIn('role', ['hr', 'employee'])->findAll();
+
+        $leaveTypeModel = new \App\Models\LeaveTypeModel();
+        $leaveTypes = $leaveTypeModel->findAll();
+
+        $departmentModel = new \App\Models\DepartmentModel();
+        $departments = $departmentModel->findAll();
+
+        return view('report/leaveReport', [
+            'employees'  => $employees,
+            'leaveTypes' => $leaveTypes,
+            'departments' => $departments
+        ]);
+    }
+public function fetchLeaveReport()
+    {
+        $leaveModel = new LeaveModel();
+        
+        $employee_id = $this->request->getPost('employee_id');
+        $start_date = $this->request->getPost('start_date');
+        $end_date = $this->request->getPost('end_date');
+        $year = $this->request->getPost('year');
+        $month = $this->request->getPost('month');
+        $leave_type = $this->normalizeLeaveTypeFilter($this->request->getPost('leave_type'));
+        $status = $this->request->getPost('status');
+
+        // Fetch filtered report data
+        $report = $leaveModel->getEmployeeReport($employee_id, $start_date, $end_date, $year, $month, $leave_type, $status);
+
+        // Fetch dynamic chart data
+        $chartQuery = $leaveModel->select('leave_type.leave_type, COUNT(leaves.id) AS total')
+            ->join('leave_type', 'leave_type.id = leaves.leave_id', 'left')
+            ->where('leaves.reason !=', LeaveModel::AUTO_ABSENCE_REASON)
+            ->groupBy('leave_type.leave_type');
+
+        // Apply filters for the chart
+        if ($employee_id) {
+            $chartQuery->where('leaves.user_id', $employee_id);
+        }
+        if ($start_date) {
+            $chartQuery->where('leaves.start_date >=', $start_date);
+        }
+        if ($end_date) {
+            $chartQuery->where('leaves.end_date <=', $end_date);
+        }
+        if ($year) {
+            $chartQuery->where('YEAR(leaves.start_date)', $year);
+        }
+        if ($month) {
+            $chartQuery->where('MONTH(leaves.start_date)', $month);
+        }
+        if ($leave_type) {
+            $chartQuery->where('leaves.leave_id', $leave_type);
+        }
+        if ($status) {
+            $chartQuery->where('leaves.status', $status);
         }
 
-        // Only Admin and HR can add payroll records
-        if (!in_array($user->role, ['admin', 'hr'])) {
-            return $this->failForbidden('Forbidden: You do not have access to this resource');
+        $chartDataResults = $chartQuery->findAll();
+
+        $labels = array_column($chartDataResults, 'leave_type');
+        $data = array_column($chartDataResults, 'total');
+
+        $chartData = [
+            'labels' => $labels,
+            'datasets' => [
+                [
+                    'label' => 'Number of Leaves',
+                    'data' => $data,
+                    'backgroundColor' => ['#17a2b8', '#ff6347', '#28a745', '#d3c75e']
+                ],
+            ]
+        ];
+
+        return $this->response->setJSON([
+            'tableData' => $report,
+            'chartData' => $chartData
+        ]);
+    }
+
+    private function normalizeLeaveTypeFilter($leaveType)
+    {
+        if ($leaveType === null) {
+            return null;
         }
 
-        // Retrieve input data
-        $data = $this->request->getPost();
-
-        // Validation
-        if (!$this->validate([
-            'leave_type' => 'required|string',
-            'number_of_leaves' => 'required|integer',
-            'allow_half_day' => 'required|in_list[0,1]'
-        ])) {
-            return $this->respond([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $this->validator->getErrors()
-            ], 400);
+        $leaveType = trim((string) $leaveType);
+        if ($leaveType === '' || strtolower($leaveType) === 'all' || strtolower($leaveType) === 'all types') {
+            return null;
         }
 
-        // Check if leave_type already exists (case-insensitive)
-        $existing = $this->leaveTypeModel
-            ->where('LOWER(leave_type)', strtolower($data['leave_type']))
+        if (ctype_digit($leaveType)) {
+            return (int) $leaveType;
+        }
+
+        $leaveTypeModel = new LeaveTypeModel();
+        $matchedLeaveType = $leaveTypeModel
+            ->select('id')
+            ->where('LOWER(leave_type)', strtolower($leaveType))
             ->first();
 
-        if ($existing) {
-            return $this->respond([
-                'status' => 'error',
-                'message' => 'This leave type already exists.',
-            ], 409); // 409 Conflict
-        }
-
-        // Add the creator's ID
-        $data['created_by'] = $user->sub;
-        // Insert data into the database
-        if ($this->leaveTypeModel->insert($data)) {
-            return $this->respond([
-                'status' => 'success',
-                'message' => 'Leave type record added successfully'
-            ], 201);
-        }
-        return $this->respond([
-            'status' => 'error',
-            'message' => 'Failed to add leave record'
-        ], 500);
+        return $matchedLeaveType['id'] ?? null;
     }
-    
-    // Display All Departments
-    public function getAll()
-    {
-        $user = $this->authService->check();
-        if (!$user) {
-            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
-        }
-
-        if (!in_array($user->role, ['admin', 'hr'])) {
-            return $this->failForbidden('Forbidden: You do not have access to this resource');
-        }
-
-        $records = $this->leaveTypeModel->orderBy('created_at', 'DESC')->findAll();
-        return $this->respond(['status' => 'success', 'data' => $records]);
-    }
-    // Display Single Department
-    public function getByEmployee($employeeId = null)
-    {
-        $user = $this->authService->check();
-        if (!$user) {
-            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
-        }
-     
-        // Employees can only view their own payroll records
-        if ($user->role === 'employee' && $user->sub !== $employeeId) {
-            return $this->failForbidden('Forbidden: You can only access your own performance records');
-         }
-
-        $records = $this->leaveTypeModel->where('user_id', $employeeId)->findAll();
-        return $this->respond(['status' => 'success', 'data' => $records]);
-    }
-
-    // Update the leave type record
-    public function update($id = null)
-    {
-        $user = $this->authService->check();
-        if (!$user) {
-            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
-        }
-
-        if (!in_array($user->role, ['admin', 'hr'])) {
-            return $this->failForbidden('Forbidden: You do not have access to this resource');
-        }
-
-        $data = $this->request->getPost();
-
-        // Validate leave_type and new fields
-        if (!$this->validate([
-            'leave_type' => 'required|string',
-            'number_of_leaves' => 'required|integer',
-            'allow_half_day' => 'required|in_list[0,1]',
-        ])) {
-            return $this->respond([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $this->validator->getErrors()
-            ], 400);
-        }
-
-        // Update the record
-        if ($this->leaveTypeModel->update($id, $data)) {
-            return $this->respond(['status' => 'success', 'message' => 'Leave type updated successfully']);
-        }
-
-        return $this->respond(['status' => 'error', 'message' => 'Failed to update leave type'], 500);
-    }
-
-
-    // Delete Payroll Record (Admin Only)
-    public function delete($id = null)
-    {
-        $user = $this->authService->check();
-        if (!$user) {
-            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
-        }
-    
-        if ($user->role !== 'admin') {
-            return $this->failForbidden('Forbidden: Only Admin can delete leave types');
-        }
-    
-        $db = \Config\Database::connect();
-    
-        // Check if the leave type is being used in the leaves table
-        $leaveCount = $db->table('leaves')->where('leave_id', $id)->countAllResults();
-    
-        if ($leaveCount > 0) {
-            return $this->respond([
-                'status' => 'error',
-                'message' => 'This leave type is assigned to users and cannot be deleted.'
-            ], 400);
-        }
-    
-        // Proceed with deletion
-        if ($this->leaveTypeModel->delete($id)) {
-            return $this->respond([
-                'status' => 'success',
-                'message' => 'Leave type deleted successfully!'
-            ]);
-        }
-    
-        return $this->respond([
-            'status' => 'error',
-            'message' => 'Failed to delete leave type'
-        ], 500);
-    }
-      
-   // Display a single leave type by ID
-    public function getById($id = null)
-    {
-        $user = $this->authService->check();
-        if (!$user) {
-            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
-        }
-
-        // Only Admin and HR can access leave records
-        if (!in_array($user->role, ['admin', 'hr'])) {
-            return $this->failForbidden('Forbidden: You do not have access to this resource');
-        }
-
-        $record = $this->leaveTypeModel->find($id);
-        if ($record) {
-            return $this->respond(['status' => 'success', 'data' => $record]);
-        }
-
-        return $this->respond(['status' => 'error', 'message' => 'Leave type not found'], 404);
-    }
-
-    public function creates()
-    {        
-        return view('leave_type/leave_type');
-    }
-
-    public function display()
-    {
-        return view('leave_type/view');
-    }  
-
 }

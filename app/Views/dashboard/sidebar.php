@@ -103,6 +103,7 @@ $role = $user ? $user->role : null;
             <!-- <li class="nav-item"> <a class="nav-link" href="/manage-leaves">Manage Balance</a></li> -->
             <li class="nav-item"> <a class="nav-link" href="/leaveview">Manage Leaves</a></li>
             <li class="nav-item"> <a class="nav-link" href="/addleave">Add Leaves</a></li>
+              <li class="nav-item"> <a class="nav-link" href="/employee-live-request">Employee Leave Request</a></li>
           </ul>
         </div>
       </li>

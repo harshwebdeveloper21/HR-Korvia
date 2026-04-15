@@ -150,6 +150,11 @@ class EmployeeController extends ResourceController
         return view('employee/view');
     }
 
+    public function liveRequest()
+    {
+        return view('employee/employee_live_request');
+    }
+
     public function validateStep()
     {
         $validation = \Config\Services::validation();
@@ -671,8 +676,20 @@ class EmployeeController extends ResourceController
         $results = $builder->findAll();
 
         $employees = [];
+        $payrollModel = new \App\Models\PayrollModel();
 
         foreach ($results as $row) {
+            $latestPayroll = $payrollModel
+                ->where('user_id', $row['id'])
+                ->orderBy('month_year', 'DESC')
+                ->orderBy('id', 'DESC')
+                ->first();
+
+            $remainingPaidLeave = $latestPayroll['remaining_paid_leaves']
+                ?? ($row['paid_leave'] ?? 0);
+            $remainingSickLeave = $latestPayroll['remaining_sick_leaves']
+                ?? ($row['casual_leave'] ?? 0);
+
             $employees[] = [
                 'user' => [
                     'id' => $row['id'],
@@ -685,8 +702,8 @@ class EmployeeController extends ResourceController
                     'firstname' => $row['firstname'],
                     'lastname' => $row['lastname'],
                     'joining_date' => $row['joining_date'],
-                    'remaining_paid_leave' => $row['paid_leave'] ?? 0,
-                    'remaining_sick_leave' => $row['casual_leave'] ?? 0,
+                    'remaining_paid_leave' => $remainingPaidLeave,
+                    'remaining_sick_leave' => $remainingSickLeave,
                     'department_id' => $row['department_id'],
                     'department_name' => $row['department_name'],
                     'profile_image_url' => !empty($row['profile_image']) ? base_url('upload/' . $row['profile_image']) : base_url('public/upload/default-profile.jpg'),

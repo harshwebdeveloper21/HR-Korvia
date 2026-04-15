@@ -15,6 +15,8 @@ class UserModel extends Model
 
     public function getEmployeeReport($filters)
     {
+        $hasEmployeeFilter = !empty($filters['employee_id']);
+
         $builder = $this->db->table('users u')
             ->select('ui.firstname, ui.lastname, ui.joining_date,
                     d.department_name, des.designation_name, u.is_deleted, u.updated_at')
@@ -24,11 +26,11 @@ class UserModel extends Model
             // ->where('u.is_deleted', 0)
             ->whereIn('u.role', ['employee', 'hr']);
 
-        if (!empty($filters['department_id'])) {
+        if (!empty($filters['department_id']) && !$hasEmployeeFilter) {
             $builder->where('ui.department_id', $filters['department_id']);
         }
 
-        if (!empty($filters['employee_id'])) {
+        if ($hasEmployeeFilter) {
             $builder->where('u.id', $filters['employee_id']);
         }
 
@@ -66,16 +68,18 @@ class UserModel extends Model
     
     public function getEmployeeSummary($filters)
     {
+        $hasEmployeeFilter = !empty($filters['employee_id']);
+
         $builder = $this->db->table('users u')
             ->select('COUNT(u.id) as total_employees')
             ->join('user_info ui', 'ui.user_id = u.id')
-            ->where('u.role', 'employee');
+            ->whereIn('u.role', ['employee', 'hr']);
 
-        if (!empty($filters['department_id'])) {
+        if (!empty($filters['department_id']) && !$hasEmployeeFilter) {
             $builder->where('ui.department_id', $filters['department_id']);
         }
 
-        if (!empty($filters['employee_id'])) {
+        if ($hasEmployeeFilter) {
             $builder->where('u.id', $filters['employee_id']);
         }
 
@@ -102,15 +106,15 @@ class UserModel extends Model
             ->select('d.department_name, COUNT(u.id) as total')
             ->join('user_info ui', 'ui.user_id = u.id')
             ->join('department d', 'd.id = ui.department_id')
-            ->where('u.role', 'employee')
+            ->whereIn('u.role', ['employee', 'hr'])
             ->groupBy('d.id, d.department_name')
             ->orderBy('d.department_name');
 
-        if (!empty($filters['department_id'])) {
+        if (!empty($filters['department_id']) && !$hasEmployeeFilter) {
             $deptBuilder->where('ui.department_id', $filters['department_id']);
         }
 
-        if (!empty($filters['employee_id'])) {
+        if ($hasEmployeeFilter) {
             $deptBuilder->where('u.id', $filters['employee_id']);
         }
 
@@ -132,8 +136,20 @@ class UserModel extends Model
 
         $deptWise = $deptBuilder->get()->getResultArray();
 
+        $activeEmployees = 0;
+        $deletedEmployees = 0;
+        foreach ($this->getEmployeeReport($filters) as $employee) {
+            if ((string) ($employee['is_deleted'] ?? '0') === '1') {
+                $deletedEmployees++;
+            } else {
+                $activeEmployees++;
+            }
+        }
+
         return [
             'total_employees' => $totalResult['total_employees'] ?? 0,
+            'active_employees' => $activeEmployees,
+            'deleted_employees' => $deletedEmployees,
             'department_wise' => $deptWise
         ];
     }

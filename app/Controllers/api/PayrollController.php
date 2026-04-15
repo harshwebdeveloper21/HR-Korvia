@@ -1894,10 +1894,26 @@ class PayrollController extends ResourceController
                 );
             }
 
-            // Fetch leave balances for display (dynamic fetch)
-            $leaveBalance = $employeeLeaveModel->where('employee_id', $emp['user_id'])->first();
-            $emp['remaining_paid_leaves'] = $leaveBalance['paid_leave'] ?? 0;
-            $emp['remaining_casual_leaves'] = $leaveBalance['casual_leave'] ?? 0;
+            $leaveBalance = $employeeLeaveModel
+                ->where('employee_id', $emp['user_id'])
+                ->first();
+            $openingLeaveBalance = $this->getOpeningLeaveBalance(
+                (int) $emp['user_id'],
+                (string) $month,
+                $payroll ?: null,
+                $leaveBalance,
+            );
+
+            if ($payroll) {
+                $emp['remaining_paid_leaves'] = (float) ($payroll['remaining_paid_leaves'] ?? 0);
+                $emp['remaining_casual_leaves'] = (float) ($payroll['remaining_sick_leaves'] ?? 0);
+            } else {
+                $emp['remaining_paid_leaves'] = (float) ($openingLeaveBalance['paid_leave'] ?? 0);
+                $emp['remaining_casual_leaves'] = (float) ($openingLeaveBalance['casual_leave'] ?? 0);
+            }
+
+            $emp['opening_paid_leaves'] = (float) ($openingLeaveBalance['paid_leave'] ?? 0);
+            $emp['opening_casual_leaves'] = (float) ($openingLeaveBalance['casual_leave'] ?? 0);
 
             // Calculate Total Adjustment (Additions - Deductions)
             $emp['total_adjustment'] = ($emp['overtime_pay'] ?? 0) - ($emp['salary_deduction'] ?? 0) - ($emp['tax_deduction'] ?? 0);
@@ -1926,47 +1942,85 @@ class PayrollController extends ResourceController
         $month = $request->getPost("month");
 
         $payrollModel = new \App\Models\PayrollModel();
+        $employeeLeaveModel = new EmployeeLeaveModel();
         $companyRulesModel = new \App\Models\CompanyRulesModel();
         $rules = $companyRulesModel->first();
+        $db = \Config\Database::connect();
 
-        foreach ($employeeIds as $index => $empId) {
-            $existing = $payrollModel
-                ->where("user_id", $empId)
-                ->where("month_year", $month)
-                ->first();
+        $db->transBegin();
 
-            // Determine tax deduction: preserve existing tax_deduction if record already
-            // exists (may have been customised via Add Payroll), otherwise calculate it.
-            $taxDeduction = $existing
-                ? $existing["tax_deduction"]
-                : ($salaries[$index] > $rules["salary_above_tax"] ? $rules["tax"] : 0);
+        try {
+            foreach ($employeeIds as $index => $empId) {
+                $existing = $payrollModel
+                    ->where("user_id", $empId)
+                    ->where("month_year", $month)
+                    ->first();
 
-            $data = [
-                "user_id" => $empId,
-                "month_year" => $month,
-                "salary_amount" => $salaries[$index],
-                "total_leaves" => $leaves[$index],
-                "total_half_day" => $half_day[$index],
-                "used_paid_leaves" => $paid_leave[$index] ?? 0,
-                "used_sick_leaves" => $sick_leave[$index] ?? 0,
-                "salary_deduction" => $deductions[$index],
-                "tax_deduction" => $taxDeduction,
-                "net_salary" => $netSalaries[$index],
-                "overtime_pay" => isset($overtime_pay[$index]) ? (float) $overtime_pay[$index] : 0,
-                "total_overtime_hours" => isset($total_overtime_hours[$index]) ? (float) $total_overtime_hours[$index] : 0,
-                "payment_date" => $existing ? $existing["payment_date"] : date("Y-m-d H:i:s"),
-                "payment_status" => $existing ? $existing["payment_status"] : "Paid",
-            ];
+                $totalHalfDays = (float) ($half_day[$index] ?? 0);
+                $usedPaidLeaves = (float) ($paid_leave[$index] ?? 0);
+                $usedSickLeaves = (float) ($sick_leave[$index] ?? 0);
+                $remainingLeaves = $this->syncEmployeeLeaveBalance(
+                    $employeeLeaveModel,
+                    (int) $empId,
+                    (string) $month,
+                    $totalHalfDays,
+                    $usedPaidLeaves,
+                    $usedSickLeaves,
+                    $existing
+                );
 
-            if ($existing) {
-                // Update existing record with latest calculated values from salary-details page
-                $data["id"] = $existing["id"];
-                $payrollModel->save($data);
-            } else {
-                $data["created_at"] = date("Y-m-d H:i:s");
-                $payrollModel->insert($data);
+                // Determine tax deduction: preserve existing tax_deduction if record already
+                // exists (may have been customised via Add Payroll), otherwise calculate it.
+                $taxDeduction = $existing
+                    ? $existing["tax_deduction"]
+                    : ($salaries[$index] > $rules["salary_above_tax"] ? $rules["tax"] : 0);
+
+                $data = [
+                    "user_id" => $empId,
+                    "month_year" => $month,
+                    "salary_amount" => $salaries[$index],
+                    "total_leaves" => $leaves[$index],
+                    "total_half_day" => $half_day[$index],
+                    "used_paid_leaves" => $usedPaidLeaves,
+                    "used_sick_leaves" => $usedSickLeaves,
+                    "remaining_paid_leaves" => $remainingLeaves["paid_leave"],
+                    "remaining_sick_leaves" => $remainingLeaves["casual_leave"],
+                    "salary_deduction" => $deductions[$index],
+                    "tax_deduction" => $taxDeduction,
+                    "net_salary" => $netSalaries[$index],
+                    "overtime_pay" => isset($overtime_pay[$index]) ? (float) $overtime_pay[$index] : 0,
+                    "total_overtime_hours" => isset($total_overtime_hours[$index]) ? (float) $total_overtime_hours[$index] : 0,
+                    "payment_date" => $existing ? $existing["payment_date"] : date("Y-m-d H:i:s"),
+                    "payment_status" => $existing ? $existing["payment_status"] : "Paid",
+                ];
+
+                if ($existing) {
+                    // Update existing record with latest calculated values from salary-details page
+                    $data["id"] = $existing["id"];
+                    $payrollModel->save($data);
+                } else {
+                    $data["created_at"] = date("Y-m-d H:i:s");
+                    $payrollModel->insert($data);
+                }
+
+                if ($payrollModel->errors() || $employeeLeaveModel->errors()) {
+                    throw new \RuntimeException("Failed to save payroll leave balances.");
+                }
             }
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException("Database transaction failed.");
+            }
+        } catch (\Throwable $e) {
+            $db->transRollback();
+
+            return $this->response->setStatusCode(500)->setJSON([
+                "status" => "error",
+                "message" => "Failed to save payroll data.",
+            ]);
         }
+
+        $db->transCommit();
 
         return $this->response->setJSON([
             "status" => "success",
@@ -2259,6 +2313,7 @@ class PayrollController extends ResourceController
         $salary = $this->request->getPost("salary");
 
         $payrollModel = new PayrollModel();
+        $employeeLeaveModel = new EmployeeLeaveModel();
         $companyRulesModel = new \App\Models\CompanyRulesModel();
         $rules = $companyRulesModel->first();
         $salaryAboveTax = $rules["salary_above_tax"] ?? PHP_INT_MAX;
@@ -2266,44 +2321,170 @@ class PayrollController extends ResourceController
         $taxDeduction =
             $salary > $salaryAboveTax ? $tax : 0;
 
-        $data = [
-            "user_id" => $userId,
-            "month_year" => $month,
-            "salary_amount" => $salary,
-            "total_leaves" => $this->request->getPost("leaves"),
-            "total_half_day" => $this->request->getPost("half_day"),
-            "used_paid_leaves" => $this->request->getPost("paid_leave") ?? 0,
-            "used_sick_leaves" => $this->request->getPost("sick_leave") ?? 0,
-            "salary_deduction" => $this->request->getPost("deduction"),
-            "tax_deduction" => $taxDeduction,
-            "net_salary" => $this->request->getPost("net_salary"),
-            "overtime_pay" => (float) ($this->request->getPost("overtime_pay") ?? 0),
-            "total_overtime_hours" => (float) ($this->request->getPost("total_overtime_hours") ?? 0),
-            "payment_date" => date("Y-m-d H:i:s"),
-            "payment_status" => "Paid",
-        ];
+        $totalHalfDays = (float) ($this->request->getPost("half_day") ?? 0);
+        $usedPaidLeaves = (float) ($this->request->getPost("paid_leave") ?? 0);
+        $usedSickLeaves = (float) ($this->request->getPost("sick_leave") ?? 0);
 
         $existing = $payrollModel
             ->where("user_id", $userId)
             ->where("month_year", $month)
             ->first();
 
-        if ($existing) {
-            $data["id"] = $existing["id"];
-            $payrollModel->save($data);
+        $db = \Config\Database::connect();
+        $db->transBegin();
 
-            return $this->response->setStatusCode(200)->setJSON([
-                "status" => "success",
-                "message" => "Salary updated for the employee.",
-            ]);
-        } else {
-            $payrollModel->insert($data);
+        try {
+            $remainingLeaves = $this->syncEmployeeLeaveBalance(
+                $employeeLeaveModel,
+                (int) $userId,
+                (string) $month,
+                $totalHalfDays,
+                $usedPaidLeaves,
+                $usedSickLeaves,
+                $existing
+            );
 
-            return $this->response->setStatusCode(200)->setJSON([
-                "status" => "success",
-                "message" => "Salary saved for the employee.",
+            $data = [
+                "user_id" => $userId,
+                "month_year" => $month,
+                "salary_amount" => $salary,
+                "total_leaves" => $this->request->getPost("leaves"),
+                "total_half_day" => $this->request->getPost("half_day"),
+                "used_paid_leaves" => $usedPaidLeaves,
+                "used_sick_leaves" => $usedSickLeaves,
+                "remaining_paid_leaves" => $remainingLeaves["paid_leave"],
+                "remaining_sick_leaves" => $remainingLeaves["casual_leave"],
+                "salary_deduction" => $this->request->getPost("deduction"),
+                "tax_deduction" => $taxDeduction,
+                "net_salary" => $this->request->getPost("net_salary"),
+                "overtime_pay" => (float) ($this->request->getPost("overtime_pay") ?? 0),
+                "total_overtime_hours" => (float) ($this->request->getPost("total_overtime_hours") ?? 0),
+                "payment_date" => $existing ? $existing["payment_date"] : date("Y-m-d H:i:s"),
+                "payment_status" => $existing ? $existing["payment_status"] : "Paid",
+            ];
+
+            if ($existing) {
+                $data["id"] = $existing["id"];
+                $payrollModel->save($data);
+            } else {
+                $payrollModel->insert($data);
+            }
+
+            if ($payrollModel->errors() || $employeeLeaveModel->errors() || $db->transStatus() === false) {
+                throw new \RuntimeException("Failed to save salary data.");
+            }
+        } catch (\Throwable $e) {
+            $db->transRollback();
+
+            return $this->response->setStatusCode(500)->setJSON([
+                "status" => "error",
+                "message" => "Failed to save salary for the employee.",
             ]);
         }
+
+        $db->transCommit();
+
+        return $this->response->setStatusCode(200)->setJSON([
+            "status" => "success",
+            "message" => $existing
+                ? "Salary updated for the employee."
+                : "Salary saved for the employee.",
+        ]);
+    }
+
+    private function syncEmployeeLeaveBalance(
+        EmployeeLeaveModel $employeeLeaveModel,
+        int $employeeId,
+        string $monthYear,
+        float $totalHalfDays,
+        float $usedPaidLeaves,
+        float $usedSickLeaves,
+        ?array $existingPayroll = null
+    ): array {
+        $leaveBalance = $employeeLeaveModel
+            ->where("employee_id", $employeeId)
+            ->first();
+        $openingBalance = $this->getOpeningLeaveBalance(
+            $employeeId,
+            $monthYear,
+            $existingPayroll,
+            $leaveBalance,
+        );
+
+        $halfDayPaidLeaveEquivalent = max($totalHalfDays, 0) / 2;
+        $remainingPaidLeave = max(
+            (float) ($openingBalance["paid_leave"] ?? 0) -
+                $usedPaidLeaves -
+                $halfDayPaidLeaveEquivalent,
+            0,
+        );
+        $remainingSickLeave = max(
+            (float) ($openingBalance["casual_leave"] ?? 0) - $usedSickLeaves,
+            0,
+        );
+
+        $leaveData = [
+            "employee_id" => $employeeId,
+            "paid_leave" => $remainingPaidLeave,
+            "casual_leave" => $remainingSickLeave,
+        ];
+
+        if (!empty($leaveBalance["id"])) {
+            $leaveData["id"] = $leaveBalance["id"];
+        }
+
+        $employeeLeaveModel->save($leaveData);
+
+        return [
+            "opening_paid_leave" => (float) ($openingBalance["paid_leave"] ?? 0),
+            "opening_casual_leave" => (float) ($openingBalance["casual_leave"] ?? 0),
+            "paid_leave" => $remainingPaidLeave,
+            "casual_leave" => $remainingSickLeave,
+        ];
+    }
+
+    private function getOpeningLeaveBalance(
+        int $employeeId,
+        string $monthYear,
+        ?array $existingPayroll = null,
+        ?array $leaveBalance = null
+    ): array {
+        if (!empty($existingPayroll)) {
+            $savedHalfDays = (float) ($existingPayroll["total_half_day"] ?? 0);
+            $savedHalfDayPaidLeaveEquivalent = max($savedHalfDays, 0) / 2;
+
+            return [
+                "paid_leave" => max(
+                    (float) ($existingPayroll["remaining_paid_leaves"] ?? 0) +
+                        (float) ($existingPayroll["used_paid_leaves"] ?? 0) +
+                        $savedHalfDayPaidLeaveEquivalent,
+                    0,
+                ),
+                "casual_leave" => max(
+                    (float) ($existingPayroll["remaining_sick_leaves"] ?? 0) +
+                        (float) ($existingPayroll["used_sick_leaves"] ?? 0),
+                    0,
+                ),
+            ];
+        }
+
+        $previousPayroll = $this->payrollModel
+            ->where("user_id", $employeeId)
+            ->where("month_year <", $monthYear)
+            ->orderBy("month_year", "DESC")
+            ->first();
+
+        if (!empty($previousPayroll)) {
+            return [
+                "paid_leave" => (float) ($previousPayroll["remaining_paid_leaves"] ?? 0),
+                "casual_leave" => (float) ($previousPayroll["remaining_sick_leaves"] ?? 0),
+            ];
+        }
+
+        return [
+            "paid_leave" => (float) ($leaveBalance["paid_leave"] ?? 0),
+            "casual_leave" => (float) ($leaveBalance["casual_leave"] ?? 0),
+        ];
     }
     private function generateCombinedSlipPdf(array $payrollIds)
     {
