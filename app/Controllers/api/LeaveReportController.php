@@ -36,7 +36,7 @@ public function fetchLeaveReport()
         $end_date = $this->request->getPost('end_date');
         $year = $this->request->getPost('year');
         $month = $this->request->getPost('month');
-        $leave_type = $this->request->getPost('leave_type');
+        $leave_type = $this->normalizeLeaveTypeFilter($this->request->getPost('leave_type'));
         $status = $this->request->getPost('status');
 
         // Fetch filtered report data
@@ -90,5 +90,29 @@ public function fetchLeaveReport()
             'tableData' => $report,
             'chartData' => $chartData
         ]);
+    }
+
+    private function normalizeLeaveTypeFilter($leaveType)
+    {
+        if ($leaveType === null) {
+            return null;
+        }
+
+        $leaveType = trim((string) $leaveType);
+        if ($leaveType === '' || strtolower($leaveType) === 'all' || strtolower($leaveType) === 'all types') {
+            return null;
+        }
+
+        if (ctype_digit($leaveType)) {
+            return (int) $leaveType;
+        }
+
+        $leaveTypeModel = new LeaveTypeModel();
+        $matchedLeaveType = $leaveTypeModel
+            ->select('id')
+            ->where('LOWER(leave_type)', strtolower($leaveType))
+            ->first();
+
+        return $matchedLeaveType['id'] ?? null;
     }
 }

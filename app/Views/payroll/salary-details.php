@@ -114,6 +114,9 @@
                 max="<?= $currentMonth ?>" />
             </div>
             <div class="slarypadding">
+              <input type="text" id="employeeSearch" class="form-control form-control-sm" placeholder="Search employee name..." style="min-width: 200px;">
+            </div>
+            <div class="slarypadding">
               <a href="/payrollview" class="btn hr-btnbg" style="margin-right: 7.5rem;white-space:nowrap">
                 <i class="mdi mdi-arrow-left iconfontsize"></i>Back
               </a>
@@ -199,24 +202,22 @@
                       <input type="number" name="paid_leave[]" class="form-control form-control-sm paid-leave-input"
                         value="<?= $emp["used_paid_leaves"] ?? 0 ?>" min="0" step="0.5" data-index="<?= $index ?>"
                         data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-allocated="<?= $emp['remaining_paid_leaves'] ?? 0 ?>"
+                        data-allocated="<?= $emp['opening_paid_leaves'] ?? 0 ?>"
                         data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
                     </td>
                     <td>
                       <input type="number" name="sick_leave[]" class="form-control form-control-sm sick-leave-input"
                         value="<?= $emp["used_sick_leaves"] ?? 0 ?>" min="0" step="0.5" data-index="<?= $index ?>"
                         data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-allocated="<?= $emp['remaining_casual_leaves'] ?? 0 ?>"
+                        data-allocated="<?= $emp['opening_casual_leaves'] ?? 0 ?>"
                         data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
                     </td>
                     <td class="rem-paid-leave">
-
-
-                      <?= esc(($emp['remaining_paid_leaves'] ?? 0) - ($emp['used_paid_leaves'] ?? 0)) ?>
+                      <?= esc($emp['remaining_paid_leaves'] ?? 0) ?>
                     </td>
 
                     <td class="rem-sick-leave">
-                      <?= esc(($emp['remaining_casual_leaves'] ?? 0) - ($emp['used_sick_leaves'] ?? 0)) ?>
+                      <?= esc($emp['remaining_casual_leaves'] ?? 0) ?>
                     </td>
                     <td>₹<?= number_format($emp["per_day"], 2) ?><br><small
                         class="text-muted">₹<?= number_format($emp["per_hour"] ?? ($emp["per_day"] / 8), 2) ?>/hr</small>
@@ -314,7 +315,11 @@
         Swal.fire({
           icon: 'error',
           title: 'Validation Error',
-          text: 'Please correct leave balances before updating. Used leave cannot exceed total allocated balance.'
+          text: 'Used leaves exceed available balance. Please correct before saving.',
+          toast: true,
+          position: 'top-end',
+          timer: 3000,
+          showConfirmButton: false
         });
       }
     });
@@ -341,6 +346,26 @@
           "/payroll/salary-details",
         ) ?>?month=${selectedMonth}`;
       }
+    });
+  }
+
+  // Employee search functionality
+  const employeeSearch = document.getElementById('employeeSearch');
+  if (employeeSearch) {
+    employeeSearch.addEventListener('input', function () {
+      const searchTerm = this.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#payroll-table tbody tr');
+
+      rows.forEach(row => {
+        const nameElement = row.querySelector('td:first-child');
+        const name = nameElement ? nameElement.textContent.toLowerCase() : '';
+        
+        if (name.includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
     });
   }
 
@@ -402,7 +427,8 @@
     const allocatedPaid = parseFloat(paidLeaveInput.dataset.allocated) || 0;
     const allocatedSick = parseFloat(sickLeaveInput.dataset.allocated) || 0;
 
-    const remPaid = allocatedPaid - usedPaidLeaves;
+    const halfDayPaidLeaveDeduction = Math.max(halfDays, 0) / 2;
+    const remPaid = allocatedPaid - usedPaidLeaves - halfDayPaidLeaveDeduction;
     const remSick = allocatedSick - usedSickLeaves;
 
     const remPaidCell = row.querySelector('.rem-paid-leave');
@@ -411,13 +437,16 @@
     if (remPaidCell) remPaidCell.textContent = Math.max(0, remPaid);
     if (remSickCell) remSickCell.textContent = Math.max(0, remSick);
 
-    if (remPaid < 0) {
+    const paidBalanceInvalid = remPaid < 0 || remPaid > allocatedPaid;
+    const sickBalanceInvalid = remSick < 0 || remSick > allocatedSick;
+
+    if (paidBalanceInvalid) {
       paidLeaveInput.classList.add('is-invalid');
     } else {
       paidLeaveInput.classList.remove('is-invalid');
     }
 
-    if (remSick < 0) {
+    if (sickBalanceInvalid) {
       sickLeaveInput.classList.add('is-invalid');
     } else {
       sickLeaveInput.classList.remove('is-invalid');
@@ -482,10 +511,16 @@
         Swal.fire({
           icon: 'error',
           title: 'Validation Error',
-          text: 'Used leave cannot exceed total allocated leave balance.'
+          text: 'Used leaves exceed the available balance for this employee.',
+          toast: true,
+          position: 'top-end',
+          timer: 3000,
+          showConfirmButton: false
         });
         return;
       }
+
+      const currentBtn = this;
 
       fetch("<?= base_url("/api/payroll/save") ?>", {
         method: "POST",
@@ -514,23 +549,42 @@
             const badge = document.createElement('span');
             badge.className = 'badge bg-success btn-sm rounded';
             badge.textContent = 'Saved';
-            this.parentNode.replaceChild(badge, this);
+            if (currentBtn.parentNode) {
+              currentBtn.parentNode.replaceChild(badge, currentBtn);
+            }
             Swal.fire({
               icon: 'success',
-              title: data.message,
+              title: 'Success',
+              text: data.message || 'Saved successfully!',
               toast: true,
               position: 'top-end',
-              timer: 2000,
+              timer: 3000,
               showConfirmButton: false
             });
           } else {
             Swal.fire({
               icon: 'error',
-              title: data.message
+              title: 'Error',
+              text: data.message || 'Failed to save salary details.',
+              toast: true,
+              position: 'top-end',
+              timer: 3000,
+              showConfirmButton: false
             });
           }
         })
-        .catch(err => Swal.fire('Error', 'Error: ' + err, 'error'));
+        .catch(err => {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'System Error',
+                text: 'An unexpected error occurred. Please refresh the page and try again.',
+                toast: true,
+                position: 'top-end',
+                timer: 4000,
+                showConfirmButton: false
+            });
+        });
     });
   });
 

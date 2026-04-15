@@ -6,6 +6,8 @@ use CodeIgniter\Model;
 
 class LeaveModel extends Model
 {
+    public const AUTO_ABSENCE_REASON = 'Auto leave for full-day absence';
+
     protected $table = 'leaves';
     protected $primaryKey = 'id';
     protected $allowedFields = [
@@ -18,27 +20,28 @@ class LeaveModel extends Model
         $builder = $this->select('users.username, leave_type.leave_type, leaves.start_date, leaves.end_date, leaves.status')
             ->join('users', 'users.id = leaves.user_id', 'left')
             ->join('leave_type', 'leave_type.id = leaves.leave_id', 'left')
-            ->whereIn('users.role', ['employee', 'hr']);
+            ->whereIn('users.role', ['employee', 'hr'])
+            ->where('leaves.reason !=', self::AUTO_ABSENCE_REASON);
 
-        if ($employee_id) {
+        if ($employee_id !== null && $employee_id !== '') {
             $builder->where('leaves.user_id', $employee_id);
         }
-        if ($start_date) {
+        if ($start_date !== null && $start_date !== '') {
             $builder->where('leaves.start_date >=', $start_date);
         }
-        if ($end_date) {
+        if ($end_date !== null && $end_date !== '') {
             $builder->where('leaves.end_date <=', $end_date);
         }
-        if ($year) {
+        if ($year !== null && $year !== '') {
             $builder->where('YEAR(leaves.start_date)', $year);
         }
-        if ($month) {
+        if ($month !== null && $month !== '') {
             $builder->where('MONTH(leaves.start_date)', $month);
         }
-        if ($leave_type) {
+        if ($leave_type !== null && $leave_type !== '') {
             $builder->where('leaves.leave_id', $leave_type);
         }
-        if ($status) {
+        if ($status !== null && $status !== '') {
             $builder->where('leaves.status', $status);
         }
 

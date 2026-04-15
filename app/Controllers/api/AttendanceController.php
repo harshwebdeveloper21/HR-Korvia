@@ -411,22 +411,23 @@ class AttendanceController extends ResourceController
         /* ---------------------------------------------------
         7. ATTENDANCE STATUS (UPDATED - 4 HOUR RULE)
         --------------------------------------------------- */
-        $status = 'absent';
+       $status = 'absent';
 
         $effectiveSeconds = $workHoursInSeconds + $graceSeconds;
 
-        $fullDayThreshold = 4 * 3600; // 4 hours
-        $halfDayThreshold = 1 * 3600; // optional
+        $fullDayThreshold  = 5 * 3600; // 6 hours = present
+        $halfDayThreshold  = 4 * 3600; // 4 hours = half-day
+        // below 4 hours = absent
 
         if ($payrollType === 'hourly') {
             $status = $workHoursInSeconds > 0 ? 'present' : 'absent';
         } else {
-            if ($effectiveSeconds > $fullDayThreshold) {
+            if ($effectiveSeconds >= $fullDayThreshold) {
                 $status = 'present';
             } elseif ($effectiveSeconds >= $halfDayThreshold) {
                 $status = 'half-day';
             } else {
-                $status = 'absent';
+                $status = 'absent'; // less than 4 hours
             }
         }
 

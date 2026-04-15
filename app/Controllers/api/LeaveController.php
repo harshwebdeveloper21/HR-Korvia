@@ -8,6 +8,7 @@ use App\Services\AuthService;
 use App\Models\LeaveTypeModel;
 use App\Models\UserModel;
 use App\Models\UserInfoModel;
+use App\Models\EmployeeLeaveModel;
 use App\Models\NotificationSettingsModel;
 use App\Services\PushNotificationService;
 
@@ -266,6 +267,22 @@ class LeaveController extends ResourceController
         if ($this->leaveModel->insert($data)) {
             $leaveId = $this->leaveModel->getInsertID();
 
+            if (strtolower((string) ($data['status'] ?? '')) === 'approved') {
+                try {
+                    $data['id'] = $leaveId;
+                    $this->syncLeaveBalanceForStatusChange(
+                        array_merge($data, ['status' => 'pending']),
+                        'approved'
+                    );
+                } catch (\Throwable $e) {
+                    $this->leaveModel->delete($leaveId);
+                    return $this->respond([
+                        'status' => 'error',
+                        'message' => 'Failed to sync leave balance after approval',
+                    ], 500);
+                }
+            }
+
             // Send notifications (internal and push)
             try {
                 $this->sendLeaveNotification($data, $leaveId);
@@ -311,8 +328,23 @@ class LeaveController extends ResourceController
         $leave = $leaveModel->find($id);
 
         if ($leave) {
-            $leave['status'] = 'approved';
-            $leaveModel->save($leave);
+            $db = \Config\Database::connect();
+            $db->transBegin();
+
+            try {
+                $this->syncLeaveBalanceForStatusChange($leave, 'approved');
+                $leave['status'] = 'approved';
+                $leaveModel->save($leave);
+
+                if ($leaveModel->errors() || $db->transStatus() === false) {
+                    throw new \RuntimeException('Failed to approve leave.');
+                }
+            } catch (\Throwable $e) {
+                $db->transRollback();
+                return $this->respond(['status' => 'error', 'message' => 'Failed to approve leave'], 500);
+            }
+
+            $db->transCommit();
 
             return $this->respond(['status' => 'success', 'message' => 'Leave approved successfully']);
         }
@@ -328,7 +360,8 @@ class LeaveController extends ResourceController
         $employeeId = $this->request->getGet('employee_id'); // Get employee_id from request
 
         $query = $leaveModel->join('user_info', 'leaves.user_id = user_info.user_id')
-            ->select('leaves.*, user_info.firstname, user_info.lastname, user_info.profile_image');
+            ->select('leaves.*, user_info.firstname, user_info.lastname, user_info.profile_image')
+            ->where('leaves.reason !=', 'Auto leave for full-day absence');
 
         if (!empty($employeeId)) {
             $query->where('leaves.user_id', $employeeId); // Filter by employee_id
@@ -341,6 +374,8 @@ class LeaveController extends ResourceController
             'data' => $leaves
         ]);
     }
+
+
 
     public function updateStatus($leaveId)
     {
@@ -451,13 +486,100 @@ class LeaveController extends ResourceController
             // Do NOT abort the response — notification failure should not block the status update
         }
 
-        // Update leave status
-        $leaveModel->update($leaveId, [
-            'status' => $status,
-            'created_by' => $userId,
-        ]);
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            $this->syncLeaveBalanceForStatusChange($leave, $status);
+
+            $leaveModel->update($leaveId, [
+                'status' => $status,
+                'created_by' => $userId,
+            ]);
+
+            if ($leaveModel->errors() || $db->transStatus() === false) {
+                throw new \RuntimeException('Failed to update leave status.');
+            }
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            return $this->respond(['status' => 'error', 'message' => 'Failed to update leave status'], 500);
+        }
+
+        $db->transCommit();
 
         return $this->respond(['status' => 'success', 'message' => 'Leave status updated successfully']);
+    }
+
+    private function syncLeaveBalanceForStatusChange(array $leave, string $newStatus): void
+    {
+        $oldStatus = strtolower((string) ($leave['status'] ?? ''));
+        $newStatus = strtolower($newStatus);
+
+        $wasApproved = $oldStatus === 'approved';
+        $isApproved = $newStatus === 'approved';
+
+        if ($wasApproved === $isApproved) {
+            return;
+        }
+
+        $balanceColumn = $this->resolveLeaveBalanceColumn((int) ($leave['leave_id'] ?? 0));
+        if ($balanceColumn === null) {
+            return;
+        }
+
+        $employeeLeaveModel = new EmployeeLeaveModel();
+        $leaveBalance = $employeeLeaveModel
+            ->where('employee_id', $leave['user_id'])
+            ->first();
+
+        $leaveDays = (float) ($leave['no_of_day'] ?? 0);
+        $currentBalance = (float) ($leaveBalance[$balanceColumn] ?? 0);
+        $updatedBalance = $isApproved
+            ? max($currentBalance - $leaveDays, 0)
+            : $currentBalance + $leaveDays;
+
+        $leaveData = [
+            'employee_id' => $leave['user_id'],
+            $balanceColumn => $updatedBalance,
+        ];
+
+        if (!empty($leaveBalance['id'])) {
+            $leaveData['id'] = $leaveBalance['id'];
+        }
+
+        $employeeLeaveModel->save($leaveData);
+
+        if ($employeeLeaveModel->errors()) {
+            throw new \RuntimeException('Failed to sync employee leave balance.');
+        }
+    }
+
+    private function resolveLeaveBalanceColumn(int $leaveTypeId): ?string
+    {
+        if ($leaveTypeId === 1) {
+            return 'paid_leave';
+        }
+
+        if ($leaveTypeId === 2) {
+            return 'casual_leave';
+        }
+
+        $leaveTypeModel = new LeaveTypeModel();
+        $leaveType = $leaveTypeModel->find($leaveTypeId);
+        $leaveTypeName = strtolower(trim((string) ($leaveType['leave_type'] ?? '')));
+
+        if (str_contains($leaveTypeName, 'paid')) {
+            return 'paid_leave';
+        }
+
+        if (
+            str_contains($leaveTypeName, 'casual') ||
+            str_contains($leaveTypeName, 'sick')
+        ) {
+            return 'casual_leave';
+        }
+
+        return null;
     }
 
     /**
@@ -732,4 +854,17 @@ class LeaveController extends ResourceController
         ]);
     }
 
+    public function delete($id = null)
+    {
+        $user = $this->authService->check();
+        if (!$user || !in_array($user->role, ['admin', 'hr'])) {
+            return $this->failUnauthorized();
+        }
+
+        if ($this->leaveModel->delete($id)) {
+            return $this->respondDeleted(['status' => 'success', 'message' => 'Leave record deleted successfully']);
+        }
+
+        return $this->fail('Failed to delete leave record');
+    }
 }
