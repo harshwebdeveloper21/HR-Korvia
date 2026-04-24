@@ -909,11 +909,19 @@ class AttendanceController extends ResourceController
             });
 
             // ── Accumulate ALL sessions per date ──
-            // Group by date keyed by user_id, then pick earliest check_in + sum completed work_hours
+            // Group by date, sum completed work_hours, pick earliest check_in & recalculate status
             $byDate = [];
             foreach ($userAttendance as $record) {
                 $byDate[$record['date']][] = $record;
             }
+
+            // Fetch company rules once for status recalculation
+            $companyRuleForStatus = $companyRulesModel->orderBy('id', 'DESC')->first();
+            $startTimeForStatus   = $companyRuleForStatus['start_time'] ?? '09:30:00';
+            $graceMinutes         = (int)($companyRuleForStatus['grace_period'] ?? 0);
+            $fullDaySeconds       = ((float)($companyRuleForStatus['working_hours_per_day'] ?? 8)) * 3600;
+            $halfDaySeconds       = ((float)($companyRuleForStatus['half_day_hours'] ?? 4)) * 3600;
+            $payrollType          = $companyRuleForStatus['payroll_type'] ?? 'monthly';
 
             $attendanceByDate = [];
             foreach ($byDate as $date => $recs) {
@@ -921,30 +929,71 @@ class AttendanceController extends ResourceController
                 usort($recs, fn($a, $b) => strcmp($a['check_in_time'], $b['check_in_time']));
 
                 $completedSeconds = 0;
-                $activeRecord = null;
+                $activeRecord     = null;
+                $lastCheckOut     = null;
 
                 foreach ($recs as $rec) {
                     if ($rec['check_out_time']) {
-                        $parts = explode(':', $rec['work_hours'] ?? '00:00:00');
-                        if (count($parts) === 3) {
-                            $completedSeconds += ((int) $parts[0] * 3600)
-                                + ((int) $parts[1] * 60)
-                                + (int) $parts[2];
+                        // Sum duration of each completed session directly from timestamps
+                        $inSec  = $this->timeToSeconds($rec['check_in_time']);
+                        $outSec = $this->timeToSeconds($rec['check_out_time']);
+                        if ($outSec > $inSec) {
+                            $completedSeconds += ($outSec - $inSec);
+                        }
+                        // Track latest checkout for display
+                        if ($lastCheckOut === null || strcmp($rec['check_out_time'], $lastCheckOut) > 0) {
+                            $lastCheckOut = $rec['check_out_time'];
                         }
                     } else {
                         $activeRecord = $rec; // open session
                     }
                 }
 
-                $first = $recs[0];
-                $displayRec = $activeRecord ?? $first;  // use active if exists else last
+                $first      = $recs[0];
+                $displayRec = $activeRecord ?? end($recs); // active session if any, else last completed
+
+                // ── Recalculate status from TOTAL worked seconds ──
+                $graceSeconds  = $graceMinutes * 60;
+                $effectiveSecs = $completedSeconds + $graceSeconds;
+
+                if ($payrollType === 'hourly') {
+                    $computedStatus = $completedSeconds > 0 ? 'present' : 'absent';
+                } else {
+                    if ($effectiveSecs >= $fullDaySeconds) {
+                        $computedStatus = 'present';
+                    } elseif ($effectiveSecs >= $halfDaySeconds) {
+                        $computedStatus = 'half-day';
+                    } elseif ($completedSeconds > 0) {
+                        $computedStatus = 'present'; // short hours, still present
+                    } else {
+                        $computedStatus = $activeRecord ? 'present' : 'absent'; // active = present
+                    }
+                }
+
+                // ── Late detection based on FIRST check-in ──
+                $firstCheckInSecs = $this->timeToSeconds($first['check_in_time']);
+                $startTimeSecs    = $this->timeToSeconds($startTimeForStatus);
+                $isLateCalc       = ($firstCheckInSecs > ($startTimeSecs + $graceSeconds)) ? 1 : 0;
+                $lateMinutesCalc  = $isLateCalc
+                    ? (int)ceil(($firstCheckInSecs - $startTimeSecs - $graceSeconds) / 60)
+                    : 0;
+
+                // Format total work hours as HH:MM:SS
+                $totalWorkHours = sprintf(
+                    '%02d:%02d:%02d',
+                    intdiv($completedSeconds, 3600),
+                    intdiv($completedSeconds % 3600, 60),
+                    $completedSeconds % 60
+                );
 
                 $attendanceByDate[$date] = array_merge($displayRec, [
                     'check_in_time'     => $first['check_in_time'],       // EARLIEST of the day
-                    'check_out_time'    => $displayRec['check_out_time'],  // null if still active
+                    'check_out_time'    => $activeRecord ? null : $lastCheckOut, // null if still active
                     'completed_seconds' => $completedSeconds,
-                    'is_late'           => $first['is_late'],              // based on FIRST check-in
-                    'late_minutes'      => $first['late_minutes'],         // based on FIRST check-in
+                    'work_hours'        => $totalWorkHours,                // TOTAL across all sessions
+                    'status'            => $computedStatus,                // recalculated status
+                    'is_late'           => $isLateCalc,                   // based on FIRST check-in
+                    'late_minutes'      => $lateMinutesCalc,               // based on FIRST check-in
                 ]);
             }
 
@@ -1659,7 +1708,7 @@ class AttendanceController extends ResourceController
 
         $isNewRecord = empty($existingRecords);
 
-        if ($isNewRecord || count($records) === 1) {
+        if ($isNewRecord) {
             $record = $records[0];
 
             $workHours = '00:00:00';

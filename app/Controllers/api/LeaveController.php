@@ -675,11 +675,16 @@ class LeaveController extends ResourceController
             }
         }
 
-        $noOfDays = (string) max(1, (($end - $start) / 86400 + 1));
+        $noOfDays = (string) max(0.5, (($end - $start) / 86400 + 1));
+        
+        if (isset($leave['leave_duration']) && $leave['leave_duration'] === 'half_day') {
+            $noOfDays = '0.5';
+            $updateData['end_date'] = $startDate;
+        }
 
         $updateData = [
             'start_date' => $startDate,
-            'end_date' => $endDate,
+            'end_date' => $updateData['end_date'] ?? $endDate,
             'no_of_day' => $noOfDays,
         ];
 

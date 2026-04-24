@@ -135,8 +135,12 @@
                 }
             },
             eventDidMount: function (info) {
+                const durationText = info.event.extendedProps.leave_duration === 'half_day' 
+                    ? `0.5 Days (${info.event.extendedProps.half_day_type.replace('_', ' ')})` 
+                    : `${info.event.extendedProps.no_of_day} Days`;
+                
                 tippy(info.el, {
-                    content: `<strong>${info.event.title}</strong><br>${info.event.extendedProps.description}`,
+                    content: `<strong>${info.event.title}</strong><br><small>${durationText}</small><br>${info.event.extendedProps.description}`,
                     placement: 'top',
                     animation: 'fade',
                     allowHTML: true
