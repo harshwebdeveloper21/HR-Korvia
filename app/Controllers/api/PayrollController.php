@@ -257,7 +257,56 @@ class PayrollController extends ResourceController
     }
 
     // Get All Payroll Records (Admin & HR Only)
-    public function getAll()
+    // public function getAll()
+    // {
+    //     $user = $this->authService->check();
+    //     if (!$user) {
+    //         return $this->failUnauthorized(
+    //             "Unauthorized: Token missing or invalid",
+    //         );
+    //     }
+
+    //     // Get month filter from query params
+    //     $month = $this->request->getGet("month");
+
+    //     $this->payrollModel
+    //         ->select(
+    //             "payroll.id, payroll.user_id as employee_id, payroll.salary_amount, payroll.month_year, payroll.net_salary, payroll.payment_date, payroll.created_at, user_info.profile_image, users.username",
+    //         )
+    //         ->join("users", "users.id = payroll.user_id")
+    //         ->join("user_info", "user_info.user_id = payroll.user_id");
+
+    //     // Apply month filter if provided
+    //     if ($month) {
+    //         $this->payrollModel->where("payroll.month_year", $month);
+    //     }
+
+    //     // Role-based filtering
+    //     if ($user->role === "admin") {
+    //         // Admin can see all records (no filter)
+    //         $records = $this->payrollModel
+    //             ->orderBy("created_at", "DESC")
+    //             ->findAll();
+    //     } elseif ($user->role === "hr") {
+    //         // HR can only see employee records (exclude admin & HR)
+    //         $records = $this->payrollModel
+    //             ->where("users.role", "employee")
+    //             ->orderBy("created_at", "DESC")
+    //             ->findAll();
+    //     } elseif ($user->role === "employee") {
+    //         // Employee can only see their own records
+    //         $records = $this->payrollModel
+    //             ->where("payroll.user_id", $user->sub)
+    //             ->orderBy("created_at", "DESC")
+    //             ->findAll();
+    //     } else {
+    //         return $this->failForbidden("Forbidden: Unauthorized role");
+    //     }
+
+    //     return $this->respond(["status" => "success", "data" => $records]);
+    // }
+
+      public function getAll()
     {
         $user = $this->authService->check();
         if (!$user) {
@@ -288,9 +337,12 @@ class PayrollController extends ResourceController
                 ->orderBy("created_at", "DESC")
                 ->findAll();
         } elseif ($user->role === "hr") {
-            // HR can only see employee records (exclude admin & HR)
+            // HR can see employee records and their own records
             $records = $this->payrollModel
-                ->where("users.role", "employee")
+                ->groupStart()
+                    ->where("users.role", "employee")
+                    ->orWhere("payroll.user_id", $user->sub)
+                ->groupEnd()
                 ->orderBy("created_at", "DESC")
                 ->findAll();
         } elseif ($user->role === "employee") {
@@ -305,7 +357,6 @@ class PayrollController extends ResourceController
 
         return $this->respond(["status" => "success", "data" => $records]);
     }
-
     // Get Payroll Records for a Specific Employee (Employee-Specific Access)
     public function getByEmployee($employeeId = null)
     {
@@ -1034,8 +1085,6 @@ class PayrollController extends ResourceController
         $monthYear = $this->request->getPost("month_year");
 
         $leaveTypeModel = new \App\Models\LeaveTypeModel();
-        $leaveModel = new \App\Models\LeaveModel();
-        $payrollModel = new \App\Models\PayrollModel();
         $attendanceModel = new AttendanceModel();
         // Get number_of_leaves for selected leave type
         $leaveType = $leaveTypeModel->find($leaveId);
@@ -1053,39 +1102,8 @@ class PayrollController extends ResourceController
             $totalLeaves = $leaveType ? (int) $leaveType["number_of_leaves"] : 0;
         }
 
-        $usedPaidLeavesTotal = $payrollModel
-            ->where("user_id", $userId)
-            ->where("leave_type", $leaveId)
-            ->selectSum("used_paid_leaves")
-            ->first();
-
-        $monthUsed = $payrollModel
-            ->where("user_id", $userId)
-            ->where("leave_type", $leaveId)
-            ->where("month_year", $monthYear)
-            ->selectSum("used_paid_leaves")
-            ->first();
-        // Used leaves for selected leave_id
-        // $usedLeaves = $leaveModel->where('user_id', $userId)
-        //     ->where('leave_id', $leaveId)
-        //     ->like('start_date', $monthYear)
-        //     ->selectSum('no_of_day')
-        //     ->first();
-
-        $totalUsedCount = isset($usedPaidLeavesTotal["used_paid_leaves"])
-            ? (float) $usedPaidLeavesTotal["used_paid_leaves"]
-            : 0;
-
-        $currentMonthUsed = isset($monthUsed["used_paid_leaves"])
-            ? (float) $monthUsed["used_paid_leaves"]
-            : 0;
-
-        // Remaining balance AFTER all past usages but BEFORE this month's draft (if any)
-        // If we are editing, we should probably exclude this month's saved value from "used" to get "remaining available"
-        $remaining = $totalLeaves - ($totalUsedCount - $currentMonthUsed);
-        if ($remaining < 0) {
-            $remaining = 0;
-        }
+        // employee_leaves stores the current master balance for paid/casual leave.
+        $remaining = max((float) $totalLeaves, 0);
         $halfDays = $attendanceModel
             ->where("user_id", $userId)
             ->where("status", "half-day")
@@ -1100,7 +1118,7 @@ class PayrollController extends ResourceController
 
         return $this->response->setJSON([
             "total_leaves" => $totalLeaves,
-            "used_leaves" => $currentMonthUsed,
+            "used_leaves" => 0,
             "remaining_leaves" => $remaining,
             "total_half_day_leaves" => $halfDays,
             "allow_half_day" => $allowHalfDay,
@@ -1109,25 +1127,15 @@ class PayrollController extends ResourceController
 
     public function getRemainingPaidLeaves($userId)
     {
-        $leaveTypeId = $this->request->getPost("leave_type");
-
-        $lastPayroll = $this->payrollModel
-            ->where("user_id", $userId)
-            ->where("leave_type", $leaveTypeId)
+        $employeeLeaveModel = new EmployeeLeaveModel();
+        $leaveBalance = $employeeLeaveModel
+            ->where("employee_id", $userId)
             ->first();
 
-        if ($lastPayroll) {
-            return $this->respond([
-                "status" => "success",
-                "remaining_paid_leaves" =>
-                    $lastPayroll["remaining_paid_leaves"],
-            ]);
-        } else {
-            return $this->respond([
-                "status" => "success",
-                "remaining_paid_leaves" => 0,
-            ]);
-        }
+        return $this->respond([
+            "status" => "success",
+            "remaining_paid_leaves" => (float) ($leaveBalance["paid_leave"] ?? 0),
+        ]);
     }
 
     public function downloadMultiple()
@@ -1897,23 +1905,27 @@ class PayrollController extends ResourceController
             $leaveBalance = $employeeLeaveModel
                 ->where('employee_id', $emp['user_id'])
                 ->first();
-            $openingLeaveBalance = $this->getOpeningLeaveBalance(
-                (int) $emp['user_id'],
-                (string) $month,
-                $payroll ?: null,
-                $leaveBalance,
+            $currentPaidBalance = (float) ($leaveBalance['paid_leave'] ?? 0);
+            $currentSickBalance = (float) ($leaveBalance['casual_leave'] ?? 0);
+            $savedHalfDayEquivalent = $payroll ? max((float) ($payroll['total_half_day'] ?? 0), 0) / 2 : 0;
+
+            // Use employee_leaves as the master balance, then rebuild the row's
+            // editable opening balance by adding back the currently saved month.
+            $emp['opening_paid_leaves'] = $currentPaidBalance
+                + (float) ($payroll['used_paid_leaves'] ?? 0)
+                + $savedHalfDayEquivalent;
+            $emp['opening_casual_leaves'] = $currentSickBalance
+                + (float) ($payroll['used_sick_leaves'] ?? 0);
+            $emp['remaining_paid_leaves'] = max(
+                $emp['opening_paid_leaves']
+                    - (max((float) ($emp['half_days'] ?? 0), 0) * 0.5)
+                    - (float) ($emp['used_paid_leaves'] ?? 0),
+                0,
             );
-
-            if ($payroll) {
-                $emp['remaining_paid_leaves'] = (float) ($payroll['remaining_paid_leaves'] ?? 0);
-                $emp['remaining_casual_leaves'] = (float) ($payroll['remaining_sick_leaves'] ?? 0);
-            } else {
-                $emp['remaining_paid_leaves'] = (float) ($openingLeaveBalance['paid_leave'] ?? 0);
-                $emp['remaining_casual_leaves'] = (float) ($openingLeaveBalance['casual_leave'] ?? 0);
-            }
-
-            $emp['opening_paid_leaves'] = (float) ($openingLeaveBalance['paid_leave'] ?? 0);
-            $emp['opening_casual_leaves'] = (float) ($openingLeaveBalance['casual_leave'] ?? 0);
+            $emp['remaining_casual_leaves'] = max(
+                $emp['opening_casual_leaves'] - (float) ($emp['used_sick_leaves'] ?? 0),
+                0,
+            );
 
             // Calculate Total Adjustment (Additions - Deductions)
             $emp['total_adjustment'] = ($emp['overtime_pay'] ?? 0) - ($emp['salary_deduction'] ?? 0) - ($emp['tax_deduction'] ?? 0);
@@ -2404,22 +2416,21 @@ class PayrollController extends ResourceController
         $leaveBalance = $employeeLeaveModel
             ->where("employee_id", $employeeId)
             ->first();
-        $openingBalance = $this->getOpeningLeaveBalance(
-            $employeeId,
-            $monthYear,
-            $existingPayroll,
-            $leaveBalance,
-        );
-
+        $currentPaidBalance = (float) ($leaveBalance["paid_leave"] ?? 0);
+        $currentSickBalance = (float) ($leaveBalance["casual_leave"] ?? 0);
+        $existingHalfDayPaidLeaveEquivalent = max((float) ($existingPayroll["total_half_day"] ?? 0), 0) / 2;
         $halfDayPaidLeaveEquivalent = max($totalHalfDays, 0) / 2;
+        $openingPaidLeave = $currentPaidBalance
+            + (float) ($existingPayroll["used_paid_leaves"] ?? 0)
+            + $existingHalfDayPaidLeaveEquivalent;
+        $openingSickLeave = $currentSickBalance
+            + (float) ($existingPayroll["used_sick_leaves"] ?? 0);
         $remainingPaidLeave = max(
-            (float) ($openingBalance["paid_leave"] ?? 0) -
-                $usedPaidLeaves -
-                $halfDayPaidLeaveEquivalent,
+            $openingPaidLeave - $usedPaidLeaves - $halfDayPaidLeaveEquivalent,
             0,
         );
         $remainingSickLeave = max(
-            (float) ($openingBalance["casual_leave"] ?? 0) - $usedSickLeaves,
+            $openingSickLeave - $usedSickLeaves,
             0,
         );
 
@@ -2436,56 +2447,13 @@ class PayrollController extends ResourceController
         $employeeLeaveModel->save($leaveData);
 
         return [
-            "opening_paid_leave" => (float) ($openingBalance["paid_leave"] ?? 0),
-            "opening_casual_leave" => (float) ($openingBalance["casual_leave"] ?? 0),
+            "opening_paid_leave" => $openingPaidLeave,
+            "opening_casual_leave" => $openingSickLeave,
             "paid_leave" => $remainingPaidLeave,
             "casual_leave" => $remainingSickLeave,
         ];
     }
 
-    private function getOpeningLeaveBalance(
-        int $employeeId,
-        string $monthYear,
-        ?array $existingPayroll = null,
-        ?array $leaveBalance = null
-    ): array {
-        if (!empty($existingPayroll)) {
-            $savedHalfDays = (float) ($existingPayroll["total_half_day"] ?? 0);
-            $savedHalfDayPaidLeaveEquivalent = max($savedHalfDays, 0) / 2;
-
-            return [
-                "paid_leave" => max(
-                    (float) ($existingPayroll["remaining_paid_leaves"] ?? 0) +
-                        (float) ($existingPayroll["used_paid_leaves"] ?? 0) +
-                        $savedHalfDayPaidLeaveEquivalent,
-                    0,
-                ),
-                "casual_leave" => max(
-                    (float) ($existingPayroll["remaining_sick_leaves"] ?? 0) +
-                        (float) ($existingPayroll["used_sick_leaves"] ?? 0),
-                    0,
-                ),
-            ];
-        }
-
-        $previousPayroll = $this->payrollModel
-            ->where("user_id", $employeeId)
-            ->where("month_year <", $monthYear)
-            ->orderBy("month_year", "DESC")
-            ->first();
-
-        if (!empty($previousPayroll)) {
-            return [
-                "paid_leave" => (float) ($previousPayroll["remaining_paid_leaves"] ?? 0),
-                "casual_leave" => (float) ($previousPayroll["remaining_sick_leaves"] ?? 0),
-            ];
-        }
-
-        return [
-            "paid_leave" => (float) ($leaveBalance["paid_leave"] ?? 0),
-            "casual_leave" => (float) ($leaveBalance["casual_leave"] ?? 0),
-        ];
-    }
     private function generateCombinedSlipPdf(array $payrollIds)
     {
         $payrollModel = new PayrollModel();

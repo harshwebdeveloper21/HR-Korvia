@@ -859,8 +859,12 @@
                 showLeaveModal(info.event);
             },
             eventDidMount: function (info) {
+                const durationText = info.event.extendedProps.leave_duration === 'half_day' 
+                    ? `0.5 Days (${info.event.extendedProps.half_day_type.replace('_', ' ')})` 
+                    : `${info.event.extendedProps.no_of_day} Days`;
+
                 tippy(info.el, {
-                    content: `<strong>${info.event.title}</strong><br>${info.event.extendedProps.description}`,
+                    content: `<strong>${info.event.title}</strong><br><small>${durationText}</small><br>${info.event.extendedProps.description}`,
                     placement: 'top',
                     animation: 'fade',
                     allowHTML: true
@@ -1071,7 +1075,14 @@
         
         // Set total days
         const totalDays = event.extendedProps.no_of_day;
-        const daysText = totalDays == '0.5' ? 'Half Day' : (totalDays == 1 ? '1 Day' : totalDays + ' Days');
+        const leaveDuration = event.extendedProps.leave_duration;
+        const halfDayType = event.extendedProps.half_day_type;
+        
+        let daysText = totalDays == '0.5' ? '0.5 Days' : (totalDays == 1 ? '1 Day' : totalDays + ' Days');
+        if (leaveDuration === 'half_day' && halfDayType) {
+            const halfText = halfDayType.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            daysText = `0.5 Days (${halfText})`;
+        }
         $('#leaveTotalDays').text(daysText);
 
         $('#leaveReason').text(event.extendedProps.description);
@@ -1691,12 +1702,13 @@
 
             const startDate = new Date(event.start);
             const endDate = new Date(event.end);
-            const duration = props.no_of_day || Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) || 1;
-            let durationText = duration == '0.5' ? 'Half Day' : (duration == 1 ? '1 day' : `${duration} days`);
+            // Calculate duration
+            const duration = props.leave_duration === 'half_day' ? 0.5 : (props.no_of_day || 1);
+            let durationText = duration == 0.5 ? '0.5 days' : (duration == 1 ? '1 day' : `${duration} days`);
 
-            if (duration == '0.5' && props.half_day_type) {
+            if (props.leave_duration === 'half_day' && props.half_day_type) {
                 const halfDayText = props.half_day_type === 'first_half' ? 'First Half' : 'Second Half';
-                durationText += ` (${halfDayText})`;
+                durationText = `0.5 days (${halfDayText})`;
             }
 
             card.innerHTML = `
@@ -1838,7 +1850,9 @@
                     <div class="mobile-leave-status cancelled">Cancelled</div>
                 </div>
                 <div class="mobile-leave-info">
-                    <strong>Dates:</strong> ${displayStart} - ${displayEnd}
+                    <strong>Duration:</strong> ${props.leave_duration === 'half_day' ? '0.5 days' : (props.no_of_day || '1 day')} 
+                    ${props.leave_duration === 'half_day' && props.half_day_type ? `(${props.half_day_type.replace('_', ' ')})` : ''}
+                    (${displayStart} - ${displayEnd})
                 </div>
                 <div class="mobile-leave-reason">
                     "${props.description}"

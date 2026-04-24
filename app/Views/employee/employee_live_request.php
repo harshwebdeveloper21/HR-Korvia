@@ -225,7 +225,10 @@
                                     </td>
                                     <td>${leave.start_date}</td>
                                     <td>${leave.end_date}</td>
-                                    <td>${leave.no_of_day}</td>
+                                    <td>
+                                        ${leave.leave_duration === 'half_day' ? '0.5' : leave.no_of_day}
+                                        ${leave.leave_duration === 'half_day' ? `<br><small class="text-muted">(${capitalizeFirstLetter(leave.half_day_type.replace('_', ' '))})</small>` : ''}
+                                    </td>
                                     <td><div class="reason-wrap">${leave.reason || 'N/A'}</div></td>
                                     <td><div class="status-wrapper"><span class="status-badge ${statusClass}">${leave.status}</span></div></td>
                                     <td>

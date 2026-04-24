@@ -60,6 +60,15 @@ trait CompanyRuleTrait
      * Sundays and holidays are excluded so they "count as present".
      * Attendance overrides leave: if employee has present or half-day on a date, that day is NOT counted as leave.
      *
+     * Sandwich Leave Rule:
+     *   • If an approved leave falls on Friday (day 5), the following Saturday & Sunday are
+     *     automatically included in the leave count (Friday leave = 3 days: Fri + Sat + Sun).
+     *   • If an approved leave falls on Monday (day 1), the preceding Saturday & Sunday are
+     *     automatically included (Monday leave = 3 days: Sat + Sun + Mon).
+     *   • When both Friday AND Monday are on leave the Sat/Sun are counted only once (5 days total).
+     *   • The rule does NOT apply to half-day leaves.
+     *   • Weekend days that are public holidays or marked present/half-day are NOT added.
+     *
      * @param array $holidayDates Optional list of holiday dates (Y-m-d) for this month
      */
     protected function countMonthlyLeaves(
@@ -104,18 +113,58 @@ trait CompanyRuleTrait
 
             $isHalfDay = isset($leave['leave_duration']) && $leave['leave_duration'] === 'half_day';
 
-            while ($start <= $end) {
+            $current = clone $start;
+            while ($current <= $end) {
 
-                $dateStr = $start->format('Y-m-d');
-                // Sandwich leaves: include weekends if they fall within an approved leave range.
+                $dateStr = $current->format('Y-m-d');
+                $dow = (int) $current->format('w'); // 0=Sun, 1=Mon … 5=Fri, 6=Sat
+
                 if (!isset($holidaySet[$dateStr])) {
                     if (!isset($presentOrHalfDayDates[$dateStr]) && !isset($countedDates[$dateStr])) {
                         $total += $isHalfDay ? 0.5 : 1;
                         $countedDates[$dateStr] = true;
                     }
+
+                    // ── Sandwich Leave Rule ──────────────────────────────────────────────
+                    // Friday leave → also count Saturday (+1) and Sunday (+2)
+                    if (!$isHalfDay && $dow === 5) {
+                        $sat = (clone $current)->modify('+1 day');
+                        $sun = (clone $current)->modify('+2 days');
+
+                        foreach ([$sat, $sun] as $weekend) {
+                            $wStr = $weekend->format('Y-m-d');
+                            if (
+                                !isset($holidaySet[$wStr]) &&
+                                !isset($presentOrHalfDayDates[$wStr]) &&
+                                !isset($countedDates[$wStr])
+                            ) {
+                                $total += 1;
+                                $countedDates[$wStr] = true;
+                            }
+                        }
+                    }
+
+                    // Monday leave → also count preceding Sunday (-1) and Saturday (-2)
+                    if (!$isHalfDay && $dow === 1) {
+                        $sun = (clone $current)->modify('-1 day');
+                        $sat = (clone $current)->modify('-2 days');
+
+                        foreach ([$sat, $sun] as $weekend) {
+                            $wStr = $weekend->format('Y-m-d');
+                            if (
+                                !isset($holidaySet[$wStr]) &&
+                                !isset($presentOrHalfDayDates[$wStr]) &&
+                                !isset($countedDates[$wStr])
+                            ) {
+                                $total += 1;
+                                $countedDates[$wStr] = true;
+                            }
+                        }
+                    }
+                    // ────────────────────────────────────────────────────────────────────
                 }
 
-                $start->modify('+1 day');
+                $current->modify('+1 day');
             }
         }
 
@@ -134,9 +183,6 @@ trait CompanyRuleTrait
                 }
             }
         }
-
-
-
 
         return (float) $total;
     }
