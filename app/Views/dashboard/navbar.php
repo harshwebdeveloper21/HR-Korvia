@@ -1154,7 +1154,11 @@ $role = $user ? $user->role : null;
                         <small style="opacity: 0.85; font-size: 11px;">Mandatory Attendance Verification</small>
                     </div>
                 </div>
-                <!-- Close button hidden - mandatory check-in -->
+                <!-- Close button -->
+                <button type="button" id="face-modal-close-btn" onclick="closeFaceCheckInModal()" aria-label="Close"
+                    style="margin-left: auto; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 18px; line-height: 1;">
+                    &times;
+                </button>
             </div>
 
             <!-- Body -->
@@ -1200,8 +1204,8 @@ $role = $user ? $user->role : null;
             </div>
 
             <!-- Footer -->
-            <div class="modal-footer border-0 justify-content-center gap-2 py-3" style="background: white;">
-                <button type="button" id="cancel-face-btn" class="btn btn-light px-4" data-bs-dismiss="modal" style="border-radius: 20px; font-size: 13px; display: none;">
+            <div class="modal-footer border-0 justify-content-between gap-2 py-3" style="background: white;">
+                <button type="button" id="cancel-face-btn" class="btn btn-light px-4" onclick="closeFaceCheckInModal()" style="border-radius: 20px; font-size: 13px;">
                     <i class="mdi mdi-close me-1"></i>Cancel
                 </button>
                 <a href="#" class="btn btn-light px-4 logout-link"><i class="dropdown-item-icon mdi mdi-power me-2"></i>Sign Out</a>
@@ -1235,10 +1239,24 @@ $role = $user ? $user->role : null;
             await initFaceRecognition();
         });
 
-        // When modal closes
+        // When modal closes (covers all close paths)
         document.getElementById('faceCheckInModal')?.addEventListener('hidden.bs.modal', function() {
             stopCamera();
+            // Remove blocker overlay if it exists
+            const blocker = document.getElementById('checkin-blocker');
+            if (blocker) blocker.remove();
         });
+
+        // Global helper: close modal + stop camera immediately (no confirmation)
+        window.closeFaceCheckInModal = function() {
+            stopCamera();
+            const blocker = document.getElementById('checkin-blocker');
+            if (blocker) blocker.remove();
+            const modalEl = document.getElementById('faceCheckInModal');
+            const bsModal = bootstrap.Modal.getInstance(modalEl) ||
+                            new bootstrap.Modal(modalEl);
+            bsModal.hide();
+        };
 
         async function initFaceRecognition() {
             video = document.getElementById('face-video');
