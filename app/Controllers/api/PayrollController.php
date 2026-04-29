@@ -869,7 +869,7 @@ class PayrollController extends ResourceController
 
             case "daily":
                 $perDayRate = $baseSalary / $workingDays;
-                $deduction = $unpaidLeaves * $perDayRate; // late arrival excluded
+                $deduction = ($unpaidLeaves * $perDayRate) + ($unpaidHalfDays * ($perDayRate / 2)); // late arrival excluded
                 break;
 
             case "monthly":
@@ -959,6 +959,7 @@ class PayrollController extends ResourceController
             "data" => [
                 "base_salary" => round($baseSalary, 2),
                 "working_days" => $workingDays,
+                "present_days" => max($workingDays - $totalLeaves - ($halfDays * 0.5), 0),
                 "total_leaves" => $totalLeaves,
                 "paid_leaves_used" => $usedPaidLeaves,
                 "unpaid_leaves" => $unpaidLeaves,
