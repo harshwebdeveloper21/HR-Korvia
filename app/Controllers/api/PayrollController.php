@@ -615,7 +615,7 @@ class PayrollController extends ResourceController
             ->where("date >=", $startOfMonth)
             ->where("date <=", $endOfMonth)
             ->countAllResults();
-
+       
         return $this->response->setJSON([
             "status" => "success",
             "total_leaves" => $totalLeaveDaysInMonth,

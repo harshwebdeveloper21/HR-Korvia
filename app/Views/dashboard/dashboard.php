@@ -1982,7 +1982,7 @@
                         <div class="wrapper d-flex align-items-center justify-content-between py-2 border-bottom">
 
                             <div class="d-flex">
-                                <a href="employee/profile/${user.user_id}" class="text-decoration-none text-dark"> 
+                                <a href="javascript:void(0);" class="text-decoration-none text-dark"> 
                                     <img class="img-sm rounded" src="${profileImage}" alt="profile">
                                 </a>
                                 <div class="wrapper ms-3">
