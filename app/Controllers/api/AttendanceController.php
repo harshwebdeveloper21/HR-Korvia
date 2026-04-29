@@ -1241,12 +1241,21 @@ class AttendanceController extends ResourceController
         $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
         // Get Total Employees
         $totalEmployees = $userModel->where('role', 'employee')->countAllResults();
-        $presentEmployees = $attendanceModel
+        $fullDayPresent = $attendanceModel
             ->select('user_id')
             ->where('status', 'present')
-            ->where('date', date('Y-m-d')) // Ensure it's for today
-            ->distinct() // Count unique users
+            ->where('date', $today)
+            ->distinct()
             ->countAllResults();
+
+        $halfDayPresent = $attendanceModel
+            ->select('user_id')
+            ->where('status', 'half-day')
+            ->where('date', $today)
+            ->distinct()
+            ->countAllResults();
+
+        $presentEmployees = $fullDayPresent + ($halfDayPresent * 0.5);
 
         $absentEmployees = $userModel
             ->where('role', 'employee')
@@ -1290,12 +1299,21 @@ class AttendanceController extends ResourceController
         $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
         // Get Total Employees
         $totalEmployees = $userModel->where('role', 'employee')->countAllResults();
-        $presentEmployees = $attendanceModel
+        $fullDayPresent = $attendanceModel
             ->select('user_id')
             ->where('status', 'present')
-            ->where('date', date('Y-m-d')) // Ensure it's for today
-            ->distinct() // Count unique users
+            ->where('date', $today)
+            ->distinct()
             ->countAllResults();
+
+        $halfDayPresent = $attendanceModel
+            ->select('user_id')
+            ->where('status', 'half-day')
+            ->where('date', $today)
+            ->distinct()
+            ->countAllResults();
+
+        $presentEmployees = $fullDayPresent + ($halfDayPresent * 0.5);
 
         $absentEmployees = $userModel
             ->where('role', 'employee')
@@ -1335,12 +1353,21 @@ class AttendanceController extends ResourceController
 
         $totalEmployees = $userModel->where('role', 'employee')->countAllResults();
 
-        $presentEmployees = $attendanceModel
+        $fullDayPresent = $attendanceModel
             ->select('user_id')
             ->where('status', 'present')
             ->where('date', $today)
             ->distinct()
             ->countAllResults();
+
+        $halfDayPresent = $attendanceModel
+            ->select('user_id')
+            ->where('status', 'half-day')
+            ->where('date', $today)
+            ->distinct()
+            ->countAllResults();
+
+        $presentEmployees = $fullDayPresent + ($halfDayPresent * 0.5);
 
         $absentEmployees = $userModel
             ->where('role', 'employee')

@@ -345,43 +345,43 @@
                     recordsByDate[date].push(a);
                 });
 
-                // Determine final status for each date based on total work hours
+                // Determine final status for each date based on API response
                 let presentDays = 0;
                 let halfDays = 0;
                 let absentDays = 0;
                 let leaveDays = 0;
 
                 Object.values(recordsByDate).forEach(dateRecords => {
-                    // Sum work hours for this date
-                    let totalWorkSecondsForDate = 0;
                     let hasLeave = false;
                     let hasHoliday = false;
                     let hasWeekOff = false;
+                    let hasPresent = false;
+                    let hasHalfDay = false;
 
                     dateRecords.forEach(record => {
-                        if (record.status === 'leave') {
+                        const status = record.status ? record.status.toLowerCase() : '';
+                        if (status === 'leave') {
                             hasLeave = true;
-                        } else if (record.status === 'holiday') {
+                        } else if (status === 'holiday') {
                             hasHoliday = true;
-                        } else if (record.status === 'Week Off') {
+                        } else if (status === 'week off' || status === 'week_off') {
                             hasWeekOff = true;
-                        } else if (record.check_in_time && record.check_out_time) {
-                            const workHours = calculateWorkHours(record);
-                            totalWorkSecondsForDate += workHours;
+                        } else if (status === 'present') {
+                            hasPresent = true;
+                        } else if (status === 'half-day') {
+                            hasHalfDay = true;
                         }
                     });
 
-                    // Determine status based on total work hours for this date
+                    // Determine status based on API status
                     if (hasLeave) {
                         leaveDays++;
                     } else if (hasHoliday || hasWeekOff) {
                         presentDays++;
-                    } else if (totalWorkSecondsForDate >= 5 * 3600) { // 5 hours = present
+                    } else if (hasPresent) {
                         presentDays++;
-                    } else if (totalWorkSecondsForDate >= 4 * 3600) { // 4 hours = half-day
+                    } else if (hasHalfDay) {
                         halfDays++;
-                    } else if (totalWorkSecondsForDate > 0) {
-                        halfDays++; // Less than 4 hours but worked = half-day
                     } else {
                         absentDays++;
                     }
@@ -397,7 +397,10 @@
                 let totalLateMinutes = 0;
 
                 attendance.forEach(record => {
-                    if (record.check_in_time && record.check_out_time) {
+                    if (record.work_hours && record.work_hours !== '00:00:00') {
+                        totalSeconds += timeToSeconds(record.work_hours);
+                    } else if (record.check_in_time && record.check_out_time) {
+                        // Fallback just in case work_hours is not set
                         const workHours = calculateWorkHours(record);
                         totalSeconds += workHours;
                     }
