@@ -1320,7 +1320,7 @@
                     statusText = attendance.is_late == 1 ? 'Present (Late)' : 'Present';
                     statusClass = 'present';
                 } else if (status === 'half-day') {
-                    statusText = attendance.is_late == 1 ? 'Half-day (Late)' : 'Half-day';
+                    statusText = attendance.is_late == 1 ? 'Half Day (Late)' : 'Half Day';
                     statusClass = 'half-day';
                 }
 

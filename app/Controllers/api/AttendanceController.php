@@ -27,33 +27,84 @@ class AttendanceController extends ResourceController
     private $locationSettingsModel;
     private $notificationSettingsModel;
 
-    private function calculateAttendanceStatus(int $workedSeconds, array $companyRule): string
-    {
+    /**
+     * ═══════════════════════════════════════════════════════════════
+     * SINGLE SOURCE OF TRUTH — Daily Attendance Status
+     * ═══════════════════════════════════════════════════════════════
+     * Multi-punch rule: always use FIRST check-in → LAST check-out
+     * of the day as the gross work window, then:
+     *   1. Subtract meal break (unless Saturday half-day)
+     *   2. Add grace minutes before comparing thresholds
+     *   3. Apply thresholds:
+     *        net < 4 h  → absent
+     *        net 4–6 h  → half-day
+     *        net ≥ 6 h  → present
+     *   4. Hourly payroll: present if any hours worked > 0
+     *
+     * @param string      $date       Y-m-d
+     * @param string      $firstIn    Earliest check-in  HH:MM:SS
+     * @param string      $lastOut    Latest check-out   HH:MM:SS
+     * @param string|null $mealBreak  Meal break duration HH:MM:SS or null
+     * @param array       $rule       Company rules row
+     * @return array { net_seconds, work_hours, status }
+     */
+    private function calculateDayStatus(
+        string $date,
+        string $firstIn,
+        string $lastOut,
+        ?string $mealBreak,
+        array $rule
+    ): array {
+        // Guard: both times required
+        if (empty($firstIn) || empty($lastOut)) {
+            return ['net_seconds' => 0, 'work_hours' => '00:00:00', 'status' => 'absent'];
+        }
 
-        $payrollType = $companyRule['payroll_type'] ?? 'monthly';
+        // 1. Gross window: last check-out − first check-in
+        $inSec  = $this->timeToSeconds($firstIn);
+        $outSec = $this->timeToSeconds($lastOut);
+        if ($outSec <= $inSec) {
+            return ['net_seconds' => 0, 'work_hours' => '00:00:00', 'status' => 'absent'];
+        }
+        $grossSec = $outSec - $inSec;
 
-        // 🔹 HOURLY PAYROLL → half-day does NOT exist
+        // 2. Subtract meal break (skip on Saturday half-day)
+        $mealSec = 0;
+        if (!$this->isSaturdayHalfDay($date, $rule) && !empty($mealBreak)) {
+            $mealSec = $this->timeToSeconds($mealBreak);
+        }
+        $netSec = max(0, $grossSec - $mealSec);
+
+        // 3. Grace buffer (add before comparing thresholds)
+        $graceSec     = ((int)($rule['grace_minutes'] ?? 0)) * 60;
+        $effectiveSec = $netSec + $graceSec;
+
+        // 4. Status thresholds
+        $payrollType = $rule['payroll_type'] ?? 'monthly';
         if ($payrollType === 'hourly') {
-            return $workedSeconds > 0 ? 'present' : 'absent';
+            $status = $netSec > 0 ? 'present' : 'absent';
+        } else {
+            if ($effectiveSec >= 6 * 3600) {       // ≥ 6 h → Present
+                $status = 'present';
+            } elseif ($effectiveSec >= 4 * 3600) { // 4–6 h → Half-Day
+                $status = 'half-day';
+            } else {                                // < 4 h → Absent
+                $status = 'absent';
+            }
         }
 
-        // 🔹 DAILY / MONTHLY
-        $fullDayHours = $companyRule['working_hours_per_day'] ?? 8;
-        $halfDayHours = $companyRule['half_day_hours']
-            ?? ($fullDayHours / 2);
+        $workHours = sprintf(
+            '%02d:%02d:%02d',
+            intdiv($netSec, 3600),
+            intdiv($netSec % 3600, 60),
+            $netSec % 60
+        );
 
-        $fullDaySeconds = $fullDayHours * 3600;
-        $halfDaySeconds = $halfDayHours * 3600;
-
-        if ($workedSeconds >= $fullDaySeconds) {
-            return 'present';
-        }
-
-        // if ($workedSeconds >= $halfDaySeconds) {
-        //     return 'half-day';
-        // }
-
-        return 'absent';
+        return [
+            'net_seconds' => $netSec,
+            'work_hours'  => $workHours,
+            'status'      => $status,
+        ];
     }
 
     private function timeToSeconds(?string $time): int
@@ -409,15 +460,14 @@ class AttendanceController extends ResourceController
         }
 
         /* ---------------------------------------------------
-        7. ATTENDANCE STATUS (UPDATED - 4 HOUR RULE)
+        7. ATTENDANCE STATUS (6 HOUR RULE)
         --------------------------------------------------- */
-       $status = 'absent';
+        $status = 'absent';
 
         $effectiveSeconds = $workHoursInSeconds + $graceSeconds;
 
-        $fullDayThreshold  = 5 * 3600; // 6 hours = present
+        $fullDayThreshold  = 6 * 3600; // 6 hours = present
         $halfDayThreshold  = 4 * 3600; // 4 hours = half-day
-        // below 4 hours = absent
 
         if ($payrollType === 'hourly') {
             $status = $workHoursInSeconds > 0 ? 'present' : 'absent';
@@ -427,7 +477,7 @@ class AttendanceController extends ResourceController
             } elseif ($effectiveSeconds >= $halfDayThreshold) {
                 $status = 'half-day';
             } else {
-                $status = 'absent'; // less than 4 hours
+                $status = 'absent';
             }
         }
 
@@ -532,15 +582,42 @@ class AttendanceController extends ResourceController
             return $this->respond(['status' => 'error', 'message' => 'No check-in record found for today'], 400);
         }
 
-        // Calculate work hours using the helper method
-        $calculation = $this->calculateWorkHours($date, $latestAttendance['meal_break'], $latestAttendance['check_in_time'], $checkOutTimeOnly);
+        // ── Multi-punch: find the FIRST check-in of the day ──────────────────
+        // Status must reflect the full day window (first check-in → this checkout)
+        // so that a 2nd/3rd punch checkout saves the correct cumulative status.
+        $firstRecord = $this->attendanceModel
+            ->where('user_id', $user->sub)
+            ->where('date', $date)
+            ->orderBy('id', 'ASC')
+            ->first();
+        $firstCheckIn = $firstRecord['check_in_time'] ?? $latestAttendance['check_in_time'];
+
+        // Load company rules for calculateDayStatus
+        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+
+        // Calculate status over the full day window
+        $dayCalc = $this->calculateDayStatus(
+            $date,
+            $firstCheckIn,
+            $checkOutTimeOnly,
+            $latestAttendance['meal_break'],
+            $companyRule ?? []
+        );
+
+        // Keep overtime from the single-session calculateWorkHours (overtime unchanged)
+        $sessionCalc = $this->calculateWorkHours(
+            $date,
+            $latestAttendance['meal_break'],
+            $latestAttendance['check_in_time'],
+            $checkOutTimeOnly
+        );
 
         $data = [
-            'check_out_time' => $checkOutTimeOnly, // Store only time (HH:MM:SS)
-            'work_hours' => $calculation['work_hours'],
-            'overtime' => $calculation['overtime'],
-            'meal_break' => $latestAttendance['meal_break'],
-            'status' => $calculation['status']
+            'check_out_time' => $checkOutTimeOnly,
+            'work_hours'     => $dayCalc['work_hours'],   // net hours from first-in → this checkout
+            'overtime'       => $sessionCalc['overtime'],  // overtime from this session
+            'meal_break'     => $latestAttendance['meal_break'],
+            'status'         => $dayCalc['status'],        // status from full-day window
         ];
 
         if ($this->attendanceModel->update($latestAttendance['id'], $data)) {
@@ -617,8 +694,8 @@ class AttendanceController extends ResourceController
             if (!empty($record['check_in_time']) && !empty($record['check_out_time'])) {
                 $calculation = $this->calculateWorkHours($record['date'], $record['meal_break'], $record['check_in_time'], $record['check_out_time']);
                 $record['work_hours'] = $calculation['work_hours'];
-                // Optionally update status as well if needed
-                // $record['status'] = $calculation['status'];
+                // Update status as well to ensure it matches the recalculated work hours
+                $record['status'] = $calculation['status'];
             }
         }
         // Return the attendance data
@@ -908,69 +985,70 @@ class AttendanceController extends ResourceController
                 return $row['user_id'] == $userId;
             });
 
-            // ── Accumulate ALL sessions per date ──
-            // Group by date, sum completed work_hours, pick earliest check_in & recalculate status
+            // ── Group all sessions by date ────────────────────────────────────────
             $byDate = [];
             foreach ($userAttendance as $record) {
                 $byDate[$record['date']][] = $record;
             }
 
-            // Fetch company rules once for status recalculation
-            $companyRuleForStatus = $companyRulesModel->orderBy('id', 'DESC')->first();
+            // Company rules (used for calculateDayStatus + late-detection)
+            $companyRuleForStatus = $companyRulesModel->orderBy('id', 'DESC')->first() ?? [];
             $startTimeForStatus   = $companyRuleForStatus['start_time'] ?? '09:30:00';
             $graceMinutes         = (int)($companyRuleForStatus['grace_period'] ?? 0);
-            $fullDaySeconds       = ((float)($companyRuleForStatus['working_hours_per_day'] ?? 8)) * 3600;
-            $halfDaySeconds       = ((float)($companyRuleForStatus['half_day_hours'] ?? 4)) * 3600;
-            $payrollType          = $companyRuleForStatus['payroll_type'] ?? 'monthly';
+            $graceSeconds         = $graceMinutes * 60;
 
             $attendanceByDate = [];
             foreach ($byDate as $date => $recs) {
-                // Sort ascending so first element = earliest check-in
+                // Sort ascending → $recs[0] = earliest check-in
                 usort($recs, fn($a, $b) => strcmp($a['check_in_time'], $b['check_in_time']));
 
-                $completedSeconds = 0;
-                $activeRecord     = null;
-                $lastCheckOut     = null;
+                $activeRecord = null;
+                $lastCheckOut = null;
 
                 foreach ($recs as $rec) {
                     if ($rec['check_out_time']) {
-                        // Sum duration of each completed session directly from timestamps
-                        $inSec  = $this->timeToSeconds($rec['check_in_time']);
-                        $outSec = $this->timeToSeconds($rec['check_out_time']);
-                        if ($outSec > $inSec) {
-                            $completedSeconds += ($outSec - $inSec);
-                        }
-                        // Track latest checkout for display
+                        // Track the latest checkout time across all sessions
                         if ($lastCheckOut === null || strcmp($rec['check_out_time'], $lastCheckOut) > 0) {
                             $lastCheckOut = $rec['check_out_time'];
                         }
                     } else {
-                        $activeRecord = $rec; // open session
+                        $activeRecord = $rec; // still clocked in
                     }
                 }
 
                 $first      = $recs[0];
-                $displayRec = $activeRecord ?? end($recs); // active session if any, else last completed
+                $displayRec = $activeRecord ?? end($recs);
 
-                // ── Recalculate status from TOTAL worked seconds ──
-                $graceSeconds  = $graceMinutes * 60;
-                $effectiveSecs = $completedSeconds + $graceSeconds;
-
-                if ($payrollType === 'hourly') {
-                    $computedStatus = $completedSeconds > 0 ? 'present' : 'absent';
+                // ── Status: FIRST check-in → LAST check-out (multi-punch rule) ──────
+                if ($activeRecord) {
+                    // Still clocked in → show as present (working)
+                    $computedStatus = 'present';
+                    $totalWorkHours = '00:00:00'; // will be updated at checkout
                 } else {
-                    if ($effectiveSecs >= $fullDaySeconds) {
-                        $computedStatus = 'present';
-                    } elseif ($effectiveSecs >= $halfDaySeconds) {
-                        $computedStatus = 'half-day';
-                    } elseif ($completedSeconds > 0) {
-                        $computedStatus = 'present'; // short hours, still present
-                    } else {
-                        $computedStatus = $activeRecord ? 'present' : 'absent'; // active = present
+                    // Recalculate from full-day window using canonical function
+                    $mealBreak = $first['meal_break'] ?? null; // use first session's meal break
+                    $dayCalc   = $this->calculateDayStatus(
+                        $date,
+                        $first['check_in_time'],
+                        $lastCheckOut,
+                        $mealBreak,
+                        $companyRuleForStatus
+                    );
+                    $computedStatus = $dayCalc['status'];
+                    $totalWorkHours = $dayCalc['work_hours'];
+
+                    // Persist corrected status + work_hours back to the last session's DB row
+                    // so the display layer always reads a trustworthy stored value.
+                    $lastRec = end($recs);
+                    if ($lastRec && ($lastRec['status'] !== $computedStatus || $lastRec['work_hours'] !== $totalWorkHours)) {
+                        $this->attendanceModel->update($lastRec['id'], [
+                            'status'     => $computedStatus,
+                            'work_hours' => $totalWorkHours,
+                        ]);
                     }
                 }
 
-                // ── Late detection based on FIRST check-in ──
+                // ── Late detection: always based on FIRST check-in ───────────────────
                 $firstCheckInSecs = $this->timeToSeconds($first['check_in_time']);
                 $startTimeSecs    = $this->timeToSeconds($startTimeForStatus);
                 $isLateCalc       = ($firstCheckInSecs > ($startTimeSecs + $graceSeconds)) ? 1 : 0;
@@ -978,22 +1056,13 @@ class AttendanceController extends ResourceController
                     ? (int)ceil(($firstCheckInSecs - $startTimeSecs - $graceSeconds) / 60)
                     : 0;
 
-                // Format total work hours as HH:MM:SS
-                $totalWorkHours = sprintf(
-                    '%02d:%02d:%02d',
-                    intdiv($completedSeconds, 3600),
-                    intdiv($completedSeconds % 3600, 60),
-                    $completedSeconds % 60
-                );
-
                 $attendanceByDate[$date] = array_merge($displayRec, [
-                    'check_in_time'     => $first['check_in_time'],       // EARLIEST of the day
-                    'check_out_time'    => $activeRecord ? null : $lastCheckOut, // null if still active
-                    'completed_seconds' => $completedSeconds,
-                    'work_hours'        => $totalWorkHours,                // TOTAL across all sessions
-                    'status'            => $computedStatus,                // recalculated status
-                    'is_late'           => $isLateCalc,                   // based on FIRST check-in
-                    'late_minutes'      => $lateMinutesCalc,               // based on FIRST check-in
+                    'check_in_time'  => $first['check_in_time'],             // EARLIEST of the day
+                    'check_out_time' => $activeRecord ? null : $lastCheckOut, // null if still active
+                    'work_hours'     => $totalWorkHours,                      // net hours (first-in → last-out)
+                    'status'         => $computedStatus,                      // canonical status
+                    'is_late'        => $isLateCalc,
+                    'late_minutes'   => $lateMinutesCalc,
                 ]);
             }
 

@@ -1126,7 +1126,7 @@
                         $('#firstname').val(userInfo.firstname);
                         $('#lastname').val(userInfo.lastname);
                         $('#email').val(user.email);
-                        // $('#password').val();
+                        $('#password').val(user.password);
                         $('input[name="gender"][value="' + userInfo.gender + '"]').prop('checked', true);
                         $('#marital_status').val(userInfo.marital_status);
                         $('#date_of_birth').val(userInfo.date_of_birth);

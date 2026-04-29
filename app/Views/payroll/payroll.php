@@ -930,6 +930,7 @@
             $('#loader').show();
 
             // Fetch leaves and half-days
+             
             $.ajax({
                 url: '<?= base_url("api/payroll/get-monthly-leaves") ?>',
                 method: 'POST',

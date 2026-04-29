@@ -125,39 +125,38 @@ trait CompanyRuleTrait
                         $countedDates[$dateStr] = true;
                     }
 
-                    // ── Sandwich Leave Rule ──────────────────────────────────────────────
-                    // Friday leave → also count Saturday (+1) and Sunday (+2)
-                    if (!$isHalfDay && $dow === 5) {
-                        $sat = (clone $current)->modify('+1 day');
-                        $sun = (clone $current)->modify('+2 days');
+                    // ── Sandwich Leave Rule (apply only for Fri/Mon leave) ─────────────
+                    if (!$isHalfDay) {
+                        // Friday leave → also count Saturday (+1) and Sunday (+2) always
+                        if ($dow === 5) {
+                            $sat = (clone $current)->modify('+1 day');
+                            $sun = (clone $current)->modify('+2 days');
 
-                        foreach ([$sat, $sun] as $weekend) {
-                            $wStr = $weekend->format('Y-m-d');
-                            if (
-                                !isset($holidaySet[$wStr]) &&
-                                !isset($presentOrHalfDayDates[$wStr]) &&
-                                !isset($countedDates[$wStr])
-                            ) {
-                                $total += 1;
-                                $countedDates[$wStr] = true;
+                            foreach ([$sat, $sun] as $weekend) {
+                                $wStr = $weekend->format('Y-m-d');
+                                if (
+                                    !isset($presentOrHalfDayDates[$wStr]) &&
+                                    !isset($countedDates[$wStr])
+                                ) {
+                                    $total += 1;
+                                    $countedDates[$wStr] = true;
+                                }
                             }
                         }
-                    }
+                        // Monday leave → also count preceding Sunday (-1) and Saturday (-2) always
+                        if ($dow === 1) {
+                            $sun = (clone $current)->modify('-1 day');
+                            $sat = (clone $current)->modify('-2 days');
 
-                    // Monday leave → also count preceding Sunday (-1) and Saturday (-2)
-                    if (!$isHalfDay && $dow === 1) {
-                        $sun = (clone $current)->modify('-1 day');
-                        $sat = (clone $current)->modify('-2 days');
-
-                        foreach ([$sat, $sun] as $weekend) {
-                            $wStr = $weekend->format('Y-m-d');
-                            if (
-                                !isset($holidaySet[$wStr]) &&
-                                !isset($presentOrHalfDayDates[$wStr]) &&
-                                !isset($countedDates[$wStr])
-                            ) {
-                                $total += 1;
-                                $countedDates[$wStr] = true;
+                            foreach ([$sat, $sun] as $weekend) {
+                                $wStr = $weekend->format('Y-m-d');
+                                if (
+                                    !isset($presentOrHalfDayDates[$wStr]) &&
+                                    !isset($countedDates[$wStr])
+                                ) {
+                                    $total += 1;
+                                    $countedDates[$wStr] = true;
+                                }
                             }
                         }
                     }

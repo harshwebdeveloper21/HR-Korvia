@@ -335,13 +335,61 @@
                     : attendance;
 
                 // Calculate stats based on effective attendance only
-                var presentDays = effectiveAttendance.filter(a => a.status === 'present').length;
-                var holidayDays = effectiveAttendance.filter(a => a.status === 'holiday').length;
-                var weekOffDays = effectiveAttendance.filter(a => a.status === 'Week Off').length;
-                var presentDays = presentDays + holidayDays + weekOffDays;
-                const halfDays = effectiveAttendance.filter(a => a.status === 'half-day').length;
-                const leaveDays = effectiveAttendance.filter(a => a.status === 'leave').length;
-                const absentDays = workingDays - presentDays - halfDays - leaveDays;
+                // Group records by date to handle multiple check-ins on the same day
+                const recordsByDate = {};
+                effectiveAttendance.forEach(a => {
+                    const date = a.date.substring(0, 10);
+                    if (!recordsByDate[date]) {
+                        recordsByDate[date] = [];
+                    }
+                    recordsByDate[date].push(a);
+                });
+
+                // Determine final status for each date based on total work hours
+                let presentDays = 0;
+                let halfDays = 0;
+                let absentDays = 0;
+                let leaveDays = 0;
+
+                Object.values(recordsByDate).forEach(dateRecords => {
+                    // Sum work hours for this date
+                    let totalWorkSecondsForDate = 0;
+                    let hasLeave = false;
+                    let hasHoliday = false;
+                    let hasWeekOff = false;
+
+                    dateRecords.forEach(record => {
+                        if (record.status === 'leave') {
+                            hasLeave = true;
+                        } else if (record.status === 'holiday') {
+                            hasHoliday = true;
+                        } else if (record.status === 'Week Off') {
+                            hasWeekOff = true;
+                        } else if (record.check_in_time && record.check_out_time) {
+                            const workHours = calculateWorkHours(record);
+                            totalWorkSecondsForDate += workHours;
+                        }
+                    });
+
+                    // Determine status based on total work hours for this date
+                    if (hasLeave) {
+                        leaveDays++;
+                    } else if (hasHoliday || hasWeekOff) {
+                        presentDays++;
+                    } else if (totalWorkSecondsForDate >= 5 * 3600) { // 5 hours = present
+                        presentDays++;
+                    } else if (totalWorkSecondsForDate >= 4 * 3600) { // 4 hours = half-day
+                        halfDays++;
+                    } else if (totalWorkSecondsForDate > 0) {
+                        halfDays++; // Less than 4 hours but worked = half-day
+                    } else {
+                        absentDays++;
+                    }
+                });
+
+                // Update absent days calculation
+                absentDays = workingDays - presentDays - halfDays - leaveDays;
+                if (absentDays < 0) absentDays = 0;
 
                 // Calculate total work hours
                 let totalSeconds = 0;
