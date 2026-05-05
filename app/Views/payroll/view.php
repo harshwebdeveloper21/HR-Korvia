@@ -953,8 +953,9 @@
             const fullLeaves = parseFloat(p.total_leaves)      || 0;
             const halfLeaves = parseFloat(p.total_half_day)    || 0;
             const paidLeaves = parseFloat(p.used_paid_leaves)  || 0;
-            // Unpaid leaves = total (incl. half-day) minus paid leaves used
-            const leaves     = Math.max((fullLeaves + halfLeaves * 0.5) - paidLeaves, 0);
+            const sickLeaves = parseFloat(p.used_sick_leaves)  || 0;
+            // Unpaid leaves = total (incl. half-day) minus paid and sick leaves
+            const leaves     = Math.max((fullLeaves + halfLeaves * 0.5) - paidLeaves - sickLeaves, 0);
 
             const [yr, mo]    = (rawMonth || '2026-01').split('-');
             const daysInMonth = new Date(parseInt(yr), parseInt(mo), 0).getDate();
