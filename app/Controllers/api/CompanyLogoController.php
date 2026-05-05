@@ -22,22 +22,19 @@ class CompanyLogoController extends ResourceController
  
     public function getCompanyLogo()
     {
-        $company = $this->companyLogoModel->first(); // Fetch latest logo
+        $company = $this->companyLogoModel->first();
 
-        // Set default logo path
         $defaultLogo = base_url(env('ImagePath').'upload/fab_logo.jpg');
+        $logoUrl = ($company && !empty($company['logo_img']))
+            ? base_url('upload/' . $company['logo_img'])
+            : $defaultLogo;
 
-        if ($company && !empty($company['logo_img'])) {
-            return $this->respond([
-                'status' => 'success',
-                'logo_img' =>base_url('upload/' . $company['logo_img'])
-            ]);
-        } else {
-            return $this->respond([
-                'status' => 'success',
-                'logo_img' => $defaultLogo // Return default logo instead of error
-            ]);
-        }
+        return $this->respond([
+            'status'          => 'success',
+            'logo_img'        => $logoUrl,
+            'company_name'    => $company['company_name']    ?? 'Fablead Developers Technolab',
+            'company_address' => $company['company_address'] ?? '',
+        ]);
     }
 
     public function updateLogo()
