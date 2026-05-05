@@ -950,7 +950,9 @@
         payrolls.forEach(p => {
             const name      = (p.username || '').trim();
             const salary    = Math.round(parseFloat(p.salary_amount) || 0);
-            const leaves    = parseFloat(p.total_leaves)     || 0;
+            const fullLeaves = parseFloat(p.total_leaves)    || 0;
+            const halfLeaves = parseFloat(p.total_half_day)  || 0;
+            const leaves     = fullLeaves + (halfLeaves * 0.5); // e.g. 3 full + 1 half = 3.5
             const [yr, mo]    = (rawMonth || '2026-01').split('-');
             const daysInMonth = new Date(parseInt(yr), parseInt(mo), 0).getDate();
             const perDay      = Math.round(salary / daysInMonth);
