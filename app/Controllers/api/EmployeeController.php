@@ -649,7 +649,7 @@ class EmployeeController extends ResourceController
 
         // Build query with join
         $builder = $this->userModel
-            ->select('users.*, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, department.department_name, department.id as department_id, employee_leaves.paid_leave, employee_leaves.casual_leave')
+            ->select('users.*, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, user_info.salary, user_info.last_increment_date, user_info.last_increment_amount, department.department_name, department.id as department_id, employee_leaves.paid_leave, employee_leaves.casual_leave')
             ->join('user_info', 'user_info.user_id = users.id')
             ->join('department', 'department.id = user_info.department_id', 'left')
             ->join('employee_leaves', 'employee_leaves.employee_id = users.id', 'left');
@@ -694,6 +694,9 @@ class EmployeeController extends ResourceController
                     'remaining_sick_leave' => (float) ($row['casual_leave'] ?? 0),
                     'department_id' => $row['department_id'],
                     'department_name' => $row['department_name'],
+                    'salary' => (float) ($row['salary'] ?? 0),
+                    'last_increment_date' => $row['last_increment_date'] ?? 'N/A',
+                    'last_increment_amount' => (float) ($row['last_increment_amount'] ?? 0),
                     'profile_image_url' => !empty($row['profile_image']) ? base_url('upload/' . $row['profile_image']) : base_url('public/upload/default-profile.jpg'),
                 ]
             ];
@@ -1321,6 +1324,151 @@ class EmployeeController extends ResourceController
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Job details updated successfully'
+        ]);
+    }
+    public function incrementSalary()
+    {
+        $user = $this->authorize();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized access');
+        }
+
+        $userId          = $this->request->getPost('user_id');
+        $incrementAmount = $this->request->getPost('increment_amount');
+        $incrementDate   = $this->request->getPost('increment_date');
+
+        if (!$userId || !$incrementAmount || $incrementAmount <= 0 || !$incrementDate) {
+            return $this->failValidationErrors('Invalid increment data provided.');
+        }
+
+        $userInfo = $this->userInfoModel->where('user_id', $userId)->first();
+        if (!$userInfo) {
+            return $this->failNotFound('Employee info not found');
+        }
+
+        $db = \Config\Database::connect();
+
+        // ---- Idempotency Guard ----
+        // Prevent duplicate inserts if the same request fires twice within 30 seconds
+        $thirtySecondsAgo = date('Y-m-d H:i:s', strtotime('-30 seconds'));
+        $existing = $db->table('salary_increment_history')
+            ->where('employee_id', $userId)
+            ->where('increment_amount', (float)$incrementAmount)
+            ->where('created_at >=', $thirtySecondsAgo)
+            ->countAllResults();
+
+        if ($existing > 0) {
+            return $this->respond([
+                'status'  => 'success',
+                'message' => 'Salary already updated (duplicate request ignored).'
+            ]);
+        }
+
+        $previousSalary = (float)($userInfo['salary'] ?? 0);
+        $newSalary      = $previousSalary + (float)$incrementAmount;
+        $now            = date('Y-m-d H:i:s');
+
+        // ---- Build JSON history array (append, never overwrite) ----
+        $existingJson = $userInfo['last_increment_date'] ?? null;
+        $historyArray = [];
+
+        if (!empty($existingJson)) {
+            $decoded = json_decode($existingJson, true);
+            if (is_array($decoded)) {
+                $historyArray = $decoded;
+            }
+        }
+
+        // Prepend new entry so latest is first
+        array_unshift($historyArray, [
+            'increment_amount' => (float)$incrementAmount,
+            'previous_salary'  => $previousSalary,
+            'new_salary'       => $newSalary,
+            'effective_date'   => $incrementDate,
+            'created_at'       => $now,
+        ]);
+
+        $db->transStart();
+
+        // Save updated salary + JSON history to user_info
+        $this->userInfoModel->where('user_id', $userId)->set([
+            'salary'                => $newSalary,
+            'last_increment_date'   => json_encode($historyArray),
+            'last_increment_amount' => (float)$incrementAmount,  // keep latest amount as scalar
+        ])->update();
+
+        // Also insert into relational history table for profile tab queries
+        $db->table('salary_increment_history')->insert([
+            'employee_id'         => $userId,
+            'increment_amount'    => (float)$incrementAmount,
+            'previous_salary'     => $previousSalary,
+            'new_salary'          => $newSalary,
+            'effective_from_date' => $incrementDate,
+            'updated_by'          => $user->sub,
+            'created_at'          => $now,
+        ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->failServerError('Failed to update salary increment.');
+        }
+
+        return $this->respond([
+            'status'  => 'success',
+            'message' => 'Salary incremented successfully! New salary: ₹' . number_format($newSalary, 2)
+        ]);
+    }
+
+    public function getIncrementHistory($userInfoId = null)
+    {
+        $authUser = $this->authorize();
+        if (!$authUser) {
+            return $this->failUnauthorized('Unauthorized access');
+        }
+
+        if (!$userInfoId) {
+            return $this->failValidationErrors('Employee ID is required.');
+        }
+
+        // The profile page passes user_info.id — resolve it to users.id
+        $userInfo = $this->userInfoModel->find($userInfoId);
+        if (!$userInfo) {
+            return $this->failNotFound('Employee not found.');
+        }
+        $usersId = $userInfo['user_id']; // users.id — stored as employee_id in history
+
+        $db = \Config\Database::connect();
+
+        // Primary source: relational salary_increment_history table (descending)
+        $records = $db->table('salary_increment_history as h')
+            ->select('h.id, h.increment_amount, h.previous_salary, h.new_salary, h.effective_from_date, h.created_at')
+            ->where('h.employee_id', $usersId)
+            ->orderBy('h.id', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Fallback: if relational table has no rows, parse JSON from user_info.last_increment_date
+        if (empty($records) && !empty($userInfo['last_increment_date'])) {
+            $decoded = json_decode($userInfo['last_increment_date'], true);
+            if (is_array($decoded)) {
+                // JSON is already prepended (latest first); map to expected field names
+                $records = array_map(function ($entry, $idx) {
+                    return [
+                        'id'                  => $idx + 1,
+                        'increment_amount'    => $entry['increment_amount'] ?? 0,
+                        'previous_salary'     => $entry['previous_salary']  ?? 0,
+                        'new_salary'          => $entry['new_salary']       ?? 0,
+                        'effective_from_date' => $entry['effective_date']   ?? '',
+                        'created_at'          => $entry['created_at']       ?? '',
+                    ];
+                }, $decoded, array_keys($decoded));
+            }
+        }
+
+        return $this->respond([
+            'status'  => 'success',
+            'history' => $records
         ]);
     }
 }

@@ -220,6 +220,56 @@
     </div>
 </div>
 
+<!-- Salary Increment Modal -->
+<div class="modal fade" id="incrementModal" tabindex="-1" aria-labelledby="incrementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#E66136; color:white;">
+                <h5 class="modal-title" id="incrementModalLabel">
+                    <i class="mdi mdi-trending-up me-1"></i> Salary Increment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="incrementForm">
+                    <input type="hidden" name="increment_user_id" id="increment_user_id">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Employee:</label>
+                        <span id="increment_employee_name" class="ms-1"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Current Salary (&#8377;):</label>
+                            <input type="text" class="form-control bg-light" id="current_salary" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Last Increment Date:</label>
+                            <input type="text" class="form-control bg-light" id="last_increment_date" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="increment_amount" class="form-label fw-bold">New Increment Amount (&#8377;) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="mdi mdi-plus"></i></span>
+                            <input type="number" class="form-control" id="increment_amount" name="increment_amount" placeholder="e.g. 2000" min="1" required>
+                        </div>
+                        <small class="text-muted">This amount will be added to the current salary.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Effective From Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="increment_date" name="increment_date" required value="<?= date('Y-m-d') ?>">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnSaveIncrement" style="background:#E66136; border-color:#E66136;">
+                    <i class="mdi mdi-check me-1"></i> Update Salary
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     $(document).ready(function () {
@@ -298,6 +348,7 @@
                                                         <span class="detail-value">${empRemSick}</span>
                                                     </div>
                                                     <div class="detail-actions">
+                                                        <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info.salary || 0}" data-last-date="${employee.user_info.last_increment_date || 'N/A'}" class="btn btn-sm btn-success open-increment-modal" title="Increment"><i class="mdi mdi-cash-plus"></i> Increment</a>
                                                         <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="btn btn-sm btn-secondary open-password-modal" title="Password"><i class="fa fa-key"></i> Password</a>
                                                         <a href="/employee/profile/${employee.user_info.id}" class="btn btn-sm btn-primary" title="View"><i class="mdi mdi-eye text-white"></i> View</a>
                                                         <a href="/employee/${employee.user.id}" class="btn btn-sm btn-warning" title="Edit"><i class="mdi mdi-pencil"></i> Edit</a>
@@ -312,6 +363,9 @@
                                         <td class="desktop-only-col">${empRemPaid}</td>
                                         <td class="desktop-only-col">${empRemSick}</td>
                                         <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
+                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info.salary || 0}" data-last-date="${employee.user_info.last_increment_date || 'N/A'}" class="text-success fs-5 open-increment-modal" title="Salary Increment">
+                                                <i class="mdi mdi-cash-plus"></i>
+                                            </a>
                                             <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="text-primary fs-5 open-password-modal" title="Password">
                                                 <i class="fa fa-key" aria-hidden="true"></i>
                                             </a>
@@ -553,6 +607,80 @@
                 Swal.fire('Error', 'Something went wrong', 'error');
             });
     });
+
+    // ---- Salary Increment Modal ----
+    $(document).on('click', '.open-increment-modal', function (e) {
+        e.preventDefault();
+        const userId   = $(this).data('id');
+        const name     = $(this).data('name');
+        const salary   = $(this).data('salary');
+        const lastDate = $(this).data('last-date');
+
+        // Format the last increment date nicely
+        let formattedDate = 'No previous increment';
+        if (lastDate && lastDate !== 'N/A' && lastDate !== 'null' && lastDate !== '') {
+            const d = new Date(lastDate);
+            if (!isNaN(d.getTime())) {
+                formattedDate = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+        }
+
+        $('#increment_user_id').val(userId);
+        $('#increment_employee_name').text(name);
+        $('#current_salary').val(parseFloat(salary || 0).toLocaleString('en-IN'));
+        $('#last_increment_date').val(formattedDate);
+        $('#increment_amount').val('');
+
+        const modal = new bootstrap.Modal(document.getElementById('incrementModal'));
+        modal.show();
+    });
+
+
+    // Use .off().on() to prevent duplicate event stacking on modal reuse
+    $('#btnSaveIncrement').off('click').on('click', function () {
+        const $btn            = $(this);
+        const userId          = $('#increment_user_id').val();
+        const incrementAmount = parseFloat($('#increment_amount').val());
+        const incrementDate   = $('#increment_date').val() || new Date().toISOString().split('T')[0];
+        const token           = localStorage.getItem('token');
+
+        if (!incrementAmount || incrementAmount <= 0) {
+            Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please enter a valid increment amount greater than 0.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+            return;
+        }
+
+        if (!incrementDate) {
+            Swal.fire({ icon: 'warning', title: 'Required Field', text: 'Please select the effective date.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+            return;
+        }
+
+        // Disable button immediately to prevent double-click duplicate submissions
+        $btn.prop('disabled', true).text('Saving...');
+
+        $.ajax({
+            url: '<?= base_url("/api/employee/increment-salary") ?>',
+            type: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            data: { user_id: userId, increment_amount: incrementAmount, increment_date: incrementDate },
+            success: function (response) {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Update Salary');
+                if (response.status === 'success') {
+                    Swal.fire({ icon: 'success', title: 'Success', text: response.message || 'Salary incremented successfully!', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false })
+                        .then(() => {
+                            bootstrap.Modal.getInstance(document.getElementById('incrementModal')).hide();
+                            fetchEmployees($('#departmentFilter').val());
+                        });
+                } else {
+                    Swal.fire('Error', response.message || 'Failed to update salary', 'error');
+                }
+            },
+            error: function (xhr) {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Update Salary');
+                Swal.fire('Error', xhr.responseJSON?.message || 'Something went wrong', 'error');
+            }
+        });
+    });
+
 </script>
 
 <?= $this->endSection(); ?>
