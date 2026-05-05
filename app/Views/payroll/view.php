@@ -948,11 +948,14 @@
         let totalLeave = 0, totalDeduction = 0, totalSalary = 0, totalTax = 0, totalNetPay = 0, totalSalaryAmt = 0;
 
         payrolls.forEach(p => {
-            const name      = (p.username || '').trim();
-            const salary    = Math.round(parseFloat(p.salary_amount) || 0);
-            const fullLeaves = parseFloat(p.total_leaves)    || 0;
-            const halfLeaves = parseFloat(p.total_half_day)  || 0;
-            const leaves     = fullLeaves + (halfLeaves * 0.5); // e.g. 3 full + 1 half = 3.5
+            const name       = (p.username || '').trim();
+            const salary     = Math.round(parseFloat(p.salary_amount) || 0);
+            const fullLeaves = parseFloat(p.total_leaves)      || 0;
+            const halfLeaves = parseFloat(p.total_half_day)    || 0;
+            const paidLeaves = parseFloat(p.used_paid_leaves)  || 0;
+            // Unpaid leaves = total (incl. half-day) minus paid leaves used
+            const leaves     = Math.max((fullLeaves + halfLeaves * 0.5) - paidLeaves, 0);
+
             const [yr, mo]    = (rawMonth || '2026-01').split('-');
             const daysInMonth = new Date(parseInt(yr), parseInt(mo), 0).getDate();
             const perDay      = Math.round(salary / daysInMonth);
@@ -972,12 +975,13 @@
             totalTax       += taxAmt;
             totalNetPay    += netPay;
 
+            // Column order: NAME | SALARY | LEAVE | PER DAY | DEDUCTION | TAX | NET PAY
             tableBody.push([
                 name,
+                'Rs. ' + salary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 leaves % 1 === 0 ? leaves.toString() : leaves.toFixed(1),
                 'Rs. ' + perDay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 'Rs. ' + deduction.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-                'Rs. ' + salary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 taxText,
                 'Rs. ' + netPay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
             ]);
@@ -985,10 +989,10 @@
 
         tableBody.push([
             'TOTAL',
+            'Rs. ' + totalSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
             totalLeave % 1 === 0 ? totalLeave.toString() : totalLeave.toFixed(1),
             '',
             'Rs. ' + totalDeduction.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-            'Rs. ' + totalSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
             'Rs. ' + totalTax.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
             'Rs. ' + totalNetPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })
         ]);
@@ -1047,13 +1051,13 @@
         doc.autoTable({
             startY: tableStartY,
             margin: { left: 40, right: 40 },
-            head: [['NAME', 'LEAVE\n(Days)', 'PER DAY\nSALARY (Rs)', 'DEDUCTION\n(Rs)', 'SALARY\n(Rs)', 'TAX\n(Rs)', 'NET PAY\n(Rs)']],
+            head: [['NAME', 'SALARY\n(Rs)', 'LEAVE\n(Days)', 'PER DAY\nSALARY (Rs)', 'DEDUCTION\n(Rs)', 'TAX\n(Rs)', 'NET PAY\n(Rs)']],
             body: tableBody,
             headStyles: { fillColor: orange, textColor: white, fontStyle: 'bold', fontSize: 7, halign: 'center', valign: 'middle', cellPadding: 3 },
             columnStyles: {
                 0: { halign: 'left',   cellWidth: 'auto' },
-                1: { halign: 'center', cellWidth: 40 },
-                2: { halign: 'right' },
+                1: { halign: 'right' },
+                2: { halign: 'center', cellWidth: 40 },
                 3: { halign: 'right' },
                 4: { halign: 'right' },
                 5: { halign: 'center' },
@@ -1070,12 +1074,12 @@
                     data.cell.styles.fontSize  = 8;
                     return;
                 }
-                // Red highlight on Leave (1) and Tax (5) columns
-                if (data.section === 'body' && (data.column.index === 1 || data.column.index === 5)) {
+                // Red highlight on Leave (2) and Tax (5) columns
+                if (data.section === 'body' && (data.column.index === 2 || data.column.index === 5)) {
                     data.cell.styles.textColor = [200, 0, 0];
                 }
-                // Red color for Deduction values (3)
-                if (data.section === 'body' && data.column.index === 3) {
+                // Red color for Deduction values (4)
+                if (data.section === 'body' && data.column.index === 4) {
                     data.cell.styles.textColor = [200, 0, 0];
                     data.cell.styles.fontStyle = 'bold';
                 }
