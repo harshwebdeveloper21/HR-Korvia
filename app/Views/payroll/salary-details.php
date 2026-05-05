@@ -92,6 +92,51 @@
     </div>
   </div>
 </div>
+<!-- Remark and Adjustment Modal -->
+<div class="modal fade" id="remarkModal" tabindex="-1" aria-labelledby="remarkModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#E66136;color:white;">
+        <h5 class="modal-title" id="remarkModalLabel">
+          <i class="mdi mdi-comment-text-outline me-1"></i> Salary Adjustment & Remark
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="remarkForm">
+          <input type="hidden" id="modal_employee_id">
+          <div class="mb-3 d-flex justify-content-between">
+            <div>
+                <label class="form-label fw-bold">Employee:</label>
+                <span id="modal_employee_name" class="ms-1"></span>
+            </div>
+            <div>
+                <label class="form-label fw-bold">Month:</label>
+                <span id="modal_month_year" class="ms-1"></span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="adjustment_amount" class="form-label fw-bold">This Month Adjustment (₹)</label>
+            <input type="number" class="form-control" id="adjustment_amount" placeholder="e.g. 500 or -200" step="0.01">
+            <small class="text-muted">Enter positive for addition, negative for deduction.</small>
+          </div>
+
+          <div class="mb-3">
+            <label for="adjustment_remark" class="form-label fw-bold">Reason/Remark</label>
+            <textarea class="form-control" id="adjustment_remark" rows="3" placeholder="Reason for adjustment..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn hr-btnbg" id="btnConfirmSaveSalary" style="background:#E66136; border-color:#E66136; color:white;">
+          <i class="mdi mdi-content-save me-1"></i> Save Salary
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="row">
   <div class="col-lg-12 grid-margin stretch-card">
     <div class="card">
@@ -140,13 +185,9 @@
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Base Salary</th>
-                  <th>Leaves</th>
-                  <th>Half-day</th>
-                  <th>Used Paid Leave</th>
-                  <th>Used Sick Leave</th>
-                  <th>Rem. Paid Leave</th>
-                  <th>Rem. Sick Leave</th>
+                  <th>Leaves / Half-Day<br><small class="text-muted" style="font-size: 10px; color:white !important;">(Leaves / Half-Day)</small></th>
+                  <th>Used Leave<br><small class="text-muted" style="font-size: 10px; color:white !important;">(Paid / Sick)</small></th>
+                  <th>Rem. Leave<br><small class="text-muted" style="font-size: 10px; color:white !important;">(Paid / Sick)</small></th>
                   <th>Per-Day Salary</th>
                   <th>Tax</th>
                   <th>Salary Deduction</th>
@@ -160,64 +201,74 @@
                     data-late-deduction="<?= esc($emp['late_deduction'] ?? 0) ?>"
                     data-base-deduction="<?= esc($emp['base_deduction'] ?? $emp['salary_deduction']) ?>"
                     data-per-day="<?= esc($emp['per_day']) ?>">
+                    <!-- Name: avatar + name & salary text below -->
                     <td>
-                      <a href="/employee/profile/<?= $emp[
-                        "id"
-                      ] ?>" class="text-decoration-none text-dark">
-                        <div style="display: flex; align-items: center; gap: 10px;">
+                      <a href="/employee/profile/<?= $emp["id"] ?>" class="text-decoration-none text-dark">
+                        <div style="display: flex; align-items: center; gap: 12px;">
                           <?php if (!empty($emp["profile_image"])) { ?>
-                            <img src="/upload/<?= !empty($emp["profile_image"])
-                              ? esc($emp["profile_image"])
-                              : "default-profile.jpg" ?>" alt="Profile"
+                            <img src="/upload/<?= !empty($emp["profile_image"]) ? esc($emp["profile_image"]) : "default-profile.jpg" ?>" alt="Profile"
                               style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                            <span class="capitalize-text"><?= esc(
-                              $emp["firstname"],
-                            ) ?></span>
                           <?php } else { ?>
-                            <img src="/public/upload/<?= !empty(
-                              $emp["profile_image"]
-                            )
-                              ? esc($emp["profile_image"])
-                              : "default-profile.jpg" ?>" alt="Profile"
+                            <img src="/public/upload/<?= !empty($emp["profile_image"]) ? esc($emp["profile_image"]) : "default-profile.jpg" ?>" alt="Profile"
                               style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                            <span><?= esc($emp["firstname"]) ?></span>
                           <?php } ?>
+                          <div style="display: flex; flex-direction: column;">
+                            <span class="capitalize-text fw-bold"><?= esc($emp["firstname"]) ?></span>
+                            <small class="text-muted" style="font-size: 13px;">₹<?= number_format($emp["salary"], 0) ?></small>
+                          </div>
                         </div>
                       </a>
                     </td>
-                    <td>₹<?= number_format($emp["salary"], 2) ?></td>
+                    <!-- Leaves / Half-Day: merged -->
                     <td>
-                      <input type="number" name="leaves[]" class="form-control form-control-sm leave-input"
-                        value="<?= $emp["leaves"] ?>" min="0" data-index="<?= $index ?>"
-                        data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
+                      <div style="display:flex; flex-direction: column; align-items: center;">
+                        <div style="display:flex; gap:4px; align-items:center;">
+                          <input type="number" name="leaves[]" class="form-control form-control-sm leave-input"
+                            value="<?= $emp["leaves"] ?>" min="0" data-index="<?= $index ?>"
+                            data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
+                            data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>"
+                            style="width:58px;">
+                          <!-- <span class="text-muted">/</span> -->
+                          <input type="number" name="half_day[]" class="form-control form-control-sm half_day-input"
+                            value="<?= $emp["half_days"] ?>" min="0" data-index="<?= $index ?>"
+                            data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
+                            data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>"
+                            style="width:58px;">
+                        </div>
+                        <!-- <small class="text-muted" style="font-size: 9px; margin-top: 2px;">Leaves / Half-Day</small> -->
+                      </div>
                     </td>
+                    <!-- Used Leave (Paid / Sick): merged -->
                     <td>
-                      <input type="number" name="half_day[]" class="form-control form-control-sm half_day-input"
-                        value="<?= $emp["half_days"] ?>" min="0" data-index="<?= $index ?>"
-                        data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
+                      <div style="display:flex; flex-direction: column; align-items: center;">
+                        <div style="display:flex; gap:4px; align-items:center;">
+                          <input type="number" name="paid_leave[]" class="form-control form-control-sm paid-leave-input"
+                            value="<?= $emp["used_paid_leaves"] ?? 0 ?>" min="0" step="0.5" data-index="<?= $index ?>"
+                            data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
+                            data-allocated="<?= $emp['opening_paid_leaves'] ?? 0 ?>"
+                            data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>"
+                            style="width:58px;">
+                          <!-- <span class="text-muted">/</span> -->
+                          <input type="number" name="sick_leave[]" class="form-control form-control-sm sick-leave-input"
+                            value="<?= $emp["used_sick_leaves"] ?? 0 ?>" min="0" step="0.5" data-index="<?= $index ?>"
+                            data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
+                            data-allocated="<?= $emp['opening_casual_leaves'] ?? 0 ?>"
+                            data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>"
+                            style="width:58px;">
+                        </div>
+                        <!-- <small class="text-muted" style="font-size: 9px; margin-top: 2px;">Paid / Sick</small> -->
+                      </div>
                     </td>
+                    <!-- Rem. Leave (Paid / Sick): merged into one cell -->
                     <td>
-                      <input type="number" name="paid_leave[]" class="form-control form-control-sm paid-leave-input"
-                        value="<?= $emp["used_paid_leaves"] ?? 0 ?>" min="0" step="0.5" data-index="<?= $index ?>"
-                        data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-allocated="<?= $emp['opening_paid_leaves'] ?? 0 ?>"
-                        data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
-                    </td>
-                    <td>
-                      <input type="number" name="sick_leave[]" class="form-control form-control-sm sick-leave-input"
-                        value="<?= $emp["used_sick_leaves"] ?? 0 ?>" min="0" step="0.5" data-index="<?= $index ?>"
-                        data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
-                        data-allocated="<?= $emp['opening_casual_leaves'] ?? 0 ?>"
-                        data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>">
-                    </td>
-                    <td class="rem-paid-leave">
-                      <?= esc($emp['remaining_paid_leaves'] ?? 0) ?>
-                    </td>
-
-                    <td class="rem-sick-leave">
-                      <?= esc($emp['remaining_casual_leaves'] ?? 0) ?>
+                      <div style="display:flex; flex-direction: column; align-items: center;">
+                        <div>
+                          <span class="rem-paid-leave"><?= esc($emp['remaining_paid_leaves'] ?? 0) ?></span>
+                          <span class="text-muted"> / </span>
+                          <span class="rem-sick-leave"><?= esc($emp['remaining_casual_leaves'] ?? 0) ?></span>
+                        </div>
+                        <!-- <small class="text-muted" style="font-size: 9px; margin-top: 2px;">Paid / Sick</small> -->
+                      </div>
                     </td>
                     <td>₹<?= number_format($emp["per_day"], 2) ?><br><small
                         class="text-muted">₹<?= number_format($emp["per_hour"] ?? ($emp["per_day"] / 8), 2) ?>/hr</small>
@@ -491,20 +542,15 @@
     input.addEventListener('input', () => updateRowCalculations(row));
   });
 
+  let currentSavingRow = null;
+  let currentSavingBtn = null;
+
   document.querySelectorAll('.btn-save-single').forEach(btn => {
     btn.addEventListener('click', function () {
       const row = this.closest('tr');
       const employeeId = this.dataset.id;
-      const salary = row.querySelector('input[name="salary[]"]').value;
-      const leaves = row.querySelector('.leave-input').value;
-      const halfDay = row.querySelector('.half_day-input').value;
-      const paidLeave = row.querySelector('.paid-leave-input').value || 0;
-      const sickLeave = row.querySelector('.sick-leave-input').value || 0;
-      const deduction = row.querySelector('.deduction-input').value;
-      const netSalary = row.querySelector('.net-salary-input').value;
-      const overtimePay = (row.querySelector('.overtime-pay-input') && row.querySelector('.overtime-pay-input').value) || 0;
-      const totalOvertimeHours = (row.querySelector('.total-overtime-hours-input') && row.querySelector('.total-overtime-hours-input').value) || 0;
-      const month = row.querySelector('.single-month').value;
+      const employeeName = row.querySelector('.capitalize-text')?.textContent || row.querySelector('span')?.textContent || 'Employee';
+      const monthYear = row.querySelector('.single-month').value;
 
       // Validation Check
       if (row.querySelector('.is-invalid')) {
@@ -520,7 +566,44 @@
         return;
       }
 
-      const currentBtn = this;
+      currentSavingRow = row;
+      currentSavingBtn = this;
+
+      // Populate Modal
+      document.getElementById('modal_employee_id').value = employeeId;
+      document.getElementById('modal_employee_name').textContent = employeeName;
+      document.getElementById('modal_month_year').textContent = monthYear;
+      document.getElementById('adjustment_amount').value = '';
+      document.getElementById('adjustment_remark').value = '';
+
+      const remarkModal = new bootstrap.Modal(document.getElementById('remarkModal'));
+      remarkModal.show();
+    });
+  });
+
+  document.getElementById('btnConfirmSaveSalary').addEventListener('click', function() {
+      if (!currentSavingRow) return;
+
+      const adjustmentAmount = document.getElementById('adjustment_amount').value || 0;
+      const adjustmentRemark = document.getElementById('adjustment_remark').value;
+
+
+      const row = currentSavingRow;
+      const employeeId = currentSavingBtn.dataset.id;
+      const salary = row.querySelector('input[name="salary[]"]').value;
+      const leaves = row.querySelector('.leave-input').value;
+      const halfDay = row.querySelector('.half_day-input').value;
+      const paidLeave = row.querySelector('.paid-leave-input').value || 0;
+      const sickLeave = row.querySelector('.sick-leave-input').value || 0;
+      const deduction = row.querySelector('.deduction-input').value;
+      const netSalary = (parseFloat(row.querySelector('.net-salary-input').value) + parseFloat(adjustmentAmount)).toFixed(2);
+      const overtimePay = (row.querySelector('.overtime-pay-input') && row.querySelector('.overtime-pay-input').value) || 0;
+      const totalOvertimeHours = (row.querySelector('.total-overtime-hours-input') && row.querySelector('.total-overtime-hours-input').value) || 0;
+      const month = row.querySelector('.single-month').value;
+
+      const currentBtn = currentSavingBtn;
+      const modalElement = document.getElementById('remarkModal');
+      const modalInstance = bootstrap.Modal.getInstance(modalElement);
 
       fetch("<?= base_url("/api/payroll/save") ?>", {
         method: "POST",
@@ -540,18 +623,25 @@
           deduction: deduction,
           net_salary: netSalary,
           overtime_pay: overtimePay,
-          total_overtime_hours: totalOvertimeHours
+          total_overtime_hours: totalOvertimeHours,
+          adjustment_amount: adjustmentAmount,
+          adjustment_remark: adjustmentRemark
         })
       })
         .then(res => res.json())
         .then(data => {
           if (data.status === 'success') {
+            modalInstance.hide();
             const badge = document.createElement('span');
             badge.className = 'badge bg-success btn-sm rounded';
             badge.textContent = 'Saved';
             if (currentBtn.parentNode) {
               currentBtn.parentNode.replaceChild(badge, currentBtn);
             }
+            
+            // Update the UI net salary cell to reflect adjustment
+            row.querySelector('.net-salary-cell').textContent = '₹' + netSalary;
+
             Swal.fire({
               icon: 'success',
               title: 'Success',
@@ -585,7 +675,6 @@
                 showConfirmButton: false
             });
         });
-    });
   });
 
   // Deduction info modal – event delegation + touchend for mobile

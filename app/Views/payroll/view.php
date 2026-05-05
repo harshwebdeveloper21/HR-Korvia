@@ -247,6 +247,9 @@
                             <button class="btn hr-btnbg attendenceall" id="yearlySlipBtn">
                                 <i class="mdi mdi-download iconfontsize"></i> Yearly Slip
                             </button>
+                            <button type="button" id="btnSalarySheetView" class="btn hr-btnbg attendenceall" onclick="generateSalarySheetPDF()">
+                                <i class="mdi mdi-file-pdf iconfontsize"></i> Salary Sheet
+                            </button>
 
                             <a href="/payroll" class="btn hr-btnbg attendenceall">
                                 <i class="mdi mdi-plus iconfontsize"></i> Add Payroll
@@ -298,6 +301,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
     $(document).ready(function () {
         // Get last month as default
@@ -358,6 +363,7 @@
                 success: function (response) {
                     if (response.status === 'success' && response.data) {
                         const payrolls = response.data;
+                        window._payrollData = payrolls; // cache for Salary Sheet PDF
                         let tableRows = '';
                         let userRole = getUserRole(); // Get role from JWT
                         var baseImagePath = "<?= base_url(env("ImagePath")) ?>";
@@ -887,5 +893,133 @@
     });
 </script>
 
+<script>
+    // ─── Salary Sheet PDF (client-side, jsPDF + AutoTable) ──────────────────
+    function generateSalarySheetPDF() {
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+            alert('PDF library not loaded yet. Please wait a moment and try again.');
+            return;
+        }
+        const payrolls = window._payrollData || [];
+        if (!payrolls.length) {
+            Swal.fire({ icon: 'warning', title: 'No Data', text: 'No payroll records loaded. Please wait for the table to finish loading.' });
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+
+        const companyName = 'Fablead Developers Technolab';
+        const rawMonth    = document.getElementById('payrollMonthFilter')?.value || '';
+        const [yr, mo]    = (rawMonth || '2026-01').split('-');
+        const monthLabel  = new Date(yr, parseInt(mo) - 1, 1).toLocaleString('en-IN', { month: 'long' }) + ' ' + yr;
+        const fileName    = 'Salary_Sheet_' + monthLabel.replace(' ', '_') + '.pdf';
+
+        const tableBody = [];
+        let totalLeave = 0, totalDeduction = 0, totalSalary = 0, totalNet = 0;
+
+        payrolls.forEach(p => {
+            const name      = (p.username || '').trim();
+            const salary    = parseFloat(p.salary_amount)    || 0;
+            const netSalary = parseFloat(p.net_salary)       || 0;
+            const taxAmt    = parseFloat(p.tax_deduction)    || 0;
+            const deduction = Math.max(salary - netSalary - taxAmt, 0);
+            const taxText   = taxAmt > 0 ? 'Rs. ' + taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : 'No Tax';
+            const leaves    = parseFloat(p.total_leaves)     || 0;
+            const workDays  = parseFloat(p.working_days)     || 26;
+            const perDay    = workDays > 0 ? salary / workDays : 0;
+
+            totalLeave     += leaves;
+            totalDeduction += deduction;
+            totalSalary    += salary;
+            totalNet       += netSalary;
+
+            tableBody.push([
+                name,
+                leaves % 1 === 0 ? leaves.toString() : leaves.toFixed(1),
+                'Rs. ' + perDay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                'Rs. ' + deduction.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                'Rs. ' + salary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                taxText,
+                'Rs. ' + netSalary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                'Rs. ' + netSalary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            ]);
+        });
+
+        tableBody.push([
+            'TOTAL',
+            totalLeave % 1 === 0 ? totalLeave.toString() : totalLeave.toFixed(1),
+            '',
+            'Rs. ' + totalDeduction.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            'Rs. ' + totalSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            '',
+            'Rs. ' + totalNet.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            'Rs. ' + totalNet.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+        ]);
+
+        const orange      = [230, 97, 54];
+        const darkBg      = [40, 40, 50];
+        const lightGr     = [248, 248, 248];
+        const white       = [255, 255, 255];
+        const pageW       = doc.internal.pageSize.getWidth();
+        const totalRowIdx = tableBody.length - 1;
+
+        doc.setFillColor(...orange);
+        doc.rect(40, 30, pageW - 80, 22, 'F');
+        doc.setTextColor(...white);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(companyName, pageW / 2, 45, { align: 'center' });
+
+        doc.setFillColor(...darkBg);
+        doc.rect(40, 52, pageW - 80, 18, 'F');
+        doc.setTextColor(...white);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Monthly Salary Sheet - ' + monthLabel, pageW / 2, 64, { align: 'center' });
+
+        doc.autoTable({
+            startY: 74,
+            margin: { left: 40, right: 40 },
+            head: [['NAME', 'LEAVE\n(Days)', 'PER DAY\nSALARY (Rs)', 'DEDUCTION\n(Rs)', 'SALARY\n(Rs)', 'TAX\n(Rs)', 'NET PAY\n(Rs)', 'SALARY AMOUNT\n(Rs)']],
+            body: tableBody,
+            headStyles: { fillColor: orange, textColor: white, fontStyle: 'bold', fontSize: 7, halign: 'center', valign: 'middle', cellPadding: 3 },
+            columnStyles: {
+                0: { halign: 'left',   cellWidth: 'auto' },
+                1: { halign: 'center', cellWidth: 40 },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'center' },
+                6: { halign: 'right' },
+                7: { halign: 'right' },
+            },
+            styles: { fontSize: 7.5, cellPadding: { top: 4, bottom: 4, left: 4, right: 4 }, overflow: 'linebreak', lineColor: [220, 220, 220], lineWidth: 0.3 },
+            alternateRowStyles: { fillColor: lightGr },
+            bodyStyles: { textColor: [30, 30, 30], valign: 'middle' },
+            didParseCell: function (data) {
+                if (data.section === 'body' && data.row.index === totalRowIdx) {
+                    data.cell.styles.fillColor = darkBg;
+                    data.cell.styles.textColor = white;
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fontSize  = 8;
+                    return;
+                }
+                if (data.section === 'body' && data.column.index === 3) {
+                    data.cell.styles.textColor = [200, 0, 0];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+                if (data.section === 'body' && (data.column.index === 6 || data.column.index === 7)) {
+                    data.cell.styles.textColor = [0, 150, 70];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            },
+            foot: [['Generated by Fablead HR Portal - ' + monthLabel, '', '', '', '', '', '', '']],
+            footStyles: { fillColor: [240, 240, 240], textColor: [100, 100, 100], fontSize: 6, halign: 'left', fontStyle: 'italic' },
+        });
+
+        doc.save(fileName);
+    }
+</script>
 
 <?= $this->endSection() ?>

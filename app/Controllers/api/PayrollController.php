@@ -2319,6 +2319,37 @@ class PayrollController extends ResourceController
         ]);
     }
 
+    public function getPreviousAdjustment()
+    {
+        $userId = $this->request->getPost("user_id");
+        $monthYear = $this->request->getPost("month"); // This is the current month being processed
+
+        if (!$userId || !$monthYear) {
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Missing parameters"
+            ]);
+        }
+
+        // Calculate last month
+        $lastMonth = date("Y-m", strtotime($monthYear . " -1 month"));
+
+        $payrollModel = new PayrollModel();
+        $previous = $payrollModel
+            ->where("user_id", $userId)
+            ->where("month_year", $lastMonth)
+            ->first();
+
+        return $this->response->setJSON([
+            "status" => "success",
+            "data" => [
+                "amount" => $previous["adjustment_amount"] ?? 0,
+                "remark" => $previous["adjustment_remark"] ?? "No adjustment recorded"
+            ],
+            "last_month_label" => date("F Y", strtotime($lastMonth))
+        ]);
+    }
+
     public function savedata()
     {
         $userId = $this->request->getPost("employee_id");
@@ -2372,6 +2403,8 @@ class PayrollController extends ResourceController
                 "net_salary" => $this->request->getPost("net_salary"),
                 "overtime_pay" => (float) ($this->request->getPost("overtime_pay") ?? 0),
                 "total_overtime_hours" => (float) ($this->request->getPost("total_overtime_hours") ?? 0),
+                "adjustment_amount" => (float) ($this->request->getPost("adjustment_amount") ?? 0),
+                "adjustment_remark" => $this->request->getPost("adjustment_remark"),
                 "payment_date" => $existing ? $existing["payment_date"] : date("Y-m-d H:i:s"),
                 "payment_status" => $existing ? $existing["payment_status"] : "Paid",
             ];

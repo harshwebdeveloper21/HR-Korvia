@@ -1820,12 +1820,8 @@ class AttendanceController extends ResourceController
                 );
                 $workHours = $calculation['work_hours'];
                 $overTimeHours = $calculation['overtime'];
-                $workedSeconds = $this->timeToSeconds($workHours);
-
-                $calculatedStatus = $this->calculateAttendanceStatus(
-                    $workedSeconds,
-                    $companyRule
-                );
+                // Use the status already calculated by calculateWorkHours()
+                $calculatedStatus = $calculation['status'];
 
             }
 
@@ -1892,10 +1888,8 @@ class AttendanceController extends ResourceController
         }
 
         // Handle multiple records (existing logic)
-        $mb = new \DateTime($mealBreak);
-        $mealSeconds = ($mb->format('H') * 3600)
-            + ($mb->format('i') * 60)
-            + $mb->format('s');
+        // Use timeToSeconds() — DateTime cannot parse a bare HH:MM:SS string
+        $mealSeconds = $this->timeToSeconds($mealBreak);
 
         $totalSeconds = 0;
         $earliestCheckIn = null;

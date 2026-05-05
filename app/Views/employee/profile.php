@@ -93,6 +93,7 @@
 
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#compensation"><i class="fa fa-tasks" aria-hidden="true"></i> Job Details</a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#emergency"><i class="fa fa-bank"> </i> Bank Details</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#incrementHistory" id="incrementHistoryTab"><i class="mdi mdi-cash-plus"></i> Increment History</a></li>
 
             </ul>
 
@@ -559,6 +560,34 @@
                                 </div>
                             </div>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Increment History Tab -->
+                <div class="tab-pane fade" id="incrementHistory">
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="section-title">Increment History</h6>
+                        </div>
+                        <div id="incrementHistoryLoading" class="text-center py-4" style="display:none !important;">
+                            <div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle" id="incrementHistoryTable">
+                                <thead style="background-color:#E66136; color:#fff;">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Increment Amount (&#8377;)</th>
+                                        <th>Previous Salary (&#8377;)</th>
+                                        <th>New Salary (&#8377;)</th>
+                                        <th>Updated At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="incrementHistoryBody">
+                                    <tr><td colspan="5" class="text-center text-muted">Click the tab to load history.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -1100,8 +1129,53 @@
             });
         });
 
-    });
+        // ---- Increment History Tab ----
+        let incrementHistoryLoaded = false;
+        const profileUserInfoId = '<?= $id; ?>';
+
+        $(document).on('shown.bs.tab', '#incrementHistoryTab', function () {
+            if (incrementHistoryLoaded) return;
+            const token = localStorage.getItem('token');
+            const $tbody = $('#incrementHistoryBody');
+
+            $tbody.html('<tr><td colspan="7" class="text-center"><div class="spinner-border spinner-border-sm text-warning" role="status"></div>&nbsp; Loading...</td></tr>');
+
+            $.ajax({
+                url: '<?= base_url("/api/employee/increment-history/") ?>' + profileUserInfoId,
+                type: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.status === 'success' && res.history.length > 0) {
+                        let rows = '';
+                        res.history.forEach(function (r, idx) {
+                            const createdAt = r.created_at
+                                ? new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                                : 'N/A';
+                            rows += `<tr>
+                                <td>${idx + 1}</td>
+                                <td class="text-success fw-bold">+ &#8377;${parseFloat(r.increment_amount).toLocaleString('en-IN')}</td>
+                                <td>&#8377;${parseFloat(r.previous_salary).toLocaleString('en-IN')}</td>
+                                <td class="fw-bold">&#8377;${parseFloat(r.new_salary).toLocaleString('en-IN')}</td>
+                                <td>${createdAt}</td>
+                            </tr>`;
+                        });
+                        $tbody.html(rows);
+                        incrementHistoryLoaded = true;
+                    } else {
+                        $tbody.html('<tr><td colspan="5" class="text-center text-muted py-4"><i class="mdi mdi-information-outline me-1"></i> No increment history found.</td></tr>');
+                        incrementHistoryLoaded = true;
+                    }
+                },
+                error: function () {
+                    $tbody.html('<tr><td colspan="5" class="text-center text-danger">Failed to load increment history. Please try again.</td></tr>');
+                }
+            });
+        });
+
+    }); // end $(document).ready
 </script>
 
 
 <?= $this->endSection(); ?>
+

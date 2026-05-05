@@ -92,6 +92,23 @@ $role = $user ? $user->role : null;
           </ul>
         </div>
       </li>
+
+      
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#tabs" aria-expanded="false" aria-controls="tabs">
+          <i class="menu-icon mdi mdi-currency-inr"></i>
+          <span class="menu-title">Payroll</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="tabs">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="/payrollview">Manage Payroll</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/payroll">Add Payroll</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/account-detail-view">Manage Account Detail</a></li>
+          </ul>
+        </div>
+      </li>
+
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#cha-rts" aria-expanded="false" aria-controls="cha-rts">
           <i class="menu-icon mdi mdi-calendar"></i>
@@ -156,20 +173,6 @@ $role = $user ? $user->role : null;
       </li>
 
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="collapse" href="#tabs" aria-expanded="false" aria-controls="tabs">
-          <i class="menu-icon mdi mdi-currency-inr"></i>
-          <span class="menu-title">Payroll</span>
-          <i class="menu-arrow"></i>
-        </a>
-        <div class="collapse" id="tabs">
-          <ul class="nav flex-column sub-menu">
-            <li class="nav-item"> <a class="nav-link" href="/payrollview">Manage Payroll</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/payroll">Add Payroll</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/account-detail-view">Manage Account Detail</a></li>
-          </ul>
-        </div>
-      </li>
-      <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#task" aria-expanded="false" aria-controls="task">
           <i class="menu-icon mdi mdi-book-open"></i>
           <span class="menu-title">Task</span>
@@ -180,6 +183,21 @@ $role = $user ? $user->role : null;
             <li class="nav-item"> <a class="nav-link" href="/taskview">Manage Task</a></li>
             <li class="nav-item"> <a class="nav-link" href="/task">Add Task</a></li>
             <li class="nav-item"> <a class="nav-link" href="/all_subtask">SubTask List</a></li>
+          </ul>
+        </div>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#expense" aria-expanded="false" aria-controls="expense">
+          <i class="menu-icon mdi mdi-wallet"></i>
+          <span class="menu-title">Expense</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="expense">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('expenses') ?>">Expense List</a></li>
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('expenses/create') ?>">Add Expense</a></li>
+            <li class="nav-item"> <a class="nav-link" href="<?= base_url('expenses/categories') ?>">Expense Categories</a></li>
           </ul>
         </div>
       </li>
@@ -377,6 +395,13 @@ $role = $user ? $user->role : null;
         <a class="nav-link" href="/trainingview">
           <i class="menu-icon mdi mdi-currency-usd"></i>
           <span class="menu-title">Training</span>
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('expenses') ?>">
+          <i class="menu-icon mdi mdi-wallet"></i>
+          <span class="menu-title">Expense</span>
         </a>
       </li>
 
