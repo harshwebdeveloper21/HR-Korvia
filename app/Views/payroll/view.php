@@ -906,10 +906,28 @@
             return;
         }
 
+        const token = localStorage.getItem('token');
+
+        // Fetch company info first, then generate PDF
+        fetch('<?= base_url("/api/getCompanyLogo") ?>', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(r => r.json())
+        .then(companyData => {
+            _buildSalarySheetPDF(payrolls, companyData);
+        })
+        .catch(() => {
+            _buildSalarySheetPDF(payrolls, {});
+        });
+    }
+
+    function _buildSalarySheetPDF(payrolls, companyData) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
 
-        const companyName = 'Fablead Developers Technolab';
+        const companyName    = companyData.company_name    || 'Fablead Developers Technolab';
+        const companyAddress = companyData.company_address || '';
+        const companyLogo    = companyData.logo_img        || '';
         const rawMonth    = document.getElementById('payrollMonthFilter')?.value || '';
         const [yr, mo]    = (rawMonth || '2026-01').split('-');
         const monthLabel  = new Date(yr, parseInt(mo) - 1, 1).toLocaleString('en-IN', { month: 'long' }) + ' ' + yr;
@@ -934,14 +952,12 @@
 
             // Fetch Net Pay directly from the database and round it
             const netPay = Math.round(parseFloat(p.net_salary) || 0);
-            const salaryAmount = netPay;
 
             totalLeave     += leaves;
             totalDeduction += deduction;
             totalSalary    += salary;
             totalTax       += taxAmt;
             totalNetPay    += netPay;
-            totalSalaryAmt += salaryAmount; 
 
             tableBody.push([
                 name,
@@ -950,8 +966,7 @@
                 'Rs. ' + deduction.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 'Rs. ' + salary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 taxText,
-                'Rs. ' + netPay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-                'Rs. ' + salaryAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                'Rs. ' + netPay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
             ]);
         });
 
@@ -962,35 +977,64 @@
             'Rs. ' + totalDeduction.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
             'Rs. ' + totalSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
             'Rs. ' + totalTax.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-            'Rs. ' + totalNetPay.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-            'Rs. ' + totalSalaryAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            'Rs. ' + totalNetPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })
         ]);
 
         const orange      = [230, 97, 54];
         const darkBg      = [40, 40, 50];
         const lightGr     = [248, 248, 248];
         const white       = [255, 255, 255];
+        const black       = [0, 0, 0];
         const pageW       = doc.internal.pageSize.getWidth();
         const totalRowIdx = tableBody.length - 1;
 
-        doc.setFillColor(...orange);
-        doc.rect(40, 30, pageW - 80, 22, 'F');
-        doc.setTextColor(...white);
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text(companyName, pageW / 2, 45, { align: 'center' });
+        // ── Header: centered layout like salary slip ────────────────────────────
+        const headerH    = companyAddress ? 62 : 46;
+        const logoSize   = 44;
 
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.5);
+        doc.rect(30, 10, pageW - 60, headerH, 'S');
+
+        // Logo (if available) – centered left side
+        let logoEndX = 40;
+        if (companyLogo) {
+            const logoX = pageW / 2 - logoSize - 5;
+            const logoY = 14;
+            const img = new Image();
+            img.src = companyLogo;
+            try { doc.addImage(img, logoX, logoY, logoSize, logoSize); logoEndX = logoX + logoSize + 8; } catch(e) {}
+        }
+
+        // Company Name – bold, centered
+        doc.setTextColor(...black);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(companyName, pageW / 2, 35, { align: 'center' });
+
+        // Company Address – normal, centered, smaller
+        if (companyAddress) {
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(80, 80, 80);
+            doc.text(companyAddress, pageW / 2, 50, { align: 'center' });
+        }
+
+        // Month / Sheet title row – dark bar below header
+        const titleBarY = headerH + 10 + 10;
         doc.setFillColor(...darkBg);
-        doc.rect(40, 52, pageW - 80, 18, 'F');
+        doc.rect(30, titleBarY - 14, pageW - 60, 20, 'F');
         doc.setTextColor(...white);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        doc.text('Monthly Salary Sheet - ' + monthLabel, pageW / 2, 64, { align: 'center' });
+        doc.text('Monthly Salary Sheet - ' + monthLabel, pageW / 2, titleBarY, { align: 'center' });
+
+        const tableStartY = titleBarY + 12;
 
         doc.autoTable({
-            startY: 74,
+            startY: tableStartY,
             margin: { left: 40, right: 40 },
-            head: [['NAME', 'LEAVE\n(Days)', 'PER DAY\nSALARY (Rs)', 'DEDUCTION\n(Rs)', 'SALARY\n(Rs)', 'TAX\n(Rs)', 'NET PAY\n(Rs)', 'SALARY AMOUNT\n(Rs)']],
+            head: [['NAME', 'LEAVE\n(Days)', 'PER DAY\nSALARY (Rs)', 'DEDUCTION\n(Rs)', 'SALARY\n(Rs)', 'TAX\n(Rs)', 'NET PAY\n(Rs)']],
             body: tableBody,
             headStyles: { fillColor: orange, textColor: white, fontStyle: 'bold', fontSize: 7, halign: 'center', valign: 'middle', cellPadding: 3 },
             columnStyles: {
@@ -1000,8 +1044,7 @@
                 3: { halign: 'right' },
                 4: { halign: 'right' },
                 5: { halign: 'center' },
-                6: { halign: 'right' },
-                7: { halign: 'right' },
+                6: { halign: 'right' }
             },
             styles: { fontSize: 7.5, cellPadding: { top: 4, bottom: 4, left: 4, right: 4 }, overflow: 'linebreak', lineColor: [220, 220, 220], lineWidth: 0.3 },
             alternateRowStyles: { fillColor: lightGr },
@@ -1023,13 +1066,13 @@
                     data.cell.styles.textColor = [200, 0, 0];
                     data.cell.styles.fontStyle = 'bold';
                 }
-                // Green color for Net Pay (6) and Salary Amount (7)
-                if (data.section === 'body' && (data.column.index === 6 || data.column.index === 7)) {
+                // Green color for Net Pay (6)
+                if (data.section === 'body' && data.column.index === 6) {
                     data.cell.styles.textColor = [0, 150, 70];
                     data.cell.styles.fontStyle = 'bold';
                 }
             },
-            foot: [['Generated by Fablead HR Portal - ' + monthLabel, '', '', '', '', '', '', '']],
+            foot: [['Generated by Fablead HR Portal - ' + monthLabel, '', '', '', '', '', '']],
             footStyles: { fillColor: [240, 240, 240], textColor: [100, 100, 100], fontSize: 6, halign: 'left', fontStyle: 'italic' },
         });
 
