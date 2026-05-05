@@ -916,23 +916,32 @@
         const fileName    = 'Salary_Sheet_' + monthLabel.replace(' ', '_') + '.pdf';
 
         const tableBody = [];
-        let totalLeave = 0, totalDeduction = 0, totalSalary = 0, totalNet = 0;
+        let totalLeave = 0, totalDeduction = 0, totalSalary = 0, totalTax = 0, totalNetPay = 0, totalSalaryAmt = 0;
 
         payrolls.forEach(p => {
             const name      = (p.username || '').trim();
-            const salary    = parseFloat(p.salary_amount)    || 0;
-            const netSalary = parseFloat(p.net_salary)       || 0;
-            const taxAmt    = parseFloat(p.tax_deduction)    || 0;
-            const deduction = Math.max(salary - netSalary - taxAmt, 0);
-            const taxText   = taxAmt > 0 ? 'Rs. ' + taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : 'No Tax';
+            const salary    = Math.round(parseFloat(p.salary_amount) || 0);
             const leaves    = parseFloat(p.total_leaves)     || 0;
-            const workDays  = parseFloat(p.working_days)     || 26;
-            const perDay    = workDays > 0 ? salary / workDays : 0;
+            const [yr, mo]    = (rawMonth || '2026-01').split('-');
+            const daysInMonth = new Date(parseInt(yr), parseInt(mo), 0).getDate();
+            const perDay      = Math.round(salary / daysInMonth);
+
+            // Fetch actual values from the database and round them
+            const deduction = Math.round(parseFloat(p.salary_deduction) || 0);
+            const taxAmt    = Math.round(parseFloat(p.tax_deduction)    || 0);
+            
+            const taxText = taxAmt > 0 ? 'Rs. ' + taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'No Tax';
+
+            // Fetch Net Pay directly from the database and round it
+            const netPay = Math.round(parseFloat(p.net_salary) || 0);
+            const salaryAmount = netPay;
 
             totalLeave     += leaves;
             totalDeduction += deduction;
             totalSalary    += salary;
-            totalNet       += netSalary;
+            totalTax       += taxAmt;
+            totalNetPay    += netPay;
+            totalSalaryAmt += salaryAmount; 
 
             tableBody.push([
                 name,
@@ -941,8 +950,8 @@
                 'Rs. ' + deduction.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 'Rs. ' + salary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 taxText,
-                'Rs. ' + netSalary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-                'Rs. ' + netSalary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                'Rs. ' + netPay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                'Rs. ' + salaryAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             ]);
         });
 
@@ -952,9 +961,9 @@
             '',
             'Rs. ' + totalDeduction.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
             'Rs. ' + totalSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-            '',
-            'Rs. ' + totalNet.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-            'Rs. ' + totalNet.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            'Rs. ' + totalTax.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            'Rs. ' + totalNetPay.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            'Rs. ' + totalSalaryAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
         ]);
 
         const orange      = [230, 97, 54];
@@ -1005,10 +1014,16 @@
                     data.cell.styles.fontSize  = 8;
                     return;
                 }
+                // Red highlight on Leave (1) and Tax (5) columns
+                if (data.section === 'body' && (data.column.index === 1 || data.column.index === 5)) {
+                    data.cell.styles.textColor = [200, 0, 0];
+                }
+                // Red color for Deduction values (3)
                 if (data.section === 'body' && data.column.index === 3) {
                     data.cell.styles.textColor = [200, 0, 0];
                     data.cell.styles.fontStyle = 'bold';
                 }
+                // Green color for Net Pay (6) and Salary Amount (7)
                 if (data.section === 'body' && (data.column.index === 6 || data.column.index === 7)) {
                     data.cell.styles.textColor = [0, 150, 70];
                     data.cell.styles.fontStyle = 'bold';
