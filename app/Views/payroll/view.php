@@ -908,26 +908,37 @@
 
         const token = localStorage.getItem('token');
 
-        // Fetch company info first, then generate PDF
+        // Step 1: Fetch company info
         fetch('<?= base_url("/api/getCompanyLogo") ?>', {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(r => r.json())
         .then(companyData => {
-            _buildSalarySheetPDF(payrolls, companyData);
+            const logoUrl = companyData.logo_img || '';
+            if (!logoUrl) {
+                _buildSalarySheetPDF(payrolls, companyData, null);
+                return;
+            }
+            // Step 2: Preload logo as base64 so jsPDF can embed it synchronously
+            fetch(logoUrl)
+                .then(r => r.blob())
+                .then(blob => new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                }))
+                .then(base64 => _buildSalarySheetPDF(payrolls, companyData, base64))
+                .catch(() => _buildSalarySheetPDF(payrolls, companyData, null));
         })
-        .catch(() => {
-            _buildSalarySheetPDF(payrolls, {});
-        });
+        .catch(() => _buildSalarySheetPDF(payrolls, {}, null));
     }
 
-    function _buildSalarySheetPDF(payrolls, companyData) {
+    function _buildSalarySheetPDF(payrolls, companyData, logoBase64) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
 
         const companyName    = companyData.company_name    || 'Fablead Developers Technolab';
         const companyAddress = companyData.company_address || '';
-        const companyLogo    = companyData.logo_img        || '';
         const rawMonth    = document.getElementById('payrollMonthFilter')?.value || '';
         const [yr, mo]    = (rawMonth || '2026-01').split('-');
         const monthLabel  = new Date(yr, parseInt(mo) - 1, 1).toLocaleString('en-IN', { month: 'long' }) + ' ' + yr;
@@ -988,48 +999,48 @@
         const pageW       = doc.internal.pageSize.getWidth();
         const totalRowIdx = tableBody.length - 1;
 
-        // ── Header: centered layout like salary slip ────────────────────────────
-        const headerH    = companyAddress ? 62 : 46;
-        const logoSize   = 44;
+        // ── Header: Logo LEFT + Company Name/Address RIGHT ──────────────────────
+        const logoSize = 44;
+        const logoX    = 36;
+        const logoY    = 12;
+        const headerH  = companyAddress ? 64 : 48;
+        const textX    = logoBase64 ? (logoX + logoSize + 14) : 36;
 
-        doc.setDrawColor(180, 180, 180);
+        // Border box around header
+        doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.5);
-        doc.rect(30, 10, pageW - 60, headerH, 'S');
+        doc.rect(28, 8, pageW - 56, headerH, 'S');
 
-        // Logo (if available) – centered left side
-        let logoEndX = 40;
-        if (companyLogo) {
-            const logoX = pageW / 2 - logoSize - 5;
-            const logoY = 14;
-            const img = new Image();
-            img.src = companyLogo;
-            try { doc.addImage(img, logoX, logoY, logoSize, logoSize); logoEndX = logoX + logoSize + 8; } catch(e) {}
+        // Logo – drawn from preloaded base64 (no broken image box)
+        if (logoBase64) {
+            try { doc.addImage(logoBase64, logoX, logoY, logoSize, logoSize); } catch(e) {}
         }
 
-        // Company Name – bold, centered
+        // Company Name – bold, left-aligned in text area
         doc.setTextColor(...black);
-        doc.setFontSize(14);
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
-        doc.text(companyName, pageW / 2, 35, { align: 'center' });
+        doc.text(companyName, textX, 34);
 
-        // Company Address – normal, centered, smaller
+        // Company Address – normal, grey
         if (companyAddress) {
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(80, 80, 80);
-            doc.text(companyAddress, pageW / 2, 50, { align: 'center' });
+            doc.text(companyAddress, textX, 50);
         }
 
         // Month / Sheet title row – dark bar below header
-        const titleBarY = headerH + 10 + 10;
+        const titleBarY = headerH + 8 + 12;
         doc.setFillColor(...darkBg);
-        doc.rect(30, titleBarY - 14, pageW - 60, 20, 'F');
+        doc.rect(28, titleBarY - 14, pageW - 56, 20, 'F');
         doc.setTextColor(...white);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.text('Monthly Salary Sheet - ' + monthLabel, pageW / 2, titleBarY, { align: 'center' });
 
         const tableStartY = titleBarY + 12;
+
 
         doc.autoTable({
             startY: tableStartY,
