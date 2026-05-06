@@ -115,8 +115,14 @@
                             <?php if($user->role !== 'employee' && $expense['status'] === 'Pending'): ?>
                                 <div class="mt-4 pt-4 border-top">
                                     <p class="text-muted small">Approval Actions:</p>
-                                    <a href="<?= base_url('expenses/approve/'.$expense['id']) ?>" class="btn btn-success text-white me-2" onclick="return confirm('Approve this expense?')">Approve</a>
-                                    <a href="<?= base_url('expenses/reject/'.$expense['id']) ?>" class="btn btn-danger text-white" onclick="return confirm('Reject this expense?')">Reject</a>
+                                    <a href="javascript:void(0)" class="btn btn-success text-white me-2"
+                                       onclick="confirmExpenseAction('<?= base_url('expenses/approve/'.$expense['id']) ?>', 'Approve', 'Do you want to approve this expense?', '#198754')">
+                                        Approve
+                                    </a>
+                                    <a href="javascript:void(0)" class="btn btn-danger text-white"
+                                       onclick="confirmExpenseAction('<?= base_url('expenses/reject/'.$expense['id']) ?>', 'Reject', 'Do you want to reject this expense?', '#dc3545')">
+                                        Reject
+                                    </a>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -127,3 +133,23 @@
     </div>
 </div>
 <?= $this->endSection() ?>
+
+<script>
+    function confirmExpenseAction(url, action, message, color) {
+        Swal.fire({
+            icon: action === 'Approve' ? 'success' : 'warning',
+            title: action + ' Expense?',
+            text: message,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, ' + action,
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: color,
+            cancelButtonColor: '#6c757d',
+            position: 'center',
+        }).then(result => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    }
+</script>

@@ -43,7 +43,9 @@
                                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="editCategory(<?= $cat['id'] ?>, '<?= esc($cat['name'], 'js') ?>')">
                                                 <i class="mdi mdi-pencil"></i>
                                             </button>
-                                            <a href="<?= base_url('expenses/categories/delete/'.$cat['id']) ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this category? This may affect existing expenses.')">
+                                            <a href="javascript:void(0)" class="btn btn-outline-danger btn-sm"
+                                               onclick="confirmDeleteCategory('<?= base_url('expenses/categories/delete/'.$cat['id']) ?>')"
+                                            >
                                                 <i class="mdi mdi-delete"></i>
                                             </a>
                                         </td>
@@ -71,6 +73,25 @@
         document.getElementById('name').value = '';
         document.getElementById('form-title').innerText = 'Add Expense Category';
         document.getElementById('submit-btn').innerText = 'Add Category';
+    }
+
+    function confirmDeleteCategory(url) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Delete Category?',
+            text: 'This may affect existing expenses.',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#e05d2a',
+            cancelButtonColor: '#6c757d',
+            toast: false,
+            position: 'center',
+        }).then(result => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
     }
 </script>
 <?= $this->endSection() ?>

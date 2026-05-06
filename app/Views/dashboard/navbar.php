@@ -879,17 +879,18 @@ $role = $user ? $user->role : null;
                 if (result.isConfirmed) {
                     btn.disabled = true;
 
-                    const now = new Date();
-                    const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
-                    const time = now.toTimeString().split(' ')[0]; // HH:MM:SS
-                    const fullDateTime = `${date} ${time}`;
+                    // ── Capture GPS, then POST to check-in API ────────────────────
+                    const doCheckIn = (lat, lng) => {
+                        const payload = {};
+                        if (lat !== null && lng !== null) {
+                            payload.latitude  = lat;
+                            payload.longitude = lng;
+                        }
 
-                    fetch('/api/attendance/checkin', {
+                        fetch('/api/attendance/checkin', {
                             method: 'POST',
                             headers: headers,
-                            body: JSON.stringify({
-                                check_in_time: fullDateTime
-                            })
+                            body: JSON.stringify(payload)
                         })
                         .then(response => response.json())
                         .then(data => {
@@ -898,9 +899,7 @@ $role = $user ? $user->role : null;
                                 text: data.message,
                                 icon: 'success',
                                 confirmButtonText: 'OK',
-                                customClass: {
-                                    confirmButton: 'hr-btnbg'
-                                }
+                                customClass: { confirmButton: 'hr-btnbg' }
                             });
                             updateAttendanceStatus();
                         })
@@ -910,14 +909,22 @@ $role = $user ? $user->role : null;
                                 text: 'Unable to check in.',
                                 icon: 'error',
                                 confirmButtonText: 'OK',
-                                customClass: {
-                                    confirmButton: 'hr-btnbg'
-                                }
+                                customClass: { confirmButton: 'hr-btnbg' }
                             });
                         })
-                        .finally(() => {
-                            btn.disabled = false;
-                        });
+                        .finally(() => { btn.disabled = false; });
+                    };
+
+                    // Try to get GPS location (allow up to 8 s)
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            pos => doCheckIn(pos.coords.latitude, pos.coords.longitude),
+                            ()  => doCheckIn(null, null),  // permission denied / error → proceed without GPS
+                            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                        );
+                    } else {
+                        doCheckIn(null, null);
+                    }
                 }
             });
         });
@@ -942,28 +949,33 @@ $role = $user ? $user->role : null;
                 if (result.isConfirmed) {
                     btn.disabled = true;
 
-                    fetch('/api/attendance/checkout', {
+                    // ── Capture GPS, then POST to check-out API ─────────────────
+                    const doCheckOut = (lat, lng) => {
+                        const payload = {};
+                        if (lat !== null && lng !== null) {
+                            payload.latitude  = lat;
+                            payload.longitude = lng;
+                        }
+
+                        fetch('/api/attendance/checkout', {
                             method: 'POST',
                             headers: headers,
-                            body: JSON.stringify({})
+                            body: JSON.stringify(payload)
                         })
                         .then(response => response.json())
                         .then(data => {
-                            console.log('Checkout response:', data); // debug log
+                            console.log('Checkout response:', data);
 
-                            // Normalize: handle both direct and wrapped CI4 response
                             const status  = data.status  || (data.data && data.data.status);
                             const message = data.message || (data.data && data.data.message) || '';
 
                             if (status === 'success') {
-                                // ✅ Immediately update UI — don't wait for updateAttendanceStatus()
                                 btn.style.display = 'none';
                                 btn.disabled = false;
                                 if (checkInBtn) {
                                     checkInBtn.style.display = 'flex';
                                     checkInBtn.style.alignItems = 'center';
                                 }
-
                                 Swal.fire({
                                     title: 'Checked Out!',
                                     text: message || 'You have been checked out successfully.',
@@ -971,12 +983,9 @@ $role = $user ? $user->role : null;
                                     confirmButtonText: 'OK',
                                     customClass: { confirmButton: 'hr-btnbg' }
                                 });
-
-                                // Sync status in background
                                 setTimeout(() => updateAttendanceStatus(), 1000);
 
                             } else if (message.toLowerCase().includes('no active') || message.toLowerCase().includes('no check-in')) {
-                                // Already checked out — hide checkout button, show check-in
                                 btn.style.display = 'none';
                                 btn.disabled = false;
                                 if (checkInBtn) {
@@ -993,7 +1002,6 @@ $role = $user ? $user->role : null;
                                 updateAttendanceStatus();
 
                             } else {
-                                
                                 Swal.fire({
                                     title: 'Checked Out!',
                                     text: message || 'You have been checked out successfully.',
@@ -1001,7 +1009,7 @@ $role = $user ? $user->role : null;
                                     confirmButtonText: 'OK',
                                     customClass: { confirmButton: 'hr-btnbg' }
                                 });
-                              setTimeout(() => updateAttendanceStatus(), 1000);
+                                setTimeout(() => updateAttendanceStatus(), 1000);
                             }
                         })
                         .catch(err => {
@@ -1015,6 +1023,18 @@ $role = $user ? $user->role : null;
                                 customClass: { confirmButton: 'hr-btnbg' }
                             });
                         });
+                    };
+
+                    // Try to get GPS location
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            pos => doCheckOut(pos.coords.latitude, pos.coords.longitude),
+                            ()  => doCheckOut(null, null),
+                            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                        );
+                    } else {
+                        doCheckOut(null, null);
+                    }
                 }
             });
         });
