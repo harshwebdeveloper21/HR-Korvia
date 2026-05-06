@@ -1471,4 +1471,70 @@ class EmployeeController extends ResourceController
             'history' => $records
         ]);
     }
+
+    /**
+     * getIncrementHistoryByUserId($userId)
+     *
+     * Route: GET /api/employee/increment-history-user/{userId}
+     *
+     * Accepts users.id (the id used in the employee list view) and returns
+     * the full salary increment history for that employee.
+     */
+    public function getIncrementHistoryByUserId($userId = null)
+    {
+        $authUser = $this->authorize();
+        if (!$authUser) {
+            return $this->failUnauthorized('Unauthorized access');
+        }
+
+        if (!$userId) {
+            return $this->failValidationErrors('User ID is required.');
+        }
+
+        // Resolve users.id → user_info row
+        $userInfo = $this->userInfoModel->where('user_id', $userId)->first();
+        if (!$userInfo) {
+            return $this->failNotFound('Employee not found.');
+        }
+
+        $db = \Config\Database::connect();
+
+        // Fetch employee name for display
+        $userModel = new \App\Models\UserModel();
+        $userRow   = $userModel->find($userId);
+        $firstName = $userInfo['firstname'] ?? '';
+        $lastName  = $userInfo['lastname']  ?? '';
+        $empName   = trim("$firstName $lastName") ?: ($userRow['username'] ?? 'Employee');
+
+        // Primary source: relational salary_increment_history table (descending)
+        $records = $db->table('salary_increment_history as h')
+            ->select('h.id, h.increment_amount, h.previous_salary, h.new_salary, h.effective_from_date, h.created_at')
+            ->where('h.employee_id', $userId)
+            ->orderBy('h.id', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Fallback: if relational table has no rows, parse JSON from user_info.last_increment_date
+        if (empty($records) && !empty($userInfo['last_increment_date'])) {
+            $decoded = json_decode($userInfo['last_increment_date'], true);
+            if (is_array($decoded)) {
+                $records = array_map(function ($entry, $idx) {
+                    return [
+                        'id'                  => $idx + 1,
+                        'increment_amount'    => $entry['increment_amount'] ?? 0,
+                        'previous_salary'     => $entry['previous_salary']  ?? 0,
+                        'new_salary'          => $entry['new_salary']       ?? 0,
+                        'effective_from_date' => $entry['effective_date']   ?? '',
+                        'created_at'          => $entry['created_at']       ?? '',
+                    ];
+                }, $decoded, array_keys($decoded));
+            }
+        }
+
+        return $this->respond([
+            'status'        => 'success',
+            'employee_name' => $empName,
+            'history'       => $records
+        ]);
+    }
 }

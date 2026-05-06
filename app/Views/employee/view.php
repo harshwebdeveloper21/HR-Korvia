@@ -172,6 +172,7 @@
                                 <th class="desktop-only-col">Role</th>
                                 <th class="desktop-only-col">Rem. Paid Leave</th>
                                 <th class="desktop-only-col">Rem. Sick Leave</th>
+                                <th class="desktop-only-col">Increment History</th>
                                 <th class="desktop-only-col">Action</th>
                                 <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
@@ -271,6 +272,69 @@
     </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════
+     Increment History Modal
+     ══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="incrementHistoryModal" tabindex="-1" aria-labelledby="incrementHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:12px; overflow:hidden;">
+
+            <!-- Header -->
+            <div class="modal-header" style="background: linear-gradient(135deg,#E66136,#f0845a); color:#fff; padding:18px 24px;">
+                <div>
+                    <h5 class="modal-title mb-0" id="incrementHistoryModalLabel">
+                        <i class="mdi mdi-history me-2"></i>Increment History
+                    </h5>
+                    <small id="ih-employee-name" class="opacity-75"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body p-0">
+
+                <!-- Loader -->
+                <div id="ih-loader" class="text-center py-5">
+                    <div class="spinner-border" style="color:#E66136; width:2.5rem; height:2.5rem;" role="status">
+                        <span class="visually-hidden">Loading…</span>
+                    </div>
+                    <p class="mt-3 text-muted">Fetching increment history…</p>
+                </div>
+
+                <!-- Empty state -->
+                <div id="ih-empty" class="text-center py-5" style="display:none;">
+                    <i class="mdi mdi-file-search-outline" style="font-size:3rem; color:#ccc;"></i>
+                    <p class="mt-2 text-muted fw-semibold">No Increment History Available</p>
+                </div>
+
+                <!-- Table -->
+                <div id="ih-table-wrapper" style="display:none;">
+                    <table class="table table-hover mb-0" id="ih-table">
+                        <thead style="background:#f8f9fa; position:sticky; top:0; z-index:1;">
+                            <tr>
+                                <th class="ps-4">#</th>
+                                <th>Employee Name</th>
+                                <th>Previous Salary (₹)</th>
+                                <th>Increment Amount (₹)</th>
+                                <th>New Salary (₹)</th>
+                                <th>Effective Date</th>
+                                <th>Added On</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ih-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer" style="background:#f8f9fa;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     $(document).ready(function () {
         const token = localStorage.getItem('token');
@@ -353,6 +417,7 @@
                                                         <a href="/employee/profile/${employee.user_info.id}" class="btn btn-sm btn-primary" title="View"><i class="mdi mdi-eye text-white"></i> View</a>
                                                         <a href="/employee/${employee.user.id}" class="btn btn-sm btn-warning" title="Edit"><i class="mdi mdi-pencil"></i> Edit</a>
                                                         <a href="#" class="btn btn-sm btn-danger delete-employee" data-id="${employee.user.id}" title="Delete"><i class="mdi mdi-delete"></i> Delete</a>
+                                                        <button class="btn btn-sm open-increment-history" data-id="${employee.user.id}" data-name="${empName}" title="Increment History" style="background:#E66136; color:#fff; border:none;"><i class="mdi mdi-history"></i> History</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -362,6 +427,11 @@
                                         <td class="desktop-only-col">${empRole}</td>
                                         <td class="desktop-only-col">${empRemPaid}</td>
                                         <td class="desktop-only-col">${empRemSick}</td>
+                                       <td class="desktop-only-col">
+                                            <button class="btn btn-sm open-increment-history" data-id="${employee.user.id}" data-name="${empName}" style="white-space:nowrap; background:#E66136; color:#fff; border:none;">
+                                                <i class="mdi mdi-history"></i> History
+                                            </button>
+                                        </td>
                                         <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
                                             <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info.salary || 0}" data-last-date="${employee.user_info.last_increment_date || 'N/A'}" class="text-success fs-5 open-increment-modal" title="Salary Increment">
                                                 <i class="mdi mdi-cash-plus"></i>
@@ -373,6 +443,7 @@
                                             <a href="/employee/${employee.user.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
                                             <a href="#" class="text-danger fs-5 delete-employee" data-id="${employee.user.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
                                         </td>
+                                       
                                         <td class="mobile-expand-col text-center">
                                             <button type="button" class="expand-toggle" data-target="emp-details-${employee.user.id}" aria-label="Expand details"></button>
                                         </td>
@@ -406,7 +477,17 @@
                                         searchable: false
                                     },
                                     {
-                                        targets: 7, // mobile expand column
+                                        targets: 7, // Action column — not sortable
+                                        orderable: false,
+                                        searchable: false
+                                    },
+                                    {
+                                        targets: 8, // Increment History column — not sortable
+                                        orderable: false,
+                                        searchable: false
+                                    },
+                                    {
+                                        targets: 9, // mobile expand column
                                         orderable: false,
                                         searchable: false
                                     }
@@ -677,6 +758,82 @@
             error: function (xhr) {
                 $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Update Salary');
                 Swal.fire('Error', xhr.responseJSON?.message || 'Something went wrong', 'error');
+            }
+        });
+    });
+
+    // ══════════════════════════════════════════════════════
+    // Increment History Modal — AJAX fetch
+    // ══════════════════════════════════════════════════════
+    $(document).on('click', '.open-increment-history', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const userId   = $(this).data('id');
+        const empName  = $(this).data('name') || 'Employee';
+        const token    = localStorage.getItem('token');
+
+        // Reset UI
+        $('#ih-employee-name').text(empName);
+        $('#ih-loader').show();
+        $('#ih-empty').hide();
+        $('#ih-table-wrapper').hide();
+        $('#ih-tbody').empty();
+
+        const modal = new bootstrap.Modal(document.getElementById('incrementHistoryModal'));
+        modal.show();
+
+        // Fetch increment history via AJAX
+        $.ajax({
+            url: `/api/employee/increment-history-user/${userId}`,
+            type: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+            success: function (res) {
+                $('#ih-loader').hide();
+
+                const history = res.history || [];
+                const name    = res.employee_name || empName;
+                $('#ih-employee-name').text(name);
+
+                if (history.length === 0) {
+                    $('#ih-empty').show();
+                    return;
+                }
+
+                let rows = '';
+                history.forEach((item, idx) => {
+                    const fmtDate = (d) => {
+                        if (!d) return '-';
+                        const parsed = new Date(d);
+                        return isNaN(parsed) ? d : parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                    };
+                    const fmtMoney = (v) => parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const diff = parseFloat(item.increment_amount || 0);
+                    const badge = diff > 0
+                        ? `<span class="badge" style="background:#d4edda;color:#155724;font-size:.85em;">+&#8377;${fmtMoney(diff)}</span>`
+                        : `<span class="badge bg-secondary">&#8377;${fmtMoney(diff)}</span>`;
+
+                    rows += `
+                        <tr>
+                            <td class="ps-4 text-muted">${idx + 1}</td>
+                            <td class="fw-semibold">${name}</td>
+                            <td>&#8377;${fmtMoney(item.previous_salary)}</td>
+                            <td>${badge}</td>
+                            <td class="fw-bold" style="color:#E66136;">&#8377;${fmtMoney(item.new_salary)}</td>
+                            <td>${fmtDate(item.effective_from_date)}</td>
+                            <td class="text-muted">${fmtDate(item.created_at)}</td>
+                            <td class="text-muted fst-italic">${item.remarks || '-'}</td>
+                        </tr>`;
+                });
+
+                $('#ih-tbody').html(rows);
+                $('#ih-table-wrapper').show();
+            },
+            error: function (xhr) {
+                $('#ih-loader').hide();
+                const msg = xhr.responseJSON?.message || 'Failed to load increment history.';
+                $('#ih-empty').find('p').text(msg);
+                $('#ih-empty').show();
             }
         });
     });
