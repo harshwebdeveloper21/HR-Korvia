@@ -48,6 +48,7 @@ class ExpenseModel extends Model
         }
 
         $builder->orderBy('e.expense_date', 'DESC');
+        $builder->groupBy('e.id');
         return $builder->get()->getResultArray();
     }
 }
