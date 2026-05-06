@@ -772,6 +772,85 @@
             height: 16px;
         }
     }
+    /* Location info inside employee card - inline style */
+    .loc-info-block {
+        margin-top: 2px;
+        font-size: 12px;
+        color: #555;
+        line-height: 1.5;
+    }
+
+    .loc-info-block .loc-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 4px;
+        margin-bottom: 1px;
+    }
+
+    .loc-info-block .loc-icon {
+        flex-shrink: 0;
+        width: 16px;
+        text-align: center;
+    }
+
+    .loc-info-block .loc-text {
+        word-break: break-word;
+    }
+
+    .loc-section-label {
+        font-weight: 700;
+        font-size: 10px;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+        margin-bottom: 2px;
+    }
+
+    .loc-section-label.checkin-label  { color: #198754; }
+    .loc-section-label.checkout-label { color: #dc3545; }
+
+    /* Inline time + location line (matches screenshot) */
+    .loc-inline-line {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        margin-bottom: 1px;
+        font-size: 12.5px;
+        color: #333;
+    }
+
+    .loc-inline-line .loc-time {
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .loc-inline-line .loc-sep {
+        color: #aaa;
+        flex-shrink: 0;
+    }
+
+    .loc-inline-line .loc-addr {
+        color: #555;
+        font-size: 11.5px;
+        flex: 1;
+        word-break: break-word;
+    }
+
+    /* Status badge pill */
+    .status-badge-pill {
+        display: inline-block;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .status-badge-pill.present   { background: #28a745; color: white; }
+    .status-badge-pill.half-day  { background: #ffc107; color: #000; }
+    .status-badge-pill.absent    { background: #dc3545; color: white; }
+    .status-badge-pill.working   { background: #007bff; color: white; }
 </style>
 
 <div class="row">
@@ -1324,9 +1403,30 @@
                     statusClass = 'half-day';
                 }
 
-                const checkInTime = attendance?.check_in_time || '-';
-                const checkOutTime = attendance?.check_out_time || '-';
-                const overtime = attendance?.overtime && attendance.overtime !== '00:00:00' ? '' : '';
+                // ── Format time (HH:MM:SS → h:mm:ss AM/PM) ──────────────────────
+                function fmtTime(t) {
+                    if (!t || t === '-') return null;
+                    const [h, m, s] = t.split(':');
+                    const hh = parseInt(h);
+                    const ampm = hh >= 12 ? 'PM' : 'AM';
+                    const h12 = hh % 12 || 12;
+                    return `${h12}:${m.padStart(2,'0')}:${(s||'00').padStart(2,'0')} ${ampm}`;
+                }
+
+                // ── Build inline time + pin location row (matches screenshot) ─────
+                function buildInlineLine(prefix, time, locationName) {
+                    const timeStr = fmtTime(time) || '-';
+                    const pin = locationName
+                        ? `<span class="loc-sep">|</span><span>&#128205;</span><span class="loc-addr">${locationName}</span>`
+                        : `<span class="loc-sep">|</span><span>&#128205;</span><span class="loc-addr" style="color:#bbb;">-</span>`;
+                    return `<div class="loc-inline-line">
+                        <span class="loc-time">${prefix}: ${timeStr}</span>
+                        ${pin}
+                    </div>`;
+                }
+
+                const checkInLine  = buildInlineLine('In',  attendance?.check_in_time,  attendance?.check_in_location_name);
+                const checkOutLine = buildInlineLine('Out', attendance?.check_out_time, attendance?.check_out_location_name);
 
                 const employeeCard = document.createElement('div');
                 employeeCard.className = 'mobile-employee-card';
@@ -1337,11 +1437,12 @@
                 <img src="${profileImage}" alt="${user.employee_name}">
                 <div class="mobile-employee-info">
                     <div class="mobile-employee-name">${user.employee_name}</div>
-                    <div class="mobile-employee-times">
-                        In: ${checkInTime} | Out: ${checkOutTime}${overtime}
+                    <div class="loc-info-block">
+                        ${checkInLine}
+                        ${checkOutLine}
                     </div>
                 </div>
-                <div class="mobile-employee-status ${statusClass}">
+                <div class="status-badge-pill ${statusClass}">
                     ${statusText}
                 </div>
             `;

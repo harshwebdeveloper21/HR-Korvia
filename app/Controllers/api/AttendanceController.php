@@ -264,28 +264,13 @@ class AttendanceController extends ResourceController
             ->orderBy('id', 'DESC')
             ->first();
 
-        // If user is already checked in (has check-in but no check-out), update the check-in time
-        if ($latestAttendance && !$latestAttendance['check_out_time']) {
-            $updateData = [
-                'check_in_time' => $timeOnly, // Store only time (HH:MM:SS)
-            ];
+        // ── Multi-punch guard: only block a new check-in if the employee is
+        //    ALREADY clocked in (no checkout yet). When the previous session
+        //    is closed (has a check_out_time), always create a new row so
+        //    multiple check-in/check-out pairs can be recorded in one day.
+        // NOTE: We intentionally skip the old "update check-in time" branch
+        //       so that every tap of the Check-In button creates a fresh row.
 
-            $this->attendanceModel->update($latestAttendance['id'], $updateData);
-
-            $response = [
-                'status' => 'success',
-                'message' => 'Check-in time updated successfully',
-                'data' => $updateData
-            ];
-
-            // Include auto-checkout info if applicable
-            if ($autoCheckoutInfo) {
-                $response['auto_checkout'] = $autoCheckoutInfo;
-                $response['message'] .= '. Yesterday\'s attendance was automatically checked out at ' . $autoCheckoutInfo['checkout_time'] . ' (' . $autoCheckoutInfo['work_hours'] . ' hours)';
-            }
-
-            return $this->respond($response);
-        }
 
         // If user has already checked out or no record exists, create a new check-in record
         // This allows checking in again after checkout
@@ -299,13 +284,43 @@ class AttendanceController extends ResourceController
             log_message('info', '🏠 Remote employee check-in (no location required): user_id=' . $user->sub . ' at ' . $timeOnly);
         }
 
+        // ── Capture check-in location info ───────────────────────────────────
+        $clientIp   = $this->request->getIPAddress();
+        $userAgent  = $this->request->getUserAgent()->getAgentString();
+        $bodyJson   = $this->request->getJSON(true) ?? [];
+        $checkinLat = isset($bodyJson['latitude'])  ? (float)$bodyJson['latitude']  : null;
+        $checkinLng = isset($bodyJson['longitude']) ? (float)$bodyJson['longitude'] : null;
+
+        // ── Reverse-geocode GPS coordinates via Nominatim ────────────────────
+        $locationName = null;
+        if ($checkinLat !== null && $checkinLng !== null) {
+            $nominatimUrl = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={$checkinLat}&lon={$checkinLng}&zoom=18&addressdetails=1";
+            $ctx = stream_context_create(['http' => ['header' => "User-Agent: FableadHRPortal/1.0\r\n", 'timeout' => 5]]);
+            $geoData = @file_get_contents($nominatimUrl, false, $ctx);
+            if ($geoData) {
+                $geoJson = json_decode($geoData, true);
+                if (!empty($geoJson['display_name'])) {
+                    $locationName = $geoJson['display_name'];
+                }
+            }
+            // Fallback if Nominatim fails
+            if (!$locationName) {
+                $locationName = "GPS: {$checkinLat}, {$checkinLng}";
+            }
+        }
+
         // If user has already checked out or no record exists, create a new check-in record
         // This allows checking in again after checkout
         $data = [
-            'user_id' => $user->sub,
-            'date' => $date, // Today's date from server
-            'check_in_time' => $timeOnly, // Current time from server (HH:MM:SS)
-            'status' => 'present'
+            'user_id'               => $user->sub,
+            'date'                  => $date,
+            'check_in_time'         => $timeOnly,
+            'status'                => 'present',
+            // New canonical column names
+            'check_in_ip_address'   => $clientIp,
+            'check_in_latitude'     => $checkinLat,
+            'check_in_longitude'    => $checkinLng,
+            'check_in_location_name'=> $locationName,
         ];
 
         // Delete any leave record for today if exists
@@ -316,40 +331,37 @@ class AttendanceController extends ResourceController
             ->delete();
 
         if ($this->attendanceModel->insert($data)) {
-            // Check if attendance notifications are enabled
-            $notificationSettingsModel = new NotificationSettingsModel();
-            if ($notificationSettingsModel->isAttendanceNotificationsEnabled()) {
-                // Send push notification to admins
-                $employee = $this->userModel->find($user->sub);
-                $employeeName = $employee ? $employee['username'] : 'Employee';
-
-                log_message('info', '📝 Employee check-in: ' . $employeeName . ' at ' . $timeOnly);
-                log_message('info', '📝 Attempting to send push notification to admins...');
-
-                $pushResult = $this->pushNotificationService->notifyAdmins(
-                    'Employee Check-In',
-                    $employeeName . ' has checked in at ' . $timeOnly,
-                    [
-                        'type' => 'checkin',
-                        'user_id' => $user->sub,
-                        'username' => $employeeName,
-                        'time' => $timeOnly,
-                        'date' => $date,
-                        'url' => base_url('/attendence')
-                    ]
-                );
-
-                log_message('info', '📝 Push notification result: ' . json_encode($pushResult));
-            } else {
-                log_message('info', '📝 Attendance notifications are disabled - skipping push notification');
+            // Check if attendance notifications are enabled (wrap in try-catch
+            // so a push-notification failure never corrupts the success response)
+            try {
+                $notificationSettingsModel = new NotificationSettingsModel();
+                if ($notificationSettingsModel->isAttendanceNotificationsEnabled()) {
+                    $employee     = $this->userModel->find($user->sub);
+                    $employeeName = $employee ? $employee['username'] : 'Employee';
+                    log_message('info', '📝 Employee check-in: ' . $employeeName . ' at ' . $timeOnly);
+                    $this->pushNotificationService->notifyAdmins(
+                        'Employee Check-In',
+                        $employeeName . ' has checked in at ' . $timeOnly,
+                        [
+                            'type'     => 'checkin',
+                            'user_id'  => $user->sub,
+                            'username' => $employeeName,
+                            'time'     => $timeOnly,
+                            'date'     => $date,
+                            'url'      => base_url('/attendence')
+                        ]
+                    );
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Check-in push notification failed: ' . $e->getMessage());
+                // Do NOT rethrow – the check-in itself succeeded
             }
 
             $response = [
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => 'Checked in successfully'
             ];
 
-            // Include auto-checkout info if applicable
             if ($autoCheckoutInfo) {
                 $response['auto_checkout'] = $autoCheckoutInfo;
                 $response['message'] .= '. Yesterday\'s attendance was automatically checked out at ' . $autoCheckoutInfo['checkout_time'] . ' (' . $autoCheckoutInfo['work_hours'] . ' hours)';
@@ -612,45 +624,74 @@ class AttendanceController extends ResourceController
             $checkOutTimeOnly
         );
 
+        // ── Capture check-out location info ──────────────────────────────────
+        $coIp   = $this->request->getIPAddress();
+        $coBody = $this->request->getJSON(true) ?? [];
+        $coLat  = isset($coBody['latitude'])  ? (float)$coBody['latitude']  : null;
+        $coLng  = isset($coBody['longitude']) ? (float)$coBody['longitude'] : null;
+
+        // ── Reverse-geocode checkout GPS coordinates via Nominatim ───────────
+        $coLocationName = null;
+        if ($coLat !== null && $coLng !== null) {
+            $coNominatimUrl = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={$coLat}&lon={$coLng}&zoom=18&addressdetails=1";
+            $coCtx = stream_context_create(['http' => ['header' => "User-Agent: FableadHRPortal/1.0\r\n", 'timeout' => 5]]);
+            $coGeoData = @file_get_contents($coNominatimUrl, false, $coCtx);
+            if ($coGeoData) {
+                $coGeoJson = json_decode($coGeoData, true);
+                if (!empty($coGeoJson['display_name'])) {
+                    $coLocationName = $coGeoJson['display_name'];
+                }
+            }
+            if (!$coLocationName) {
+                $coLocationName = "GPS: {$coLat}, {$coLng}";
+            }
+        }
+
         $data = [
-            'check_out_time' => $checkOutTimeOnly,
-            'work_hours'     => $dayCalc['work_hours'],   // net hours from first-in → this checkout
-            'overtime'       => $sessionCalc['overtime'],  // overtime from this session
-            'meal_break'     => $latestAttendance['meal_break'],
-            'status'         => $dayCalc['status'],        // status from full-day window
+            'check_out_time'            => $checkOutTimeOnly,
+            'work_hours'                => $dayCalc['work_hours'],
+            'overtime'                  => $sessionCalc['overtime'],
+            'meal_break'                => $latestAttendance['meal_break'],
+            'status'                    => $dayCalc['status'],
+            // New canonical column names
+            'check_out_ip_address'      => $coIp,
+            'check_out_latitude'        => $coLat,
+            'check_out_longitude'       => $coLng,
+            'check_out_location_name'   => $coLocationName,
         ];
 
         if ($this->attendanceModel->update($latestAttendance['id'], $data)) {
-            // Check if attendance notifications are enabled
-            $notificationSettingsModel = new NotificationSettingsModel();
-            if ($notificationSettingsModel->isAttendanceNotificationsEnabled()) {
-                // Send push notification to admins
-                $employee = $this->userModel->find($user->sub);
-                $employeeName = $employee ? $employee['username'] : 'Employee';
-
-                log_message('info', '📝 Employee check-out: ' . $employeeName . ' at ' . $checkOutTimeOnly);
-
-                $this->pushNotificationService->notifyAdmins(
-                    'Employee Check-Out',
-                    $employeeName . ' has checked out at ' . $checkOutTimeOnly . ' (Status: ' . $calculation['status'] . ')',
-                    [
-                        'type' => 'checkout',
-                        'user_id' => $user->sub,
-                        'username' => $employeeName,
-                        'time' => $checkOutTimeOnly,
-                        'date' => $date,
-                        'status' => $calculation['status'],
-                        'url' => base_url('/attendence')
-                    ]
-                );
-            } else {
-                log_message('info', '📝 Attendance notifications are disabled - skipping push notification');
+            // Wrap push notification in try-catch so a VAPID/encryption failure
+            // never leaks into the checkout success response.
+            try {
+                $notificationSettingsModel = new NotificationSettingsModel();
+                if ($notificationSettingsModel->isAttendanceNotificationsEnabled()) {
+                    $employee     = $this->userModel->find($user->sub);
+                    $employeeName = $employee ? $employee['username'] : 'Employee';
+                    log_message('info', '📝 Employee check-out: ' . $employeeName . ' at ' . $checkOutTimeOnly);
+                    $this->pushNotificationService->notifyAdmins(
+                        'Employee Check-Out',
+                        $employeeName . ' has checked out at ' . $checkOutTimeOnly . ' (Status: ' . $dayCalc['status'] . ')',
+                        [
+                            'type'     => 'checkout',
+                            'user_id'  => $user->sub,
+                            'username' => $employeeName,
+                            'time'     => $checkOutTimeOnly,
+                            'date'     => $date,
+                            'status'   => $dayCalc['status'],
+                            'url'      => base_url('/attendence')
+                        ]
+                    );
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Check-out push notification failed: ' . $e->getMessage());
+                // Do NOT rethrow – the check-out itself succeeded
             }
 
             return $this->respond([
-                'status' => 'success',
-                'message' => 'Checked out successfully (' . $calculation['status'] . ')',
-                'data' => $data
+                'status'  => 'success',
+                'message' => 'Checked out successfully (' . $dayCalc['status'] . ')',
+                'data'    => $data
             ]);
         }
 
@@ -910,7 +951,9 @@ class AttendanceController extends ResourceController
         $userIds = array_column($users, 'id');
 
         // 🔹 User info
-        $userInfoList = $userInfoModel->whereIn('user_id', $userIds)->findAll();
+        $userInfoList = !empty($userIds)
+            ? $userInfoModel->whereIn('user_id', $userIds)->findAll()
+            : [];
         $userInfoMap = [];
         foreach ($userInfoList as $info) {
             $userInfoMap[$info['user_id']] = $info;
@@ -996,28 +1039,34 @@ class AttendanceController extends ResourceController
             $startTimeForStatus   = $companyRuleForStatus['start_time'] ?? '09:30:00';
             $graceMinutes         = (int)($companyRuleForStatus['grace_period'] ?? 0);
             $graceSeconds         = $graceMinutes * 60;
+            // calculateDayStatus() reads 'grace_minutes'; DB column is 'grace_period' — alias it.
+            $companyRuleForStatus['grace_minutes'] = $graceMinutes;
+
 
             $attendanceByDate = [];
             foreach ($byDate as $date => $recs) {
                 // Sort ascending → $recs[0] = earliest check-in
                 usort($recs, fn($a, $b) => strcmp($a['check_in_time'], $b['check_in_time']));
 
-                $activeRecord = null;
-                $lastCheckOut = null;
+                $first              = $recs[0];
+                $activeRecord       = null;
+                $lastCheckOut       = null;
+                $lastCheckOutRecord = null;   // track the RECORD whose checkout is latest
 
                 foreach ($recs as $rec) {
                     if ($rec['check_out_time']) {
-                        // Track the latest checkout time across all sessions
+                        // Track the latest checkout time AND the record it belongs to
                         if ($lastCheckOut === null || strcmp($rec['check_out_time'], $lastCheckOut) > 0) {
-                            $lastCheckOut = $rec['check_out_time'];
+                            $lastCheckOut       = $rec['check_out_time'];
+                            $lastCheckOutRecord = $rec;
                         }
                     } else {
                         $activeRecord = $rec; // still clocked in
                     }
                 }
 
-                $first      = $recs[0];
-                $displayRec = $activeRecord ?? end($recs);
+                // $displayRec is only used for location fields below
+                $displayRec = $lastCheckOutRecord;   // the record with the latest checkout
 
                 // ── Status: FIRST check-in → LAST check-out (multi-punch rule) ──────
                 if ($activeRecord) {
@@ -1056,13 +1105,26 @@ class AttendanceController extends ResourceController
                     ? (int)ceil(($firstCheckInSecs - $startTimeSecs - $graceSeconds) / 60)
                     : 0;
 
-                $attendanceByDate[$date] = array_merge($displayRec, [
-                    'check_in_time'  => $first['check_in_time'],             // EARLIEST of the day
-                    'check_out_time' => $activeRecord ? null : $lastCheckOut, // null if still active
-                    'work_hours'     => $totalWorkHours,                      // net hours (first-in → last-out)
-                    'status'         => $computedStatus,                      // canonical status
-                    'is_late'        => $isLateCalc,
-                    'late_minutes'   => $lateMinutesCalc,
+                // Use $displayRec as the base array; fall back to $first when no checkout
+                // exists yet (active session) to avoid array_merge(null, ...) TypeError.
+                $baseRec = $displayRec ?? $first;
+                $attendanceByDate[$date] = array_merge($baseRec, [
+                    'check_in_time'              => $first['check_in_time'],
+                    'check_out_time'             => $activeRecord ? null : $lastCheckOut,
+                    'work_hours'                 => $totalWorkHours,
+                    'status'                     => $computedStatus,
+                    'is_late'                    => $isLateCalc,
+                    'late_minutes'               => $lateMinutesCalc,
+                    // ── First check-in location (new column names) ───────
+                    'check_in_ip_address'        => $first['check_in_ip_address'] ?? ($first['ip_address'] ?? null),
+                    'check_in_latitude'          => $first['check_in_latitude']   ?? ($first['latitude']   ?? null),
+                    'check_in_longitude'         => $first['check_in_longitude']  ?? ($first['longitude']  ?? null),
+                    'check_in_location_name'     => $first['check_in_location_name'] ?? ($first['location_address'] ?? null),
+                    // ── Last check-out location (new column names) ───────
+                    'check_out_ip_address'       => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_ip_address']    ?? ($displayRec['checkout_ip_address']        ?? null)),
+                    'check_out_latitude'         => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_latitude']      ?? ($displayRec['checkout_latitude']           ?? null)),
+                    'check_out_longitude'        => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_longitude']     ?? ($displayRec['checkout_longitude']          ?? null)),
+                    'check_out_location_name'    => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_location_name'] ?? ($displayRec['checkout_location_address']   ?? null)),
                 ]);
             }
 
@@ -1178,15 +1240,24 @@ class AttendanceController extends ResourceController
                 if (isset($attendanceByDate[$date])) {
                     $record = $attendanceByDate[$date];
                     $formattedAttendance[] = [
-                        'date' => $date,
-                        'check_in_time' => $record['check_in_time'],  // earliest session
-                        'check_out_time' => $record['check_out_time'], // active session checkout
-                        'status' => $record['status'],
-                        'is_late' => $record['is_late'],
-                        'late_minutes' => $record['late_minutes'],
-                        'overtime' => $record['overtime'] ?? null,
-                        'work_hours' => $record['work_hours'] ?? null,
-                        'completed_seconds' => $record['completed_seconds'] ?? 0,
+                        'date'                   => $date,
+                        'check_in_time'          => $record['check_in_time'],
+                        'check_out_time'         => $record['check_out_time'],
+                        'status'                 => $record['status'],
+                        'is_late'                => $record['is_late'],
+                        'late_minutes'           => $record['late_minutes'],
+                        'overtime'               => $record['overtime'] ?? null,
+                        'work_hours'             => $record['work_hours'] ?? null,
+                        'completed_seconds'      => $record['completed_seconds'] ?? 0,
+                        // ── Location fields ──────────────────────────────
+                        'check_in_ip_address'    => $record['check_in_ip_address']    ?? null,
+                        'check_in_latitude'      => $record['check_in_latitude']      ?? null,
+                        'check_in_longitude'     => $record['check_in_longitude']     ?? null,
+                        'check_in_location_name' => $record['check_in_location_name'] ?? null,
+                        'check_out_ip_address'   => $record['check_out_ip_address']   ?? null,
+                        'check_out_latitude'     => $record['check_out_latitude']     ?? null,
+                        'check_out_longitude'    => $record['check_out_longitude']    ?? null,
+                        'check_out_location_name'=> $record['check_out_location_name']?? null,
                     ];
                     continue;
                 }
