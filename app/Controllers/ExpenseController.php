@@ -38,9 +38,8 @@ class ExpenseController extends BaseController
 
         // Dashboard stats
         $stats = [
-            'total_month' => $this->expenseModel->where('MONTH(expense_date)', date('m'))->where('YEAR(expense_date)', date('Y'))->where('status', 'Approved')->selectSum('amount')->get()->getRow()->amount ?? 0,
-            'total_year' => $this->expenseModel->where('YEAR(expense_date)', date('Y'))->where('status', 'Approved')->selectSum('amount')->get()->getRow()->amount ?? 0,
-            'pending_count' => $this->expenseModel->where('status', 'Pending')->countAllResults(),
+            'total_month' => $this->expenseModel->where('MONTH(expense_date)', date('m'))->where('YEAR(expense_date)', date('Y'))->selectSum('amount')->get()->getRow()->amount ?? 0,
+            'total_year' => $this->expenseModel->where('YEAR(expense_date)', date('Y'))->selectSum('amount')->get()->getRow()->amount ?? 0,
         ];
 
         // Category-wise data for chart
@@ -48,7 +47,6 @@ class ExpenseController extends BaseController
         $chartData = $db->table('expenses e')
             ->select('ec.name, SUM(e.amount) as total')
             ->join('expense_categories ec', 'ec.id = e.category_id')
-            ->where('e.status', 'Approved')
             ->groupBy('e.category_id')
             ->get()->getResultArray();
 
@@ -97,6 +95,7 @@ class ExpenseController extends BaseController
 
         $data = $this->request->getPost();
         $data['created_by'] = $user->sub;
+        $data['status'] = 'Approved';
         
         // Handle "Company" in paid_by
         if ($data['paid_by'] === 'Company') {
@@ -113,6 +112,10 @@ class ExpenseController extends BaseController
 
         $this->expenseModel->insert($data);
 
+        // Fetch employee name
+        $userInfo = $this->userInfoModel->where('user_id', $user->sub)->first();
+        $empName = $userInfo ? trim(($userInfo['firstname'] ?? '') . ' ' . ($userInfo['lastname'] ?? '')) : 'An employee';
+
         // Notify Admins
         $notificationModel = new \App\Models\NotificationModel();
         $userModel = new \App\Models\UserModel();
@@ -123,7 +126,7 @@ class ExpenseController extends BaseController
                 'recipient_id' => $admin['id'],
                 'data' => json_encode([
                     'title' => 'New Expense Submitted',
-                    'message' => $user->name . " submitted a new expense: " . $data['title'],
+                    'message' => $empName . " submitted a new expense: " . $data['title'],
                     'link' => '/expenses'
                 ]),
                 'is_read' => false

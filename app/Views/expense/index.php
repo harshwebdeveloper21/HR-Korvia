@@ -34,10 +34,6 @@
                                         <p class="statistics-title">Total Expense (Year)</p>
                                         <h3 class="rate-percentage text-success">₹<?= number_format($stats['total_year'], 2) ?></h3>
                                     </div>
-                                    <div>
-                                        <p class="statistics-title">Pending Approvals</p>
-                                        <h3 class="rate-percentage text-warning"><?= $stats['pending_count'] ?></h3>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -72,15 +68,8 @@
                                                     <?php endforeach; ?>
                                                 </select>
                                             </div>
-                                            <div class="col-md-2">
-                                                <select name="status" class="form-select form-select-sm">
-                                                    <option value="">All Status</option>
-                                                    <option value="Pending" <?= ($filters['status'] ?? '') == 'Pending' ? 'selected' : '' ?>>Pending</option>
-                                                    <option value="Approved" <?= ($filters['status'] ?? '') == 'Approved' ? 'selected' : '' ?>>Approved</option>
-                                                    <option value="Rejected" <?= ($filters['status'] ?? '') == 'Rejected' ? 'selected' : '' ?>>Rejected</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
+
+                                            <div class="col-md-5">
                                                 <input type="text" name="search" class="form-control form-control-sm" placeholder="Search title or employee..." value="<?= $filters['search'] ?? '' ?>">
                                             </div>
                                             <div class="col-md-1">
@@ -106,7 +95,6 @@
                                                         <th>Amount</th>
                                                         <th>Paid By</th>
                                                         <th>Date</th>
-                                                        <th>Status</th>
                                                         <th>Action</th>
                                                     </tr>
                                                 </thead>
@@ -119,26 +107,10 @@
                                                             <td><?= $expense['paid_by'] ? $expense['paid_by_name'] : '<span class="text-info">Company</span>' ?></td>
                                                             <td><?= date('d M, Y', strtotime($expense['expense_date'])) ?></td>
                                                             <td>
-                                                                <?php if($expense['status'] == 'Pending'): ?>
-                                                                    <label class="badge badge-warning">Pending</label>
-                                                                <?php elseif($expense['status'] == 'Approved'): ?>
-                                                                    <label class="badge badge-success">Approved</label>
-                                                                <?php else: ?>
-                                                                    <label class="badge badge-danger">Rejected</label>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                            <td>
                                                                 <div class="btn-group">
                                                                     <a href="<?= base_url('expenses/edit/'.$expense['id']) ?>" class="btn btn-outline-primary btn-sm"><i class="mdi mdi-pencil"></i></a>
                                                                     <?php if($user->role !== 'employee'): ?>
-                                                                        <?php if($expense['status'] == 'Pending'): ?>
-                                                                            <a href="<?= base_url('expenses/approve/'.$expense['id']) ?>" class="btn btn-outline-success btn-sm" onclick="return confirm('Approve this expense?')"><i class="mdi mdi-check"></i></a>
-                                                                            <a href="<?= base_url('expenses/reject/'.$expense['id']) ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject this expense?')"><i class="mdi mdi-close"></i></a>
-                                                                        <?php endif; ?>
-                                                                        <a href="<?= base_url('expenses/delete/'.$expense['id']) ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure?')"><i class="mdi mdi-delete"></i></a>
-                                                                    <?php endif; ?>
-                                                                    <?php if(!empty($expense['attachment'])): ?>
-                                                                        <a href="<?= base_url('uploads/expenses/'.$expense['attachment']) ?>" target="_blank" class="btn btn-outline-info btn-sm"><i class="mdi mdi-attachment"></i></a>
+                                                                        <a href="javascript:void(0)" onclick="confirmExpenseAction('<?= base_url('expenses/delete/'.$expense['id']) ?>', 'Delete', 'Are you sure you want to delete this expense?', '#dc3545')" class="btn btn-outline-danger btn-sm"><i class="mdi mdi-delete"></i></a>
                                                                     <?php endif; ?>
                                                                 </div>
                                                             </td>
@@ -146,7 +118,7 @@
                                                     <?php endforeach; ?>
                                                     <?php if(empty($expenses)): ?>
                                                         <tr>
-                                                            <td colspan="7" class="text-center">No expenses found.</td>
+                                                            <td colspan="6" class="text-center">No expenses found.</td>
                                                         </tr>
                                                     <?php endif; ?>
                                                 </tbody>
@@ -203,5 +175,23 @@
             }
         }
     });
+
+    function confirmExpenseAction(url, action, message, color) {
+        Swal.fire({
+            icon: action === 'Approve' ? 'success' : 'warning',
+            title: action + ' Expense?',
+            text: message,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, ' + action,
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: color,
+            cancelButtonColor: '#6c757d',
+            position: 'center',
+        }).then(result => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    }
 </script>
 <?= $this->endSection() ?>

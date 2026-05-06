@@ -187,6 +187,7 @@ $role = $user ? $user->role : null;
         </div>
       </li>
 
+      <?php if ($role === 'admin' || $role === 'hr'): ?>
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#expense" aria-expanded="false" aria-controls="expense">
           <i class="menu-icon mdi mdi-wallet"></i>
@@ -201,6 +202,7 @@ $role = $user ? $user->role : null;
           </ul>
         </div>
       </li>
+      <?php endif; ?>
 
       <!-- PDF Recorder - Available for all users -->
       <!-- <li class="nav-item">
