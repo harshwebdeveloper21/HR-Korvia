@@ -1414,19 +1414,23 @@
                 }
 
                 // ── Build inline time + pin location row (matches screenshot) ─────
-                function buildInlineLine(prefix, time, locationName) {
+                function buildInlineLine(prefix, time, locationName, locationStatus) {
                     const timeStr = fmtTime(time) || '-';
+                    const isMissing = !locationName || locationStatus === 'not_captured' || locationStatus === 'denied' || locationStatus === 'failed';
+                    const pinColor = isMissing ? 'color: #dc3545;' : '';
+                    const titleText = isMissing ? ' title="Location not captured"' : '';
+                    
                     const pin = locationName
-                        ? `<span class="loc-sep">|</span><span>&#128205;</span><span class="loc-addr">${locationName}</span>`
-                        : `<span class="loc-sep">|</span><span>&#128205;</span><span class="loc-addr" style="color:#bbb;">-</span>`;
+                        ? `<span class="loc-sep">|</span><span style="${pinColor}"${titleText}>&#128205;</span><span class="loc-addr">${locationName}</span>`
+                        : `<span class="loc-sep">|</span><span style="${pinColor}"${titleText}>&#128205;</span><span class="loc-addr" style="color:#bbb;">-</span>`;
                     return `<div class="loc-inline-line">
                         <span class="loc-time">${prefix}: ${timeStr}</span>
                         ${pin}
                     </div>`;
                 }
 
-                const checkInLine  = buildInlineLine('In',  attendance?.check_in_time,  attendance?.check_in_location_name);
-                const checkOutLine = buildInlineLine('Out', attendance?.check_out_time, attendance?.check_out_location_name);
+                const checkInLine  = buildInlineLine('In',  attendance?.check_in_time,  attendance?.check_in_location_name, attendance?.check_in_location_status);
+                const checkOutLine = buildInlineLine('Out', attendance?.check_out_time, attendance?.check_out_location_name, attendance?.check_out_location_status);
 
                 const employeeCard = document.createElement('div');
                 employeeCard.className = 'mobile-employee-card';
