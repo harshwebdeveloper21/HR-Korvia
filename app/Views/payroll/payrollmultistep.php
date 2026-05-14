@@ -293,7 +293,7 @@
         <div class="card">
             <div class="card-body">
                 <h4 class="card-title">Add Payroll</h4>
-                <form class="form-sample" method="POST" id="payrollForm">
+                <form class="form-sample" method="POST" id="payrollForm" novalidate>
                     <input type="hidden" name="id" id="id" value=""> <!-- Hidden input for id -->
                     <div class="row">
                         <div class="col-md-6">
@@ -727,7 +727,7 @@
                 $('#paidLeaveSection').slideDown();
             } else {
                 $('#paidLeaveSection').slideUp();
-                $('#total_paid_leaves, #used_paid_leaves, #remaining_paid_leaves').val('');
+                $('#total_paid_leaves, #used_paid_leaves, #remaining_paid_leaves').val('0');
                 calculateNetSalary(); // <- recalculate after clearing paid leave fields
             }
         });

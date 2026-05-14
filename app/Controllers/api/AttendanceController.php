@@ -287,9 +287,10 @@ class AttendanceController extends ResourceController
         // ── Capture check-in location info ───────────────────────────────────
         $clientIp   = $this->request->getIPAddress();
         $userAgent  = $this->request->getUserAgent()->getAgentString();
-        $bodyJson   = $this->request->getJSON(true) ?? [];
-        $checkinLat = isset($bodyJson['latitude'])  ? (float)$bodyJson['latitude']  : null;
-        $checkinLng = isset($bodyJson['longitude']) ? (float)$bodyJson['longitude'] : null;
+        $bodyJson       = $this->request->getJSON(true) ?? [];
+        $checkinLat     = isset($bodyJson['latitude'])  ? (float)$bodyJson['latitude']  : null;
+        $checkinLng     = isset($bodyJson['longitude']) ? (float)$bodyJson['longitude'] : null;
+        $locationStatus = isset($bodyJson['location_status']) ? $bodyJson['location_status'] : null;
 
         // ── Reverse-geocode GPS coordinates via Nominatim ────────────────────
         $locationName = null;
@@ -321,6 +322,7 @@ class AttendanceController extends ResourceController
             'check_in_latitude'     => $checkinLat,
             'check_in_longitude'    => $checkinLng,
             'check_in_location_name'=> $locationName,
+            'check_in_location_status' => $locationStatus,
         ];
 
         // Delete any leave record for today if exists
@@ -629,6 +631,7 @@ class AttendanceController extends ResourceController
         $coBody = $this->request->getJSON(true) ?? [];
         $coLat  = isset($coBody['latitude'])  ? (float)$coBody['latitude']  : null;
         $coLng  = isset($coBody['longitude']) ? (float)$coBody['longitude'] : null;
+        $coLocationStatus = isset($coBody['location_status']) ? $coBody['location_status'] : null;
 
         // ── Reverse-geocode checkout GPS coordinates via Nominatim ───────────
         $coLocationName = null;
@@ -658,6 +661,7 @@ class AttendanceController extends ResourceController
             'check_out_latitude'        => $coLat,
             'check_out_longitude'       => $coLng,
             'check_out_location_name'   => $coLocationName,
+            'check_out_location_status' => $coLocationStatus,
         ];
 
         if ($this->attendanceModel->update($latestAttendance['id'], $data)) {
@@ -1120,11 +1124,13 @@ class AttendanceController extends ResourceController
                     'check_in_latitude'          => $first['check_in_latitude']   ?? ($first['latitude']   ?? null),
                     'check_in_longitude'         => $first['check_in_longitude']  ?? ($first['longitude']  ?? null),
                     'check_in_location_name'     => $first['check_in_location_name'] ?? ($first['location_address'] ?? null),
+                    'check_in_location_status'   => $first['check_in_location_status'] ?? null,
                     // ── Last check-out location (new column names) ───────
                     'check_out_ip_address'       => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_ip_address']    ?? ($displayRec['checkout_ip_address']        ?? null)),
                     'check_out_latitude'         => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_latitude']      ?? ($displayRec['checkout_latitude']           ?? null)),
                     'check_out_longitude'        => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_longitude']     ?? ($displayRec['checkout_longitude']          ?? null)),
                     'check_out_location_name'    => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_location_name'] ?? ($displayRec['checkout_location_address']   ?? null)),
+                    'check_out_location_status'  => ($activeRecord || !$displayRec) ? null : ($displayRec['check_out_location_status'] ?? null),
                 ]);
             }
 

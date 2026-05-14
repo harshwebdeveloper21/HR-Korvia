@@ -85,7 +85,7 @@
                     </a>
                 </div>
 
-                <form class="form-sample" method="POST" id="payrollForm">
+                <form class="form-sample" method="POST" id="payrollForm" novalidate>
                     <input type="hidden" name="id" id="id" value="">
                     <input type="hidden" id="enable_payroll" name="enable_payroll">
                     <input type="hidden" id="payroll_type" name="payroll_type">
@@ -469,7 +469,7 @@
                 $('#paidLeaveSection').slideDown();
             } else {
                 $('#paidLeaveSection').slideUp();
-                $('#total_paid_leaves, #used_paid_leaves, #remaining_paid_leaves').val('');
+                $('#total_paid_leaves, #used_paid_leaves, #remaining_paid_leaves').val('0');
                 calculateNetSalary();
             }
         });

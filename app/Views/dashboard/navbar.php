@@ -848,6 +848,54 @@ $role = $user ? $user->role : null;
         // Make updateAttendanceStatus available globally
         window.updateAttendanceStatus = updateAttendanceStatus;
 
+        function fetchIpLocation(callback) {
+            fetch('https://ipapi.co/json/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.latitude && data.longitude) {
+                        callback(data.latitude, data.longitude, 'ip');
+                    } else {
+                        callback(null, null, 'failed');
+                    }
+                })
+                .catch(() => callback(null, null, 'failed'));
+        }
+
+        function getGPSLocationWithRetryAndFallback(callback, retriesLeft = 3) {
+            if (!navigator.geolocation) {
+                fetchIpLocation(callback);
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    callback(pos.coords.latitude, pos.coords.longitude, 'gps');
+                },
+                error => {
+                    if (error.code === error.PERMISSION_DENIED) {
+                        Swal.fire({
+                            title: 'Location Required',
+                            text: 'Please enable location permissions to punch attendance. If denied, your punch will be marked as location missing.',
+                            icon: 'warning'
+                        });
+                        // Save with not_captured
+                        callback(null, null, 'not_captured');
+                        return;
+                    }
+
+                    if (retriesLeft > 0) {
+                        console.log('Retrying GPS fetch... attempts left:', retriesLeft);
+                        setTimeout(() => getGPSLocationWithRetryAndFallback(callback, retriesLeft - 1), 1000);
+                    } else {
+                        // Fallback to IP
+                        console.log('GPS failed, falling back to IP location');
+                        fetchIpLocation(callback);
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        }
+
         function getCurrentTime() {
             const now = new Date();
             const options = {
@@ -880,11 +928,14 @@ $role = $user ? $user->role : null;
                     btn.disabled = true;
 
                     // ── Capture GPS, then POST to check-in API ────────────────────
-                    const doCheckIn = (lat, lng) => {
+                    const doCheckIn = (lat, lng, status) => {
                         const payload = {};
                         if (lat !== null && lng !== null) {
                             payload.latitude  = lat;
                             payload.longitude = lng;
+                        }
+                        if (status) {
+                            payload.location_status = status;
                         }
 
                         fetch('/api/attendance/checkin', {
@@ -915,16 +966,10 @@ $role = $user ? $user->role : null;
                         .finally(() => { btn.disabled = false; });
                     };
 
-                    // Try to get GPS location (allow up to 8 s)
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            pos => doCheckIn(pos.coords.latitude, pos.coords.longitude),
-                            ()  => doCheckIn(null, null),  // permission denied / error → proceed without GPS
-                            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-                        );
-                    } else {
-                        doCheckIn(null, null);
-                    }
+                    // Try to get GPS location
+                    getGPSLocationWithRetryAndFallback((lat, lng, status) => {
+                        doCheckIn(lat, lng, status);
+                    });
                 }
             });
         });
@@ -950,11 +995,14 @@ $role = $user ? $user->role : null;
                     btn.disabled = true;
 
                     // ── Capture GPS, then POST to check-out API ─────────────────
-                    const doCheckOut = (lat, lng) => {
+                    const doCheckOut = (lat, lng, status) => {
                         const payload = {};
                         if (lat !== null && lng !== null) {
                             payload.latitude  = lat;
                             payload.longitude = lng;
+                        }
+                        if (status) {
+                            payload.location_status = status;
                         }
 
                         fetch('/api/attendance/checkout', {
@@ -966,10 +1014,10 @@ $role = $user ? $user->role : null;
                         .then(data => {
                             console.log('Checkout response:', data);
 
-                            const status  = data.status  || (data.data && data.data.status);
+                            const apiStatus  = data.status  || (data.data && data.data.status);
                             const message = data.message || (data.data && data.data.message) || '';
 
-                            if (status === 'success') {
+                            if (apiStatus === 'success') {
                                 btn.style.display = 'none';
                                 btn.disabled = false;
                                 if (checkInBtn) {
@@ -1026,15 +1074,9 @@ $role = $user ? $user->role : null;
                     };
 
                     // Try to get GPS location
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            pos => doCheckOut(pos.coords.latitude, pos.coords.longitude),
-                            ()  => doCheckOut(null, null),
-                            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-                        );
-                    } else {
-                        doCheckOut(null, null);
-                    }
+                    getGPSLocationWithRetryAndFallback((lat, lng, status) => {
+                        doCheckOut(lat, lng, status);
+                    });
                 }
             });
         });
