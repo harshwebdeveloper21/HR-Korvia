@@ -603,11 +603,12 @@ class AdminController extends ResourceController
         // Leave count for all roles
         if (in_array($role, ['admin', 'hr'])) {
             $totalLeavesThisWeek = $this->leaveModel
-                ->where('start_date >=', $startOfWeek)
-                ->where('start_date <=', $endOfWeek)
+                ->where('status', 'approved')
+                ->where('((start_date >= \'' . $startOfWeek . '\' AND start_date <= \'' . $endOfWeek . '\') OR (end_date >= \'' . $startOfWeek . '\' AND end_date <= \'' . $endOfWeek . '\') OR (start_date <= \'' . $startOfWeek . '\' AND end_date >= \'' . $endOfWeek . '\'))')
                 ->countAllResults();
             $totalLeavesThisYear = $this->leaveModel
-                ->where('YEAR(created_at)', date('Y')) // Filter by current year
+                ->where('status', 'approved')
+                ->where('YEAR(start_date)', date('Y')) // Filter by current year
                 ->countAllResults();
             $attendanceCountThisWeek = $this->attendanceModel
                 ->where('date >=', $startOfWeek)
@@ -619,8 +620,8 @@ class AdminController extends ResourceController
                 ->where('assigned_date <=', $endOfWeek)
                 ->countAllResults();
             $totalLeaves = $this->leaveModel
-                ->where('start_date >=', $startOfMonth)
-                ->where('start_date <=', $endOfMonth)
+                ->where('status', 'approved')
+                ->where('((start_date >= \'' . $startOfMonth . '\' AND start_date <= \'' . $endOfMonth . '\') OR (end_date >= \'' . $startOfMonth . '\' AND end_date <= \'' . $endOfMonth . '\') OR (start_date <= \'' . $startOfMonth . '\' AND end_date >= \'' . $endOfMonth . '\'))')
                 ->countAllResults();
             $attendanceCountThisMonth = $this->attendanceModel
                 ->where('date >=', $startOfMonth)
@@ -654,14 +655,15 @@ class AdminController extends ResourceController
             $startOfYear = date('Y-01-01'); // 1st January this year
             $todayDate = date('Y-m-d');  // Define todayDate for employee
             $totalLeavesThisWeek = $this->leaveModel
-                ->where('user_id', $userId)
-                ->where('start_date >=', $startOfWeek)
-                ->where('start_date <=', $endOfWeek)
+                ->where('user_id', $employeeId)
+                ->where('status', 'approved')
+                ->where('((start_date >= \'' . $startOfWeek . '\' AND start_date <= \'' . $endOfWeek . '\') OR (end_date >= \'' . $startOfWeek . '\' AND end_date <= \'' . $endOfWeek . '\') OR (start_date <= \'' . $startOfWeek . '\' AND end_date >= \'' . $endOfWeek . '\'))')
                 ->countAllResults();
             // Total leaves this year
             $totalLeavesThisYear = $this->leaveModel
                 ->where('user_id', $employeeId) // Only logged-in employee's leaves
-                ->where('YEAR(created_at)', date('Y')) // start_date is inside current year
+                ->where('status', 'approved')
+                ->where('YEAR(start_date)', date('Y')) // start_date is inside current year
                 ->countAllResults();
             $todayDate = date('Y-m-d');
             $totalLeavesToday = $this->leaveModel
@@ -737,8 +739,8 @@ class AdminController extends ResourceController
 
             $totalLeaves = $this->leaveModel
                 ->where('user_id', $employeeId)
-                ->where('start_date >=', $startOfMonth)
-                ->where('start_date <=', $endOfMonth)
+                ->where('status', 'approved')
+                ->where('((start_date >= \'' . $startOfMonth . '\' AND start_date <= \'' . $endOfMonth . '\') OR (end_date >= \'' . $startOfMonth . '\' AND end_date <= \'' . $endOfMonth . '\') OR (start_date <= \'' . $startOfMonth . '\' AND end_date >= \'' . $endOfMonth . '\'))')
                 ->countAllResults();
 
             $attendanceCountThisMonth = $this->attendanceModel
