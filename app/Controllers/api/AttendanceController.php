@@ -979,6 +979,19 @@ class AttendanceController extends ResourceController
         $holidayDates = array_column($holidays, 'holiday_date');
         $holidayMap = array_flip($holidayDates);
 
+        // 🔹 Leave data
+        $startOfMonthDate = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-01";
+        $endOfMonthDate = date('Y-m-t', strtotime($startOfMonthDate));
+        $leavesData = $this->leaveModel
+            ->where('status', 'approved')
+            ->where("((start_date >= '$startOfMonthDate' AND start_date <= '$endOfMonthDate') OR (end_date >= '$startOfMonthDate' AND end_date <= '$endOfMonthDate') OR (start_date <= '$startOfMonthDate' AND end_date >= '$endOfMonthDate'))")
+            ->findAll();
+
+        $leavesByUser = [];
+        foreach ($leavesData as $leave) {
+            $leavesByUser[$leave['user_id']][] = $leave;
+        }
+
         // 🔹 Company rules
         $companyRule = $companyRulesModel->first();
         $isIncludedHoliday = $companyRule['include_holidays_in_working_days'];
@@ -1264,6 +1277,30 @@ class AttendanceController extends ResourceController
                         'check_out_latitude'     => $record['check_out_latitude']     ?? null,
                         'check_out_longitude'    => $record['check_out_longitude']    ?? null,
                         'check_out_location_name'=> $record['check_out_location_name']?? null,
+                    ];
+                    continue;
+                }
+
+                // Check for leave
+                $isOnLeave = false;
+                if (isset($leavesByUser[$userId])) {
+                    foreach ($leavesByUser[$userId] as $leave) {
+                        if ($date >= $leave['start_date'] && $date <= $leave['end_date']) {
+                            $isOnLeave = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($isOnLeave) {
+                    $formattedAttendance[] = [
+                        'date' => $date,
+                        'check_in_time' => null,
+                        'check_out_time' => null,
+                        'status' => 'leave',
+                        'is_late' => null,
+                        'late_minutes' => null,
+                        'overtime' => null,
                     ];
                     continue;
                 }
