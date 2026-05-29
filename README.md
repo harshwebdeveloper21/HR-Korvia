@@ -1,60 +1,184 @@
-# CodeIgniter 4 Framework
+# HR Demo Portal
 
-## What is CodeIgniter?
+> **Local URL:** [http://localhost/hrdemoportal/](http://localhost/hrdemoportal/)
+---
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Table of Contents
 
-This repository holds the distributable version of the framework.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+1. [Prerequisites](#prerequisites)
+2. [Project Setup](#project-setup)
+3. [Database Setup](#database-setup)
+4. [Environment Configuration](#environment-configuration)
+5. [Running the Project](#running-the-project)
+6. [Project Structure Overview](#project-structure-overview)
+7. [Troubleshooting](#troubleshooting)
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+---
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+## Prerequisites
 
-## Important Change with index.php
+Make sure the following are installed on your machine before proceeding:
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+| Requirement | Version |
+|---|---|
+| XAMPP (Apache + MySQL) | Latest stable |
+| PHP | 7.4 or higher (8.x recommended) |
+| MySQL | 5.7 or higher |
+| Composer | Latest stable |
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+**Required PHP Extensions** (enable in `php.ini` if not already active):
 
-**Please** read the user guide for a better explanation of how CI4 works!
+- `intl`
+- `mbstring`
+- `json` *(enabled by default)*
+- `mysqlnd`
+- `curl`
+- `gd`
 
-## Repository Management
+---
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+## Project Setup
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+### 1. Clone / Place the Project
 
-## Contributing
+Place the project folder inside your XAMPP `htdocs` directory:
 
-We welcome contributions from the community.
+```
+C:\xampp\htdocs\hrdemoportal\
+```
 
-Please read the [*Contributing to CodeIgniter*](https://github.com/codeigniter4/CodeIgniter4/blob/develop/CONTRIBUTING.md) section in the development repository.
+The project root should contain `index.php`, `composer.json`, and the `app/` folder.
 
-## Server Requirements
+### 2. Install PHP Dependencies
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+Open a terminal in the project root and run:
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+```bash
+composer install
+```
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+This will install all required packages including:
+- `dompdf/dompdf` — PDF generation
+- `firebase/php-jwt` — JWT authentication
+- `phpmailer/phpmailer` — Email sending
+- `laminas/laminas-escaper` — Output escaping
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+---
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## Database Setup
+
+### 1. Start MySQL
+
+Open XAMPP Control Panel and start **Apache** and **MySQL**.
+
+### 2. Create the Database
+
+Open [phpMyAdmin](http://localhost/phpmyadmin) in your browser and create a new database:
+
+```
+Database name: hrdemoportal
+```
+
+### 3. Import the Database Dump
+
+The database dump file is located in the `db/` folder (use the latest date folder):
+
+```
+db/<latest-date-folder>/database.sql
+```
+
+**To import via phpMyAdmin:**
+
+1. Open [http://localhost/phpmyadmin](http://localhost/phpmyadmin)
+2. Select the `hrdemoportal` database from the left panel
+3. Click the **Import** tab at the top
+4. Click **Choose File** and select the `.sql` file from the `db/` folder
+5. Click **Go** to import
+
+**To import via command line:**
+
+```bash
+mysql -u root -p hrdemoportal < db/<latest-date-folder>/database.sql
+```
+
+---
+
+## Environment Configuration
+
+### 1. Configure the `.env` File
+
+Copy or rename `.env.example` to `.env` (if not already present) and update the following values:
+
+```env
+CI_ENVIRONMENT = development
+
+database.default.hostname = localhost
+database.default.database = hrdemoportal
+database.default.username = root
+database.default.password = 
+database.default.DBDriver = MySQLi
+database.default.port     = 3306
+```
+
+> If your MySQL root user has a password, enter it in `database.default.password`.
+
+### 2. Verify Base URL
+
+Open `app/Config/App.php` and confirm the base URL is set correctly:
+
+```php
+public string $baseURL = 'http://localhost/hrdemoportal/';
+```
+
+### 3. Verify Database Config
+
+Open `app/Config/Database.php` and confirm:
+
+```php
+'hostname' => 'localhost',
+'username' => 'root',
+'password' => '',
+'database' => 'hrdemoportal',
+```
+
+---
+
+## Running the Project
+
+1. Start **Apache** and **MySQL** from the XAMPP Control Panel.
+2. Open your browser and navigate to:
+
+```
+http://localhost/hrdemoportal/
+```
+
+3. You should see the HR Demo Portal login page.
+
+---
+
+## Troubleshooting
+
+**Blank page or 500 error**
+- Enable error display by setting `CI_ENVIRONMENT = development` in `.env`
+- Check `writable/logs/` for error log files
+
+**Database connection error**
+- Confirm MySQL is running in XAMPP
+- Verify credentials in `app/Config/Database.php` match your local MySQL setup
+- Ensure the `hrdemoportal` database exists and the SQL dump has been imported
+
+**Composer dependencies missing**
+- Run `composer install` from the project root
+- Ensure PHP is added to your system PATH so Composer can use it
+
+**`writable/` permission errors**
+- Ensure the `writable/` directory and its subdirectories are writable by the web server
+
+**Page not found (404)**
+- Confirm Apache `mod_rewrite` is enabled in XAMPP
+- Check that the `.htaccess` file exists in the project root
+
+---
+
+## License 
+This project is proprietary software developed by **Fablead Developers Technolab**. All rights reserved.
