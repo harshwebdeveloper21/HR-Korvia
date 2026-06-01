@@ -1182,6 +1182,7 @@
         let users = [];
         let holidays = [];
         let saturdayOffDates = [];
+        let companyInfo = {};
         let isMobile = window.innerWidth <= 768;
         let selectedDate = new Date().toISOString().split('T')[0];
 
@@ -1225,6 +1226,7 @@
                     users = data.data.users || [];
                     holidays = data.data.holidays || [];
                     saturdayOffDates = data.data.saturdayOffDates || [];
+                    companyInfo = data.data.company || {};
                     populateUserFilter();
                     renderCalendar();
                 }
@@ -1413,24 +1415,66 @@
                     return `${h12}:${m.padStart(2,'0')}:${(s||'00').padStart(2,'0')} ${ampm}`;
                 }
 
-                // ── Build inline time + pin location row (matches screenshot) ─────
+                // ── Build inline time + pin location row ─────────────────────────
+                // Rules:
+                //   time == null  → show "Prefix: –" with NO pin/address
+                //   time != null, location exists → show real GPS address
+                //   time != null, location is null/empty → show default office address
                 function buildInlineLine(prefix, time, locationName, locationStatus) {
-                    const timeStr = fmtTime(time) || '-';
-                    const isMissing = !locationName || locationStatus === 'not_captured' || locationStatus === 'denied' || locationStatus === 'failed';
-                    const pinColor = isMissing ? 'color: #dc3545;' : '';
-                    const titleText = isMissing ? ' title="Location not captured"' : '';
-                    
-                    const pin = locationName
-                        ? `<span class="loc-sep">|</span><span style="${pinColor}"${titleText}>&#128205;</span><span class="loc-addr">${locationName}</span>`
-                        : `<span class="loc-sep">|</span><span style="${pinColor}"${titleText}>&#128205;</span><span class="loc-addr" style="color:#bbb;">-</span>`;
+                    const timeStr = fmtTime(time);
+
+                    // Time is null → show a plain dash, NO location at all
+                    if (!timeStr) {
+                        return `<div class="loc-inline-line" style="color:#bbb;">
+                            <span class="loc-time">${prefix}: –</span>
+                        </div>`;
+                    }
+
+                    // Time exists — decide which address to show
+                    const isMissing = !locationName || locationName.trim() === ''
+                        || locationStatus === 'not_captured'
+                        || locationStatus === 'denied'
+                        || locationStatus === 'failed';
+
+                    let displayAddr, pinColor, titleAttr, addrStyle;
+
+                    if (!isMissing) {
+                        // Real GPS location
+                        displayAddr = locationName;
+                        pinColor    = '';
+                        titleAttr   = '';
+                        addrStyle   = '';
+                    } else {
+                        // Fallback: company default address
+                        const fallback = (companyInfo.address && companyInfo.address.trim())
+                            ? companyInfo.address.trim()
+                            : 'Office';
+                        displayAddr = fallback;
+                        pinColor    = 'color: #6c757d;';
+                        titleAttr   = ' title="Default Office Address"';
+                        addrStyle   = 'color:#555;';
+                    }
+
+                    const pin = `<span class="loc-sep">|</span><span style="${pinColor}"${titleAttr}>&#128205;</span><span class="loc-addr" style="${addrStyle}">${displayAddr}</span>`;
+
                     return `<div class="loc-inline-line">
                         <span class="loc-time">${prefix}: ${timeStr}</span>
                         ${pin}
                     </div>`;
                 }
 
-                const checkInLine  = buildInlineLine('In',  attendance?.check_in_time,  attendance?.check_in_location_name, attendance?.check_in_location_status);
-                const checkOutLine = buildInlineLine('Out', attendance?.check_out_time, attendance?.check_out_location_name, attendance?.check_out_location_status);
+                const checkInLine  = buildInlineLine(
+                    'In',
+                    attendance?.check_in_time,
+                    attendance?.check_in_location_name,
+                    attendance?.check_in_location_status
+                );
+                const checkOutLine = buildInlineLine(
+                    'Out',
+                    attendance?.check_out_time  ?? null,
+                    attendance?.check_out_location_name  ?? null,
+                    attendance?.check_out_location_status ?? null
+                );
 
                 const employeeCard = document.createElement('div');
                 employeeCard.className = 'mobile-employee-card';
