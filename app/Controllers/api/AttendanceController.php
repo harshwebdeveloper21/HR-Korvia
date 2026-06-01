@@ -936,6 +936,7 @@ class AttendanceController extends ResourceController
         $attendanceModel = new AttendanceModel();
         $holidayCalendarModel = new HolidayCalendarModel();
         $companyRulesModel = new CompanyRulesModel();
+        $companyLogoModel = new \App\Models\CompanyLogoModel();
 
         $authUser = $this->authService->user();
         if (!$authUser) {
@@ -1325,13 +1326,22 @@ class AttendanceController extends ResourceController
             ];
         }
 
+        // 🔹 Company info for location fallback
+        $companyRecord  = $companyLogoModel->first();
+        $companyAddress = $companyRecord['company_address'] ?? '';
+        $companyName    = $companyRecord['company_name']    ?? '';
+
         return $this->response->setJSON([
             'status' => 'success',
             'data' => [
-                'users' => $attendanceWithUsers,
+                'users'             => $attendanceWithUsers,
                 'isIncludedHoliday' => $isIncludedHoliday,
-                'holidays' => $holidays,
-                'saturdayOffDates' => $saturdayOffDates
+                'holidays'          => $holidays,
+                'saturdayOffDates'  => $saturdayOffDates,
+                'company'           => [
+                    'address' => $companyAddress,
+                    'name'    => $companyName,
+                ],
             ]
         ]);
     }
