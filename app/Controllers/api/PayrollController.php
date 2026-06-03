@@ -608,13 +608,23 @@ class PayrollController extends ResourceController
             $holidayDates,
         );
 
-        // Half-day leaves from attendance
-        $halfDays = $attendanceModel
+        // Half-day leaves from attendance – exclude Saturdays that are company-wide
+        // scheduled half-days (saturday_half_day_enabled). Those are not employee-specific
+        // absences and must not inflate the deduction count.
+        $satHalfDayDates = $this->getSaturdayHalfDayDates($month, $year, $rules);
+        $halfDayRows = $attendanceModel
             ->where("user_id", $userId)
             ->where("status", "half-day")
             ->where("date >=", $startOfMonth)
             ->where("date <=", $endOfMonth)
-            ->countAllResults();
+            ->findAll();
+        $halfDays = 0;
+        foreach ($halfDayRows as $hdRow) {
+            $dateKey = substr($hdRow["date"], 0, 10);
+            if (!isset($satHalfDayDates[$dateKey])) {
+                $halfDays++;
+            }
+        }
        
         return $this->response->setJSON([
             "status" => "success",
@@ -762,6 +772,15 @@ class PayrollController extends ResourceController
             ->where("date >=", $startOfMonth)
             ->where("date <=", $endOfMonth)
             ->findAll();
+
+        // Exclude Saturdays that are company-wide scheduled half-days; they are not
+        // employee-specific absences and must not inflate the deduction count.
+        $satHalfDayDatesCalc = $this->getSaturdayHalfDayDates($month, $year, $rules);
+        if (!empty($satHalfDayDatesCalc)) {
+            $halfDayRows = array_values(array_filter($halfDayRows, function ($r) use ($satHalfDayDatesCalc) {
+                return !isset($satHalfDayDatesCalc[substr($r['date'], 0, 10)]);
+            }));
+        }
 
         $fullDayHoursRule = isset($rules["working_hours_per_day"])
             ? (float) $rules["working_hours_per_day"]
@@ -1079,6 +1098,60 @@ class PayrollController extends ResourceController
         ];
     }
 
+    /**
+     * Build a lookup (date string => true) of Saturday dates in the given month
+     * that are company-wide scheduled half-days (saturday_half_day_enabled).
+     *
+     * The saturday_half_day_pattern is a comma-separated list of week numbers
+     * within the month (1 = first Saturday, 2 = second Saturday, etc.).
+     *
+     * These dates should NOT be counted as employee-specific half-day absences
+     * because they are a company rule, not an individual deduction.
+     *
+     * @param int   $month Month number (1–12)
+     * @param int   $year  Four-digit year
+     * @param array $rules Company rules array
+     * @return array<string,true> Associative array keyed by 'Y-m-d' date strings
+     */
+    private function getSaturdayHalfDayDates(int $month, int $year, array $rules): array
+    {
+        if (empty($rules['saturday_half_day_enabled']) || $rules['saturday_half_day_enabled'] != 1) {
+            return [];
+        }
+
+        $patternStr = $rules['saturday_half_day_pattern'] ?? '';
+        if ($patternStr === '' || $patternStr === null) {
+            return [];
+        }
+
+        // Parse the pattern: list of week numbers (1-based) for Saturdays
+        $patternWeeks = array_filter(
+            array_map('intval', explode(',', $patternStr)),
+            fn($w) => $w > 0
+        );
+
+        if (empty($patternWeeks)) {
+            return [];
+        }
+
+        // Enumerate all Saturdays in the month and map week-number → date
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $saturdayLookup = [];
+        $satCount = 0;
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $day);
+            $dow = (int) date('w', strtotime($dateStr)); // 6 = Saturday
+            if ($dow === 6) {
+                $satCount++;
+                if (in_array($satCount, $patternWeeks, true)) {
+                    $saturdayLookup[$dateStr] = true;
+                }
+            }
+        }
+
+        return $saturdayLookup;
+    }
+
     public function getLeaveDetails()
     {
         $leaveId = $this->request->getPost("leave_id");
@@ -1105,12 +1178,25 @@ class PayrollController extends ResourceController
 
         // employee_leaves stores the current master balance for paid/casual leave.
         $remaining = max((float) $totalLeaves, 0);
-        $halfDays = $attendanceModel
+        // Fix: use proper start/end-of-month dates instead of bare YYYY-MM string
+        $startOfMonthLD = $monthYear . '-01';
+        $endOfMonthLD = date('Y-m-t', strtotime($startOfMonthLD));
+        $companyRulesModelLD = new CompanyRulesModel();
+        $rulesLD = $companyRulesModelLD->first();
+        [$yearLD, $monthNumLD] = array_map('intval', explode('-', $monthYear));
+        $satHalfDayDatesLD = $this->getSaturdayHalfDayDates($monthNumLD, $yearLD, $rulesLD);
+        $halfDayRowsLD = $attendanceModel
             ->where("user_id", $userId)
             ->where("status", "half-day")
-            ->where("date >=", $monthYear)
-            ->where("date <=", $monthYear)
-            ->countAllResults(); // count only
+            ->where("date >=", $startOfMonthLD)
+            ->where("date <=", $endOfMonthLD)
+            ->findAll();
+        $halfDays = 0;
+        foreach ($halfDayRowsLD as $hdRowLD) {
+            if (!isset($satHalfDayDatesLD[substr($hdRowLD['date'], 0, 10)])) {
+                $halfDays++;
+            }
+        }
 
         // Get allow_half_day from leave type
         $allowHalfDay = $leaveType
@@ -1823,6 +1909,12 @@ class PayrollController extends ResourceController
                     ->where("date >=", $startOfMonth)
                     ->where("date <=", $endOfMonth)
                     ->findAll();
+                // Exclude Saturdays that are company-wide scheduled half-days
+                $satHalfDayDatesForEmp = $this->getSaturdayHalfDayDates($monthNum, $year, $rules);
+                $halfDayRows = array_filter($halfDayRows, function ($r) use ($satHalfDayDatesForEmp) {
+                    return !isset($satHalfDayDatesForEmp[substr($r['date'], 0, 10)]);
+                });
+                $halfDayRows = array_values($halfDayRows);
                 $emp["half_days"] = count($halfDayRows);
 
                 $fullDaysCoveredByPaidLeave = min(floor($usedPaidLeaves + $emp["used_sick_leaves"]), $totalLeaves);
@@ -2132,6 +2224,12 @@ class PayrollController extends ResourceController
         }
 
         $holidayLookup = array_flip($holidayDates);
+        // Build lookup of Saturday dates that are company-wide scheduled half-days
+        $satBreakdownDates = $this->getSaturdayHalfDayDates(
+            (int) $date->format("m"),
+            (int) $date->format("Y"),
+            $rules
+        );
         $absentDates = [];
         $halfDayDates = [];
         $lateList = [];
@@ -2174,6 +2272,11 @@ class PayrollController extends ResourceController
                 $absentDates[] = ["date" => $dateStr, "label" => date("d M Y", strtotime($dateStr))];
             }
             if ($row["status"] === "half-day") {
+                // Skip Saturdays that are company-wide scheduled half-days – those are
+                // not employee-specific absences and should not appear in the deduction breakdown.
+                if (isset($satBreakdownDates[$dateKey])) {
+                    continue;
+                }
                 // Compute gross worked time from check-in/out (same as attendance history).
                 $displayWorkedSeconds = 0;
                 if (!empty($row["check_in_time"]) && !empty($row["check_out_time"])) {
