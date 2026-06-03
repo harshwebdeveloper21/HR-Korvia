@@ -13,7 +13,7 @@ trait CompanyRuleTrait
     protected function isWorkingDay(DateTime $date, array $rules): bool
     {
         $dayOfWeek = (int) $date->format('w'); // 0=Sunday, 6=Saturday
-        $day = (int) $date->format('j'); // Day of month (1–31)
+        $day = (int) $date->format('j'); // Day of month (1-31)
 
         if ($dayOfWeek === 0 && ($rules['sunday_off'] ?? 0) == 1) {
             return false;
@@ -61,13 +61,15 @@ trait CompanyRuleTrait
      * Attendance overrides leave: if employee has present or half-day on a date, that day is NOT counted as leave.
      *
      * Sandwich Leave Rule:
-     *   • If an approved leave falls on Friday (day 5), the following Saturday & Sunday are
+     *   - If an approved leave falls on Friday (day 5), the following Saturday & Sunday are
      *     automatically included in the leave count (Friday leave = 3 days: Fri + Sat + Sun).
-     *   • If an approved leave falls on Monday (day 1), the preceding Saturday & Sunday are
+     *   - If an approved leave falls on Monday (day 1), the preceding Saturday & Sunday are
      *     automatically included (Monday leave = 3 days: Sat + Sun + Mon).
-     *   • When both Friday AND Monday are on leave the Sat/Sun are counted only once (5 days total).
-     *   • The rule does NOT apply to half-day leaves.
-     *   • Weekend days that are public holidays or marked present/half-day are NOT added.
+     *   - When both Friday AND Monday are on leave the Sat/Sun are counted only once (5 days total).
+     *   - The rule does NOT apply to half-day leaves.
+     *   - The rule does NOT apply if the employee has a check-in record on the Friday/Monday
+     *     (meaning they came to the office or were out for official work that day).
+     *   - Weekend days that are public holidays or marked present/half-day are NOT added.
      *
      * @param array $holidayDates Optional list of holiday dates (Y-m-d) for this month
      */
@@ -83,6 +85,8 @@ trait CompanyRuleTrait
         $holidaySet = array_flip($holidayDates);
 
         $attendanceModel = new AttendanceModel();
+
+        // Fetch present/half-day attendance records so we can skip those dates from leave count
         $presentOrHalfDay = $attendanceModel
             ->where('user_id', $userId)
             ->whereIn('status', ['present', 'half-day'])
@@ -90,6 +94,23 @@ trait CompanyRuleTrait
             ->where('date <=', $endOfMonth->format('Y-m-d'))
             ->findAll();
         $presentOrHalfDayDates = array_flip(array_column($presentOrHalfDay, 'date'));
+
+        // Fetch ALL attendance rows for the month so we can check check_in_time on any given day.
+        // An employee who has a check_in_time is physically present (even if marked absent/on-leave
+        // for administrative reasons like off-site/field work). The sandwich rule must NOT apply
+        // for such days — their leave is only 1 day, not 3.
+        $allAttendance = $attendanceModel
+            ->where('user_id', $userId)
+            ->where('date >=', $startOfMonth->format('Y-m-d'))
+            ->where('date <=', $endOfMonth->format('Y-m-d'))
+            ->findAll();
+        $checkedInDates = []; // date => true if employee has any check_in_time that day
+        foreach ($allAttendance as $att) {
+            $attDate = substr($att['date'], 0, 10);
+            if (!empty($att['check_in_time'])) {
+                $checkedInDates[$attDate] = true;
+            }
+        }
 
         $leaves = $leaveModel
             ->where('user_id', $userId)
@@ -117,50 +138,58 @@ trait CompanyRuleTrait
             while ($current <= $end) {
 
                 $dateStr = $current->format('Y-m-d');
-                $dow = (int) $current->format('w'); // 0=Sun, 1=Mon … 5=Fri, 6=Sat
+                $dow = (int) $current->format('w'); // 0=Sun, 1=Mon ... 5=Fri, 6=Sat
 
                 if (!isset($holidaySet[$dateStr])) {
+                    // Only count as a leave day if the employee has NO present/half-day record
                     if (!isset($presentOrHalfDayDates[$dateStr]) && !isset($countedDates[$dateStr])) {
                         $total += $isHalfDay ? 0.5 : 1;
                         $countedDates[$dateStr] = true;
-                    }
 
-                    // ── Sandwich Leave Rule (apply only for Fri/Mon leave) ─────────────
-                    if (!$isHalfDay) {
-                        // Friday leave → also count Saturday (+1) and Sunday (+2) always
-                        if ($dow === 5) {
-                            $sat = (clone $current)->modify('+1 day');
-                            $sun = (clone $current)->modify('+2 days');
+                        // ── Sandwich Leave Rule ──────────────────────────────────────────────
+                        // Apply only when:
+                        //   1. It is a full-day leave (not half-day)
+                        //   2. The employee did NOT check in on this Friday/Monday.
+                        //      If they have a check_in_time, they came to office (or were
+                        //      on official outside duty) — treat as 1 leave day only.
+                        $employeeCheckedInToday = isset($checkedInDates[$dateStr]);
 
-                            foreach ([$sat, $sun] as $weekend) {
-                                $wStr = $weekend->format('Y-m-d');
-                                if (
-                                    !isset($presentOrHalfDayDates[$wStr]) &&
-                                    !isset($countedDates[$wStr])
-                                ) {
-                                    $total += 1;
-                                    $countedDates[$wStr] = true;
+                        if (!$isHalfDay && !$employeeCheckedInToday) {
+                            // Friday leave -> also count following Saturday (+1) and Sunday (+2)
+                            if ($dow === 5) {
+                                $sat = (clone $current)->modify('+1 day');
+                                $sun = (clone $current)->modify('+2 days');
+
+                                foreach ([$sat, $sun] as $weekend) {
+                                    $wStr = $weekend->format('Y-m-d');
+                                    if (
+                                        !isset($presentOrHalfDayDates[$wStr]) &&
+                                        !isset($countedDates[$wStr])
+                                    ) {
+                                        $total += 1;
+                                        $countedDates[$wStr] = true;
+                                    }
+                                }
+                            }
+                            // Monday leave -> also count preceding Sunday (-1) and Saturday (-2)
+                            if ($dow === 1) {
+                                $sun = (clone $current)->modify('-1 day');
+                                $sat = (clone $current)->modify('-2 days');
+
+                                foreach ([$sat, $sun] as $weekend) {
+                                    $wStr = $weekend->format('Y-m-d');
+                                    if (
+                                        !isset($presentOrHalfDayDates[$wStr]) &&
+                                        !isset($countedDates[$wStr])
+                                    ) {
+                                        $total += 1;
+                                        $countedDates[$wStr] = true;
+                                    }
                                 }
                             }
                         }
-                        // Monday leave → also count preceding Sunday (-1) and Saturday (-2) always
-                        if ($dow === 1) {
-                            $sun = (clone $current)->modify('-1 day');
-                            $sat = (clone $current)->modify('-2 days');
-
-                            foreach ([$sat, $sun] as $weekend) {
-                                $wStr = $weekend->format('Y-m-d');
-                                if (
-                                    !isset($presentOrHalfDayDates[$wStr]) &&
-                                    !isset($countedDates[$wStr])
-                                ) {
-                                    $total += 1;
-                                    $countedDates[$wStr] = true;
-                                }
-                            }
-                        }
+                        // ────────────────────────────────────────────────────────────────────
                     }
-                    // ────────────────────────────────────────────────────────────────────
                 }
 
                 $current->modify('+1 day');

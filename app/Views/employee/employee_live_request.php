@@ -175,6 +175,7 @@
                                 <th>END DATE</th>
                                 <th>DAYS</th>
                                 <th>REASON</th>
+                                <th>REQUEST DATE</th>
                                 <th>STATUS</th>
                                 <th>ACTION</th>
                             </tr>
@@ -230,6 +231,7 @@
                                         ${leave.leave_duration === 'half_day' ? `<br><small class="text-muted">(${capitalizeFirstLetter(leave.half_day_type.replace('_', ' '))})</small>` : ''}
                                     </td>
                                     <td><div class="reason-wrap">${leave.reason || 'N/A'}</div></td>
+                                    <td>${leave.created_at ? leave.created_at.split(' ')[0] : 'N/A'}</td>
                                     <td><div class="status-wrapper"><span class="status-badge ${statusClass}">${leave.status}</span></div></td>
                                     <td>
                                         <div class="action-icons-wrapper">
