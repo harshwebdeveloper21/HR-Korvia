@@ -129,9 +129,11 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn hr-btnbg" id="btnConfirmSaveSalary" style="background:#E66136; border-color:#E66136; color:white;">
-          <i class="mdi mdi-content-save me-1"></i> Save Salary
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+          style="min-width:130px; height:38px;">Cancel</button>
+        <button type="button" class="btn hr-btnbg" id="btnConfirmSaveSalary"
+          style="background:#E66136; border-color:#E66136; color:white; min-width:130px; height:38px;">
+          <i class="mdi mdi-content-save me-1"></i> Save Remark
         </button>
       </div>
     </div>
@@ -330,17 +332,24 @@
                         "net_salary"
                       ] ?>">
                       <input type="hidden" class="single-month" value="<?= $month ?>">
-                      <?php if (!empty($emp["is_saved"])): ?>
-                        <button type="button" class="btn btn-sm btn-save-single" data-id="<?= $emp["user_id"] ?>"
-                          style="background-color:#28a745;color:white">
-                          <i class="mdi mdi-content-save"></i> Update
+                      <div style="display:flex; gap:4px; align-items:center;">
+                        <button type="button" class="btn btn-sm btn-open-remark" data-id="<?= $emp["user_id"] ?>"
+                          title="Add Salary Adjustment & Remark"
+                          style="background-color:#6c757d;color:white">
+                          <i class="mdi mdi-comment-text-outline"></i>
                         </button>
-                      <?php else: ?>
-                        <button type="button" class="btn btn-sm btn-save-single" data-id="<?= $emp["user_id"] ?>"
-                          style="background-color:#E66136;color:white">
-                          <i class="mdi mdi-content-save"></i> Save
-                        </button>
-                      <?php endif; ?>
+                        <?php if (!empty($emp["is_saved"])): ?>
+                          <button type="button" class="btn btn-sm btn-save-single" data-id="<?= $emp["user_id"] ?>"
+                            style="background-color:#28a745;color:white">
+                            <i class="mdi mdi-content-save"></i> Update
+                          </button>
+                        <?php else: ?>
+                          <button type="button" class="btn btn-sm btn-save-single" data-id="<?= $emp["user_id"] ?>"
+                            style="background-color:#E66136;color:white">
+                            <i class="mdi mdi-content-save"></i> Save
+                          </button>
+                        <?php endif; ?>
+                      </div>
                     </td>
                   </tr>
                 <?php endforeach; ?>
@@ -545,12 +554,100 @@
   let currentSavingRow = null;
   let currentSavingBtn = null;
 
+  // Helper: perform the actual save API call
+  function doSavePayroll(row, saveBtn, adjustmentAmount, adjustmentRemark) {
+    const employeeId = saveBtn.dataset.id;
+    const salary = row.querySelector('input[name="salary[]"]').value;
+    const leaves = row.querySelector('.leave-input').value;
+    const halfDay = row.querySelector('.half_day-input').value;
+    const paidLeave = row.querySelector('.paid-leave-input').value || 0;
+    const sickLeave = row.querySelector('.sick-leave-input').value || 0;
+    const deduction = row.querySelector('.deduction-input').value;
+    const netSalary = (parseFloat(row.querySelector('.net-salary-input').value) + parseFloat(adjustmentAmount || 0)).toFixed(2);
+    const overtimePay = (row.querySelector('.overtime-pay-input') && row.querySelector('.overtime-pay-input').value) || 0;
+    const totalOvertimeHours = (row.querySelector('.total-overtime-hours-input') && row.querySelector('.total-overtime-hours-input').value) || 0;
+    const month = row.querySelector('.single-month').value;
+
+    fetch("<?= base_url("/api/payroll/save") ?>", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRF-TOKEN': "<?= csrf_hash() ?>"
+      },
+      body: new URLSearchParams({
+        "<?= csrf_token() ?>": "<?= csrf_hash() ?>",
+        employee_id: employeeId,
+        month: month,
+        salary: salary,
+        leaves: leaves,
+        half_day: halfDay,
+        paid_leave: paidLeave,
+        sick_leave: sickLeave,
+        deduction: deduction,
+        net_salary: netSalary,
+        overtime_pay: overtimePay,
+        total_overtime_hours: totalOvertimeHours,
+        adjustment_amount: adjustmentAmount || 0,
+        adjustment_remark: adjustmentRemark || ''
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Close modal if open
+          const modalElement = document.getElementById('remarkModal');
+          const modalInstance = bootstrap.Modal.getInstance(modalElement);
+          if (modalInstance) modalInstance.hide();
+
+          const badge = document.createElement('span');
+          badge.className = 'badge bg-success btn-sm rounded';
+          badge.textContent = 'Saved';
+          if (saveBtn.parentNode) {
+            saveBtn.parentNode.replaceChild(badge, saveBtn);
+          }
+
+          // Update the UI net salary cell to reflect adjustment
+          row.querySelector('.net-salary-cell').textContent = '₹' + netSalary;
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: data.message || 'Saved successfully!',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message || 'Failed to save salary details.',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+          });
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'System Error',
+          text: 'An unexpected error occurred. Please refresh the page and try again.',
+          toast: true,
+          position: 'top-end',
+          timer: 4000,
+          showConfirmButton: false
+        });
+      });
+  }
+
+  // Save button: directly saves without opening modal
   document.querySelectorAll('.btn-save-single').forEach(btn => {
     btn.addEventListener('click', function () {
       const row = this.closest('tr');
-      const employeeId = this.dataset.id;
-      const employeeName = row.querySelector('.capitalize-text')?.textContent || row.querySelector('span')?.textContent || 'Employee';
-      const monthYear = row.querySelector('.single-month').value;
 
       // Validation Check
       if (row.querySelector('.is-invalid')) {
@@ -566,8 +663,21 @@
         return;
       }
 
+      doSavePayroll(row, this, 0, '');
+    });
+  });
+
+  // Remark button: opens the modal for adjustment & remark
+  document.querySelectorAll('.btn-open-remark').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const row = this.closest('tr');
+      const employeeId = this.dataset.id;
+      const employeeName = row.querySelector('.capitalize-text')?.textContent || 'Employee';
+      const monthYear = row.querySelector('.single-month').value;
+
       currentSavingRow = row;
-      currentSavingBtn = this;
+      // Point to the Save button (sibling) for saving after modal confirm
+      currentSavingBtn = row.querySelector('.btn-save-single');
 
       // Populate Modal
       document.getElementById('modal_employee_id').value = employeeId;
@@ -581,100 +691,14 @@
     });
   });
 
-  document.getElementById('btnConfirmSaveSalary').addEventListener('click', function() {
-      if (!currentSavingRow) return;
+  // Modal "Save Salary" button: saves with adjustment & remark from modal
+  document.getElementById('btnConfirmSaveSalary').addEventListener('click', function () {
+    if (!currentSavingRow || !currentSavingBtn) return;
 
-      const adjustmentAmount = document.getElementById('adjustment_amount').value || 0;
-      const adjustmentRemark = document.getElementById('adjustment_remark').value;
+    const adjustmentAmount = parseFloat(document.getElementById('adjustment_amount').value) || 0;
+    const adjustmentRemark = document.getElementById('adjustment_remark').value;
 
-
-      const row = currentSavingRow;
-      const employeeId = currentSavingBtn.dataset.id;
-      const salary = row.querySelector('input[name="salary[]"]').value;
-      const leaves = row.querySelector('.leave-input').value;
-      const halfDay = row.querySelector('.half_day-input').value;
-      const paidLeave = row.querySelector('.paid-leave-input').value || 0;
-      const sickLeave = row.querySelector('.sick-leave-input').value || 0;
-      const deduction = row.querySelector('.deduction-input').value;
-      const netSalary = (parseFloat(row.querySelector('.net-salary-input').value) + parseFloat(adjustmentAmount)).toFixed(2);
-      const overtimePay = (row.querySelector('.overtime-pay-input') && row.querySelector('.overtime-pay-input').value) || 0;
-      const totalOvertimeHours = (row.querySelector('.total-overtime-hours-input') && row.querySelector('.total-overtime-hours-input').value) || 0;
-      const month = row.querySelector('.single-month').value;
-
-      const currentBtn = currentSavingBtn;
-      const modalElement = document.getElementById('remarkModal');
-      const modalInstance = bootstrap.Modal.getInstance(modalElement);
-
-      fetch("<?= base_url("/api/payroll/save") ?>", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRF-TOKEN': "<?= csrf_hash() ?>"
-        },
-        body: new URLSearchParams({
-          "<?= csrf_token() ?>": "<?= csrf_hash() ?>",
-          employee_id: employeeId,
-          month: month,
-          salary: salary,
-          leaves: leaves,
-          half_day: halfDay,
-          paid_leave: paidLeave,
-          sick_leave: sickLeave,
-          deduction: deduction,
-          net_salary: netSalary,
-          overtime_pay: overtimePay,
-          total_overtime_hours: totalOvertimeHours,
-          adjustment_amount: adjustmentAmount,
-          adjustment_remark: adjustmentRemark
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === 'success') {
-            modalInstance.hide();
-            const badge = document.createElement('span');
-            badge.className = 'badge bg-success btn-sm rounded';
-            badge.textContent = 'Saved';
-            if (currentBtn.parentNode) {
-              currentBtn.parentNode.replaceChild(badge, currentBtn);
-            }
-            
-            // Update the UI net salary cell to reflect adjustment
-            row.querySelector('.net-salary-cell').textContent = '₹' + netSalary;
-
-            Swal.fire({
-              icon: 'success',
-              title: 'Success',
-              text: data.message || 'Saved successfully!',
-              toast: true,
-              position: 'top-end',
-              timer: 3000,
-              showConfirmButton: false
-            });
-          } else {
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: data.message || 'Failed to save salary details.',
-              toast: true,
-              position: 'top-end',
-              timer: 3000,
-              showConfirmButton: false
-            });
-          }
-        })
-        .catch(err => {
-            console.error(err);
-            Swal.fire({
-                icon: 'error',
-                title: 'System Error',
-                text: 'An unexpected error occurred. Please refresh the page and try again.',
-                toast: true,
-                position: 'top-end',
-                timer: 4000,
-                showConfirmButton: false
-            });
-        });
+    doSavePayroll(currentSavingRow, currentSavingBtn, adjustmentAmount, adjustmentRemark);
   });
 
   // Deduction info modal – event delegation + touchend for mobile

@@ -2519,15 +2519,27 @@ class PayrollController extends ResourceController
                 $payrollModel->insert($data);
             }
 
-            if ($payrollModel->errors() || $employeeLeaveModel->errors() || $db->transStatus() === false) {
-                throw new \RuntimeException("Failed to save salary data.");
+            $payrollErrors = $payrollModel->errors();
+            $leaveErrors   = $employeeLeaveModel->errors();
+            if ($payrollErrors || $leaveErrors || $db->transStatus() === false) {
+                $errMsg = '';
+                if ($payrollErrors) {
+                    $errMsg .= 'Payroll: ' . implode(', ', $payrollErrors) . ' ';
+                }
+                if ($leaveErrors) {
+                    $errMsg .= 'Leave: ' . implode(', ', $leaveErrors) . ' ';
+                }
+                if ($db->transStatus() === false) {
+                    $errMsg .= 'DB transaction failed. ';
+                }
+                throw new \RuntimeException(trim($errMsg) ?: "Failed to save salary data.");
             }
         } catch (\Throwable $e) {
             $db->transRollback();
 
             return $this->response->setStatusCode(500)->setJSON([
-                "status" => "error",
-                "message" => "Failed to save salary for the employee.",
+                "status"  => "error",
+                "message" => $e->getMessage() ?: "Failed to save salary for the employee.",
             ]);
         }
 
