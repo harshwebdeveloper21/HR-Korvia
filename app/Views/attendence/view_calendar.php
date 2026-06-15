@@ -847,10 +847,48 @@
         flex-shrink: 0;
     }
 
-    .status-badge-pill.present   { background: #28a745; color: white; }
-    .status-badge-pill.half-day  { background: #ffc107; color: #000; }
-    .status-badge-pill.absent    { background: #dc3545; color: white; }
-    .status-badge-pill.working   { background: #007bff; color: white; }
+    .status-badge-pill.present      { background: #28a745; color: white; }
+    .status-badge-pill.half-day     { background: #ffc107; color: #000; }
+    .status-badge-pill.absent       { background: #dc3545; color: white; }
+    .status-badge-pill.working      { background: #007bff; color: white; }
+    .status-badge-pill.week-off-present {
+        background: linear-gradient(135deg, #ff6b35 0%, #e53e3e 100%);
+        color: white;
+        font-size: 10px;
+        padding: 4px 10px;
+        box-shadow: 0 2px 6px rgba(229,62,62,0.35);
+    }
+
+    /* Week-Off Present banner inside date view */
+    .weekoff-present-banner {
+        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+        border: 1.5px solid #ffb74d;
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #e65100;
+    }
+    .weekoff-present-banner .wop-icon { font-size: 18px; }
+    .weekoff-present-banner .wop-count {
+        background: #e65100;
+        color: white;
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: 12px;
+        margin-left: auto;
+    }
+
+    /* Calendar cell – week-off-present item */
+    .employee-attendance-item.week-off-present-item {
+        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+        border-left: 3px solid #ff6b35;
+    }
+    .attendance-status.week-off-present { color: #e65100; font-weight: 800; }
 </style>
 
 <div class="row">
@@ -1362,17 +1400,144 @@
             const dayOfWeek = selectedDateObj.getDay();
             const holiday = holidays.find(h => h.holiday_date === selectedDate);
             const isFuture = new Date(selectedDate) > new Date(todayDate);
+            const isSaturdayOff = saturdayOffDates.includes(selectedDate);
 
-            // Check if it's a non-working day
-            if (holiday || saturdayOffDates.includes(selectedDate) || dayOfWeek === 0 || isFuture) {
+            // For Sunday, hard holidays, or future dates → return early with banner
+            // Note: Sunday with actual check-ins is handled below in isSundayOff block
+            if (holiday || isFuture) {
                 mobileList.innerHTML = `
                 <div class="alert alert-info text-center">
                     ${holiday ? `<strong>Holiday:</strong> ${holiday.title}` :
-                        saturdayOffDates.includes(selectedDate) ? '<strong>Saturday Off</strong>' :
-                            dayOfWeek === 0 ? '<strong>Sunday</strong>' :
-                                '<strong>Future Date</strong>'}
+                        '<strong>Future Date</strong>'}
                 </div>
             `;
+                return;
+            }
+
+            // For Saturday Off / Sunday Off: show banner then render employees who checked in
+            // with exactly the same card design as regular working days
+            const isSundayOff = (dayOfWeek === 0);
+
+            if (isSaturdayOff || isSundayOff) {
+                // Employees who checked in on this off day
+                const presentOnOff = filteredUsers.filter(user => {
+                    const rec = user.attendance?.find(r => (r.date || '').substring(0, 10) === selectedDate);
+                    return rec && rec.check_in_time;
+                });
+
+                // Top banner indicating it's an off day
+                const offLabel = isSundayOff ? '🔴 Sunday Off' : '🟡 Saturday Off';
+                const banner = document.createElement('div');
+                banner.className = 'alert text-center fw-bold mb-3';
+                banner.style.cssText = isSundayOff
+                    ? 'background:#f8d7da;color:#842029;border:1px solid #f5c2c7;border-radius:8px;'
+                    : 'background:#fff3cd;color:#664d03;border:1px solid #ffecb5;border-radius:8px;';
+                banner.innerHTML = offLabel;
+                mobileList.appendChild(banner);
+
+                if (presentOnOff.length === 0) {
+                    const noOne = document.createElement('div');
+                    noOne.className = 'alert alert-secondary text-center';
+                    noOne.textContent = 'No employees came to office today.';
+                    mobileList.appendChild(noOne);
+                    return;
+                }
+
+                // ── Reuse the same fmtTime helper as regular days ───────────────
+                function fmtTimeOff(t) {
+                    if (!t || t === '-') return null;
+                    const [h, m, s] = t.split(':');
+                    const hh = parseInt(h);
+                    const ampm = hh >= 12 ? 'PM' : 'AM';
+                    const h12 = hh % 12 || 12;
+                    return `${h12}:${m.padStart(2,'0')}:${(s||'00').padStart(2,'0')} ${ampm}`;
+                }
+
+                // ── Same buildInlineLine helper as regular days ──────────────────
+                function buildInlineLineOff(prefix, time, locationName, locationStatus) {
+                    const timeStr = fmtTimeOff(time);
+                    if (!timeStr) {
+                        return `<div class="loc-inline-line" style="color:#bbb;">
+                            <span class="loc-time">${prefix}: –</span>
+                        </div>`;
+                    }
+                    const isMissing = !locationName || locationName.trim() === ''
+                        || locationStatus === 'not_captured'
+                        || locationStatus === 'denied'
+                        || locationStatus === 'failed';
+
+                    let displayAddr, pinColor, titleAttr, addrStyle;
+                    if (!isMissing) {
+                        displayAddr = locationName;
+                        pinColor    = '';
+                        titleAttr   = '';
+                        addrStyle   = '';
+                    } else {
+                        const fallback = (companyInfo.address && companyInfo.address.trim())
+                            ? companyInfo.address.trim()
+                            : 'Office';
+                        displayAddr = fallback;
+                        pinColor    = 'color: #6c757d;';
+                        titleAttr   = ' title="Default Office Address"';
+                        addrStyle   = 'color:#555;';
+                    }
+                    const pin = `<span class="loc-sep">|</span><span style="${pinColor}"${titleAttr}>&#128205;</span><span class="loc-addr" style="${addrStyle}">${displayAddr}</span>`;
+                    return `<div class="loc-inline-line">
+                        <span class="loc-time">${prefix}: ${timeStr}</span>
+                        ${pin}
+                    </div>`;
+                }
+
+                // ── Render each present employee with the SAME card design ───────
+                presentOnOff.forEach(user => {
+                    const attendance = user.attendance?.find(r => (r.date || '').substring(0, 10) === selectedDate);
+                    const profileImage = user.profile_image ? `/upload/${user.profile_image}` : defaultImagePath;
+
+                    const isToday = selectedDate === todayDate;
+                    const isWorking = isToday && attendance?.check_in_time && !attendance?.check_out_time;
+
+                    // Status badge — "Week Off · Present" or "Week Off · Working"
+                    const statusText = isWorking ? 'Week Off · Working' : 'Week Off · Present';
+                    const statusClass = 'week-off-present';
+
+                    const checkInLine  = buildInlineLineOff(
+                        'In',
+                        attendance?.check_in_time,
+                        attendance?.check_in_location_name,
+                        attendance?.check_in_location_status
+                    );
+                    const checkOutLine = buildInlineLineOff(
+                        'Out',
+                        attendance?.check_out_time  ?? null,
+                        attendance?.check_out_location_name  ?? null,
+                        attendance?.check_out_location_status ?? null
+                    );
+
+                    const employeeCard = document.createElement('div');
+                    employeeCard.className = 'mobile-employee-card';
+                    employeeCard.dataset.userId = user.user_id;
+                    employeeCard.dataset.date   = selectedDate;
+
+                    employeeCard.innerHTML = `
+                        <img src="${profileImage}" alt="${user.employee_name}">
+                        <div class="mobile-employee-info">
+                            <div class="mobile-employee-name">${user.employee_name}</div>
+                            <div class="loc-info-block">
+                                ${checkInLine}
+                                ${checkOutLine}
+                            </div>
+                        </div>
+                        <div class="status-badge-pill ${statusClass}">${statusText}</div>
+                    `;
+
+                    <?php if (isset($role) && in_array($role, ['hr', 'admin'])): ?>
+                        employeeCard.addEventListener('click', () => {
+                            openAttendanceModal(user.user_id, selectedDate);
+                        });
+                    <?php endif; ?>
+
+                    mobileList.appendChild(employeeCard);
+                });
                 return;
             }
 
@@ -1628,7 +1793,27 @@
                     dayDiv.appendChild(sunLabel);
                 }
 
-                // Employee attendance for this day
+                // For Saturday Off days – show employees who actually came in
+                if (saturdayOffDates.includes(dateStr) && !holiday && !isFuture) {
+                    filteredUsers.forEach(user => {
+                        const att = user.attendance?.find(r => (r.date || '').substring(0, 10) === dateStr);
+                        if (!att || !att.check_in_time) return; // only show those who checked in
+
+                        const profileImage = user.profile_image ? `/upload/${user.profile_image}` : defaultImagePath;
+                        const item = document.createElement('div');
+                        item.className = 'employee-attendance-item attendance-cell week-off-present-item';
+                        item.dataset.userId = user.user_id;
+                        item.dataset.date = dateStr;
+                        item.title = `${user.employee_name} – Check-in: ${att.check_in_time}`;
+                        item.innerHTML = `
+                            <img src="${profileImage}" alt="${user.employee_name}">
+                            <span class="attendance-status week-off-present" title="Week Off – Present">WO</span>
+                        `;
+                        dayDiv.appendChild(item);
+                    });
+                }
+
+                // Employee attendance for regular working days
                 if (!holiday && !saturdayOffDates.includes(dateStr) && dayOfWeek !== 0 && !isFuture) {
                     filteredUsers.forEach(user => {
                         const attendance = user.attendance?.find(record => {

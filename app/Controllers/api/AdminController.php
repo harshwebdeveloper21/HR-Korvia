@@ -600,6 +600,20 @@ class AdminController extends ResourceController
         usort($todayAttendance, function ($a, $b) {
             return strcmp($a['check_in_time'], $b['check_in_time']);
         });
+
+        // ── Attendance-priority fix ──────────────────────────────────────────
+        // Collect user_ids of employees who have actually checked in today.
+        // Any employee with a valid check-in must NOT appear in the
+        // "Today's Absent or Leave" list, regardless of their leave record.
+        $checkedInUserIds = array_column($todayAttendance, 'user_id');
+        if (!empty($checkedInUserIds)) {
+            $totalLeavesToday = array_values(array_filter(
+                $totalLeavesToday,
+                fn($leave) => !in_array($leave['user_id'], $checkedInUserIds)
+            ));
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         // Leave count for all roles
         if (in_array($role, ['admin', 'hr'])) {
             $totalLeavesThisWeek = $this->leaveModel
@@ -726,6 +740,17 @@ class AdminController extends ResourceController
             usort($todayAttendance, function ($a, $b) {
                 return strcmp($a['check_in_time'], $b['check_in_time']);
             });
+
+            // ── Attendance-priority fix (employee branch) ─────────────────────
+            $checkedInUserIds = array_column($todayAttendance, 'user_id');
+            if (!empty($checkedInUserIds)) {
+                $totalLeavesToday = array_values(array_filter(
+                    $totalLeavesToday,
+                    fn($leave) => !in_array($leave['user_id'], $checkedInUserIds)
+                ));
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             $attendanceCountThisWeek = $this->attendanceModel
                 ->where('user_id', $employeeId)
                 ->where('date >=', $startOfWeek)
