@@ -487,8 +487,7 @@
     const allocatedPaid = parseFloat(paidLeaveInput.dataset.allocated) || 0;
     const allocatedSick = parseFloat(sickLeaveInput.dataset.allocated) || 0;
 
-    const halfDayPaidLeaveDeduction = Math.max(halfDays, 0) / 2;
-    const remPaid = allocatedPaid - usedPaidLeaves - halfDayPaidLeaveDeduction;
+    const remPaid = allocatedPaid - usedPaidLeaves;
     const remSick = allocatedSick - usedSickLeaves;
 
     const remPaidCell = row.querySelector('.rem-paid-leave');

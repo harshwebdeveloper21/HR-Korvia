@@ -1230,29 +1230,79 @@ class AttendanceController extends ResourceController
 
                 // Sunday off (date('N') returns 7 for Sunday)
                 if (date('N', strtotime($date)) == 7) {
-                    $formattedAttendance[] = [
-                        'date' => $date,
-                        'check_in_time' => null,
-                        'check_out_time' => null,
-                        'status' => 'Week Off',
-                        'is_late' => null,
-                        'late_minutes' => null,
-                        'overtime' => null,
-                    ];
+                    // If the employee actually checked in on this Sunday, use their real record
+                    if (isset($attendanceByDate[$date])) {
+                        $record = $attendanceByDate[$date];
+                        $formattedAttendance[] = [
+                            'date'                    => $date,
+                            'check_in_time'           => $record['check_in_time'],
+                            'check_out_time'          => $record['check_out_time'],
+                            'status'                  => 'Week Off',
+                            'is_late'                 => $record['is_late'],
+                            'late_minutes'            => $record['late_minutes'],
+                            'overtime'                => $record['overtime'] ?? null,
+                            'work_hours'              => $record['work_hours'] ?? null,
+                            'completed_seconds'       => $record['completed_seconds'] ?? 0,
+                            'check_in_ip_address'     => $record['check_in_ip_address']    ?? null,
+                            'check_in_latitude'       => $record['check_in_latitude']      ?? null,
+                            'check_in_longitude'      => $record['check_in_longitude']     ?? null,
+                            'check_in_location_name'  => $record['check_in_location_name'] ?? null,
+                            'check_out_ip_address'    => $record['check_out_ip_address']   ?? null,
+                            'check_out_latitude'      => $record['check_out_latitude']     ?? null,
+                            'check_out_longitude'     => $record['check_out_longitude']    ?? null,
+                            'check_out_location_name' => $record['check_out_location_name'] ?? null,
+                        ];
+                    } else {
+                        // No check-in on this Sunday → mark as Week Off with no data
+                        $formattedAttendance[] = [
+                            'date'           => $date,
+                            'check_in_time'  => null,
+                            'check_out_time' => null,
+                            'status'         => 'Week Off',
+                            'is_late'        => null,
+                            'late_minutes'   => null,
+                            'overtime'       => null,
+                        ];
+                    }
                     continue;
                 }
 
                 // Saturday off
                 if (isset($saturdayOffMap[$date])) {
-                    $formattedAttendance[] = [
-                        'date' => $date,
-                        'check_in_time' => null,
-                        'check_out_time' => null,
-                        'status' => 'Week Off',
-                        'is_late' => null,
-                        'late_minutes' => null,
-                        'overtime' => null,
-                    ];
+                    // If the employee actually checked in on this Saturday Off, use their real record
+                    if (isset($attendanceByDate[$date])) {
+                        $record = $attendanceByDate[$date];
+                        $formattedAttendance[] = [
+                            'date'                    => $date,
+                            'check_in_time'           => $record['check_in_time'],
+                            'check_out_time'          => $record['check_out_time'],
+                            'status'                  => 'Week Off',  // Keep status as Week Off but include check-in data
+                            'is_late'                 => $record['is_late'],
+                            'late_minutes'            => $record['late_minutes'],
+                            'overtime'                => $record['overtime'] ?? null,
+                            'work_hours'              => $record['work_hours'] ?? null,
+                            'completed_seconds'       => $record['completed_seconds'] ?? 0,
+                            'check_in_ip_address'     => $record['check_in_ip_address']    ?? null,
+                            'check_in_latitude'       => $record['check_in_latitude']      ?? null,
+                            'check_in_longitude'      => $record['check_in_longitude']     ?? null,
+                            'check_in_location_name'  => $record['check_in_location_name'] ?? null,
+                            'check_out_ip_address'    => $record['check_out_ip_address']   ?? null,
+                            'check_out_latitude'      => $record['check_out_latitude']     ?? null,
+                            'check_out_longitude'     => $record['check_out_longitude']    ?? null,
+                            'check_out_location_name' => $record['check_out_location_name'] ?? null,
+                        ];
+                    } else {
+                        // No check-in on this Saturday Off → mark as Week Off with no data
+                        $formattedAttendance[] = [
+                            'date'           => $date,
+                            'check_in_time'  => null,
+                            'check_out_time' => null,
+                            'status'         => 'Week Off',
+                            'is_late'        => null,
+                            'late_minutes'   => null,
+                            'overtime'       => null,
+                        ];
+                    }
                     continue;
                 }
 

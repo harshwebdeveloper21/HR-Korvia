@@ -2000,19 +2000,19 @@ class PayrollController extends ResourceController
                 ->first();
             $currentPaidBalance = (float) ($leaveBalance['paid_leave'] ?? 0);
             $currentSickBalance = (float) ($leaveBalance['casual_leave'] ?? 0);
-            $savedHalfDayEquivalent = $payroll ? max((float) ($payroll['total_half_day'] ?? 0), 0) / 2 : 0;
 
             // Use employee_leaves as the master balance, then rebuild the row's
-            // editable opening balance by adding back the currently saved month.
+            // editable opening balance by adding back the currently saved month's
+            // used leaves (half-days do NOT consume paid leave quota).
             $emp['opening_paid_leaves'] = $currentPaidBalance
-                + (float) ($payroll['used_paid_leaves'] ?? 0)
-                + $savedHalfDayEquivalent;
+                + (float) ($payroll['used_paid_leaves'] ?? 0);
             $emp['opening_casual_leaves'] = $currentSickBalance
                 + (float) ($payroll['used_sick_leaves'] ?? 0);
+
+            // Remaining = opening minus only the used paid/sick leaves.
+            // Half-days are NOT deducted from paid leave balance.
             $emp['remaining_paid_leaves'] = max(
-                $emp['opening_paid_leaves']
-                    - (max((float) ($emp['half_days'] ?? 0), 0) * 0.5)
-                    - (float) ($emp['used_paid_leaves'] ?? 0),
+                $emp['opening_paid_leaves'] - (float) ($emp['used_paid_leaves'] ?? 0),
                 0,
             );
             $emp['remaining_casual_leaves'] = max(
@@ -2068,7 +2068,6 @@ class PayrollController extends ResourceController
                     $employeeLeaveModel,
                     (int) $empId,
                     (string) $month,
-                    $totalHalfDays,
                     $usedPaidLeaves,
                     $usedSickLeaves,
                     $existing
@@ -2485,7 +2484,6 @@ class PayrollController extends ResourceController
                 $employeeLeaveModel,
                 (int) $userId,
                 (string) $month,
-                $totalHalfDays,
                 $usedPaidLeaves,
                 $usedSickLeaves,
                 $existing
@@ -2557,7 +2555,6 @@ class PayrollController extends ResourceController
         EmployeeLeaveModel $employeeLeaveModel,
         int $employeeId,
         string $monthYear,
-        float $totalHalfDays,
         float $usedPaidLeaves,
         float $usedSickLeaves,
         ?array $existingPayroll = null
@@ -2567,15 +2564,12 @@ class PayrollController extends ResourceController
             ->first();
         $currentPaidBalance = (float) ($leaveBalance["paid_leave"] ?? 0);
         $currentSickBalance = (float) ($leaveBalance["casual_leave"] ?? 0);
-        $existingHalfDayPaidLeaveEquivalent = max((float) ($existingPayroll["total_half_day"] ?? 0), 0) / 2;
-        $halfDayPaidLeaveEquivalent = max($totalHalfDays, 0) / 2;
         $openingPaidLeave = $currentPaidBalance
-            + (float) ($existingPayroll["used_paid_leaves"] ?? 0)
-            + $existingHalfDayPaidLeaveEquivalent;
+            + (float) ($existingPayroll["used_paid_leaves"] ?? 0);
         $openingSickLeave = $currentSickBalance
             + (float) ($existingPayroll["used_sick_leaves"] ?? 0);
         $remainingPaidLeave = max(
-            $openingPaidLeave - $usedPaidLeaves - $halfDayPaidLeaveEquivalent,
+            $openingPaidLeave - $usedPaidLeaves,
             0,
         );
         $remainingSickLeave = max(
