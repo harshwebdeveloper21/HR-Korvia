@@ -518,18 +518,36 @@ class AdminController extends ResourceController
         // Only admin and HR can see new employees this week
         if (in_array($role, ['admin', 'hr'])) {
             $totalThisWeekEmployees = $this->userModel
-                ->where('role !=', 'admin')
-                ->where('is_deleted', 0)
+                ->select('users.id')
+                ->join('user_info', 'user_info.user_id = users.id', 'left')
+                ->where('users.role !=', 'admin')
+                ->where('users.is_deleted', 0)
+                ->groupStart()
+                    ->whereNotIn('LOWER(user_info.status)', ['inactive', 'resigned'])
+                    ->orWhere('user_info.status IS NULL')
+                ->groupEnd()
                 ->countAllResults();
             $startOfMonth = date('Y-m-01'); // 1st of current month
             $endOfMonth = date('Y-m-t');    // Last day of current month
             $totalEmployeesThisMonth = $this->userModel
-                ->where('role !=', 'admin')
-                ->where('is_deleted', 0)
+                ->select('users.id')
+                ->join('user_info', 'user_info.user_id = users.id', 'left')
+                ->where('users.role !=', 'admin')
+                ->where('users.is_deleted', 0)
+                ->groupStart()
+                    ->whereNotIn('LOWER(user_info.status)', ['inactive', 'resigned'])
+                    ->orWhere('user_info.status IS NULL')
+                ->groupEnd()
                 ->countAllResults();
             $totalEmployeesThisYear = $this->userModel
-                ->where('role !=', 'admin')
-                ->where('is_deleted', 0)
+                ->select('users.id')
+                ->join('user_info', 'user_info.user_id = users.id', 'left')
+                ->where('users.role !=', 'admin')
+                ->where('users.is_deleted', 0)
+                ->groupStart()
+                    ->whereNotIn('LOWER(user_info.status)', ['inactive', 'resigned'])
+                    ->orWhere('user_info.status IS NULL')
+                ->groupEnd()
                 ->countAllResults();
         }
 
@@ -541,6 +559,7 @@ class AdminController extends ResourceController
             ->where('start_date <=', $todayDate)
             ->where('end_date >=', $todayDate)
             ->where('leaves.status', 'approved') // ✅ Fully qualified
+            ->where('(user_info.last_working_day IS NULL OR user_info.last_working_day >= "' . $todayDate . '")') // Exclude resigned employees
             ->findAll();
 
         $todayAttendanceRaw = $this->attendanceModel
@@ -687,6 +706,7 @@ class AdminController extends ResourceController
                 ->where('start_date <=', $todayDate)
                 ->where('end_date >=', $todayDate)
                 ->where('leaves.status', 'approved') // ✅ Fully qualified
+                ->where('(user_info.last_working_day IS NULL OR user_info.last_working_day >= "' . $todayDate . '")') // Exclude resigned employees
                 ->findAll();
             $todayAttendanceRaw = $this->attendanceModel
                 ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')

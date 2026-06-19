@@ -774,7 +774,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isFuture = new Date(dateStr) > new Date(todayDate);
                 const isToday = dateStr === todayDate;
 
-                if (isFuture) {
+                let isOutsideEmployment = false;
+                const empStatus = (user.status || 'Active').toLowerCase();
+                const currDateObj = new Date(dateStr);
+                currDateObj.setHours(0,0,0,0);
+                
+                if (empStatus !== 'active' && user.last_working_day) {
+                    const lwd = new Date(user.last_working_day);
+                    lwd.setHours(0,0,0,0);
+                    if (currDateObj > lwd) {
+                        isOutsideEmployment = true;
+                    }
+                }
+                
+                if (user.joining_date) {
+                    const jd = new Date(user.joining_date);
+                    jd.setHours(0,0,0,0);
+                    if (currDateObj < jd) {
+                        isOutsideEmployment = true;
+                    }
+                }
+
+                if (isFuture || isOutsideEmployment) {
                     rows += `<td class="${cellClass}" style="min-width: 40px; width: 40px; text-align: center; padding: 8px 4px;"><span class="text-muted">-</span></td>`;
                 } else if (attendance) {
                     let statusLetter = 'A';

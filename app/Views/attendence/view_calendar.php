@@ -1557,6 +1557,18 @@
                 let statusText = 'Absent';
                 let statusClass = 'absent';
                 const status = attendance?.status ? attendance.status.toLowerCase() : '';
+                // Check if this date is past the employee's last working day
+                const empStatus = (user.status || 'Active').toLowerCase();
+                if (empStatus !== 'active' && user.last_working_day) {
+                    const lwd = new Date(user.last_working_day);
+                    const currDate = new Date(selectedDate);
+                    lwd.setHours(0,0,0,0);
+                    currDate.setHours(0,0,0,0);
+                    if (currDate > lwd) {
+                        return; // Skip rendering employee for this date — outside employment period
+                    }
+                }
+
 
                 const isToday = selectedDate === todayDate;
                 if (isToday && attendance?.check_in_time && !attendance?.check_out_time) {
@@ -1831,6 +1843,17 @@
                             let statusLetter = 'A';
                             let statusClass = 'absent';
                             const status = attendance?.status ? attendance.status.toLowerCase() : '';
+                            // Check if this date is past the employee's last working day
+                            const empStatus = (user.status || 'Active').toLowerCase();
+                            if (empStatus !== 'active' && user.last_working_day) {
+                                const lwd = new Date(user.last_working_day);
+                                const currDate = new Date(dateStr);
+                                lwd.setHours(0,0,0,0);
+                                currDate.setHours(0,0,0,0);
+                                if (currDate > lwd) {
+                                    return; // Skip — date is outside employment period
+                                }
+                            }
 
                             if (isToday && attendance?.check_in_time && !attendance?.check_out_time) {
                                 statusLetter = attendance.is_late == 1 ? 'W (L)' : 'W';

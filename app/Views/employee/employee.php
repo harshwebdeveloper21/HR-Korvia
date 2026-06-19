@@ -668,6 +668,35 @@
                         </div>
 
                         <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Employment Status</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="mdi mdi-account-check-outline fs-5"></i></span>
+                                        </div>
+                                        <select class="form-select" id="status" name="status">
+                                            <option value="Active" selected>Active</option>
+                                            <option value="Inactive">Inactive</option>
+                                            <option value="Resigned">Resigned</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Last Working Day <small class="text-muted">(If Inactive/Resigned)</small></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="mdi mdi-calendar-remove-outline fs-5"></i></span>
+                                        </div>
+                                        <input type="date" class="form-control" id="last_working_day" name="last_working_day" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
                             <input type="hidden" name="role" value="employee">
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -874,7 +903,7 @@
             data.append('country_id', $('#country_id_main').val() || '');
             formData.append('country_id', $('#country_id_main').val() || '');
         } else if (step === 3) {
-            let fields = ['employee_id', 'salary', 'designation_id', 'department_id', 'joining_date', 'working_location', 'role', 'remaining_paid_leave', 'remaining_sick_leave'];
+            let fields = ['employee_id', 'salary', 'designation_id', 'department_id', 'joining_date', 'working_location', 'role', 'remaining_paid_leave', 'remaining_sick_leave', 'status', 'last_working_day'];
             fields.forEach(field => {
                 data.append(field, $('#' + field).val());
                 formData.append(field, $('#' + field).val());
@@ -1168,6 +1197,16 @@
                         if (userInfo.face_photo) {
                             displayExistingFacePhoto(userInfo.face_photo);
                         }
+
+                        // Set status and last_working_day
+                        let empStatus = (userInfo.status || 'Active').trim();
+                        empStatus = empStatus.charAt(0).toUpperCase() + empStatus.slice(1).toLowerCase();
+                        if (!['Active', 'Inactive', 'Resigned'].includes(empStatus)) {
+                            empStatus = 'Active';
+                        }
+                        $('#status').val(empStatus);
+
+                        $('#last_working_day').val(userInfo.last_working_day || '');
 
                         $('h4.card-title').text('Edit Employee');
                         showStep(1);
