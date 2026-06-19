@@ -161,6 +161,19 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Employee Tabs -->
+                <ul class="nav nav-tabs mb-3" id="employeeTabs" role="tablist" style="border-bottom: 2px solid #E66136;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="active-tab" data-view="active" type="button" role="tab"
+                            style="color:#E66136; border-bottom: 3px solid #E66136; font-weight:600;">Active Employees</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="inactive-tab" data-view="inactive" type="button" role="tab"
+                            style="color:#6c757d; font-weight:600;">Inactive / Resigned</button>
+                    </li>
+                </ul>
+
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="employee-table">
                         <thead>
@@ -343,13 +356,14 @@
             return string ? string.charAt(0).toUpperCase() + string.slice(1).toLowerCase() : '';
         }
         // ✅ Fetch and display employees
-        function fetchEmployees(departmentId = '') {
+        function fetchEmployees(departmentId = '', viewType = 'active') {
             $.ajax({
                 url: '<?= base_url('/api/employees') ?>',
                 type: 'GET',
-                data: departmentId ? {
-                    department_id: departmentId
-                } : {},
+                data: {
+                    department_id: departmentId || '',
+                    view: viewType
+                },
 
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -543,12 +557,28 @@
         // ✅ Department filter change event
         $('#departmentFilter').on('change', function () {
             const selectedDeptId = $(this).val();
-            fetchEmployees(selectedDeptId); // Pass selected department ID
+            const activeView = $('#employeeTabs .nav-link.active').data('view');
+            fetchEmployees(selectedDeptId, activeView);
+        });
+
+        // ✅ Tab switch event
+        $('#employeeTabs .nav-link').on('click', function () {
+            // Update active tab styling
+            $('#employeeTabs .nav-link')
+                .removeClass('active')
+                .css({'color': '#6c757d', 'border-bottom': 'none', 'font-weight': '600'});
+            $(this)
+                .addClass('active')
+                .css({'color': '#E66136', 'border-bottom': '3px solid #E66136'});
+
+            const viewType = $(this).data('view');
+            const selectedDeptId = $('#departmentFilter').val();
+            fetchEmployees(selectedDeptId, viewType);
         });
 
         // 🚀 Initial calls
         fetchDepartments();
-        fetchEmployees(); // Load all employees initially
+        fetchEmployees('', 'active'); // Load active employees initially
 
 
         $(document).on('click', '.delete-employee', function (e) {

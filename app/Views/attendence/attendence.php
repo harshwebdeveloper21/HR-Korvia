@@ -326,13 +326,40 @@
             users.forEach(user => {
                 const attendance = user.attendance || [];
 
-                // For the current month/year, ignore future dates in stats so they are not counted as absent
-                const effectiveAttendance = isCurrentMonthYear
-                    ? attendance.filter(a => {
-                        const d = (a.date || '').substring(0, 10);
-                        return d && d <= todayStr;
-                    })
-                    : attendance;
+                // Calculate employment boundaries for this user
+                let lwd = null;
+                if (user.status && user.status.toLowerCase() !== 'active' && user.last_working_day) {
+                    lwd = user.last_working_day;
+                }
+                let jd = user.joining_date || null;
+
+                // Calculate total working days for this user specifically
+                let userWorkingDays = 0;
+                for (let day = 1; day <= totalDaysInMonth; day++) {
+                    const dStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    if (isCurrentMonthYear && dStr > todayStr) continue;
+                    if (lwd && dStr > lwd) continue;
+                    if (jd && dStr < jd) continue;
+
+                    const dayOfWeek = new Date(dStr).getDay();
+                    const isHoliday = holidays.some(h => h.holiday_date === dStr);
+                    const isSaturdayOff = saturdayOffDates.includes(dStr);
+                    if(attendanceData.isIncludedHoliday == "1"){
+                        userWorkingDays++;
+                    }else if (dayOfWeek !== 0 && !isHoliday && !isSaturdayOff) {
+                        userWorkingDays++;
+                    }
+                }
+
+                // For the current month/year, ignore future dates and dates outside employment period in stats
+                const effectiveAttendance = attendance.filter(a => {
+                    const d = (a.date || '').substring(0, 10);
+                    if (!d) return false;
+                    if (isCurrentMonthYear && d > todayStr) return false;
+                    if (lwd && d > lwd) return false;
+                    if (jd && d < jd) return false;
+                    return true;
+                });
 
                 // Calculate stats based on effective attendance only
                 // Group records by date to handle multiple check-ins on the same day
@@ -388,7 +415,7 @@
                 });
 
                 // Update absent days calculation
-                absentDays = workingDays - presentDays - halfDays - leaveDays;
+                absentDays = userWorkingDays - presentDays - halfDays - leaveDays;
                 if (absentDays < 0) absentDays = 0;
 
                 // Calculate total work hours
@@ -438,7 +465,7 @@
                         <div class="expanded-details" id="employee-details-${user.user_id}" onclick="event.stopPropagation();">
                             <div class="detail-row">
                                 <span class="detail-label">Total Days:</span>
-                                <span class="detail-value">${workingDays}</span>
+                                <span class="detail-value">${userWorkingDays}</span>
                             </div>
                             <div class="detail-row">
                                 <span class="detail-label">Present Days:</span>
@@ -471,7 +498,7 @@
                             </div>
                         </div>
                     </td>
-                    <td class="desktop-only-col">${workingDays}</td>
+                    <td class="desktop-only-col">${userWorkingDays}</td>
                     <td class="desktop-only-col">${presentDays + (halfDays * 0.5)}</td>
                     <td class="desktop-only-col">${totalWorkHours}</td>
                     <td class="desktop-only-col">${totalOvertime || '0h 0m'}</td>
@@ -575,7 +602,7 @@
                     if (data.status === 'success') {
                         const user = data.data.users.find(u => u.user_id == userId);
                         if (user) {
-                            renderHistory(historyContainer, user.attendance);
+                            renderHistory(historyContainer, user.attendance, user);
                         }
                     }
                 })
@@ -584,15 +611,29 @@
                 });
         };
 
-        const renderHistory = (container, attendance) => {
+        const renderHistory = (container, attendance, user) => {
             if (!attendance || attendance.length === 0) {
                 container.innerHTML = '<p class="text-muted">No attendance records found</p>';
                 return;
             }
 
-            // Exclude future dates so they are not shown as "absent"
-            const today = new Date();
-            const validAttendance = attendance.filter(r => new Date(r.date) <= today);
+            // Calculate boundaries for the history view
+            let lwd = null;
+            if (user && user.status && user.status.toLowerCase() !== 'active' && user.last_working_day) {
+                lwd = user.last_working_day;
+            }
+            let jd = (user && user.joining_date) ? user.joining_date : null;
+
+            // Exclude future dates and dates outside employment period
+            const todayStr = new Date().toISOString().split('T')[0];
+            const validAttendance = attendance.filter(r => {
+                const d = (r.date || '').substring(0, 10);
+                if (!d) return false;
+                if (d > todayStr) return false;
+                if (lwd && d > lwd) return false;
+                if (jd && d < jd) return false;
+                return true;
+            });
 
             if (validAttendance.length === 0) {
                 container.innerHTML = '<p class="text-muted">No attendance records found</p>';

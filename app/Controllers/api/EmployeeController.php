@@ -595,6 +595,8 @@ class EmployeeController extends ResourceController
             'joining_date' => $data['joining_date'] ?? null,
             'working_location' => $data['working_location'] ?? '',
             'role' => $role,
+            'status' => $data['status'] ?? 'Active',
+            'last_working_day' => !empty($data['last_working_day']) ? $data['last_working_day'] : null,
             'profile_image' => $profileImageName, // Update profile image only if changed
             'face_photo' => $facePhotoName, // Update face photo for biometric attendance
             'salary' => $data['salary'] ?? '',
@@ -649,7 +651,7 @@ class EmployeeController extends ResourceController
 
         // Build query with join
         $builder = $this->userModel
-            ->select('users.*, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, user_info.salary, user_info.last_increment_date, user_info.last_increment_amount, department.department_name, department.id as department_id, employee_leaves.paid_leave, employee_leaves.casual_leave')
+            ->select('users.*, user_info.status, user_info.last_working_day, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, user_info.salary, user_info.last_increment_date, user_info.last_increment_amount, department.department_name, department.id as department_id, employee_leaves.paid_leave, employee_leaves.casual_leave')
             ->join('user_info', 'user_info.user_id = users.id')
             ->join('department', 'department.id = user_info.department_id', 'left')
             ->join('employee_leaves', 'employee_leaves.employee_id = users.id', 'left');
@@ -669,6 +671,20 @@ class EmployeeController extends ResourceController
         }
 
         $builder->where('users.is_deleted', 0);
+
+        // Get view type — 'active' (default) or 'inactive'
+        $viewType = $this->request->getGet('view') ?? 'active';
+        if ($viewType === 'inactive') {
+            // Show employees who are resigned OR whose last working day has passed
+            $builder->groupStart()
+                    ->where('user_info.status !=', 'Active')
+                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE())')
+                    ->groupEnd();
+        } else {
+            // Show only active employees still within employment period
+            $builder->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)");
+            $builder->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
+        }
 
         $builder->orderBy('users.id', 'DESC');
 
@@ -695,6 +711,8 @@ class EmployeeController extends ResourceController
                     'department_id' => $row['department_id'],
                     'department_name' => $row['department_name'],
                     'salary' => (float) ($row['salary'] ?? 0),
+                    'status' => $row['status'] ?? 'Active',
+                    'last_working_day' => $row['last_working_day'],
                     'last_increment_date' => $row['last_increment_date'] ?? 'N/A',
                     'last_increment_amount' => (float) ($row['last_increment_amount'] ?? 0),
                     'profile_image_url' => !empty($row['profile_image']) ? base_url('upload/' . $row['profile_image']) : base_url('public/upload/default-profile.jpg'),
@@ -898,6 +916,7 @@ class EmployeeController extends ResourceController
             user_info.country_id, user_info.designation_id, user_info.department_id,
             user_info.postcode, user_info.employee_id, user_info.joining_date,
             user_info.working_location, user_info.role, user_info.salary,
+            user_info.status, user_info.last_working_day,
             account_detail.acc_number, account_detail.bank_name, account_detail.ifsc_code,
             account_detail.acc_in_name, account_detail.branch_name, account_detail.branch_code
         ')

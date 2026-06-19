@@ -1372,6 +1372,9 @@ class AttendanceController extends ResourceController
                 'user_id' => $userId,
                 'employee_name' => $user['username'],
                 'profile_image' => $userInfoMap[$userId]['profile_image'] ?? null,
+                'status' => $userInfoMap[$userId]['status'] ?? 'Active',
+                'last_working_day' => $userInfoMap[$userId]['last_working_day'] ?? null,
+                'joining_date' => $userInfoMap[$userId]['joining_date'] ?? null,
                 'attendance' => $formattedAttendance,
             ];
         }
