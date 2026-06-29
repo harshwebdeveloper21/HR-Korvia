@@ -1404,6 +1404,9 @@ class AdminController extends ResourceController
             $elapsedSecondsAtLoad = max(0, $currentDt->getTimestamp() - $checkInDt->getTimestamp());
         }
 
+
+
+        
         return [
             'hours_worked' => $hoursWorkedFormatted,
             'hours_worked_seconds' => $totalWorkedSeconds,
