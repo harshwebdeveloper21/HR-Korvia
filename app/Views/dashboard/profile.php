@@ -1469,6 +1469,14 @@
                     // Dynamically update logo across all pages
                     $('.sidebar-logo, .navbar-logo, .login-logo, .offer-letter-logo, .profile-logo, .title-logo , .view-logo, .forgot-logo, .reset-logo, .welcome-mail-logo')
                         .attr('src', response.logo_img);
+
+                    // Populate company details form fields if they exist
+                    if ($('#company_name').length) {
+                        $('#company_name').val(response.company_name);
+                        $('#company_address').val(response.company_address);
+                        $('#company_email').val(response.company_email);
+                        $('#company_phone').val(response.company_phone);
+                    }
                 }
             },
             error: function(xhr, status, error) {

@@ -34,6 +34,8 @@ class CompanyLogoController extends ResourceController
             'logo_img'        => $logoUrl,
             'company_name'    => $company['company_name']    ?? 'Fablead Developers Technolab',
             'company_address' => $company['company_address'] ?? '',
+            'company_email'   => $company['company_email']   ?? '',
+            'company_phone'   => $company['company_phone']   ?? '',
         ]);
     }
 
