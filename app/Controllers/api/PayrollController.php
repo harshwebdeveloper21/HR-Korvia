@@ -1310,17 +1310,21 @@ class PayrollController extends ResourceController
                 // Get latest company info (logo, name, address)
                 $company = $companyModel->orderBy("id", "DESC")->first();
                 $companyLogoBase64 = "";
-                if ($company && !empty($company["logo_img"])) {
-                    $companyLogoPath =
-                        FCPATH . "upload/" . $company["logo_img"];
-                    if (file_exists($companyLogoPath)) {
-                        $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
-                        $data = file_get_contents($companyLogoPath);
-                        $companyLogoBase64 =
-                            "data:image/" .
-                            $type .
-                            ";base64," .
-                            base64_encode($data);
+                $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
+                if (!file_exists($companyLogoPath) || empty($company["logo_img"])) {
+                    $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
+                }
+                if (file_exists($companyLogoPath)) {
+                    $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
+                    $data = file_get_contents($companyLogoPath);
+                    $companyLogoBase64 = "data:image/" . $type . ";base64," . base64_encode($data);
+                }
+
+                $db = \Config\Database::connect();
+                $companyAddressRow = $db->table('company_address')->orderBy('id', 'DESC')->get()->getRowArray();
+                if ($companyAddressRow && !empty($companyAddressRow['office_address'])) {
+                    if ($company) {
+                        $company['company_address'] = $companyAddressRow['office_address'];
                     }
                 }
 
@@ -1542,13 +1546,21 @@ class PayrollController extends ResourceController
         // Get latest company info (logo, name, address)
         $company = $companyModel->orderBy("id", "DESC")->first();
         $companyLogoBase64 = "";
-        if ($company && !empty($company["logo_img"])) {
-            $companyLogoPath = FCPATH . "upload/" . $company["logo_img"];
-            if (file_exists($companyLogoPath)) {
-                $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
-                $data = file_get_contents($companyLogoPath);
-                $companyLogoBase64 =
-                    "data:image/" . $type . ";base64," . base64_encode($data);
+        $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
+        if (!file_exists($companyLogoPath) || empty($company["logo_img"])) {
+            $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
+        }
+        if (file_exists($companyLogoPath)) {
+            $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
+            $data = file_get_contents($companyLogoPath);
+            $companyLogoBase64 = "data:image/" . $type . ";base64," . base64_encode($data);
+        }
+
+        $db = \Config\Database::connect();
+        $companyAddressRow = $db->table('company_address')->orderBy('id', 'DESC')->get()->getRowArray();
+        if ($companyAddressRow && !empty($companyAddressRow['office_address'])) {
+            if ($company) {
+                $company['company_address'] = $companyAddressRow['office_address'];
             }
         }
 
@@ -2626,12 +2638,21 @@ class PayrollController extends ResourceController
                 $company = $companyModel->orderBy("id", "DESC")->first();
 
                 $companyLogoBase64 = "";
-                if ($company && !empty($company["logo_img"])) {
-                    $companyLogoPath = FCPATH . "upload/" . $company["logo_img"];
-                    if (file_exists($companyLogoPath)) {
-                        $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
-                        $data = file_get_contents($companyLogoPath);
-                        $companyLogoBase64 = "data:image/" . $type . ";base64," . base64_encode($data);
+                $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
+                if (!file_exists($companyLogoPath) || empty($company["logo_img"])) {
+                    $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
+                }
+                if (file_exists($companyLogoPath)) {
+                    $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
+                    $data = file_get_contents($companyLogoPath);
+                    $companyLogoBase64 = "data:image/" . $type . ";base64," . base64_encode($data);
+                }
+
+                $db = \Config\Database::connect();
+                $companyAddressRow = $db->table('company_address')->orderBy('id', 'DESC')->get()->getRowArray();
+                if ($companyAddressRow && !empty($companyAddressRow['office_address'])) {
+                    if ($company) {
+                        $company['company_address'] = $companyAddressRow['office_address'];
                     }
                 }
 

@@ -1,304 +1,212 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
-    <title>Pay Slip</title>
+    <title>Salary Slip</title>
+
     <style>
         body {
-            font-family: 'DejaVu Sans', sans-serif;
-            background: #f4f4f4;
+            font-family: DejaVu Sans, sans-serif;
+            background: #fff;
             padding: 20px;
+            font-size: 12px;
         }
 
         .slip-container {
             max-width: 850px;
             margin: auto;
             background: #fff;
-            border: 2px solid #000;
-            padding: 20px;
+            padding: 15px;
         }
 
-        .header {
-            text-align: center;
-            /* border-right: 2px solid #000; */
-            border-bottom: 2px solid #000;
-            padding-bottom: 5px;
+        .header-table {
+            width: 100%;
+            margin-bottom: 5px;
+            border-collapse: collapse;
         }
 
-        .header h1 {
-            margin: 5px 0;
-            font-size: 26px;
+        .header-table td {
+            vertical-align: bottom;
+            border: none;
+            padding: 0;
         }
 
-        .header p {
-            margin: 3px 0;
-            font-size: 14px;
+        .header-line {
+            border-bottom: 4px solid #002B5B;
+            margin-bottom: 15px;
+            margin-top: 5px;
+        }
+
+        .main-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #000;
+        }
+
+        .main-table th, .main-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            vertical-align: top;
         }
 
         .title-row {
-            display: flex;
-            justify-content: space-between;
-            background: #E66136;
+            background-color: #F17F29;
+            color: #fff;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .section-header {
+            background-color: #E2E2E2;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .orange-bg {
+            background-color: #F17F29;
             color: #fff;
             font-weight: bold;
-            padding: 10px;
-            margin-top: 10px;
-        }
-
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-
-        .info-table td {
-            border: 1px solid #000;
-            padding: 5px 10px;
-        }
-
-        .pay-section {
-            display: flex;
-            margin-top: 15px;
-            gap: 20px;
-        }
-
-        .pay-section table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        .pay-section th,
-        .pay-section td {
-            border: 1px solid #000;
-            padding: 5px;
-            text-align: left;
-        }
-
-        .pay-section th {
-            background: rgb(243, 199, 184);
-        }
-
-        .footer-table {
-            width: 100%;
-            margin-top: 15px;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        .footer-table th,
-        .footer-table td {
-            border: 1px solid #000;
-            padding: 6px 10px;
-        }
-
-        .signatures {
-            width: 100%;
-            display: flex;
-            /* justify-content: space-between; */
-            margin-top: 30px;
-            text-align: left !important;
-        }
-
-        .signature-box {
-            width: 45%;
-            border: 1px solid #000;
-            padding: 30px 10px;
-            /* text-align: center; */
-            font-weight: bold;
-        }
-
-        .net-salary {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            font-weight: bold;
-            border-top: 2px solid #000;
-            padding-top: 10px;
         }
     </style>
 </head>
 
 <body>
-    <div class="slip-container">
-        <div class="header">
 
-            <?php if (!empty($companyLogoBase64)): ?>
-                <img src="<?= $companyLogoBase64 ?>" alt="Company Logo">
-            <?php endif; ?>
+<div class="slip-container">
 
+    <!-- HEADER -->
+    <table class="header-table">
+        <tr>
+            <td width="30%">
+                <?php if (!empty($companyLogoBase64)): ?>
+                    <img src="<?= $companyLogoBase64 ?>" style="max-height:120px; max-width: 250px;">
+                <?php else: ?>
+                    <h2 style="margin:0; color:#F17F29;"><?= esc($company['company_name']) ?></h2>
+                <?php endif; ?>
+            </td>
+            <td width="70%" class="right" style="font-weight: bold; font-size: 11px; padding-bottom: 5px;">
+                <?= esc($company['company_address']) ?>
+            </td>
+        </tr>
+    </table>
+    <div class="header-line"></div>
 
-            <h1><?= esc($company["company_name"]) ?></h1>
-            <p><?= esc($company["company_address"]) ?></p>
-        </div>
+    <!-- MAIN TABLE -->
+    <table class="main-table">
+        <tr class="title-row">
+            <td colspan="4">Pay slip for <?= esc($payroll['month_year']) ?></td>
+        </tr>
+        <tr>
+            <td class="bold" width="22%">Emp. Name</td>
+            <td width="28%"><?= esc($user['firstname'].' '.$user['lastname']) ?></td>
+            <td class="bold" width="22%">Department</td>
+            <td width="28%"><?= esc($department['department_name']) ?></td>
+        </tr>
+        <tr>
+            <td class="bold">Designation</td>
+            <td><?= esc($designation['designation_name']) ?></td>
+            <td class="bold">Leave/Absence</td>
+            <td><?= esc($calculatedData['absent_days']) ?> Days</td>
+        </tr>
+        <tr>
+            <td class="bold">Salary Month</td>
+            <td><?= esc($payroll['month_year']) ?></td>
+            <td></td>
+            <td></td>
+        </tr>
 
-        <div class="title-row">
-            <div>Salary Slip</div>
-            <div>Month: <?= esc($payroll["month_year"]) ?></div>
-        </div>
+        <!-- Earnings and Deductions Header -->
+        <tr class="section-header">
+            <td colspan="2">Income (INR)</td>
+            <td colspan="2">Deduction (INR)</td>
+        </tr>
 
-        <table class="info-table">
-            <tr>
-                <td>Employee Name: <?= esc(
-                                        $user["firstname"] . " " . $user["lastname"],
-                                    ) ?></td>
-                <td>Employee Code: EMP#<?= esc($user["employee_id"]) ?></td>
-            </tr>
-            <tr>
-                <td>Designation: <?= esc(
-                                        $designation["designation_name"],
-                                    ) ?></td>
-                <td>Department: <?= esc($department["department_name"]) ?></td>
-            </tr>
-            <tr>
-                <td>Date of Joining: <?= esc($user["joining_date"]) ?></td>
-                <td>Working Days: <?= esc(
-                                        $calculatedData["working_days"],
-                                    ) ?> | Present: <?= esc(
-                                    $calculatedData["present_days"],
-                                ) ?> | Absent: <?= esc($calculatedData["absent_days"]) ?></td>
-            </tr>
-            <tr>
-                <td colspan="2">Leave Details: Total Leaves: <?= esc(
-                                                                    $calculatedData["total_leaves"],
-                                                                ) ?> | Paid Leaves Used: <?= esc(
-                                                $calculatedData["used_paid_leaves"],
-                                            ) ?> | Unpaid Leaves: <?= esc(
-                            $calculatedData["unpaid_leaves"],
-                        ) ?> | Half Days: <?= esc($calculatedData["half_days"]) ?></td>
-            </tr>
-        </table>
+        <!-- Earnings and Deductions Rows -->
+        <?php
+        $incomes = [
+            ['label' => 'Basic', 'amount' => $payroll['salary_amount'] ?? 0],
+            ['label' => 'HRA', 'amount' => $payroll['hra'] ?? 0],
+            ['label' => 'Other Allowance', 'amount' => $payroll['other_allowances'] ?? 0],
+        ];
+        if (!empty($payroll['overtime_pay']) && $payroll['overtime_pay'] > 0) {
+            $incomes[] = ['label' => 'Overtime', 'amount' => $payroll['overtime_pay']];
+        }
+        if (!empty($payroll['bonuses']) && $payroll['bonuses'] > 0) {
+            $incomes[] = ['label' => 'Bonus', 'amount' => $payroll['bonuses']];
+        }
 
-        <div class="pay-section">
-            <table>
-                <thead>
-                    <tr>
-                        <th colspan="2">Earnings</th>
-                    </tr>
-                    <tr>
-                        <th>Particulars</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Basic Salary</td>
-                        <td>₹<?= esc(
-                                    number_format($payroll["salary_amount"] ?? 0, 2),
-                                ) ?></td>
-                    </tr>
-                    <!-- <tr><td>House Rent Allowance (HRA)</td><td>₹<?= esc(
-                                                                            number_format($payroll["hra"] ?? 0, 2),
-                                                                        ) ?></td></tr>
-                    <tr><td>Conveyance Allowance</td><td>₹<?= esc(
-                                                                number_format($payroll["conveyance"] ?? 0, 2),
-                                                            ) ?></td></tr>
-                    <tr><td>Medical Allowance</td><td>₹<?= esc(
-                                                            number_format($payroll["medical"] ?? 0, 2),
-                                                        ) ?></td></tr> -->
-                    <?php if (!empty($payroll["overtime_pay"])): ?>
-                        <tr>
-                            <td>Overtime Pay</td>
-                            <td>₹<?= esc(
-                                        number_format($payroll["overtime_pay"] ?? 0, 2),
-                                    ) ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <?php if (!empty($payroll["bonuses"])): ?>
-                        <tr>
-                            <td>Bonuses</td>
-                            <td>₹<?= esc(
-                                        number_format($payroll["bonuses"] ?? 0, 2),
-                                    ) ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <!-- <tr><td>Other Allowances</td><td>₹<?= esc(
-                                                                number_format($payroll["other_allowances"] ?? 0, 2),
-                                                            ) ?></td></tr> -->
-                    <tr style="font-weight: bold;">
-                        <td>Total Earnings</td>
-                        <td>₹<?= esc(
-                                    number_format($calculatedData["total_earnings"], 2),
-                                ) ?></td>
-                    </tr>
-                </tbody>
-            </table>
+        $deductions = [
+            ['label' => 'Leave Amount', 'amount' => $calculatedData['salary_deduction'] ?? 0],
+            ['label' => 'Profession Tax', 'amount' => $payroll['professional_tax'] ?? 0],
+            ['label' => 'Provident Fund', 'amount' => $payroll['pf_employee'] ?? 0],
+            ['label' => 'Other Deductions', 'amount' => $payroll['other_deductions'] ?? $payroll['loan_deduction'] ?? 0],
+        ];
+        if (!empty($payroll['tax_deduction']) && $payroll['tax_deduction'] > 0) {
+            $deductions[] = ['label' => 'Tax Deduction', 'amount' => $payroll['tax_deduction']];
+        }
 
-            <table>
-                <thead>
-                    <tr>
-                        <th colspan="2">Deductions</th>
-                    </tr>
-                    <tr>
-                        <th>Particulars</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- <tr><td>Provident Fund (Employee)</td><td>-₹<?= esc(
-                                                                            number_format($payroll["pf_employee"] ?? 0, 2),
-                                                                        ) ?></td></tr>
-                    <tr><td>ESI (Employee)</td><td>-₹<?= esc(
-                                                            number_format($payroll["esi_employee"] ?? 0, 2),
-                                                        ) ?></td></tr>
-                    <tr><td>Professional Tax</td><td>-₹<?= esc(
-                                                            number_format($payroll["professional_tax"] ?? 0, 2),
-                                                        ) ?></td></tr> -->
-                    <?php if (!empty($calculatedData["salary_deduction"])): ?>
-                        <tr>
-                            <td>Leave Deduction (LOP)</td>
-                            <td>-₹<?= esc(
-                                        number_format($calculatedData["salary_deduction"], 2),
-                                    ) ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <?php if (!empty($payroll["tax_deduction"])): ?>
-                        <tr>
-                            <td>Tax Deduction</td>
-                            <td>-₹<?= esc(
-                                        number_format($payroll["tax_deduction"] ?? 0, 2),
-                                    ) ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <!-- <tr><td>Loan/Advance</td><td>-₹<?= esc(
-                                                            number_format($payroll["loan_deduction"] ?? 0, 2),
-                                                        ) ?></td></tr> -->
-                    <tr style="font-weight: bold;">
-                        <td>Total Deductions</td>
-                        <td>-₹<?= esc(
-                                    number_format($calculatedData["total_deductions"], 2),
-                                ) ?></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        // Add some empty rows to make it look like the template
+        $maxRows = max(count($incomes), count($deductions));
+        $maxRows = max($maxRows, 4);
 
-        <div class="net-salary">
-            Gross Salary: ₹<?= esc(
-                                number_format($calculatedData["total_earnings"], 2),
-                            ) ?> |
-            Total Deductions: ₹<?= esc(
-                                    number_format($calculatedData["total_deductions"], 2),
-                                ) ?> |
-            Net Salary: ₹<?= esc(number_format($payroll["net_salary"], 2)) ?>
-        </div>
+        for ($i = 0; $i < $maxRows; $i++) {
+            echo "<tr>";
+            
+            if (isset($incomes[$i])) {
+                echo "<td class='bold'>" . esc($incomes[$i]['label']) . "</td>";
+                echo "<td class='right'>" . number_format($incomes[$i]['amount'], 2) . "</td>";
+            } else {
+                echo "<td></td><td></td>";
+            }
 
-        <table class="footer-table">
-            <tr>
-                <th>Payment Status</th>
-                <td><?= esc($payroll["payment_status"]) ?></td>
-                <th>Payment Date</th>
-                <td><?= esc($payroll["payment_date"] ?? "Not Processed") ?></td>
-            </tr>
-        </table>
+            if (isset($deductions[$i])) {
+                echo "<td class='bold'>" . esc($deductions[$i]['label']) . "</td>";
+                echo "<td class='right'>" . number_format($deductions[$i]['amount'], 2) . "</td>";
+            } else {
+                echo "<td></td><td></td>";
+            }
 
-        <div class="signatures">
-            <hr style="width: 150px; margin-left: 1px;">
-            <div style="margin-left: 20px;" class="">Authorized By</div>
-        </div>
-    </div>
+            echo "</tr>";
+        }
+        ?>
+
+        <!-- Gross Earnings -->
+        <tr>
+            <td class="orange-bg">Gross Earnings</td>
+            <td class="right bold"><?= number_format($calculatedData['total_earnings'], 2) ?></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        <!-- Empty Row Spacer -->
+        <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        <!-- Totals -->
+        <tr>
+            <td colspan="3" class="orange-bg right">Total</td>
+            <td class="right bold"><?= number_format($payroll['net_salary'], 2) ?></td>
+        </tr>
+        <tr>
+            <td colspan="3" class="orange-bg right">Net Pay</td>
+            <td class="right bold"><?= number_format($payroll['net_salary'], 2) ?></td>
+        </tr>
+    </table>
+
+</div>
+
 </body>
-
 </html>
