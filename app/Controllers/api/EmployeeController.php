@@ -675,13 +675,13 @@ class EmployeeController extends ResourceController
         // Get view type — 'active' (default) or 'inactive'
         $viewType = $this->request->getGet('view') ?? 'active';
         if ($viewType === 'inactive') {
-            // Show employees who are resigned OR whose last working day has passed
+            // Show employees whose status is Inactive or Resigned (case-insensitive)
             $builder->groupStart()
-                    ->where('user_info.status !=', 'Active')
-                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE())')
+                    ->where("LOWER(user_info.status) IN ('inactive', 'resigned')")
+                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'inactive\', \'resigned\')))')
                     ->groupEnd();
         } else {
-            // Show only active employees still within employment period
+            // Show only active employees — status is Active (or NULL) AND last_working_day hasn't passed
             $builder->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)");
             $builder->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
         }
