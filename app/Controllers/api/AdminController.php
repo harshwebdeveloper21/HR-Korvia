@@ -517,50 +517,43 @@ class AdminController extends ResourceController
         $endOfYear = date('Y-m-d'); // today
         // Only admin and HR can see new employees this week
         if (in_array($role, ['admin', 'hr'])) {
-            $totalThisWeekEmployees = $this->userModel
-                ->select('users.id')
-                ->join('user_info', 'user_info.user_id = users.id', 'left')
-                ->where('users.role !=', 'admin')
-                ->where('users.is_deleted', 0)
-                ->groupStart()
-                    ->whereNotIn('LOWER(user_info.status)', ['inactive', 'resigned'])
-                    ->orWhere('user_info.status IS NULL')
-                ->groupEnd()
-                ->countAllResults();
-            $startOfMonth = date('Y-m-01'); // 1st of current month
-            $endOfMonth = date('Y-m-t');    // Last day of current month
-            $totalEmployeesThisMonth = $this->userModel
-                ->select('users.id')
-                ->join('user_info', 'user_info.user_id = users.id', 'left')
-                ->where('users.role !=', 'admin')
-                ->where('users.is_deleted', 0)
-                ->groupStart()
-                    ->whereNotIn('LOWER(user_info.status)', ['inactive', 'resigned'])
-                    ->orWhere('user_info.status IS NULL')
-                ->groupEnd()
-                ->countAllResults();
-            $totalEmployeesThisYear = $this->userModel
-                ->select('users.id')
-                ->join('user_info', 'user_info.user_id = users.id', 'left')
-                ->where('users.role !=', 'admin')
-                ->where('users.is_deleted', 0)
-                ->groupStart()
-                    ->whereNotIn('LOWER(user_info.status)', ['inactive', 'resigned'])
-                    ->orWhere('user_info.status IS NULL')
-                ->groupEnd()
-                ->countAllResults();
+            $db = \Config\Database::connect();
+
+            // Count only active (non-inactive, non-resigned) employees
+            $activeEmpSQL = "SELECT COUNT(users.id) as cnt
+                             FROM users
+                             LEFT JOIN user_info ON user_info.user_id = users.id
+                             WHERE users.role != 'admin'
+                               AND users.is_deleted = 0
+                               AND (
+                                   user_info.status IS NULL
+                                   OR (LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
+                               )
+                               AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())";
+            $activeEmpResult = $db->query($activeEmpSQL)->getRow();
+            $activeEmpCount  = (int)($activeEmpResult->cnt ?? 0);
+
+            $totalThisWeekEmployees  = $activeEmpCount;
+            $startOfMonth = date('Y-m-01');
+            $endOfMonth   = date('Y-m-t');
+            $totalEmployeesThisMonth = $activeEmpCount;
+            $totalEmployeesThisYear  = $activeEmpCount;
         }
 
         $todayDate = date('Y-m-d');
-        $totalLeavesToday = $this->leaveModel
-            ->select('leaves.*, users.username, user_info.profile_image')
-            ->join('users', 'users.id = leaves.user_id')
-            ->join('user_info', 'user_info.user_id = users.id')
-            ->where('start_date <=', $todayDate)
-            ->where('end_date >=', $todayDate)
-            ->where('leaves.status', 'approved') // ✅ Fully qualified
-            ->where('(user_info.last_working_day IS NULL OR user_info.last_working_day >= "' . $todayDate . '")') // Exclude resigned employees
-            ->findAll();
+        if (!isset($db)) {
+            $db = \Config\Database::connect();
+        }
+        $leaveSql = "SELECT leaves.*, users.username, user_info.profile_image
+                     FROM leaves
+                     JOIN users ON users.id = leaves.user_id
+                     JOIN user_info ON user_info.user_id = users.id
+                     WHERE leaves.start_date <= '{$todayDate}'
+                       AND leaves.end_date >= '{$todayDate}'
+                       AND leaves.status = 'approved'
+                       AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
+                       AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= '{$todayDate}')";
+        $totalLeavesToday = $db->query($leaveSql)->getResultArray();
 
         $todayAttendanceRaw = $this->attendanceModel
             ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')
@@ -699,15 +692,19 @@ class AdminController extends ResourceController
                 ->where('YEAR(start_date)', date('Y')) // start_date is inside current year
                 ->countAllResults();
             $todayDate = date('Y-m-d');
-            $totalLeavesToday = $this->leaveModel
-                ->select('leaves.*, users.username, user_info.profile_image')
-                ->join('users', 'users.id = leaves.user_id')
-                ->join('user_info', 'user_info.user_id = users.id')
-                ->where('start_date <=', $todayDate)
-                ->where('end_date >=', $todayDate)
-                ->where('leaves.status', 'approved') // ✅ Fully qualified
-                ->where('(user_info.last_working_day IS NULL OR user_info.last_working_day >= "' . $todayDate . '")') // Exclude resigned employees
-                ->findAll();
+            $leaveSqlEmp = "SELECT leaves.*, users.username, user_info.profile_image
+                            FROM leaves
+                            JOIN users ON users.id = leaves.user_id
+                            JOIN user_info ON user_info.user_id = users.id
+                            WHERE leaves.start_date <= '{$todayDate}'
+                              AND leaves.end_date >= '{$todayDate}'
+                              AND leaves.status = 'approved'
+                              AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
+                              AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= '{$todayDate}')";
+            if (!isset($db)) {
+                $db = \Config\Database::connect();
+            }
+            $totalLeavesToday = $db->query($leaveSqlEmp)->getResultArray();
             $todayAttendanceRaw = $this->attendanceModel
                 ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')
                 ->join('users', 'users.id = attendance.user_id', 'inner')
@@ -818,6 +815,7 @@ class AdminController extends ResourceController
                 ->join('users', 'users.id = user_info.user_id', 'inner')
                 ->where('users.is_deleted', 0)
                 ->where('department.department_name IS NOT NULL') // Remove unassigned
+                ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)") // Exclude inactive/resigned
                 ->groupBy('department.department_name')
                 ->orderBy('department.id', 'DESC') // Sort by latest departments
                 ->limit(4) // Get only latest 6 departments
@@ -854,6 +852,7 @@ class AdminController extends ResourceController
         $birthdayUsers = $this->userInfoModel->select('user_info.*')
             ->join('users', 'users.id = user_info.user_id', 'inner')
             ->where('users.is_deleted', 0)
+            ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)") // Exclude inactive/resigned
             ->whereIn('DATE_FORMAT(user_info.date_of_birth, "%m-%d")', $weekDates)
             ->findAll();
 

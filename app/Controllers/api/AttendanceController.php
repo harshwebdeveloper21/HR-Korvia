@@ -1237,7 +1237,7 @@ class AttendanceController extends ResourceController
                             'date'                    => $date,
                             'check_in_time'           => $record['check_in_time'],
                             'check_out_time'          => $record['check_out_time'],
-                            'status'                  => 'Week Off',
+                            'status'                  => $record['status'], // Show actual status (present/half-day) if they checked in on Week Off
                             'is_late'                 => $record['is_late'],
                             'late_minutes'            => $record['late_minutes'],
                             'overtime'                => $record['overtime'] ?? null,
@@ -1276,7 +1276,7 @@ class AttendanceController extends ResourceController
                             'date'                    => $date,
                             'check_in_time'           => $record['check_in_time'],
                             'check_out_time'          => $record['check_out_time'],
-                            'status'                  => 'Week Off',  // Keep status as Week Off but include check-in data
+                            'status'                  => $record['status'], // Show actual status (present/half-day) if they checked in on Week Off
                             'is_late'                 => $record['is_late'],
                             'late_minutes'            => $record['late_minutes'],
                             'overtime'                => $record['overtime'] ?? null,
