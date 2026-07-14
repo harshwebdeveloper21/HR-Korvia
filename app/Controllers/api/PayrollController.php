@@ -1311,10 +1311,10 @@ class PayrollController extends ResourceController
                 $company = $companyModel->orderBy("id", "DESC")->first();
                 $companyLogoBase64 = "";
                 $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
-                if (!file_exists($companyLogoPath) || empty($company["logo_img"])) {
+                if (empty($company["logo_img"]) || !is_file($companyLogoPath)) {
                     $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
                 }
-                if (file_exists($companyLogoPath)) {
+                if (is_file($companyLogoPath)) {
                     $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
                     $data = file_get_contents($companyLogoPath);
                     $companyLogoBase64 = "data:image/" . $type . ";base64," . base64_encode($data);
@@ -1547,20 +1547,22 @@ class PayrollController extends ResourceController
         $company = $companyModel->orderBy("id", "DESC")->first();
         $companyLogoBase64 = "";
         $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
-        if (!file_exists($companyLogoPath) || empty($company["logo_img"])) {
+        if (empty($company["logo_img"]) || !is_file($companyLogoPath)) {
             $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
         }
-        if (file_exists($companyLogoPath)) {
+        if (is_file($companyLogoPath)) {
             $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
             $data = file_get_contents($companyLogoPath);
             $companyLogoBase64 = "data:image/" . $type . ";base64," . base64_encode($data);
         }
 
         $db = \Config\Database::connect();
-        $companyAddressRow = $db->table('company_address')->orderBy('id', 'DESC')->get()->getRowArray();
-        if ($companyAddressRow && !empty($companyAddressRow['office_address'])) {
-            if ($company) {
-                $company['company_address'] = $companyAddressRow['office_address'];
+        if ($db->tableExists('company_address')) {
+            $companyAddressRow = $db->table('company_address')->orderBy('id', 'DESC')->get()->getRowArray();
+            if ($companyAddressRow && !empty($companyAddressRow['office_address'])) {
+                if ($company) {
+                    $company['company_address'] = $companyAddressRow['office_address'];
+                }
             }
         }
 
@@ -1865,6 +1867,41 @@ class PayrollController extends ResourceController
             $emp["tax"] =
                 $emp["tax_amount"] > 0 ? "₹" . $emp["tax_amount"] : "No Tax";
 
+            // ── Extra Day (Sat/Sun full-day attendance) ──────────────────────────
+            $holidayLookupForExt = array_flip($holidayDates);
+            $weekendAttRows = $attendanceModel
+                ->where('user_id', $emp['user_id'])
+                ->where('date >=', $startOfMonth)
+                ->where('date <=', $endOfMonth)
+                ->whereNotIn('status', ['half-day', 'absent', 'leave'])
+                ->findAll();
+            $extraDayDetails = [];
+            foreach ($weekendAttRows as $wRow) {
+                $wDateStr = substr($wRow['date'], 0, 10);
+                $wDow = (int) date('w', strtotime($wDateStr)); // 0=Sun, 6=Sat
+                if ($wDow !== 0 && $wDow !== 6) continue;       // only Sat/Sun
+                if (isset($holidayLookupForExt[$wDateStr])) continue; // skip holidays
+                if (empty($wRow['check_in_time'])) continue;    // must have a punch
+                $extraDayDetails[] = [
+                    'date'          => $wDateStr,
+                    'day_name'      => date('l', strtotime($wDateStr)), // Saturday / Sunday
+                    'check_in_time' => $wRow['check_in_time'],
+                    'check_out_time'=> $wRow['check_out_time'] ?? null,
+                ];
+            }
+            // Deduplicate by date (multiple attendance records same day)
+            $seenExtDates = [];
+            $uniqueExtDetails = [];
+            foreach ($extraDayDetails as $ed) {
+                if (!in_array($ed['date'], $seenExtDates, true)) {
+                    $seenExtDates[]   = $ed['date'];
+                    $uniqueExtDetails[] = $ed;
+                }
+            }
+            $emp['extra_days']        = count($uniqueExtDetails);
+            $emp['extra_day_pay']     = round($emp['extra_days'] * $emp['per_day'], 2);
+            $emp['extra_day_details'] = $uniqueExtDetails;
+
             if ($payroll) {
                 // ── Load payroll values ──────────────────────────────────────────────
                 $emp["leaves"] = (float) ($payroll["total_leaves"] ?? 0);
@@ -1893,8 +1930,24 @@ class PayrollController extends ResourceController
                 // base_deduction is used by JS for re-computation.
                 $emp["base_deduction"] = round($emp["salary_deduction"] + $paidLeaveCredit, 2);
 
-                // Recalculate net salary based on updated components
-                $emp["net_salary"] = round($emp["salary"] - $emp["salary_deduction"] - $emp["tax_deduction"] + ($emp["overtime_pay"] ?? 0), 2);
+                $baseNetSalary = round(
+                    $emp["salary"]
+                    - $emp["salary_deduction"]
+                    - $emp["tax_deduction"]
+                    + ($emp["overtime_pay"] ?? 0),
+                    2
+                );
+
+                $savedNetSalary = round((float) ($payroll["net_salary"] ?? 0), 2);
+
+                if ($savedNetSalary > $baseNetSalary) {
+                    $emp["extra_day_pay"] = round($savedNetSalary - $baseNetSalary, 2);
+                    $emp["net_salary"] = $savedNetSalary;
+                } else {
+                    $emp["net_salary"] = $baseNetSalary;
+                    // Keep extra_day_pay as the default calculation (what they could add),
+                    // but don't add it to net_salary until they click save in the modal.
+                }
 
                 $emp["tax_amount"] = $emp["tax_deduction"];
                 $emp["tax"] = $emp["tax_amount"] > 0
@@ -2002,7 +2055,10 @@ class PayrollController extends ResourceController
                 $emp["salary_deduction"] = round($leaveHalfDeduction, 2);
                 $emp["tax_deduction"] = $emp["tax_amount"];
                 $emp["net_salary"] = round(
-                    $emp["salary"] - $emp["salary_deduction"] - $emp["tax_deduction"] + ($emp["overtime_pay"] ?? 0),
+                    $emp["salary"]
+                    - $emp["salary_deduction"]
+                    - $emp["tax_deduction"]
+                    + ($emp["overtime_pay"] ?? 0),
                     2,
                 );
             }
@@ -2433,6 +2489,113 @@ class PayrollController extends ResourceController
         ]);
     }
 
+    /**
+     * API: Return extra-day (Sat/Sun full-day) attendance details for a given
+     * employee and month.  Used to power the info popup in salary-details.
+     *
+     * POST params: user_id, month (YYYY-MM)
+     */
+    public function getExtraDayDetails()
+    {
+        $userId = $this->request->getPost('user_id') ?: $this->request->getGet('user_id');
+        $month  = $this->request->getPost('month')   ?: $this->request->getGet('month');
+
+        if (!$userId || !$month) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'user_id and month are required.',
+            ])->setStatusCode(400);
+        }
+
+        $date         = new \DateTime($month . '-01');
+        $startOfMonth = $date->format('Y-m-01');
+        $endOfMonth   = $date->format('Y-m-t');
+
+        $attendanceModel      = new AttendanceModel();
+        $companyRulesModel    = new CompanyRulesModel();
+        $holidayCalendarModel = new HolidayCalendarModel();
+        $userInfoModel        = new UserInfoModel();
+
+        $rules = $companyRulesModel->first();
+
+        // Build holiday lookup for this month
+        $holidayRows  = $holidayCalendarModel
+            ->where('holiday_date >=', $startOfMonth)
+            ->where('holiday_date <=', $endOfMonth)
+            ->findAll();
+        $holidayLookup = array_flip(array_column($holidayRows, 'holiday_date'));
+
+        // Working-days data (to compute per-day salary)
+        $workingDaysData    = $this->getWorkingDaysData(
+            (int) $date->format('m'),
+            (int) $date->format('Y'),
+            $rules,
+            array_column($holidayRows, 'holiday_date')
+        );
+        $workingDays        = $workingDaysData['working_days'];
+        $workingHoursPerDay = (float) ($rules['working_hours_per_day'] ?? 8);
+
+        // Salary (use saved payroll salary_amount when available)
+        $payrollModel = new PayrollModel();
+        $savedPayroll = $payrollModel
+            ->where('user_id', $userId)
+            ->where('month_year', $month)
+            ->first();
+        if ($savedPayroll && !empty($savedPayroll['salary_amount']) && (float) $savedPayroll['salary_amount'] > 0) {
+            $salary = (float) $savedPayroll['salary_amount'];
+        } else {
+            $userInfo = $userInfoModel->where('user_id', $userId)->first();
+            $salary   = (float) ($userInfo['salary'] ?? 0);
+        }
+        $perDay = $workingDays > 0 ? round($salary / $workingDays, 2) : 0;
+
+        // Fetch non-half-day, non-absent weekend attendance
+        $attRows = $attendanceModel
+            ->where('user_id', $userId)
+            ->where('date >=', $startOfMonth)
+            ->where('date <=', $endOfMonth)
+            ->whereNotIn('status', ['half-day', 'absent', 'leave'])
+            ->findAll();
+
+        $seenDates  = [];
+        $details    = [];
+        foreach ($attRows as $row) {
+            $dateStr = substr($row['date'], 0, 10);
+            $dow     = (int) date('w', strtotime($dateStr)); // 0=Sun, 6=Sat
+            if ($dow !== 0 && $dow !== 6) continue;
+            if (isset($holidayLookup[$dateStr])) continue;
+            if (empty($row['check_in_time'])) continue;
+            if (in_array($dateStr, $seenDates, true)) continue;
+
+            $seenDates[] = $dateStr;
+            $details[]   = [
+                'date'           => $dateStr,
+                'day_name'       => date('l', strtotime($dateStr)),
+                'formatted_date' => date('d M Y', strtotime($dateStr)),
+                'check_in_time'  => $row['check_in_time'],
+                'check_out_time' => $row['check_out_time'] ?? null,
+            ];
+        }
+
+        $extraDays   = count($details);
+        $extraDayPay = round($extraDays * $perDay, 2);
+
+        // Fetch employee name for display
+        $userInfoForName = $userInfoModel->where('user_id', $userId)->first();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => [
+                'employee_name' => ($userInfoForName['firstname'] ?? '') . ' ' . ($userInfoForName['lastname'] ?? ''),
+                'month_label'   => $date->format('F Y'),
+                'extra_days'    => $extraDays,
+                'extra_day_pay' => $extraDayPay,
+                'per_day'       => $perDay,
+                'details'       => $details,
+            ],
+        ]);
+    }
+
     public function getPreviousAdjustment()
     {
         $userId = $this->request->getPost("user_id");
@@ -2639,20 +2802,22 @@ class PayrollController extends ResourceController
 
                 $companyLogoBase64 = "";
                 $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
-                if (!file_exists($companyLogoPath) || empty($company["logo_img"])) {
+                if (empty($company["logo_img"]) || !is_file($companyLogoPath)) {
                     $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
                 }
-                if (file_exists($companyLogoPath)) {
+                if (is_file($companyLogoPath)) {
                     $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
                     $data = file_get_contents($companyLogoPath);
                     $companyLogoBase64 = "data:image/" . $type . ";base64," . base64_encode($data);
                 }
 
                 $db = \Config\Database::connect();
-                $companyAddressRow = $db->table('company_address')->orderBy('id', 'DESC')->get()->getRowArray();
-                if ($companyAddressRow && !empty($companyAddressRow['office_address'])) {
-                    if ($company) {
-                        $company['company_address'] = $companyAddressRow['office_address'];
+                if ($db->tableExists('company_address')) {
+                    $companyAddressRow = $db->table('company_address')->orderBy('id', 'DESC')->get()->getRowArray();
+                    if ($companyAddressRow && !empty($companyAddressRow['office_address'])) {
+                        if ($company) {
+                            $company['company_address'] = $companyAddressRow['office_address'];
+                        }
                     }
                 }
 

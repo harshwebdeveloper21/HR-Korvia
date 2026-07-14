@@ -92,6 +92,27 @@
     </div>
   </div>
 </div>
+<!-- Extra Day info modal -->
+<div class="modal fade" id="extraDayModal" tabindex="-1" aria-labelledby="extraDayModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#E66136;color:white;">
+        <h5 class="modal-title" id="extraDayModalLabel">
+          <i class="mdi mdi-calendar-plus me-1"></i> Extra Day Details
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="extraDayBody">
+        <div class="text-center py-4" id="extraDayLoading">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 mb-0">Loading details...</p>
+        </div>
+        <div id="extraDayContent" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Remark and Adjustment Modal -->
 <div class="modal fade" id="remarkModal" tabindex="-1" aria-labelledby="remarkModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -190,9 +211,10 @@
                   <th>Leaves / Half-Day<br><small class="text-muted" style="font-size: 10px; color:white !important;">(Leaves / Half-Day)</small></th>
                   <th>Used Leave<br><small class="text-muted" style="font-size: 10px; color:white !important;">(Paid / Sick)</small></th>
                   <th>Rem. Leave<br><small class="text-muted" style="font-size: 10px; color:white !important;">(Paid / Sick)</small></th>
-                  <th>Per-Day Salary</th>
+                  <th>Per-Day<br>Salary</th>
+                  <th>Extra Day</th>
                   <th>Tax</th>
-                  <th>Salary Deduction</th>
+                  <th>Salary<br>Deduction</th>
                   <th>Net Salary</th>
                   <th>Action</th>
                 </tr>
@@ -275,6 +297,23 @@
                     <td>₹<?= number_format($emp["per_day"], 2) ?><br><small
                         class="text-muted">₹<?= number_format($emp["per_hour"] ?? ($emp["per_day"] / 8), 2) ?>/hr</small>
                     </td>
+                    <td>
+                      <div class="d-flex align-items-center justify-content-center">
+                        <span class="fw-bold me-1"><?= esc($emp['extra_days'] ?? 0) ?></span>
+                        <?php if (($emp['extra_days'] ?? 0) > 0): ?>
+                          <button type="button" class="btn btn-sm btn-link p-0 ms-1 btn-extra-day-info"
+                            title="View extra day attendance" data-user-id="<?= $emp["user_id"] ?>"
+                            data-month="<?= esc($month) ?>" data-name="<?= esc($emp["firstname"] ?? '') ?>">
+                            <i class="mdi mdi-information-outline text-primary" style="font-size:1.1rem;"></i>
+                          </button>
+                        <?php endif; ?>
+                      </div>
+                      <?php if (($emp['extra_day_pay'] ?? 0) > 0): ?>
+                        <div class="d-flex align-items-center justify-content-center mt-1">
+                          <small class="text-success extra-day-pay-display" style="font-size: 10px; white-space:nowrap;">₹<?= number_format($emp['extra_day_pay'], 2) ?></small>
+                        </div>
+                      <?php endif; ?>
+                    </td>
                     <td><?= esc($emp["tax"]) ?></td>
                     <td class="deduction-cell">
                       <span>₹<?= number_format($emp["salary_deduction"], 2) ?></span>
@@ -305,6 +344,13 @@
                       value="<?= $emp["overtime_pay"] ?? 0 ?>">
                     <input type="hidden" name="total_overtime_hours[]" class="total-overtime-hours-input"
                       value="<?= $emp["total_overtime_hours"] ?? 0 ?>">
+                    <?php 
+                      // Calculate base net salary to see if extra_day_pay is included in the saved net_salary
+                      $baseNetSal = round($emp['salary'] - $emp['salary_deduction'] - $emp['tax_deduction'] + ($emp['overtime_pay'] ?? 0), 2);
+                      $isExtraAdded = (isset($emp['net_salary']) && round($emp['net_salary'], 2) > $baseNetSal);
+                    ?>
+                    <input type="hidden" name="extra_day_pay[]" class="extra-day-pay-input"
+                      value="<?= $isExtraAdded ? esc($emp['extra_day_pay']) : '0' ?>">
                     <!-- Per Row Save -->
                     <td>
                       <input type="hidden" class="single-employee-id" value="<?= $emp[
@@ -480,7 +526,8 @@
     const paidLeaveCredit = (usedPaidLeaves + usedSickLeaves) * perDay;
     const salaryDeduction = Math.max(baseDeduction - paidLeaveCredit, 0);
     const overtimePay = parseFloat(row.dataset.overtimePay) || 0;
-    const totalAdjustment = overtimePay - salaryDeduction - tax;
+    const extraDayPay = parseFloat(row.querySelector('.extra-day-pay-input')?.value) || 0;
+    const totalAdjustment = overtimePay + extraDayPay - salaryDeduction - tax;
     const netSalary = salary + totalAdjustment;
 
     // Update Remaining Balances and Validation
@@ -564,6 +611,7 @@
     const deduction = row.querySelector('.deduction-input').value;
     const netSalary = (parseFloat(row.querySelector('.net-salary-input').value) + parseFloat(adjustmentAmount || 0)).toFixed(2);
     const overtimePay = (row.querySelector('.overtime-pay-input') && row.querySelector('.overtime-pay-input').value) || 0;
+    const extraDayPay = (row.querySelector('.extra-day-pay-input') && row.querySelector('.extra-day-pay-input').value) || 0;
     const totalOvertimeHours = (row.querySelector('.total-overtime-hours-input') && row.querySelector('.total-overtime-hours-input').value) || 0;
     const month = row.querySelector('.single-month').value;
 
@@ -585,6 +633,7 @@
         deduction: deduction,
         net_salary: netSalary,
         overtime_pay: overtimePay,
+        extra_day_pay: extraDayPay,
         total_overtime_hours: totalOvertimeHours,
         adjustment_amount: adjustmentAmount || 0,
         adjustment_remark: adjustmentRemark || ''
@@ -807,6 +856,153 @@
     e.stopPropagation();
     if (Date.now() - salaryDetailsDeductionLastTouch < 400) return;
     openSalaryDetailsDeductionModal(btn);
+  });
+
+  // Extra Day info modal – event delegation
+  function openExtraDayModal(btn) {
+    const userId = btn.dataset.userId;
+    const month = btn.dataset.month;
+    const name = btn.dataset.name || 'Employee';
+    
+    const modalEl = document.getElementById('extraDayModal');
+    const loading = document.getElementById('extraDayLoading');
+    const content = document.getElementById('extraDayContent');
+    
+    if (!modalEl || !userId || !month) return;
+    
+    document.getElementById('extraDayModalLabel').innerHTML = '<i class="mdi mdi-calendar-plus me-1"></i> Extra Day Details – ' + name;
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    content.innerHTML = '';
+    
+    if (modalEl.parentNode !== document.body) {
+      document.body.appendChild(modalEl);
+    }
+    
+    const modalInstance = new bootstrap.Modal(modalEl);
+    modalInstance.show();
+    
+    fetch("<?= base_url('api/payroll/get-extra-day-details') ?>", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRF-TOKEN': "<?= csrf_hash() ?>"
+      },
+      body: new URLSearchParams({ user_id: userId, month: month })
+    })
+    .then(r => r.json())
+    .then(res => {
+      loading.style.display = 'none';
+      if (res.status !== 'success' || !res.data) {
+        content.innerHTML = '<p class="text-danger">Could not load extra day details.</p>';
+        content.style.display = 'block';
+        return;
+      }
+      
+      const d = res.data;
+      let html = '<p class="text-muted small mb-3">' + d.employee_name + ' – ' + d.month_label + '</p>';
+      
+      html += '<div class="alert alert-info py-2 mb-3">';
+      html += '<strong>Total Extra Days: </strong>' + (d.extra_days || 0) + '<br>';
+      html += '<strong>Extra Day Pay: </strong>₹<span id="modal-total-extra-pay">' + (d.extra_day_pay || 0).toFixed(2) + '</span>';
+      html += '</div>';
+      
+      if (d.details && d.details.length > 0) {
+        html += '<div class="table-responsive"><table class="table table-bordered table-sm">';
+        html += '<thead class="table-light"><tr><th>Date</th><th>Day</th><th>Check-In</th><th>Check-Out</th><th>Amount</th><th>Action</th></tr></thead><tbody>';
+        
+        d.details.forEach(item => {
+          html += '<tr>';
+          html += '<td>' + item.formatted_date + '</td>';
+          html += '<td>' + item.day_name + '</td>';
+          html += '<td>' + (item.check_in_time || '--') + '</td>';
+          html += '<td>' + (item.check_out_time || '--') + '</td>';
+          html += '<td><input type="number" class="form-control form-control-sm modal-extra-day-amount" value="' + (d.per_day || 0).toFixed(2) + '" step="0.01" style="width: 80px;"></td>';
+          html += '<td><button type="button" class="btn btn-sm btn-success btn-save-modal-extra-day" data-userid="'+userId+'">Save</button></td>';
+          html += '</tr>';
+        });
+        
+        html += '</tbody></table></div>';
+      } else {
+        html += '<p class="text-muted">No full-day Saturday or Sunday attendance records found for this month.</p>';
+      }
+      
+      content.innerHTML = html;
+      content.style.display = 'block';
+    })
+    .catch(() => {
+      loading.style.display = 'none';
+      content.innerHTML = '<p class="text-danger">Failed to load details.</p>';
+      content.style.display = 'block';
+    });
+  }
+
+  var extraDayLastTouch = 0;
+  document.addEventListener('touchend', function (e) {
+    const btn = e.target.closest('.btn-extra-day-info');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    extraDayLastTouch = Date.now();
+    openExtraDayModal(btn);
+  }, { passive: false });
+  
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-extra-day-info');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (Date.now() - extraDayLastTouch < 400) return;
+    openExtraDayModal(btn);
+  });
+
+  // Handle Save inside Extra Day Modal
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-save-modal-extra-day')) {
+      e.preventDefault();
+      const btn = e.target;
+      const userId = btn.dataset.userid;
+      
+      // Calculate new total from all inputs in the modal
+      const modal = document.getElementById('extraDayModal');
+      const inputs = modal.querySelectorAll('.modal-extra-day-amount');
+      let newTotal = 0;
+      inputs.forEach(input => {
+        newTotal += parseFloat(input.value) || 0;
+      });
+      
+      // Update modal display
+      document.getElementById('modal-total-extra-pay').textContent = newTotal.toFixed(2);
+      
+      // Update main table row if found
+      const mainTableBtn = document.querySelector('.btn-extra-day-info[data-user-id="'+userId+'"]');
+      if (mainTableBtn) {
+        const row = mainTableBtn.closest('tr');
+        const payDisplay = row.querySelector('.extra-day-pay-display'); // the text showing amount
+        
+        if (payDisplay) {
+          payDisplay.textContent = '₹' + newTotal.toFixed(2);
+        }
+        
+        // Add to net salary instantly
+        const input = row.querySelector('.extra-day-pay-input');
+        if (input) {
+          input.value = newTotal;
+          updateRowCalculations(row);
+        }
+      }
+      
+      // Visual feedback
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="mdi mdi-check"></i> Saved';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+      }, 600); // Close after 600ms
+    }
   });
 
 </script>
