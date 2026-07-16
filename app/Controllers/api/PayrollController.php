@@ -621,7 +621,7 @@ class PayrollController extends ResourceController
         $halfDays = 0;
         foreach ($halfDayRows as $hdRow) {
             $dateKey = substr($hdRow["date"], 0, 10);
-            if (!isset($satHalfDayDates[$dateKey])) {
+            if (!isset($satHalfDayDates[$dateKey]) && !$this->isWeekOffDay($dateKey, $rules)) {
                 $halfDays++;
             }
         }
@@ -775,12 +775,12 @@ class PayrollController extends ResourceController
 
         // Exclude Saturdays that are company-wide scheduled half-days; they are not
         // employee-specific absences and must not inflate the deduction count.
+        // Also exclude any week-off days (Sundays and Week-off Saturdays).
         $satHalfDayDatesCalc = $this->getSaturdayHalfDayDates($month, $year, $rules);
-        if (!empty($satHalfDayDatesCalc)) {
-            $halfDayRows = array_values(array_filter($halfDayRows, function ($r) use ($satHalfDayDatesCalc) {
-                return !isset($satHalfDayDatesCalc[substr($r['date'], 0, 10)]);
-            }));
-        }
+        $halfDayRows = array_values(array_filter($halfDayRows, function ($r) use ($satHalfDayDatesCalc, $rules) {
+            $dateKey = substr($r['date'], 0, 10);
+            return !isset($satHalfDayDatesCalc[$dateKey]) && !$this->isWeekOffDay($dateKey, $rules);
+        }));
 
         $fullDayHoursRule = isset($rules["working_hours_per_day"])
             ? (float) $rules["working_hours_per_day"]
@@ -1152,6 +1152,82 @@ class PayrollController extends ResourceController
         return $saturdayLookup;
     }
 
+    /**
+     * Determine whether a given Saturday date is a "Week Off" Saturday
+     * according to company rules.  Week-Off Saturdays are those excluded
+     * from working days (so attendance on them earns Extra Day credit).
+     *
+     * Rules checked:
+     *  - saturday_off_type = 'all'         → every Saturday is week-off
+     *  - saturday_off_type = 'alternate-*' → Saturdays matching off-pattern
+     *  - saturday_off_type = 'custom'      → Saturdays matching off-pattern
+     *
+     * @param  string $dateStr  'Y-m-d' Saturday date
+     * @param  array  $rules    Company rules row
+     * @return bool
+     */
+    private function isSaturdayWeekOff(string $dateStr, array $rules): bool
+    {
+        $satOffEnabled = !empty($rules['saturday_off_enabled']) && $rules['saturday_off_enabled'] == 1;
+        $satOffType    = $rules['saturday_off_type'] ?? 'all';
+
+        if (!$satOffEnabled && $satOffType === 'all') {
+            // Even if the toggle is off, if type is 'all' it was historically treated as off
+            // Guard: only count as week-off when explicitly enabled OR type is 'all'
+        }
+
+        if ($satOffType === 'all') {
+            return true; // every Saturday is a week-off
+        }
+
+        // For alternate / custom types, resolve which week-number this Saturday is
+        $patternStr = $rules['saturday_off_pattern'] ?? '';
+        if ($patternStr === '' || $patternStr === null) {
+            return false;
+        }
+        $offWeeks = array_filter(
+            array_map('intval', explode(',', $patternStr)),
+            fn($w) => $w > 0
+        );
+        if (empty($offWeeks)) {
+            return false;
+        }
+
+        // Determine which Saturday-of-month this date is (1 = first Saturday, etc.)
+        [$year, $month, $day] = array_map('intval', explode('-', $dateStr));
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $satCount = 0;
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $ds = sprintf('%04d-%02d-%02d', $year, $month, $d);
+            if ((int) date('w', strtotime($ds)) === 6) {
+                $satCount++;
+                if ($ds === $dateStr) {
+                    return in_array($satCount, $offWeeks, true);
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Determine whether a given date is a "Week Off" day (Sunday or Week-Off Saturday)
+     *
+     * @param  string $dateStr  'Y-m-d' date
+     * @param  array  $rules    Company rules row
+     * @return bool
+     */
+    private function isWeekOffDay(string $dateStr, array $rules): bool
+    {
+        $dow = (int) date('w', strtotime($dateStr)); // 0=Sun, 6=Sat
+        if ($dow === 0 && ($rules['sunday_off'] ?? 0) == 1) {
+            return true;
+        }
+        if ($dow === 6 && $this->isSaturdayWeekOff($dateStr, $rules)) {
+            return true;
+        }
+        return false;
+    }
+
     public function getLeaveDetails()
     {
         $leaveId = $this->request->getPost("leave_id");
@@ -1193,7 +1269,8 @@ class PayrollController extends ResourceController
             ->findAll();
         $halfDays = 0;
         foreach ($halfDayRowsLD as $hdRowLD) {
-            if (!isset($satHalfDayDatesLD[substr($hdRowLD['date'], 0, 10)])) {
+            $dateKey = substr($hdRowLD['date'], 0, 10);
+            if (!isset($satHalfDayDatesLD[$dateKey]) && !$this->isWeekOffDay($dateKey, $rulesLD)) {
                 $halfDays++;
             }
         }
@@ -1841,6 +1918,39 @@ class PayrollController extends ResourceController
             ->whereIn('user_info.role', ['employee', 'hr'])
             ->findAll();
 
+        // Filter out Inactive/Resigned employees who have zero attendance in the selected month
+        $inactiveUserIds = [];
+        foreach ($employees as $emp) {
+            $status = trim($emp['status'] ?? 'Active');
+            if (in_array(strtolower($status), ['inactive', 'resigned'])) {
+                $inactiveUserIds[] = $emp['user_id'];
+            }
+        }
+        
+        $activeInactiveUserIds = [];
+        if (!empty($inactiveUserIds)) {
+            $attCounts = $attendanceModel->select('user_id')
+                ->whereIn('user_id', $inactiveUserIds)
+                ->where('date >=', $startOfMonth)
+                ->where('date <=', $endOfMonth)
+                ->whereNotIn('status', ['absent', 'leave'])
+                ->groupBy('user_id')
+                ->findAll();
+            $activeInactiveUserIds = array_column($attCounts, 'user_id');
+        }
+
+        $filteredEmployees = [];
+        foreach ($employees as $emp) {
+            $status = trim($emp['status'] ?? 'Active');
+            if (in_array(strtolower($status), ['inactive', 'resigned'])) {
+                if (!in_array($emp['user_id'], $activeInactiveUserIds)) {
+                    continue; // Exclude inactive/resigned employee with zero attendance
+                }
+            }
+            $filteredEmployees[] = $emp;
+        }
+        $employees = $filteredEmployees;
+
         $employeeLeaveModel = new \App\Models\EmployeeLeaveModel();
         foreach ($employees as &$emp) {
             // Get existing payroll if saved
@@ -1867,39 +1977,84 @@ class PayrollController extends ResourceController
             $emp["tax"] =
                 $emp["tax_amount"] > 0 ? "₹" . $emp["tax_amount"] : "No Tax";
 
-            // ── Extra Day (Sat/Sun full-day attendance) ──────────────────────────
+            // ── Extra Day (Sat/Sun attendance on week-off days) ──────────────────
+            // Saturday week-off: partial work (<working_hours_per_day) = 0.5 extra;
+            // full work (>=working_hours_per_day) = 1.0 extra.
+            // Sunday is always 1.0 (always a day off).
+            // Leave / Used-Leave columns are NEVER touched here.
             $holidayLookupForExt = array_flip($holidayDates);
+            $fullDayHrsForExtra  = (float) ($rules['working_hours_per_day'] ?? 8.0);
             $weekendAttRows = $attendanceModel
                 ->where('user_id', $emp['user_id'])
                 ->where('date >=', $startOfMonth)
                 ->where('date <=', $endOfMonth)
-                ->whereNotIn('status', ['half-day', 'absent', 'leave'])
+                ->whereNotIn('status', ['absent', 'leave'])
                 ->findAll();
             $extraDayDetails = [];
             foreach ($weekendAttRows as $wRow) {
                 $wDateStr = substr($wRow['date'], 0, 10);
                 $wDow = (int) date('w', strtotime($wDateStr)); // 0=Sun, 6=Sat
-                if ($wDow !== 0 && $wDow !== 6) continue;       // only Sat/Sun
+                if ($wDow !== 0 && $wDow !== 6) continue;           // only Sat/Sun
                 if (isset($holidayLookupForExt[$wDateStr])) continue; // skip holidays
-                if (empty($wRow['check_in_time'])) continue;    // must have a punch
+                if (empty($wRow['check_in_time'])) continue;          // must have a punch
+
+                // Compute gross worked hours from check-in/check-out timestamps
+                $workedHrsForExtra = 0.0;
+                if (!empty($wRow['check_in_time']) && !empty($wRow['check_out_time'])) {
+                    $inTs  = strtotime($wDateStr . ' ' . $wRow['check_in_time']);
+                    $outTs = strtotime($wDateStr . ' ' . $wRow['check_out_time']);
+                    if ($outTs > $inTs) {
+                        $workedHrsForExtra = ($outTs - $inTs) / 3600.0;
+                    }
+                } elseif (!empty($wRow['work_hours']) && $wRow['work_hours'] !== '00:00:00') {
+                    // Fallback: use stored work_hours column
+                    $parts = array_map('intval', explode(':', $wRow['work_hours']));
+                    $workedHrsForExtra = ($parts[0] ?? 0) + ($parts[1] ?? 0) / 60.0 + ($parts[2] ?? 0) / 3600.0;
+                }
+
+                // Determine credit: Saturday week-off => 0.5 or 1.0; Sunday always 1.0
+                if ($wDow === 6 && $this->isSaturdayWeekOff($wDateStr, $rules)) {
+                    // Week-Off Saturday: credit based on hours worked
+                    $extraCredit  = ($workedHrsForExtra + 0.01 >= $fullDayHrsForExtra) ? 1.0 : 0.5;
+                    $isHalfExtra  = ($extraCredit < 1.0);
+                } else {
+                    // Sunday (or a non-week-off Saturday): always full extra
+                    $extraCredit = 1.0;
+                    $isHalfExtra = false;
+                }
+
                 $extraDayDetails[] = [
-                    'date'          => $wDateStr,
-                    'day_name'      => date('l', strtotime($wDateStr)), // Saturday / Sunday
-                    'check_in_time' => $wRow['check_in_time'],
-                    'check_out_time'=> $wRow['check_out_time'] ?? null,
+                    'date'           => $wDateStr,
+                    'day_name'       => date('l', strtotime($wDateStr)),
+                    'check_in_time'  => $wRow['check_in_time'],
+                    'check_out_time' => $wRow['check_out_time'] ?? null,
+                    'worked_hours'   => round($workedHrsForExtra, 2),
+                    'extra_credit'   => $extraCredit,
+                    'is_half_extra'  => $isHalfExtra,
                 ];
             }
-            // Deduplicate by date (multiple attendance records same day)
-            $seenExtDates = [];
+            // Deduplicate by date — keep the entry with the highest credit for the day
+            $seenExtDates    = [];
             $uniqueExtDetails = [];
             foreach ($extraDayDetails as $ed) {
-                if (!in_array($ed['date'], $seenExtDates, true)) {
-                    $seenExtDates[]   = $ed['date'];
+                $existing = array_search($ed['date'], array_column($uniqueExtDetails, 'date'));
+                if ($existing === false) {
+                    $seenExtDates[]    = $ed['date'];
                     $uniqueExtDetails[] = $ed;
+                } else {
+                    // Keep whichever has greater credit
+                    if ($ed['extra_credit'] > $uniqueExtDetails[$existing]['extra_credit']) {
+                        $uniqueExtDetails[$existing] = $ed;
+                    }
                 }
             }
-            $emp['extra_days']        = count($uniqueExtDetails);
-            $emp['extra_day_pay']     = round($emp['extra_days'] * $emp['per_day'], 2);
+            // Sum credits (float: 0.5 + 1.0 + 0.5 = 2.0, etc.)
+            $totalExtraCredit = 0.0;
+            foreach ($uniqueExtDetails as $ed) {
+                $totalExtraCredit += $ed['extra_credit'];
+            }
+            $emp['extra_days']        = $totalExtraCredit;   // now a float, e.g. 0.5, 1.5
+            $emp['extra_day_pay']     = round($totalExtraCredit * $emp['per_day'], 2);
             $emp['extra_day_details'] = $uniqueExtDetails;
 
             if ($payroll) {
@@ -1974,10 +2129,11 @@ class PayrollController extends ResourceController
                     ->where("date >=", $startOfMonth)
                     ->where("date <=", $endOfMonth)
                     ->findAll();
-                // Exclude Saturdays that are company-wide scheduled half-days
+                // Exclude Saturdays that are company-wide scheduled half-days and week-off days
                 $satHalfDayDatesForEmp = $this->getSaturdayHalfDayDates($monthNum, $year, $rules);
-                $halfDayRows = array_filter($halfDayRows, function ($r) use ($satHalfDayDatesForEmp) {
-                    return !isset($satHalfDayDatesForEmp[substr($r['date'], 0, 10)]);
+                $halfDayRows = array_filter($halfDayRows, function ($r) use ($satHalfDayDatesForEmp, $rules) {
+                    $dateKey = substr($r['date'], 0, 10);
+                    return !isset($satHalfDayDatesForEmp[$dateKey]) && !$this->isWeekOffDay($dateKey, $rules);
                 });
                 $halfDayRows = array_values($halfDayRows);
                 $emp["half_days"] = count($halfDayRows);
@@ -2549,23 +2705,62 @@ class PayrollController extends ResourceController
         }
         $perDay = $workingDays > 0 ? round($salary / $workingDays, 2) : 0;
 
-        // Fetch non-half-day, non-absent weekend attendance
+        // Fetch all weekend attendance (including half-day status for Saturday partial work)
         $attRows = $attendanceModel
             ->where('user_id', $userId)
             ->where('date >=', $startOfMonth)
             ->where('date <=', $endOfMonth)
-            ->whereNotIn('status', ['half-day', 'absent', 'leave'])
+            ->whereNotIn('status', ['absent', 'leave'])
             ->findAll();
 
-        $seenDates  = [];
-        $details    = [];
+        $fullDayHrsModal = (float) ($rules['working_hours_per_day'] ?? 8.0);
+        $seenDates       = [];
+        $details         = [];
+        $totalExtraCredit = 0.0;
+
         foreach ($attRows as $row) {
             $dateStr = substr($row['date'], 0, 10);
             $dow     = (int) date('w', strtotime($dateStr)); // 0=Sun, 6=Sat
             if ($dow !== 0 && $dow !== 6) continue;
             if (isset($holidayLookup[$dateStr])) continue;
             if (empty($row['check_in_time'])) continue;
-            if (in_array($dateStr, $seenDates, true)) continue;
+
+            // Compute gross worked hours
+            $workedHrs = 0.0;
+            if (!empty($row['check_in_time']) && !empty($row['check_out_time'])) {
+                $inTs  = strtotime($dateStr . ' ' . $row['check_in_time']);
+                $outTs = strtotime($dateStr . ' ' . $row['check_out_time']);
+                if ($outTs > $inTs) {
+                    $workedHrs = ($outTs - $inTs) / 3600.0;
+                }
+            } elseif (!empty($row['work_hours']) && $row['work_hours'] !== '00:00:00') {
+                $parts = array_map('intval', explode(':', $row['work_hours']));
+                $workedHrs = ($parts[0] ?? 0) + ($parts[1] ?? 0) / 60.0 + ($parts[2] ?? 0) / 3600.0;
+            }
+
+            // Determine credit
+            if ($dow === 6 && $this->isSaturdayWeekOff($dateStr, $rules)) {
+                $extraCredit = ($workedHrs + 0.01 >= $fullDayHrsModal) ? 1.0 : 0.5;
+                $isHalfExtra = ($extraCredit < 1.0);
+            } else {
+                $extraCredit = 1.0;
+                $isHalfExtra = false;
+            }
+
+            // Deduplicate — if already seen, keep higher credit entry
+            if (in_array($dateStr, $seenDates, true)) {
+                foreach ($details as &$existing) {
+                    if ($existing['date'] === $dateStr && $extraCredit > $existing['extra_credit']) {
+                        $existing['extra_credit']   = $extraCredit;
+                        $existing['is_half_extra']  = $isHalfExtra;
+                        $existing['worked_hours']   = round($workedHrs, 2);
+                        $existing['check_in_time']  = $row['check_in_time'];
+                        $existing['check_out_time'] = $row['check_out_time'] ?? null;
+                    }
+                }
+                unset($existing);
+                continue;
+            }
 
             $seenDates[] = $dateStr;
             $details[]   = [
@@ -2574,11 +2769,19 @@ class PayrollController extends ResourceController
                 'formatted_date' => date('d M Y', strtotime($dateStr)),
                 'check_in_time'  => $row['check_in_time'],
                 'check_out_time' => $row['check_out_time'] ?? null,
+                'worked_hours'   => round($workedHrs, 2),
+                'extra_credit'   => $extraCredit,
+                'is_half_extra'  => $isHalfExtra,
             ];
         }
 
-        $extraDays   = count($details);
-        $extraDayPay = round($extraDays * $perDay, 2);
+        // Sum float credits
+        foreach ($details as $d2) {
+            $totalExtraCredit += $d2['extra_credit'];
+        }
+
+        $extraDays   = $totalExtraCredit;                  // float e.g. 0.5, 1.5
+        $extraDayPay = round($totalExtraCredit * $perDay, 2);
 
         // Fetch employee name for display
         $userInfoForName = $userInfoModel->where('user_id', $userId)->first();
