@@ -909,22 +909,33 @@
       
       if (d.details && d.details.length > 0) {
         html += '<div class="table-responsive"><table class="table table-bordered table-sm">';
-        html += '<thead class="table-light"><tr><th>Date</th><th>Day</th><th>Check-In</th><th>Check-Out</th><th>Amount</th><th>Action</th></tr></thead><tbody>';
+        html += '<thead class="table-light"><tr><th>Date</th><th>Day</th><th>Check-In</th><th>Check-Out</th><th>Worked Hrs</th><th>Type</th><th>Amount</th><th>Action</th></tr></thead><tbody>';
         
         d.details.forEach(item => {
+          const credit     = item.extra_credit || 1.0;
+          const isHalf     = item.is_half_extra || false;
+          const workedHrs  = (item.worked_hours || 0);
+          const rowAmount  = (d.per_day || 0) * credit;
+          const typeLabel  = isHalf
+            ? '<span class="badge" style="background:#f0a500;color:#fff;">Half Extra (0.5)</span>'
+            : '<span class="badge" style="background:#28a745;color:#fff;">Full Extra (1.0)</span>';
+          const workedHrsLabel = workedHrs > 0 ? workedHrs.toFixed(2) + ' hr' : '--';
+
           html += '<tr>';
           html += '<td>' + item.formatted_date + '</td>';
           html += '<td>' + item.day_name + '</td>';
           html += '<td>' + (item.check_in_time || '--') + '</td>';
           html += '<td>' + (item.check_out_time || '--') + '</td>';
-          html += '<td><input type="number" class="form-control form-control-sm modal-extra-day-amount" value="' + (d.per_day || 0).toFixed(2) + '" step="0.01" style="width: 80px;"></td>';
+          html += '<td>' + workedHrsLabel + '</td>';
+          html += '<td>' + typeLabel + '</td>';
+          html += '<td><input type="number" class="form-control form-control-sm modal-extra-day-amount" value="' + rowAmount.toFixed(2) + '" step="0.01" style="width: 90px;"></td>';
           html += '<td><button type="button" class="btn btn-sm btn-success btn-save-modal-extra-day" data-userid="'+userId+'">Save</button></td>';
           html += '</tr>';
         });
         
         html += '</tbody></table></div>';
       } else {
-        html += '<p class="text-muted">No full-day Saturday or Sunday attendance records found for this month.</p>';
+        html += '<p class="text-muted">No Saturday (Week Off) or Sunday attendance records found for this month.</p>';
       }
       
       content.innerHTML = html;
