@@ -115,7 +115,7 @@
             <td class="bold">Designation</td>
             <td><?= esc($designation['designation_name']) ?></td>
             <td class="bold">Leave/Absence</td>
-            <td><?= esc($calculatedData['absent_days']) ?> Days</td>
+            <td><?= esc($calculatedData['unpaid_leaves']) ?> Days</td>
         </tr>
         <tr>
             <td class="bold">Salary Month</td>

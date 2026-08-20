@@ -1248,9 +1248,10 @@
             );
 
             sortedUsers.forEach(user => {
+                const empStatus = (user.status || 'Active').toLowerCase();
                 const option = document.createElement('option');
                 option.value = user.user_id;
-                option.textContent = user.employee_name;
+                option.textContent = empStatus !== 'active' ? `${user.employee_name} (${user.status})` : user.employee_name;
                 userFilter.appendChild(option);
             });
         };
@@ -1262,6 +1263,7 @@
 
                 if (data.status === 'success') {
                     users = data.data.users || [];
+
                     holidays = data.data.holidays || [];
                     saturdayOffDates = data.data.saturdayOffDates || [];
                     companyInfo = data.data.company || {};
@@ -1559,13 +1561,20 @@
                 const status = attendance?.status ? attendance.status.toLowerCase() : '';
                 // Check if this date is past the employee's last working day
                 const empStatus = (user.status || 'Active').toLowerCase();
-                if (empStatus !== 'active' && user.last_working_day) {
-                    const lwd = new Date(user.last_working_day);
-                    const currDate = new Date(selectedDate);
-                    lwd.setHours(0,0,0,0);
-                    currDate.setHours(0,0,0,0);
-                    if (currDate > lwd) {
-                        return; // Skip rendering employee for this date — outside employment period
+                if (empStatus !== 'active') {
+                    if (user.last_working_day) {
+                        const lwd = new Date(user.last_working_day);
+                        const currDate = new Date(selectedDate);
+                        lwd.setHours(0,0,0,0);
+                        currDate.setHours(0,0,0,0);
+                        if (currDate > lwd) {
+                            return; // Skip rendering employee for this date — outside employment period
+                        }
+                    } else {
+                        // If no last working day is set, only show if they actually checked in
+                        if (!attendance || (!attendance.check_in_time && status !== 'present' && status !== 'half-day')) {
+                            return; 
+                        }
                     }
                 }
 
@@ -1684,20 +1693,39 @@
             // Update statistics
             let presentCount = 0;
             let absentCount = 0;
+            let activeTotal = 0;
             filteredUsers.forEach(user => {
+                const empStatus = (user.status || 'Active').toLowerCase();
+                let skipForToday = false;
+                if (empStatus !== 'active') {
+                    if (user.last_working_day) {
+                        const lwd = new Date(user.last_working_day);
+                        const todayD = new Date(todayDate);
+                        lwd.setHours(0,0,0,0);
+                        todayD.setHours(0,0,0,0);
+                        if (todayD > lwd) skipForToday = true;
+                    } else {
+                        skipForToday = true;
+                    }
+                }
+                
                 const todayAttendance = user.attendance?.find(record => {
                     const recordDate = record.date ? record.date.substring(0, 10) : '';
                     return recordDate === todayDate;
                 });
-                if (todayAttendance && todayAttendance.status === 'present') {
+                
+                if (todayAttendance && (todayAttendance.status === 'present' || todayAttendance.status === 'half-day' || todayAttendance.check_in_time)) {
                     presentCount++;
-                } else {
+                    if (skipForToday) activeTotal++;
+                } else if (!skipForToday) {
                     absentCount++;
                 }
+                
+                if (!skipForToday) activeTotal++;
             });
 
             if (document.getElementById('total-employees')) {
-                document.getElementById('total-employees').innerText = filteredUsers.length;
+                document.getElementById('total-employees').innerText = activeTotal;
             }
             if (document.getElementById('present-employees')) {
                 document.getElementById('present-employees').innerText = presentCount;
@@ -1845,13 +1873,19 @@
                             const status = attendance?.status ? attendance.status.toLowerCase() : '';
                             // Check if this date is past the employee's last working day
                             const empStatus = (user.status || 'Active').toLowerCase();
-                            if (empStatus !== 'active' && user.last_working_day) {
-                                const lwd = new Date(user.last_working_day);
-                                const currDate = new Date(dateStr);
-                                lwd.setHours(0,0,0,0);
-                                currDate.setHours(0,0,0,0);
-                                if (currDate > lwd) {
-                                    return; // Skip — date is outside employment period
+                            if (empStatus !== 'active') {
+                                if (user.last_working_day) {
+                                    const lwd = new Date(user.last_working_day);
+                                    const currDate = new Date(dateStr);
+                                    lwd.setHours(0,0,0,0);
+                                    currDate.setHours(0,0,0,0);
+                                    if (currDate > lwd) {
+                                        return; // Skip — date is outside employment period
+                                    }
+                                } else {
+                                    if (!attendance || (!attendance.check_in_time && status !== 'present' && status !== 'half-day')) {
+                                        return;
+                                    }
                                 }
                             }
 
@@ -1885,20 +1919,39 @@
             // Update statistics
             let presentCount = 0;
             let absentCount = 0;
+            let activeTotal = 0;
             filteredUsers.forEach(user => {
+                const empStatus = (user.status || 'Active').toLowerCase();
+                let skipForToday = false;
+                if (empStatus !== 'active') {
+                    if (user.last_working_day) {
+                        const lwd = new Date(user.last_working_day);
+                        const todayD = new Date(todayDate);
+                        lwd.setHours(0,0,0,0);
+                        todayD.setHours(0,0,0,0);
+                        if (todayD > lwd) skipForToday = true;
+                    } else {
+                        skipForToday = true;
+                    }
+                }
+                
                 const todayAttendance = user.attendance?.find(record => {
                     const recordDate = record.date ? record.date.substring(0, 10) : '';
                     return recordDate === todayDate;
                 });
-                if (todayAttendance && todayAttendance.status === 'present') {
+                
+                if (todayAttendance && (todayAttendance.status === 'present' || todayAttendance.status === 'half-day' || todayAttendance.check_in_time)) {
                     presentCount++;
-                } else {
+                    if (skipForToday) activeTotal++;
+                } else if (!skipForToday) {
                     absentCount++;
                 }
+                
+                if (!skipForToday) activeTotal++;
             });
 
             if (document.getElementById('total-employees')) {
-                document.getElementById('total-employees').innerText = filteredUsers.length;
+                document.getElementById('total-employees').innerText = activeTotal;
             }
             if (document.getElementById('present-employees')) {
                 document.getElementById('present-employees').innerText = presentCount;
