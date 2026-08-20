@@ -1449,7 +1449,9 @@ class PayrollController extends ResourceController
                 // Get leave details
                 $totalLeaves = $payroll["total_leaves"] ?? 0;
                 $usedPaidLeaves = $payroll["used_paid_leaves"] ?? 0;
-                $unpaidLeaves = max($totalLeaves - $usedPaidLeaves, 0);
+                $usedSickLeaves = $payroll["used_sick_leaves"] ?? 0;
+                $halfDaysCount = isset($payroll["total_half_day"]) ? $payroll["total_half_day"] : $halfDays;
+                $unpaidLeaves = max($totalLeaves + ($halfDaysCount * 0.5) - $usedPaidLeaves - $usedSickLeaves, 0);
 
                 // Calculate salary components
                 $baseSalary = $payroll["salary_amount"] ?? 0;
@@ -1693,7 +1695,9 @@ class PayrollController extends ResourceController
         // Get leave details
         $totalLeaves = $payroll["total_leaves"] ?? 0;
         $usedPaidLeaves = $payroll["used_paid_leaves"] ?? 0;
-        $unpaidLeaves = max($totalLeaves - $usedPaidLeaves, 0);
+        $usedSickLeaves = $payroll["used_sick_leaves"] ?? 0;
+        $halfDaysCount = isset($payroll["total_half_day"]) ? $payroll["total_half_day"] : $halfDays;
+        $unpaidLeaves = max($totalLeaves + ($halfDaysCount * 0.5) - $usedPaidLeaves - $usedSickLeaves, 0);
 
         // Calculate salary components
         $baseSalary = $payroll["salary_amount"] ?? 0;
@@ -3062,7 +3066,7 @@ class PayrollController extends ResourceController
                     "absent_days" => $absentDays,
                     "total_leaves" => $payroll["total_leaves"] ?? 0,
                     "used_paid_leaves" => $payroll["used_paid_leaves"] ?? 0,
-                    "unpaid_leaves" => $unpaidLeaves,
+                    "unpaid_leaves" => max((float)($payroll["total_leaves"] ?? 0) + ((float)(isset($payroll["total_half_day"]) ? $payroll["total_half_day"] : $halfDays) * 0.5) - (float)($payroll["used_paid_leaves"] ?? 0) - (float)($payroll["used_sick_leaves"] ?? 0), 0),
                     "half_days" => isset($payroll["total_half_day"]) ? $payroll["total_half_day"] : $halfDays,
                     "worked_hours" => $payroll["worked_hours"] ?? 0,
                     "total_overtime_hours" => $payroll["total_overtime_hours"] ?? 0,
