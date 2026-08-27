@@ -19,7 +19,10 @@ class LeaveModel extends Model
     {
         $builder = $this->select('users.username, leave_type.leave_type, leaves.start_date, leaves.end_date, leaves.status')
             ->join('users', 'users.id = leaves.user_id', 'left')
+            ->join('user_info ui', 'ui.user_id = users.id', 'left')
             ->join('leave_type', 'leave_type.id = leaves.leave_id', 'left')
+            ->where("(LOWER(ui.status) NOT IN ('inactive', 'resigned') OR ui.status IS NULL)")
+            ->where("(ui.last_working_day IS NULL OR ui.last_working_day >= CURDATE())")
             ->whereIn('users.role', ['employee', 'hr'])
             ->where('leaves.reason !=', self::AUTO_ABSENCE_REASON);
 

@@ -155,6 +155,7 @@ $role = $user ? $user->role : null;
           <ul class="nav flex-column sub-menu">
             <li class="nav-item"> <a class="nav-link" href="/performanceview">Manage Performance</a></li>
             <li class="nav-item"> <a class="nav-link" href="/performance">Add Reviews</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/all-empof-month">Employee of the Month</a></li>
           </ul>
         </div>
       </li>

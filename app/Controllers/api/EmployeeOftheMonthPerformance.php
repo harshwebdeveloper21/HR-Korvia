@@ -33,13 +33,14 @@ class EmployeeOftheMonthPerformance extends ResourceController
 
     public function view()
     {
-        // Get top 5 employees with highest performance
-        $topEmployees = $this->performanceModel
+        // Get all active employees with their highest performance rating
+        $topEmployees = $this->userModel
             ->select('users.id, users.username, MAX(performance.rating) as rating')
-            ->join('users', 'users.id = performance.user_id')
+            ->join('performance', 'users.id = performance.user_id', 'left')
+            ->where('users.is_deleted', 0)
+            ->whereIn('users.role', ['employee', 'hr'])
             ->groupBy('users.id')
-            ->orderBy('rating', 'DESC')  // Highest rating first
-            ->limit(3) // Adjust limit to 5
+            ->orderBy('rating', 'DESC')
             ->findAll();
 
         // Get all templates
@@ -82,7 +83,10 @@ class EmployeeOftheMonthPerformance extends ResourceController
         }
 
         $template = $this->employeeOfTheMonthModel->find($templateId);
-        $creator  = $this->userModel->find($template['created_by']);
+        $creator = null;
+        if ($template && !empty($template['created_by'])) {
+            $creator = $this->userModel->find($template['created_by']);
+        }
 
         $company = $this->companyLogoModel->first();
 
@@ -110,15 +114,16 @@ class EmployeeOftheMonthPerformance extends ResourceController
             'management' => $performance['management'],
             'presentation_skill' => $performance['presentation_skill'],
             'behaviour' => $performance['behaviour'],
-            'rating' => $performance['rating'],
-            'created_by' => $creator['username'],
-            'company_name' => $company['company_name'],
-            'company_address' => $company['company_address'],
-            'company_phone' => $company['company_phone'],
-            'company_email' => $company['company_email'],
+            'rating' => $performance['rating'] ?? '',
+            'created_by' => $creator['username'] ?? 'Admin',
+            'company_name' => $company['company_name'] ?? '',
+            'company_address' => $company['company_address'] ?? '',
+            'company_phone' => $company['company_phone'] ?? '',
+            'company_email' => $company['company_email'] ?? '',
         ];
 
-        $finalContent = $this->parseTemplate($template['content'], $data);
+        $templateContent = $template['content'] ?? '';
+        $finalContent = $this->parseTemplate($templateContent, $data);
 
         $finalHtml = view('empofmonth/empMonthPerformace/empof_month_preview', [
             'content' => $finalContent,
@@ -165,12 +170,25 @@ class EmployeeOftheMonthPerformance extends ResourceController
             ], 400);
         }
 
+        // Set a default template if none is selected
+        if (!$templateId) {
+            $defaultTemplate = $this->employeeOfTheMonthModel->first();
+            if ($defaultTemplate) {
+                $templateId = $defaultTemplate['id'];
+            }
+        }
+
         // Validate required fields
-        if (!$employeeId || !$templateId || !$monthYear) {
+        if (!$employeeId) {
             return $this->respond([
                 'status' => false,
-                'message' => 'All fields are required.'
+                'message' => 'Please select an Employee.'
             ], 400);
+        }
+
+        // Set default month to current month if not provided
+        if (!$monthYear) {
+            $monthYear = date('Y-m');
         }
 
         $certModel = new EmployeeOfMonthPerformanceModel();
@@ -182,21 +200,22 @@ class EmployeeOftheMonthPerformance extends ResourceController
             ->first();
 
         if ($existingCertificate) {
-            return $this->respond([
-                'status' => false,
-                'message' => 'Certificate already generated for this employee in this month.'
-            ], 400);
+            // Update the existing certificate
+            $certModel->update($existingCertificate['id'], [
+                'template_id' => $templateId,
+                'updated_at'  => date('Y-m-d H:i:s')
+            ]);
+        } else {
+            // Insert new certificate record
+            $certModel->save([
+                'user_id'     => $employeeId,
+                'template_id' => $templateId,
+                'month_year'  => $monthYear,
+                'created_by'  => session()->get('user_id'),
+                'created_at'  => date('Y-m-d H:i:s'),
+                'updated_at'  => date('Y-m-d H:i:s')
+            ]);
         }
-
-        // Insert new certificate record
-        $certModel->save([
-            'user_id'     => $employeeId,
-            'template_id' => $templateId,
-            'month_year'  => $monthYear,
-            'created_by'  => session()->get('user_id'),
-            'created_at'  => date('Y-m-d H:i:s'),
-            'updated_at'  => date('Y-m-d H:i:s')
-        ]);
 
         // Generate and return PDF
         return $this->generatePerformancePdf($employeeId, $templateId, $monthYear);
@@ -215,8 +234,8 @@ class EmployeeOftheMonthPerformance extends ResourceController
         $data = $model
             ->select('employee_of_month_certificates.*, users.username as user_name,user_info.profile_image,templates.title as template_title')
             ->join('users', 'users.id = employee_of_month_certificates.user_id')
-            ->join('user_info', 'user_info.user_id = employee_of_month_certificates.user_id')
-            ->join('emp_of_month templates', 'templates.id = employee_of_month_certificates.template_id')
+            ->join('user_info', 'user_info.user_id = employee_of_month_certificates.user_id', 'left')
+            ->join('emp_of_month templates', 'templates.id = employee_of_month_certificates.template_id', 'left')
             ->orderBy('employee_of_month_certificates.created_at', 'DESC')
             ->findAll();
 

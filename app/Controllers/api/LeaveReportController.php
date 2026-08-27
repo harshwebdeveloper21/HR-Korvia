@@ -31,13 +31,13 @@ public function fetchLeaveReport()
     {
         $leaveModel = new LeaveModel();
         
-        $employee_id = $this->request->getPost('employee_id');
-        $start_date = $this->request->getPost('start_date');
-        $end_date = $this->request->getPost('end_date');
-        $year = $this->request->getPost('year');
-        $month = $this->request->getPost('month');
-        $leave_type = $this->normalizeLeaveTypeFilter($this->request->getPost('leave_type'));
-        $status = $this->request->getPost('status');
+        $employee_id = $this->request->getVar('employee_id');
+        $start_date = $this->request->getVar('start_date');
+        $end_date = $this->request->getVar('end_date');
+        $year = $this->request->getVar('year');
+        $month = $this->request->getVar('month');
+        $leave_type = $this->normalizeLeaveTypeFilter($this->request->getVar('leave_type'));
+        $status = $this->request->getVar('status');
 
         // Fetch filtered report data
         $report = $leaveModel->getEmployeeReport($employee_id, $start_date, $end_date, $year, $month, $leave_type, $status);

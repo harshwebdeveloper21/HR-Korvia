@@ -64,7 +64,7 @@
         <!-- Employee -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="user_id" class="form-label">Employee:</label>
-            <select id="user_id" name="user_id" class="form-select">
+            <select id="user_id" name="user_id" class="form-select" onchange="fetchSalaryReport()">
                 <option value="">All Employees</option>
             </select>
         </div>
@@ -72,7 +72,7 @@
         <!-- Year -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Year:</label>
-            <select id="year" name="year" class="form-select">
+            <select id="year" name="year" class="form-select" onchange="fetchSalaryReport()">
                 <option value="">All Years</option>
                 <?php
                 $currentYear = date('Y');
@@ -85,7 +85,7 @@
         <!-- Month -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Month:</label>
-            <select id="month" name="month" class="form-select">
+            <select id="month" name="month" class="form-select" onchange="fetchSalaryReport()">
                 <option value="">All Months</option>
                 <option value="1">January</option>
                 <option value="2">February</option>
@@ -105,13 +105,13 @@
         <!-- From Date -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="start_date" class="form-label">From Date:</label>
-            <input type="date" id="start_date" class="form-control" placeholder="Select Start Date">
+            <input type="date" id="start_date" class="form-control" placeholder="Select Start Date" onchange="fetchSalaryReport()">
         </div>
 
         <!-- To Date -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="end_date" class="form-label">To Date:</label>
-            <input type="date" id="end_date" class="form-control" placeholder="Select End Date">
+            <input type="date" id="end_date" class="form-control" placeholder="Select End Date" onchange="fetchSalaryReport()">
         </div>
     </div>
 
@@ -129,7 +129,7 @@
         <h5 class="fw-semibold mb-3">Salary Report</h5>
         <div class="table-responsive">
             <table id="payrollTable" class="table table-striped table-bordered">
-                <thead class="bg-dark text-light">
+                <thead>
                     <tr>
                         <th>Employee Name</th>
                         <th>Department</th>
@@ -188,8 +188,12 @@
                 list.forEach(emp => {
                     sel.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
                 });
+                fetchSalaryReport();
             },
-            error: function(xhr) { console.error('loadEmployees error:', xhr.status, xhr.responseText); }
+            error: function (xhr) { 
+                console.error('loadEmployees error:', xhr.status, xhr.responseText); 
+                fetchSalaryReport();
+            }
         });
     }
 
@@ -208,7 +212,7 @@
             url: "<?= site_url("report/fetchPayrollReport") ?>",
             type: "POST",
             data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>', // Add CSRF token here
+                ...getCSRFData(),
                 department_id: departmentId,
                 employee_id: employeeId,
                 year: year,
@@ -217,10 +221,16 @@
                 end_date: endDate
             },
             success: function(response) {
+                refreshCSRF(response);
                 populateTable(response.tableData);
                 document.getElementById("table-section").style.display = "block"; // Show Table
                 if (response.tableData.length > 0) {
                     updateChart(response.tableData[0]);
+                } else {
+                    if (salaryChartInstance instanceof Chart) {
+                        salaryChartInstance.destroy();
+                        salaryChartInstance = null;
+                    }
                 }
             },
             error: function(xhr) {
@@ -238,19 +248,21 @@
             return;
         }
 
+        let rowsHtml = '';
         data.forEach(row => {
-            tableBody.innerHTML += `
+            rowsHtml += `
                 <tr>
-                    <td class="capitalize-text">${row.firstname ?? 'N/A'}</td>
-                    <td class="capitalize-text">${row.department_name ?? 'N/A'}</td>
-                    <td class="capitalize-text">${row.payment_date ?? 'N/A'}</td>
-                    <td class="capitalize-text">${row.salary_amount !== null && row.salary_amount !== '' ? row.salary_amount : 'N/A'}</td>
-                    <td class="capitalize-text">${row.bonuses !== null && row.bonuses !== '' ? row.bonuses : 'N/A'}</td>
-                    <td class="capitalize-text">${row.tax_deduction !== null && row.tax_deduction !== '' ? row.tax_deduction : 'N/A'}</td>
-                    <td class="capitalize-text">${row.net_salary !== null && row.net_salary !== '' ? row.net_salary : 'N/A'}</td>
+                    <td class="capitalize-text">${row.firstname || 'N/A'}</td>
+                    <td class="capitalize-text">${row.department_name || 'N/A'}</td>
+                    <td class="capitalize-text">${row.payment_date || 'N/A'}</td>
+                    <td class="capitalize-text">${row.salary_amount || '0.00'}</td>
+                    <td class="capitalize-text">${row.bonuses || '0.00'}</td>
+                    <td class="capitalize-text">${row.tax_deduction || '0.00'}</td>
+                    <td class="capitalize-text">${row.net_salary || '0.00'}</td>
                 </tr>
             `;
         });
+        tableBody.innerHTML = rowsHtml;
 
         // Initialize DataTable after populating the table
         initializePayrollDataTable();
@@ -302,7 +314,7 @@
             "searching": true,
             "ordering": true,
             "info": true,
-            "responsive": true,
+            "responsive": false,
             "pageLength": 10,
             "language": {
                 "search": "Search payroll:",

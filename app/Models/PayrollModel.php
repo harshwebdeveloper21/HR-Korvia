@@ -19,7 +19,9 @@ class PayrollModel extends Model
         $payrollModel = new PayrollModel();
         $query = $payrollModel ->select('user_info.firstname, department.department_name, payroll.salary_amount, payroll.net_salary,payroll.bonuses,payroll.tax_deduction, payroll.payment_date')
         ->join('user_info', 'user_info.user_id = payroll.user_id','left')
-        ->join('department', 'department.id = user_info.department_id','left');       
+        ->join('department', 'department.id = user_info.department_id','left')
+        ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)")
+        ->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
 
         if ($departmentId) {
             $query->where('department.id', $departmentId);

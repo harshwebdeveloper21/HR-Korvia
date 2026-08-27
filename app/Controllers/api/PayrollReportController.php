@@ -22,18 +22,19 @@ class PayrollReportController extends Controller
 public function fetchPayrollReport()
     {
         if ($this->request->isAJAX()) {
-            $departmentId = $this->request->getPost('department_id');
-            $employeeId = $this->request->getPost('employee_id');
-            $startDate = $this->request->getPost('start_date');
-            $endDate = $this->request->getPost('end_date');
-            $year = $this->request->getPost('year');
-            $month = $this->request->getPost('month');
+            $departmentId = $this->request->getVar('department_id');
+            $employeeId   = $this->request->getVar('employee_id');
+            $startDate    = $this->request->getVar('start_date');
+            $endDate      = $this->request->getVar('end_date');
+            $year         = $this->request->getVar('year');
+            $month        = $this->request->getVar('month');
 
             $payrollModel = new PayrollModel();
             $reportData = $payrollModel->getPayrollReport($departmentId, $employeeId, $startDate, $endDate, $year, $month);
 
             return $this->response->setJSON([
-                'tableData' => $reportData
+                'tableData' => $reportData,
+                'csrfHash'  => csrf_hash()
             ]);
         }
     }

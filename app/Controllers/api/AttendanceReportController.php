@@ -38,12 +38,12 @@ class AttendanceReportController extends Controller
     }
     public function fetchAttendanceReport()
     {
-        $departmentId = $this->request->getPost('department_id');
-        $employeeId = $this->request->getPost('employee_id');
-        $startDate = $this->request->getPost('start_date');
-        $endDate = $this->request->getPost('end_date');
-        $year = $this->request->getPost('year');
-        $month = $this->request->getPost('month');
+        $departmentId = $this->request->getVar('department_id');
+        $employeeId   = $this->request->getVar('employee_id');
+        $startDate    = $this->request->getVar('start_date');
+        $endDate      = $this->request->getVar('end_date');
+        $year         = $this->request->getVar('year');
+        $month        = $this->request->getVar('month');
 
         // Debug: log what we receive
         log_message('debug', 'AttendanceReport Filters => department_id: ' . $departmentId . ', employee_id: ' . $employeeId . ', year: ' . $year . ', month: ' . $month);
