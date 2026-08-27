@@ -54,9 +54,14 @@
                         <h4 class="card-title mb-1 fw-bold text-white">My Complaints & Feedback</h4>
                         <p class="mb-0 opacity-75 small">Track, manage and check status of your submitted requests.</p>
                     </div>
-                    <a href="<?= base_url('complaints/create') ?>" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px; border: none;">
-                        <i class="mdi mdi-plus-circle fs-5" style="color: #E66136;"></i> Submit New Request
-                    </a>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" id="btnExportUserComplaints" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px; border: none;">
+                            <i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export Excel
+                        </button>
+                        <a href="<?= base_url('complaints/create') ?>" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px; border: none;">
+                            <i class="mdi mdi-plus-circle fs-5" style="color: #E66136;"></i> Submit New Request
+                        </a>
+                    </div>
                 </div>
             </div>
             
@@ -334,6 +339,58 @@ $(document).ready(function() {
             }
         });
     });
-});
+
+    // 📥 Export to Excel functionality
+    $('#btnExportUserComplaints').on('click', function () {
+            const $btn = $(this);
+            const type = $('#userComplaintTabs .nav-link.active').data('type') || '';
+            const search = $('#userComplaintsTable_filter input').val() || '';
+            const token = localStorage.getItem('token');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+            const queryParams = new URLSearchParams({
+                type: type,
+                search: search
+            });
+
+            fetch(`<?= base_url('api/complaints/export') ?>?${queryParams.toString()}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(async response => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export Excel');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                    throw new Error(err.message || 'Export failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const dateStr = new Date().toISOString().slice(0, 10);
+                a.download = `My_Complaints_Feedback_${dateStr}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exported!',
+                    text: 'Your requests exported to Excel successfully.',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export Excel');
+                Swal.fire('Export Error', error.message || 'Failed to export complaints', 'error');
+            });
+        });
+    });
 </script>
 <?= $this->endSection(); ?>

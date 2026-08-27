@@ -114,11 +114,16 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title">Manage Interviews</h4>
-                    <a href="<?= base_url(
-                        "/interviews",
-                    ) ?>" class="btn hr-btnbg attendenceall">
-                        <i class="mdi mdi-plus iconfontsize"></i> Add Interview
-                    </a>
+                    <div class="d-flex gap-2">
+                        <button type="button" id="btnExportInterviews" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
+                        <a href="<?= base_url(
+                            "/interviews",
+                        ) ?>" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-plus iconfontsize"></i> Add Interview
+                        </a>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped" id="interviews-Table">
@@ -429,5 +434,56 @@
             });
         }
     }
+
+    // 📥 Export to Excel functionality
+    document.getElementById('btnExportInterviews')?.addEventListener('click', function () {
+        const btn = this;
+        const search = $('#interviews-Table_filter input').val() || '';
+        const token = localStorage.getItem('token');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...';
+
+        const queryParams = new URLSearchParams({ search: search });
+
+        fetch(`<?= base_url('api/interview/export') ?>?${queryParams.toString()}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(async response => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel';
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                throw new Error(err.message || 'Export failed');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.download = `Interviews_${dateStr}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            Swal.fire({
+                icon: 'success',
+                title: 'Exported!',
+                text: 'Interview list exported to Excel successfully.',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel';
+            Swal.fire('Export Error', error.message || 'Failed to export interviews', 'error');
+        });
+    });
 </script>
 <?= $this->endSection() ?>

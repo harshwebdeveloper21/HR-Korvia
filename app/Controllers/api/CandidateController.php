@@ -12,6 +12,11 @@ use App\Models\InterviewModel;
 use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Libraries\EmailService;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class CandidateController extends ResourceController
 {
@@ -424,5 +429,111 @@ class CandidateController extends ResourceController
 
         // Force file download
         return $this->response->download($filePath, null)->setFileName(basename($filePath));
+    }
+
+    /**
+     * Export Candidates to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $jobId = $this->request->getGet('job_id');
+        $status = $this->request->getGet('status');
+        $search = $this->request->getGet('search');
+
+        $builder = $this->candidateModel->builder();
+        $builder->select('candidate.*, jobs.job_title, department.department_name')
+            ->join('jobs', 'jobs.id = candidate.job_id', 'left')
+            ->join('department', 'department.id = jobs.department_id', 'left');
+
+        if (!empty($jobId)) {
+            $builder->where('candidate.job_id', (int)$jobId);
+        }
+        if (!empty($status)) {
+            $builder->where('candidate.status', $status);
+        }
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('candidate.candidate_name', $search)
+                ->orLike('candidate.email', $search)
+                ->orLike('candidate.phone_number', $search)
+                ->orLike('jobs.job_title', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('candidate.id', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Candidates');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Candidate Name',
+            'C1' => 'Email',
+            'D1' => 'Phone Number',
+            'E1' => 'Applied Job Position',
+            'F1' => 'Department',
+            'G1' => 'Application Date',
+            'H1' => 'Status',
+            'I1' => 'Notes / Remarks',
+            'J1' => 'Created Date'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:J1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $item['candidate_name'] ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $item['email'] ?? '-');
+            $sheet->setCellValueExplicit('D' . $rowNum, (string)($item['phone_number'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('E' . $rowNum, $item['job_title'] ?? '-');
+            $sheet->setCellValue('F' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('G' . $rowNum, !empty($item['job_date']) ? date('Y-m-d', strtotime($item['job_date'])) : '-');
+            $sheet->setCellValue('H' . $rowNum, ucfirst($item['status'] ?? 'Applied'));
+            $sheet->setCellValue('I' . $rowNum, strip_tags($item['notes'] ?? '-'));
+            $sheet->setCellValue('J' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:J' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'J') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Candidates_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

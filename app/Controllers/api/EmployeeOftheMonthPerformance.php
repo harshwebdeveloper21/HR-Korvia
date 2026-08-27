@@ -11,6 +11,12 @@ use App\Models\DesignationModel;
 use CodeIgniter\RESTful\ResourceController;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use App\Services\AuthService;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class EmployeeOftheMonthPerformance extends ResourceController
 {
@@ -210,8 +216,7 @@ class EmployeeOftheMonthPerformance extends ResourceController
             $certModel->save([
                 'user_id'     => $employeeId,
                 'template_id' => $templateId,
-                'month_year'  => $monthYear,
-                'created_by'  => session()->get('user_id'),
+                'month_year'  => $monthYear,                'created_by'  => session()->get('user_id'),
                 'created_at'  => date('Y-m-d H:i:s'),
                 'updated_at'  => date('Y-m-d H:i:s')
             ]);
@@ -221,12 +226,11 @@ class EmployeeOftheMonthPerformance extends ResourceController
         return $this->generatePerformancePdf($employeeId, $templateId, $monthYear);
     }
 
-
     public function AllEmpOfMonth()
     {
-
         return view('empofmonth/empMonthPerformace/all_empof_month');
     }
+
     public function getAllPerformances()
     {
         $model = new EmployeeOfMonthPerformanceModel();
@@ -241,6 +245,7 @@ class EmployeeOftheMonthPerformance extends ResourceController
 
         return $this->respond($data);
     }
+
     public function deletePerformance($id)
     {
         $model = new EmployeeOfMonthPerformanceModel();
@@ -253,22 +258,120 @@ class EmployeeOftheMonthPerformance extends ResourceController
         $model->delete($id);
         return $this->respondDeleted(['message' => 'Deleted successfully']);
     }
-      public function getEmpMonthTemplate($id)
-{
-    $model = new \App\Models\EmployeeOfTheMonthModel();
-    $template = $model->find($id);
 
-    if (!$template) {
-        return $this->response->setJSON(['status' => false, 'message' => 'Template not found'])->setStatusCode(404);
+    public function getEmpMonthTemplate($id)
+    {
+        $model = new \App\Models\EmployeeOfTheMonthModel();
+        $template = $model->find($id);
+
+        if (!$template) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Template not found'])->setStatusCode(404);
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data' => [
+                'title' => $template['title'],
+                'content' => $template['content'],
+                'emp_image' => base_url('upload/' . $template['emp_image']),
+            ]
+        ]);
     }
 
-    return $this->response->setJSON([
-        'status' => true,
-        'data' => [
-            'title' => $template['title'],
-            'content' => $template['content'],
-            'emp_image' => base_url('upload/' . $template['emp_image']),
-        ]
-    ]);
-}
+    /**
+     * Export Employee of the Month awards to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $authService = new AuthService(service('request'));
+        $user = $authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $search = $this->request->getGet('search');
+
+        $model = new EmployeeOfMonthPerformanceModel();
+        $builder = $model->builder();
+        $builder->select('employee_of_month_certificates.*, users.username as user_name, user_info.firstname, user_info.lastname, department.department_name, templates.title as template_title')
+            ->join('users', 'users.id = employee_of_month_certificates.user_id', 'left')
+            ->join('user_info', 'user_info.user_id = employee_of_month_certificates.user_id', 'left')
+            ->join('department', 'department.id = user_info.department_id', 'left')
+            ->join('emp_of_month templates', 'templates.id = employee_of_month_certificates.template_id', 'left');
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('user_info.firstname', $search)
+                ->orLike('user_info.lastname', $search)
+                ->orLike('users.username', $search)
+                ->orLike('department.department_name', $search)
+                ->orLike('templates.title', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('employee_of_month_certificates.created_at', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Employee of Month');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Employee Name',
+            'C1' => 'Department',
+            'D1' => 'Month & Year',
+            'E1' => 'Certificate Template',
+            'F1' => 'Awarded Date'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER, 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:F1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $name = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? '')) ?: ($item['user_name'] ?? 'N/A');
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $name);
+            $sheet->setCellValue('C' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('D' . $rowNum, $item['month_year'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $item['template_title'] ?? 'Standard Template');
+            $sheet->setCellValue('F' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:F' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'F') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Employee_of_the_Month_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
 }

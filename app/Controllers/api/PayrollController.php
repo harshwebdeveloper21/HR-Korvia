@@ -20,6 +20,12 @@ use App\Services\AuthService;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\EmployeeLeaveModel;
 use App\Traits\CompanyRuleTrait;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class PayrollController extends ResourceController
 {
@@ -3213,5 +3219,170 @@ class PayrollController extends ResourceController
             ->setContentType("application/pdf")
             ->setBody($pdfOutput)
             ->setHeader("Content-Disposition", 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
+     * Export Payroll records to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $departmentId = $this->request->getGet('department_id');
+        $month = $this->request->getGet('month');
+        $year = $this->request->getGet('year');
+        $status = $this->request->getGet('status');
+        $search = $this->request->getGet('search');
+
+        $builder = $this->payrollModel->builder();
+        $builder->select('payroll.*, user_info.firstname, user_info.lastname, department.department_name, designation.designation_name')
+            ->join('user_info', 'user_info.user_id = payroll.user_id', 'left')
+            ->join('department', 'department.id = user_info.department_id', 'left')
+            ->join('designation', 'designation.id = user_info.designation_id', 'left');
+
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            $builder->where('payroll.user_id', $user->sub);
+        }
+
+        if (!empty($departmentId)) {
+            $builder->where('department.id', (int)$departmentId);
+        }
+        if (!empty($month) && !empty($year)) {
+            $my = sprintf('%04d-%02d', (int)$year, (int)$month);
+            $builder->where('payroll.month_year', $my);
+        } elseif (!empty($year)) {
+            $builder->like('payroll.month_year', (string)$year, 'after');
+        } elseif (!empty($month)) {
+            $builder->like('payroll.month_year', sprintf('-%02d', (int)$month), 'before');
+        }
+
+        if (!empty($status)) {
+            $builder->where('payroll.payment_status', $status);
+        }
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('user_info.firstname', $search)
+                ->orLike('user_info.lastname', $search)
+                ->orLike('department.department_name', $search)
+                ->orLike('payroll.month_year', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('payroll.month_year', 'DESC')
+            ->orderBy('payroll.id', 'DESC')
+            ->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Payroll Report');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Employee Name',
+            'C1' => 'Department',
+            'D1' => 'Designation',
+            'E1' => 'Month / Year',
+            'F1' => 'Base Salary (₹)',
+            'G1' => 'Total Leaves',
+            'H1' => 'Half Days',
+            'I1' => 'Overtime Hours',
+            'J1' => 'Overtime Pay (₹)',
+            'K1' => 'Bonuses (₹)',
+            'L1' => 'Tax Deduction (₹)',
+            'M1' => 'Salary Deduction (₹)',
+            'N1' => 'Adjustment (₹)',
+            'O1' => 'Adjustment Remark',
+            'P1' => 'Net Salary (₹)',
+            'Q1' => 'Payment Status',
+            'R1' => 'Payment Date',
+            'S1' => 'Bank Name',
+            'T1' => 'Account Number',
+            'U1' => 'IFSC Code'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:U1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $fullName = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? '')) ?: 'N/A';
+            $baseSalary = (float)($item['salary_amount'] ?? 0);
+            $otPay = (float)($item['overtime_pay'] ?? 0);
+            $bonuses = (float)($item['bonuses'] ?? 0);
+            $taxDeduct = (float)($item['tax_deduction'] ?? 0);
+            $salDeduct = (float)($item['salary_deduction'] ?? 0);
+            $adjAmount = (float)($item['adjustment_amount'] ?? 0);
+            $netSalary = (float)($item['net_salary'] ?? 0);
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $fullName);
+            $sheet->setCellValue('C' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('D' . $rowNum, $item['designation_name'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $item['month_year'] ?? '-');
+            $sheet->setCellValue('F' . $rowNum, $baseSalary);
+            $sheet->setCellValue('G' . $rowNum, $item['total_leaves'] ?? 0);
+            $sheet->setCellValue('H' . $rowNum, $item['total_half_day'] ?? 0);
+            $sheet->setCellValue('I' . $rowNum, $item['total_overtime_hours'] ?? 0);
+            $sheet->setCellValue('J' . $rowNum, $otPay);
+            $sheet->setCellValue('K' . $rowNum, $bonuses);
+            $sheet->setCellValue('L' . $rowNum, $taxDeduct);
+            $sheet->setCellValue('M' . $rowNum, $salDeduct);
+            $sheet->setCellValue('N' . $rowNum, $adjAmount);
+            $sheet->setCellValue('O' . $rowNum, $item['adjustment_remark'] ?? '-');
+            $sheet->setCellValue('P' . $rowNum, $netSalary);
+            $sheet->setCellValue('Q' . $rowNum, ucfirst($item['payment_status'] ?? 'Pending'));
+            $sheet->setCellValue('R' . $rowNum, !empty($item['payment_date']) ? date('Y-m-d', strtotime($item['payment_date'])) : '-');
+            $sheet->setCellValue('S' . $rowNum, $item['bank_name'] ?? '-');
+            $sheet->setCellValueExplicit('T' . $rowNum, (string)($item['acc_number'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('U' . $rowNum, $item['ifsc_code'] ?? '-');
+
+            // Format Currency columns
+            $sheet->getStyle('F' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('J' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('K' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('L' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('M' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('N' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('P' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:U' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'U') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Payroll_Report_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

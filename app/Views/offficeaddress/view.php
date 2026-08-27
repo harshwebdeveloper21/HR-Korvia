@@ -74,10 +74,15 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-md-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">Manage Location</h4>
-                    <a href="/offficeaddress" class="btn hr-btnbg attendenceall">
-                        <i class="mdi mdi-plus iconfontsize"></i> Add address
-                    </a>
+                    <h4 class="card-title">Manage Job Addresses</h4>
+                    <div class="d-flex gap-2">
+                        <button type="button" id="btnExportJobAddress" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
+                        <a href="/offficeaddress" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-plus iconfontsize"></i> Add Address
+                        </a>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped" id="address-table">
@@ -238,6 +243,56 @@
                     }
                 });
             }
+        });
+    });
+
+    $(document).ready(function() {
+        // 📥 Export to Excel functionality
+        $('#btnExportJobAddress').on('click', function () {
+            const $btn = $(this);
+            const search = $('#address-table_filter input').val() || '';
+            const token = localStorage.getItem('token');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+            const queryParams = new URLSearchParams({ search: search });
+
+            fetch(`<?= base_url('api/jobaddress/export') ?>?${queryParams.toString()}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(async response => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                    throw new Error(err.message || 'Export failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const dateStr = new Date().toISOString().slice(0, 10);
+                a.download = `Job_Addresses_${dateStr}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exported!',
+                    text: 'Job addresses exported to Excel successfully.',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                Swal.fire('Export Error', error.message || 'Failed to export job addresses', 'error');
+            });
         });
     });
 </script>

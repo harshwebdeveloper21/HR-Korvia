@@ -6,6 +6,11 @@ use App\Models\ComplaintModel;
 use App\Services\AuthService;
 use App\Services\PushNotificationService;
 use CodeIgniter\RESTful\ResourceController;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ComplaintsController extends ResourceController
 {
@@ -324,5 +329,127 @@ class ComplaintsController extends ResourceController
         }
 
         return $this->fail('Delete failed.');
+    }
+
+    /**
+     * Export Complaints & Feedback to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $type = $this->request->getGet('type');
+        $status = $this->request->getGet('status');
+        $search = $this->request->getGet('search');
+
+        $builder = $this->complaintModel->builder();
+        $builder->select('complaints.*, user_info.firstname, user_info.lastname, department.department_name')
+            ->join('user_info', 'user_info.user_id = complaints.user_id', 'left')
+            ->join('department', 'department.id = user_info.department_id', 'left');
+
+        // Role check
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            $builder->where('complaints.user_id', $user->sub);
+        }
+
+        if (!empty($type)) {
+            $builder->where('complaints.type', $type);
+        }
+        if (!empty($status)) {
+            $builder->where('complaints.status', $status);
+        }
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('complaints.name', $search)
+                ->orLike('complaints.subject', $search)
+                ->orLike('complaints.message', $search)
+                ->orLike('complaints.email', $search)
+                ->groupEnd();
+        }
+
+        $complaints = $builder->orderBy('complaints.id', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Complaints & Feedback');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Request ID',
+            'C1' => 'Name',
+            'D1' => 'Department',
+            'E1' => 'Email',
+            'F1' => 'Mobile',
+            'G1' => 'Type',
+            'H1' => 'Subject',
+            'I1' => 'Description / Message',
+            'J1' => 'Status',
+            'K1' => 'Admin Remark / Resolution',
+            'L1' => 'Submitted Date',
+            'M1' => 'Last Updated'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:M1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($complaints as $item) {
+            $fullName = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''));
+            if (empty($fullName)) {
+                $fullName = $item['name'] ?? 'N/A';
+            }
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, 'REQ-' . sprintf('%04d', $item['id']));
+            $sheet->setCellValue('C' . $rowNum, $fullName);
+            $sheet->setCellValue('D' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $item['email'] ?? '-');
+            $sheet->setCellValueExplicit('F' . $rowNum, (string)($item['mobile'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('G' . $rowNum, $item['type'] ?? 'Complaint');
+            $sheet->setCellValue('H' . $rowNum, $item['subject'] ?? '-');
+            $sheet->setCellValue('I' . $rowNum, $item['message'] ?? '-');
+            $sheet->setCellValue('J' . $rowNum, $item['status'] ?? 'Pending');
+            $sheet->setCellValue('K' . $rowNum, $item['admin_remark'] ?? '-');
+            $sheet->setCellValue('L' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+            $sheet->setCellValue('M' . $rowNum, !empty($item['updated_at']) ? date('Y-m-d H:i', strtotime($item['updated_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:M' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Complaints_Feedback_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

@@ -238,12 +238,6 @@ $role = $user ? $user->role : null;
         </a>
         <div class="collapse" id="Settings">
           <ul class="nav flex-column sub-menu">
-            <li class="nav-item"> <a class="nav-link" href="/cityview">City</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/countryview">Country</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/stateView">State</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/departmentview">Departments</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/designationview">Designations</a></li>
-            <li class="nav-item"> <a class="nav-link" href="/leavetypeview">Leave Types</a></li>
             <li class="nav-item"> <a class="nav-link" href="/locationview">Job Location</a></li>
             <li class="nav-item"> <a class="nav-link" href="/addressview">Job Addresses</a></li>
             <!-- <li class="nav-item"> <a class="nav-link" href="/applyjob">Apply Job</a></li> -->

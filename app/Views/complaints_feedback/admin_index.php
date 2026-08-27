@@ -67,6 +67,9 @@
                             <option value="Complaint">Complaint</option>
                             <option value="Feedback">Feedback</option>
                         </select>
+                        <button type="button" id="btnExportComplaints" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
                         <a href="<?= base_url('complaints/create') ?>" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-plus iconfontsize"></i> Add New Request
                         </a>
@@ -348,6 +351,60 @@
                         }
                     });
                 }
+            });
+        });
+
+        // 📥 Export to Excel functionality
+        $('#btnExportComplaints').on('click', function () {
+            const $btn = $(this);
+            const type = $('#complaintTabs .nav-link.active').data('type') || $('#filterType').val() || '';
+            const status = $('#filterStatus').val() || '';
+            const search = $('#complaintsAdminTable_filter input').val() || '';
+            const token = localStorage.getItem('token');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+            const queryParams = new URLSearchParams({
+                type: type,
+                status: status,
+                search: search
+            });
+
+            fetch(`<?= base_url('api/complaints/export') ?>?${queryParams.toString()}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(async response => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                    throw new Error(err.message || 'Export failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const dateStr = new Date().toISOString().slice(0, 10);
+                a.download = `Complaints_Feedback_${dateStr}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exported!',
+                    text: 'Complaints & Feedback exported to Excel successfully.',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                Swal.fire('Export Error', error.message || 'Failed to export complaints', 'error');
             });
         });
     });

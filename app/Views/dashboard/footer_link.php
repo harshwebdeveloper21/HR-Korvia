@@ -19,6 +19,7 @@
 <script src="<?= base_url(env('ImagePath').'assets/js/script.js?v=' . time()); ?>"></script>
 <script src="<?= base_url(env('ImagePath').'assets/js/mobile-table.js?v=' . time()); ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <!-- 404 Detection and Redirect Script -->
 <script>
@@ -296,4 +297,114 @@ $(document).ready(function() {
         });
     }
 })();
+
+// ─── Global Universal Table to Excel Exporter ───
+window.exportTableToExcel = function (tableSelector, defaultName) {
+    if (typeof XLSX === 'undefined') {
+        Swal.fire('Error', 'Excel export library not loaded. Please refresh the page.', 'error');
+        return;
+    }
+
+    var $table = $(tableSelector).first();
+    if (!$table.length) {
+        // Fallback: try finding first visible table in page
+        $table = $('table:visible').first();
+    }
+    if (!$table.length) {
+        Swal.fire('Notice', 'No table data found to export.', 'info');
+        return;
+    }
+
+    var baseName = defaultName || 'Export_Data';
+    var isDataTable = $.fn.DataTable && $.fn.DataTable.isDataTable($table);
+
+    // Identify columns to exclude (Action, Details, checkboxes, buttons)
+    var headers = [];
+    var excludeColIdx = [];
+
+    $table.find('thead tr').first().find('th, td').each(function (idx) {
+        var text = $(this).text().trim();
+        var lower = text.toLowerCase();
+        // Ignore empty header, action/actions/details/options/expand/checkbox
+        if (!text || lower === 'action' || lower === 'actions' || lower === 'details' || lower === 'option' || lower === 'options' || lower === '#' || $(this).hasClass('mobile-expand-col') || $(this).css('display') === 'none') {
+            excludeColIdx.push(idx);
+        } else {
+            headers.push(text);
+        }
+    });
+
+    var dataRows = [];
+    dataRows.push(headers);
+
+    var extractRowData = function (tr) {
+        var rowVals = [];
+        $(tr).find('td, th').each(function (idx) {
+            if (excludeColIdx.indexOf(idx) !== -1) return;
+            // Extract clean text, ignore buttons / modals / dropdown text
+            var $cell = $(this).clone();
+            $cell.find('button, .dropdown-menu, script, style, .expand-toggle, .mobile-expand-details').remove();
+            var cellText = $cell.text().replace(/\s+/g, ' ').trim();
+            rowVals.push(cellText);
+        });
+        if (rowVals.length > 0) {
+            dataRows.push(rowVals);
+        }
+    };
+
+    if (isDataTable) {
+        var dt = $table.DataTable();
+        // Get all matching filtered nodes across all pages
+        dt.rows({ search: 'applied' }).nodes().each(function (node) {
+            extractRowData(node);
+        });
+    } else {
+        $table.find('tbody tr').each(function () {
+            if ($(this).hasClass('expanded-details-row') || $(this).css('display') === 'none' && $(this).text().indexOf('No ') !== -1) return;
+            extractRowData(this);
+        });
+    }
+
+    if (dataRows.length <= 1) {
+        Swal.fire('Notice', 'No records found to export.', 'info');
+        return;
+    }
+
+    var ws = XLSX.utils.aoa_to_sheet(dataRows);
+
+    // Auto-fit column widths
+    var colWidths = [];
+    dataRows.forEach(function (row) {
+        row.forEach(function (val, cIdx) {
+            var len = (val ? String(val).length : 10) + 3;
+            colWidths[cIdx] = Math.max(colWidths[cIdx] || 12, len);
+        });
+    });
+    ws['!cols'] = colWidths.map(function (w) { return { wch: Math.min(w, 50) }; });
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+
+    var dateStr = new Date().toISOString().slice(0, 10);
+    var cleanFilename = baseName.replace(/[^a-zA-Z0-9_-]/g, '_') + '_' + dateStr + '.xlsx';
+
+    XLSX.writeFile(wb, cleanFilename);
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Exported!',
+        text: 'Table data exported to Excel successfully.',
+        toast: true,
+        position: 'top-end',
+        timer: 3000,
+        showConfirmButton: false
+    });
+};
+
+// Global click handler for any .export-page-btn
+$(document).on('click', '.export-page-btn', function (e) {
+    e.preventDefault();
+    var tableSel = $(this).data('table') || 'table';
+    var filename = $(this).data('filename') || 'Export_Data';
+    window.exportTableToExcel(tableSel, filename);
+});
 </script>

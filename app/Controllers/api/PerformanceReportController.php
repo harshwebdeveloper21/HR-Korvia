@@ -16,8 +16,8 @@ class PerformanceReportController extends Controller
         $departmentModel = new DepartmentModel();
         $departments = $departmentModel->findAll();
 
-        $userModel = new \App\Models\UserModel();
-        $employees = $userModel->whereIn('role', ['hr', 'employee'])->findAll();
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $employees = $userInfoModel->select('user_id as id, firstname, lastname')->orderBy('firstname', 'ASC')->findAll();
 
         return view('report/performanceReport', [
             'departments' => $departments,
@@ -27,9 +27,14 @@ class PerformanceReportController extends Controller
 
     /**
      * AJAX handler – fetch filtered performance data.
-     * Accepts: department_id, employee_id, start_date, month, year
+     * Accepts: department_id, employee_id, start_date, end_date, month, year
      */
     public function fetchtPerformanceReport()
+    {
+        return $this->fetchPerformanceReport();
+    }
+
+    public function fetchPerformanceReport()
     {
         if ($this->request->isAJAX()) {
             $departmentId = $this->request->getVar('department_id');
@@ -37,10 +42,14 @@ class PerformanceReportController extends Controller
             $month = $this->request->getVar('month');   // 1-12 or empty
             $year = $this->request->getVar('year');    // YYYY or empty
 
-            // start_date: only parse if a non-empty value was posted
             $rawDate = $this->request->getVar('start_date');
             $startDate = (!empty($rawDate) && strtotime($rawDate))
                 ? date('Y-m-d', strtotime($rawDate))
+                : null;
+
+            $rawEndDate = $this->request->getVar('end_date');
+            $endDate = (!empty($rawEndDate) && strtotime($rawEndDate))
+                ? date('Y-m-d', strtotime($rawEndDate))
                 : null;
 
             $performanceModel = new PerformanceModel();
@@ -48,12 +57,14 @@ class PerformanceReportController extends Controller
                 $departmentId,
                 $employeeId,
                 $startDate,
+                $endDate,
                 $month,
                 $year
             );
 
             return $this->response->setJSON([
                 'tableData' => !empty($reportData) ? $reportData : [],
+                'csrfHash'  => csrf_hash(),
             ]);
         }
 

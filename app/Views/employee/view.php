@@ -142,6 +142,8 @@
         div.dataTables_wrapper div.dataTables_filter label input {
             width: 321px !important;
         }
+    }
+
 @media (max-width: 767px) {
     .emp-filter-container {
         display: flex !important;
@@ -159,11 +161,31 @@
         width: calc(50% - 4px) !important;
         min-width: 0 !important;
     }
-    .emp-filter-container .btn {
-        width: 100% !important;
+    .emp-filter-container #btnExportEmployees,
+    .emp-filter-container a.btn {
+        flex: 1 1 calc(50% - 4px) !important;
+        width: calc(50% - 4px) !important;
         justify-content: center !important;
         margin-top: 4px !important;
     }
+}
+
+/* ─── Modal override: force visibility on ALL screen sizes for ALL modals ─── */
+.modal {
+    display: none;
+    opacity: 1 !important;
+    transition: none !important;
+    z-index: 9999 !important;
+}
+.modal.show {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 9999 !important;
+}
+.modal-backdrop.show {
+    opacity: 0.5 !important;
+    z-index: 9998 !important;
 }
 </style>
 <div class="row">
@@ -199,6 +221,9 @@
                                 <option value="<?= $y ?>"><?= $y ?></option>
                             <?php endfor; ?>
                         </select>
+                        <button type="button" id="btnExportEmployees" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
                         <a href="/employee" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-plus iconfontsize"></i> Add Employee
                         </a>
@@ -244,7 +269,7 @@
     </div>
 </div>
 <!-- Password Reset Modal -->
-<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+<div class="modal" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <form id="passwordForm">
             <div class="modal-content">
@@ -279,7 +304,7 @@
 </div>
 
 <!-- Employee Status Modal -->
-<div class="modal fade" id="employeeStatusModal" tabindex="-1" aria-labelledby="employeeStatusModalLabel" aria-hidden="true">
+<div class="modal" id="employeeStatusModal" tabindex="-1" aria-labelledby="employeeStatusModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:12px; overflow:hidden;">
             <div class="modal-header" style="background:#E66136; color:white;">
@@ -325,7 +350,7 @@
 </div>
 
 <!-- Month-wise Leave History Modal -->
-<div class="modal fade" id="leaveHistoryMonthlyModal" tabindex="-1" aria-labelledby="leaveHistoryMonthlyModalLabel" aria-hidden="true">
+<div class="modal" id="leaveHistoryMonthlyModal" tabindex="-1" aria-labelledby="leaveHistoryMonthlyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="border-radius:12px; overflow:hidden;">
             <div class="modal-header" style="background: linear-gradient(135deg,#E66136,#f0845a); color:#fff; padding:18px 24px;">
@@ -617,40 +642,114 @@
         fetchDepartments();
         fetchEmployees('', 'active');
 
+        // 📥 Export to Excel functionality
+        $('#btnExportEmployees').on('click', function () {
+            const $btn = $(this);
+            const departmentId = $('#departmentFilter').val() || '';
+            const month = $('#monthFilter').val() || '';
+            const year = $('#yearFilter').val() || '';
+            const viewType = $('#employeeTabs .nav-link.active').data('view') || 'active';
+            const token = localStorage.getItem('token');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+            const queryParams = new URLSearchParams({
+                department_id: departmentId,
+                month: month,
+                year: year,
+                view: viewType
+            });
+
+            fetch(`<?= base_url('api/employee/export') ?>?${queryParams.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(async response => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                    throw new Error(err.message || 'Export failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const dateStr = new Date().toISOString().slice(0, 10);
+                a.download = `Employees_${viewType.charAt(0).toUpperCase() + viewType.slice(1)}_${dateStr}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exported!',
+                    text: 'Employee list exported to Excel successfully.',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                Swal.fire('Export Error', error.message || 'Failed to export employees', 'error');
+            });
+        });
+
         function showBsModal(modalId) {
-            const el = document.getElementById(modalId);
+            var el = document.getElementById(modalId);
             if (!el) return;
-            if (window.$ && typeof $('#' + modalId).modal === 'function') {
-                try {
-                    $('#' + modalId).modal('show');
-                    return;
-                } catch (e) {}
-            }
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                try {
-                    let inst = bootstrap.Modal.getInstance(el);
-                    if (!inst) inst = new bootstrap.Modal(el);
-                    inst.show();
-                } catch (e) {}
+            el.removeAttribute('aria-hidden');
+            el.setAttribute('aria-modal', 'true');
+            el.classList.add('show');
+            el.style.display = 'block';
+            el.style.zIndex = '9999';
+            document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
+            if (!document.getElementById(modalId + '-backdrop')) {
+                var bd = document.createElement('div');
+                bd.id = modalId + '-backdrop';
+                bd.className = 'modal-backdrop show';
+                bd.style.cssText = 'opacity:0.5; z-index:9998;';
+                document.body.appendChild(bd);
             }
         }
+        // Make globally accessible for code outside $(document).ready()
+        window.showBsModal = showBsModal;
 
         function hideBsModal(modalId) {
-            const el = document.getElementById(modalId);
+            var el = document.getElementById(modalId);
             if (!el) return;
-            if (window.$ && typeof $('#' + modalId).modal === 'function') {
-                try {
-                    $('#' + modalId).modal('hide');
-                    return;
-                } catch (e) {}
-            }
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                try {
-                    let inst = bootstrap.Modal.getInstance(el);
-                    if (inst) inst.hide();
-                } catch (e) {}
+            el.classList.remove('show');
+            el.removeAttribute('aria-modal');
+            el.setAttribute('aria-hidden', 'true');
+            el.style.display = 'none';
+            var bd = document.getElementById(modalId + '-backdrop');
+            if (bd) bd.remove();
+            if (!document.querySelector('.modal.show')) {
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.querySelectorAll('.modal-backdrop').forEach(function(b){ b.remove(); });
             }
         }
+        // Make globally accessible for code outside $(document).ready()
+        window.hideBsModal = hideBsModal;
+
+        // Close modal on dismiss button click
+        $(document).on('click', '[data-bs-dismiss="modal"], [data-dismiss="modal"]', function () {
+            var $m = $(this).closest('.modal');
+            if ($m.length) hideBsModal($m.attr('id'));
+        });
+
+        // Close modal when clicking the backdrop
+        $(document).on('click', '.modal-backdrop', function () {
+            var open = document.querySelector('.modal.show');
+            if (open) hideBsModal(open.id);
+        });
 
         // ══════════════════════════════════════════════════════
         // Status Change Modal Handler
@@ -842,12 +941,11 @@
 
     $(document).on('click', '.open-password-modal', function (e) {
         e.preventDefault();
+        e.stopPropagation();
         const userId = $(this).data('id');
-        const userpss = $(this).data('pass'); // fix here
-
         $('#password_user_id').val(userId);
-        // $('#password').val(userpss); // populate password field
-        // $('#confirm_password').val(userpss); // populate password field
+        $('#password').val('');
+        $('#confirm_password').val('');
 
         showBsModal('passwordModal');
     });
@@ -1039,3 +1137,7 @@
                 $('#ih-empty').show();
             }
         });
+    });
+</script>
+
+<?= $this->endSection(); ?>

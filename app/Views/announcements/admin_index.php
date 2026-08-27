@@ -7,11 +7,11 @@
                 <div class="card-header d-flex justify-content-between align-items-center border-bottom-0 p-2">
                     <h5 class="card-title fw-bold mb-0">Manage Announcements</h5>
                     <div class="d-flex gap-2">
-                        <!-- <select class="form-select form-select-sm" style="width: auto; border: 1px solid #dee2e6; border-radius: 4px;">
-                            <option>All Types</option>
-                        </select> -->
-                        <a href="/announcements/create" class="btn btn-sm text-white fw-bold" style="background-color: #E66136; border-radius: 4px; padding: 10px 15px;">
-                            + Add Announcement
+                        <button type="button" id="btnExportAnnouncements" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
+                        <a href="/announcements/create" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-plus iconfontsize"></i> Add Announcement
                         </a>
                     </div>
                 </div>
@@ -142,6 +142,51 @@ $(document).ready(function() {
                     }
                 });
             }
+        });
+    });
+
+    // 📥 Export to Excel functionality
+    $('#btnExportAnnouncements').on('click', function () {
+        const $btn = $(this);
+        const token = localStorage.getItem('token');
+
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+        fetch(`<?= base_url('api/announcements/export') ?>`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(async response => {
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                throw new Error(err.message || 'Export failed');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.download = `Announcements_${dateStr}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            Swal.fire({
+                icon: 'success',
+                title: 'Exported!',
+                text: 'Announcements exported to Excel successfully.',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        })
+        .catch(error => {
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            Swal.fire('Export Error', error.message || 'Failed to export announcements', 'error');
         });
     });
 });

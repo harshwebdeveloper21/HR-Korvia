@@ -14,6 +14,11 @@ use App\Models\NotificationModel;
 use App\Services\AuthService;
 use App\Libraries\EmailService;
 use CodeIgniter\Config\Services;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class EmployeeController extends ResourceController
 {
@@ -1671,5 +1676,265 @@ class EmployeeController extends ResourceController
             'monthly_history' => array_values($monthlyData),
             'all_leaves' => $leaves
         ]);
+    }
+
+    /**
+     * Export all employee fields to Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized access');
+        }
+
+        $role = $user->role;
+        if (!in_array($role, ['admin', 'hr'])) {
+            return $this->failForbidden('You do not have permission to export employees');
+        }
+
+        $departmentId = $this->request->getGet('department_id');
+        $viewType     = $this->request->getGet('view') ?? 'active';
+        $month        = $this->request->getGet('month');
+        $year         = $this->request->getGet('year');
+
+        // Build query to fetch all employee details
+        $builder = $this->userModel
+            ->select('
+                users.id as user_table_id,
+                users.email,
+                users.role,
+                user_info.id as user_info_id,
+                user_info.employee_id,
+                user_info.firstname,
+                user_info.lastname,
+                user_info.gender,
+                user_info.date_of_birth,
+                user_info.contact_number,
+                user_info.address_1,
+                user_info.address_2,
+                user_info.postcode,
+                user_info.working_location,
+                user_info.joining_date,
+                user_info.salary,
+                user_info.status,
+                user_info.status_reason,
+                user_info.last_working_day,
+                user_info.last_increment_date,
+                user_info.last_increment_amount,
+                department.department_name,
+                designation.designation_name,
+                city.city_name,
+                states.state_name,
+                country.country_name,
+                employee_leaves.paid_leave,
+                employee_leaves.casual_leave,
+                account_detail.bank_name,
+                account_detail.acc_number,
+                account_detail.ifsc_code,
+                account_detail.branch_name
+            ')
+            ->join('user_info', 'user_info.user_id = users.id')
+            ->join('department', 'department.id = user_info.department_id', 'left')
+            ->join('designation', 'designation.id = user_info.designation_id', 'left')
+            ->join('city', 'city.id = user_info.city_id', 'left')
+            ->join('states', 'states.id = user_info.state_id', 'left')
+            ->join('country', 'country.id = user_info.country_id', 'left')
+            ->join('employee_leaves', 'employee_leaves.employee_id = users.id', 'left')
+            ->join('account_detail', 'account_detail.user_id = users.id', 'left');
+
+        if ($role === 'admin') {
+            $builder->whereIn('users.role', ['employee', 'hr']);
+        } else {
+            $builder->where('users.role', 'employee');
+        }
+
+        if (!empty($departmentId)) {
+            $builder->where('user_info.department_id', $departmentId);
+        }
+
+        $builder->where('users.is_deleted', 0);
+
+        if ($viewType === 'inactive') {
+            $builder->groupStart()
+                    ->where("LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')")
+                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'inactive\', \'resigned\', \'fired\', \'removed\')))')
+                    ->groupEnd();
+        } else {
+            $builder->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned', 'fired', 'removed') OR user_info.status IS NULL)");
+            $builder->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
+        }
+
+        if (!empty($year)) {
+            $builder->where("YEAR(user_info.joining_date)", $year);
+        }
+        if (!empty($month)) {
+            $builder->where("MONTH(user_info.joining_date)", $month);
+        }
+
+        $builder->orderBy('users.id', 'ASC');
+        $employees = $builder->findAll();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Employees');
+
+        // Define column headers
+        $headers = [
+            'A1'  => 'S.No',
+            'B1'  => 'Emp ID',
+            'C1'  => 'First Name',
+            'D1'  => 'Last Name',
+            'E1'  => 'Full Name',
+            'F1'  => 'Email',
+            'G1'  => 'Contact Number',
+            'H1'  => 'Role',
+            'I1'  => 'Department',
+            'J1'  => 'Designation',
+            'K1'  => 'Status',
+            'L1'  => 'Status Reason / Comment',
+            'M1'  => 'Joining Date',
+            'N1'  => 'Last Working Day',
+            'O1'  => 'Monthly Salary (INR)',
+            'P1'  => 'Rem. Paid Leave',
+            'Q1'  => 'Rem. Sick Leave',
+            'R1'  => 'Gender',
+            'S1'  => 'Date of Birth',
+            'T1'  => 'Working Location',
+            'U1'  => 'Address 1',
+            'V1'  => 'Address 2',
+            'W1'  => 'City',
+            'X1'  => 'State',
+            'Y1'  => 'Country',
+            'Z1'  => 'Postcode',
+            'AA1' => 'Last Increment Date',
+            'AB1' => 'Last Increment Amount (INR)',
+            'AC1' => 'Bank Name',
+            'AD1' => 'Account Number',
+            'AE1' => 'IFSC Code',
+            'AF1' => 'Branch Name',
+        ];
+
+        // Populate header cells
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        // Header styling
+        $headerStyle = [
+            'font' => [
+                'bold'  => true,
+                'color' => ['rgb' => 'FFFFFF'],
+                'size'  => 11,
+            ],
+            'fill' => [
+                'fillType'   => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'E66136'], // Brand orange
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical'   => Alignment::VERTICAL_CENTER,
+                'wrapText'   => true,
+            ],
+        ];
+        $sheet->getStyle('A1:AF1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        // Fill data rows
+        $rowNum = 2;
+        $sno = 1;
+
+        foreach ($employees as $emp) {
+            $empIdCode = !empty($emp['employee_id']) ? $emp['employee_id'] : ('EMP-' . sprintf('%03d', $emp['user_table_id']));
+            $fullName  = trim(($emp['firstname'] ?? '') . ' ' . ($emp['lastname'] ?? ''));
+            $status    = !empty($emp['status']) ? $emp['status'] : 'Active';
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $empIdCode);
+            $sheet->setCellValue('C' . $rowNum, $emp['firstname'] ?? '');
+            $sheet->setCellValue('D' . $rowNum, $emp['lastname'] ?? '');
+            $sheet->setCellValue('E' . $rowNum, $fullName);
+            $sheet->setCellValue('F' . $rowNum, $emp['email'] ?? '');
+            $sheet->setCellValueExplicit('G' . $rowNum, (string)($emp['contact_number'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('H' . $rowNum, ucfirst($emp['role'] ?? 'employee'));
+            $sheet->setCellValue('I' . $rowNum, $emp['department_name'] ?? '-');
+            $sheet->setCellValue('J' . $rowNum, $emp['designation_name'] ?? '-');
+            $sheet->setCellValue('K' . $rowNum, $status);
+            $sheet->setCellValue('L' . $rowNum, $emp['status_reason'] ?? '');
+            $sheet->setCellValue('M' . $rowNum, !empty($emp['joining_date']) && $emp['joining_date'] !== '0000-00-00' ? $emp['joining_date'] : '-');
+            $sheet->setCellValue('N' . $rowNum, !empty($emp['last_working_day']) ? $emp['last_working_day'] : '-');
+            $sheet->setCellValue('O' . $rowNum, (float)($emp['salary'] ?? 0));
+            $sheet->setCellValue('P' . $rowNum, (float)($emp['paid_leave'] ?? 0));
+            $sheet->setCellValue('Q' . $rowNum, (float)($emp['casual_leave'] ?? 0));
+            $sheet->setCellValue('R' . $rowNum, ucfirst($emp['gender'] ?? ''));
+            $sheet->setCellValue('S' . $rowNum, !empty($emp['date_of_birth']) && $emp['date_of_birth'] !== '0000-00-00' ? $emp['date_of_birth'] : '-');
+            $sheet->setCellValue('T' . $rowNum, ucfirst($emp['working_location'] ?? ''));
+            $sheet->setCellValue('U' . $rowNum, $emp['address_1'] ?? '');
+            $sheet->setCellValue('V' . $rowNum, $emp['address_2'] ?? '');
+            $sheet->setCellValue('W' . $rowNum, $emp['city_name'] ?? '');
+            $sheet->setCellValue('X' . $rowNum, $emp['state_name'] ?? '');
+            $sheet->setCellValue('Y' . $rowNum, $emp['country_name'] ?? '');
+            $sheet->setCellValue('Z' . $rowNum, $emp['postcode'] ?? '');
+            $sheet->setCellValue('AA' . $rowNum, !empty($emp['last_increment_date']) ? $emp['last_increment_date'] : '-');
+            $sheet->setCellValue('AB' . $rowNum, (float)($emp['last_increment_amount'] ?? 0));
+            $sheet->setCellValue('AC' . $rowNum, $emp['bank_name'] ?? '-');
+            $sheet->setCellValueExplicit('AD' . $rowNum, (string)($emp['acc_number'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('AE' . $rowNum, $emp['ifsc_code'] ?? '-');
+            $sheet->setCellValue('AF' . $rowNum, $emp['branch_name'] ?? '-');
+
+            // Format salary & increment as currency numbers
+            $sheet->getStyle('O' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('AB' . $rowNum)->getNumberFormat()->setFormatCode('#,##0.00');
+
+            // Center align specific columns
+            $sheet->getStyle('A' . $rowNum . ':B' . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('H' . $rowNum . ':K' . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('M' . $rowNum . ':N' . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('P' . $rowNum . ':T' . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('AA' . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            $sheet->getRowDimension($rowNum)->setRowHeight(20);
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+
+        // Apply grid borders
+        $borderStyle = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color'       => ['rgb' => 'E0E0E0'],
+                ],
+            ],
+        ];
+        $sheet->getStyle('A1:AF' . $lastRow)->applyFromArray($borderStyle);
+
+        // Auto size all columns
+        foreach (range('A', 'Z') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        $sheet->getColumnDimension('AA')->setAutoSize(true);
+        $sheet->getColumnDimension('AB')->setAutoSize(true);
+        $sheet->getColumnDimension('AC')->setAutoSize(true);
+        $sheet->getColumnDimension('AD')->setAutoSize(true);
+        $sheet->getColumnDimension('AE')->setAutoSize(true);
+        $sheet->getColumnDimension('AF')->setAutoSize(true);
+
+        $filename = 'Employees_' . ucfirst($viewType) . '_' . date('Y_m_d_His') . '.xlsx';
+
+        // Clear output buffer to prevent corrupted binary excel file
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

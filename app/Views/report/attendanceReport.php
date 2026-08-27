@@ -42,9 +42,11 @@
         <div class="header-controls">
             <h4 class="card-title fw-bolder mb-0">Attendance Report</h4>
         </div>
-        <div class="d-flex align-items-center">
-            <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchAttenReport()">Generate
-                Report</button>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn hr-btnbg btnpdingam export-page-btn" data-table="#attendanceTable" data-filename="Attendance_Report" style="white-space: nowrap;">
+                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+            </button>
+            <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchAttenReport()">Generate Report</button>
         </div>
     </div>
 
@@ -70,9 +72,7 @@
             <select id="user_id" name="user_id" class="form-select" onchange="fetchAttenReport();">
                 <option value="">All Employees</option>
                 <?php foreach ($employees as $employee): ?>
-                    <option value="<?= $employee["id"] ?>"><?= esc(
-                          $employee["username"] ?? ''
-                      ) ?></option>
+                    <option value="<?= $employee["id"] ?>"><?= esc(trim(($employee["firstname"] ?? '') . ' ' . ($employee["lastname"] ?? ''))) ?: 'Employee #' . $employee['id'] ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -319,10 +319,15 @@
         const ctx = document.getElementById('attendanceChart').getContext('2d');
         if (AttendanceInstance instanceof Chart) {
             AttendanceInstance.destroy();
+            AttendanceInstance = null;
+        }
+
+        if (!data || !data.length) {
+            return;
         }
 
         const labels = data.map(entry => entry.date);
-        const attendanceCounts = data.map(entry => entry.attendance_count); // Ensure this field exists
+        const attendanceCounts = data.map(entry => entry.attendance_count);
 
         AttendanceInstance = new Chart(ctx, {
             type: 'line',

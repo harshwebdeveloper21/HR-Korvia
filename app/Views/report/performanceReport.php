@@ -2,6 +2,7 @@
 <?= $this->section("content") ?>
 
 <link rel="stylesheet" href="<?= base_url(env("ImagePath") . "assets/css/performancereport.css") ?>">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 
 <style>
     .capitalize-text { text-transform: capitalize; }
@@ -55,7 +56,10 @@
 <div class="filter-card">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h4 class="card-title fw-bolder mb-0">Employee Performance Report</h4>
-        <div class="d-flex gap-2 flex-wrap">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button type="button" class="btn hr-btnbg btnpdingam export-page-btn" data-table="#performanceTable" data-filename="Performance_Report" style="white-space:nowrap;">
+                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+            </button>
             <button class="btn hr-btnbg btnpdingam" style="white-space:nowrap;" onclick="fetchPerformanceReport()">
                 <i class="mdi mdi-chart-bar me-1"></i>Generate Report
             </button>
@@ -71,7 +75,7 @@
         <div class="col-12 col-sm-6 col-md-3">
             <label for="department_id" class="form-label">Department:</label>
             <select id="department_id" name="department_id" class="form-select" onchange="loadEmployees(this.value)">
-                <option value="" disabled selected>Select Department</option>
+                <option value="">All Departments</option>
                 <?php foreach ($departments as $department): ?>
                     <option value="<?= $department["id"] ?>"><?= $department["department_name"] ?></option>
                 <?php endforeach; ?>
@@ -82,7 +86,10 @@
         <div class="col-12 col-sm-6 col-md-3">
             <label for="user_id" class="form-label">Employee:</label>
             <select id="user_id" name="user_id" class="form-select" onchange="fetchPerformanceReport()">
-                <option value="" disabled selected>Select Employee</option>
+                <option value="">All Employees</option>
+                <?php foreach ($employees as $employee): ?>
+                    <option value="<?= $employee["id"] ?>"><?= esc(trim(($employee["firstname"] ?? '') . ' ' . ($employee["lastname"] ?? ''))) ?: 'Employee #' . $employee['id'] ?></option>
+                <?php endforeach; ?>
             </select>
         </div>
 
@@ -121,6 +128,12 @@
         <div class="col-12 col-sm-6 col-md-2">
             <label for="start_date" class="form-label">From Date:</label>
             <input type="date" id="start_date" class="form-control" onchange="fetchPerformanceReport()">
+        </div>
+
+        <!-- End Date -->
+        <div class="col-12 col-sm-6 col-md-2">
+            <label for="end_date" class="form-label">To Date:</label>
+            <input type="date" id="end_date" class="form-control" onchange="fetchPerformanceReport()">
         </div>
     </div>
 </div>
@@ -188,10 +201,8 @@ function refreshCSRF(r) { if (r && r.csrfHash) csrfTokenValue = r.csrfHash; }
    Load employees when department changes
    ============================================================ */
 function loadEmployees(departmentId) {
-    const sel = document.getElementById('user_id');
-    sel.innerHTML = '<option value="" disabled selected>Select Employee</option>';
     const employeeSelect = document.getElementById('user_id');
-    employeeSelect.innerHTML = '<option value="" disabled selected>Select Employee</option>';
+    employeeSelect.innerHTML = '<option value="">All Employees</option>';
     
     $.ajax({
         url: '<?= site_url("report/fetchEmployeesByDepartment") ?>',
@@ -200,6 +211,7 @@ function loadEmployees(departmentId) {
         data: { ...getCSRFData(), department_id: departmentId },
         success: function(response) {
             refreshCSRF(response);
+            employeeSelect.innerHTML = '<option value="">All Employees</option>';
             const list = response.employees || [];
             list.forEach(emp => {
                 const name = (emp.firstname || '') + ' ' + (emp.lastname || '');
@@ -222,12 +234,15 @@ let performanceChartInstance = null;
 function updateChart(data) {
     const ctx = document.getElementById("performanceChart").getContext("2d");
     if (!data || !data.length) {
-        if (performanceChartInstance instanceof Chart) performanceChartInstance.destroy();
+        if (performanceChartInstance instanceof Chart) {
+            performanceChartInstance.destroy();
+            performanceChartInstance = null;
+        }
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
     }
 
-    const labels  = data.map(i => i.firstname || 'N/A');
+    const labels  = data.map(i => ((i.firstname || '') + ' ' + (i.lastname || '')).trim() || 'N/A');
     const ratings = data.map(i => parseFloat(i.rating) || 0);
 
     // Gradient colours per bar
@@ -260,10 +275,10 @@ function updateChart(data) {
             responsive: true,
             plugins: {
                 legend: { position: "top" },
-                title: { display: true, text: "Employee Performance Ratings", font: { size: 15 } },
+                title: { display: true, text: `Employee Performance Ratings (${data.length} Records)`, font: { size: 15 } },
             },
             scales: {
-                y: { beginAtZero: true, max: 5.5, title: { display: true, text: "Ratings" } },
+                y: { beginAtZero: true, max: 5.5, title: { display: true, text: "Ratings (out of 5)" } },
                 x: { title: { display: true, text: "Employees" } },
             },
         },
@@ -274,6 +289,10 @@ function updateChart(data) {
    Table
    ============================================================ */
 function populateTable(data) {
+    if ($.fn.DataTable.isDataTable('#performanceTable')) {
+        $('#performanceTable').DataTable().clear().destroy();
+    }
+
     const tbody = document.getElementById("performance-table-body");
     tbody.innerHTML = "";
 
@@ -285,19 +304,21 @@ function populateTable(data) {
 
     let rowsHtml = '';
     data.forEach((row, idx) => {
+        const fullName = ((row.firstname || '') + ' ' + (row.lastname || '')).trim() || 'N/A';
         const reviewDate = row.review_date
             ? new Date(row.review_date).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'})
             : 'N/A';
-        const stars = '★'.repeat(Math.round(row.rating)) + '☆'.repeat(5 - Math.round(row.rating));
+        const ratingVal = parseFloat(row.rating) || 0;
+        const stars = '★'.repeat(Math.min(5, Math.max(0, Math.round(ratingVal)))) + '☆'.repeat(Math.max(0, 5 - Math.round(ratingVal)));
         rowsHtml += `
             <tr>
                 <td>${idx + 1}</td>
-                <td class="capitalize-text fw-semibold">${row.firstname || 'N/A'}</td>
+                <td class="capitalize-text fw-semibold">${fullName}</td>
                 <td class="capitalize-text">${row.department_name || 'N/A'}</td>
                 <td>${reviewDate}</td>
                 <td>
                     <span class="rating-badge">
-                        ${row.rating}
+                        ${ratingVal.toFixed(1)}
                         <span style="letter-spacing:1px;font-size:11px;">${stars}</span>
                     </span>
                 </td>
@@ -305,9 +326,23 @@ function populateTable(data) {
     });
     tbody.innerHTML = rowsHtml;
     document.getElementById("table-section").style.display = "block";
+
+    $('#performanceTable').DataTable({
+        "paging": true,
+        "searching": true,
+        "ordering": true,
+        "info": true,
+        "responsive": false,
+        "pageLength": 10,
+        "language": {
+            "search": "Search performance:",
+            "lengthMenu": "Show _MENU_ entries",
+            "info": "Showing _START_ to _END_ of _TOTAL_ records",
+            "infoEmpty": "No records found",
+            "zeroRecords": "No matching records found"
+        }
+    });
 }
-
-
 
 /* ============================================================
    Fetch report
@@ -318,27 +353,26 @@ function fetchPerformanceReport() {
     const departmentId = document.getElementById("department_id").value;
     const employeeId   = document.getElementById("user_id").value;
     const startDate    = document.getElementById("start_date").value;
+    const endDate      = document.getElementById("end_date") ? document.getElementById("end_date").value : '';
     const month        = document.getElementById("filter_month").value;
     const year         = document.getElementById("filter_year").value;
     clearValidationMessages();
 
-    let valid = true;
-    if (!departmentId) { displayValidationMessage("department_id", "Please select a department."); valid = false; }
-    if (!employeeId)   { displayValidationMessage("user_id",        "Please select an employee."); valid = false; }
-    if (!valid) return;
-
     $.ajax({
         url: "<?= site_url("report/fetchPerformanceReport") ?>",
         type: "POST",
+        dataType: "json",
         data: {
-            '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+            ...getCSRFData(),
             department_id: departmentId,
             employee_id:   employeeId,
             start_date:    startDate,
+            end_date:      endDate,
             month:         month,
             year:          year,
         },
         success: function(response) {
+            refreshCSRF(response);
             const data = (response.tableData && response.tableData.length) ? response.tableData : [];
             lastReportData = data;
             populateTable(data);
@@ -495,6 +529,13 @@ async function downloadPDF() {
         btn.innerHTML = '<i class="mdi mdi-file-pdf-box me-1"></i>Download PDF';
     }
 }
+
+$(document).ready(function() {
+    fetchPerformanceReport();
+});
 </script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 
 <?= $this->endSection() ?>

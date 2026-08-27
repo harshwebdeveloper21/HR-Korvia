@@ -8,6 +8,11 @@ use App\Models\CommentModel;
 use App\Models\SubtaskModel;
 use App\Services\AuthService;
 use App\Libraries\EmailService;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class TaskController extends ResourceController
 {
@@ -469,7 +474,7 @@ class TaskController extends ResourceController
         }
         $commentModel = new \App\Models\CommentModel();
         $comments = $commentModel
-            ->select(select: 'comments.comment, comments.created_at, users.username, user_info.profile_image')
+            ->select('comments.comment, comments.created_at, users.username, user_info.profile_image')
             ->join('users', 'users.id = comments.user_id')
             ->join('user_info', 'user_info.user_id = users.id', 'left')
             ->where('comments.task_id', $id)
@@ -614,5 +619,123 @@ class TaskController extends ResourceController
             'status' => 'success',
             'message' => 'Task status updated successfully'
         ]);
+    }
+
+    /**
+     * Export Tasks to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized: Token missing or invalid']);
+        }
+
+        $search = $this->request->getGet('search');
+        $status = $this->request->getGet('status');
+
+        $builder = $this->taskModel->builder();
+        $builder->select('task.*, users.username as employee_name, ui.firstname, ui.lastname, ui.employee_id, ui.email, dep.department_name, creator.username as creator_name')
+            ->join('users', 'users.id = task.user_id', 'left')
+            ->join('user_info ui', 'ui.user_id = users.id', 'left')
+            ->join('department dep', 'dep.id = task.department_id', 'left')
+            ->join('users creator', 'creator.id = task.created_by', 'left');
+
+        // Role-based filtering
+        if ($user->role === 'hr') {
+            $builder->where('users.role', 'employee');
+        } elseif ($user->role === 'employee') {
+            $builder->where('task.user_id', $user->sub);
+        }
+
+        if (!empty($status)) {
+            $builder->where('task.task_status', $status);
+        }
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('task.task_title', $search)
+                ->orLike('task.task_status', $search)
+                ->orLike('users.username', $search)
+                ->orLike('ui.firstname', $search)
+                ->orLike('ui.lastname', $search)
+                ->orLike('dep.department_name', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('task.created_at', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Tasks');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Employee ID',
+            'C1' => 'Assigned Employee',
+            'D1' => 'Department',
+            'E1' => 'Task Title',
+            'F1' => 'Assigned Date',
+            'G1' => 'Due Date',
+            'H1' => 'Status',
+            'I1' => 'Description',
+            'J1' => 'Created By',
+            'K1' => 'Created Date'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:K1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $name = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? '')) ?: ($item['employee_name'] ?? 'N/A');
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValueExplicit('B' . $rowNum, $item['employee_id'] ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('C' . $rowNum, $name);
+            $sheet->setCellValue('D' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $item['task_title'] ?? '-');
+            $sheet->setCellValue('F' . $rowNum, $item['assigned_date'] ?? '-');
+            $sheet->setCellValue('G' . $rowNum, $item['due_date'] ?? '-');
+            $sheet->setCellValue('H' . $rowNum, ucfirst($item['task_status'] ?? '-'));
+            $sheet->setCellValue('I' . $rowNum, strip_tags($item['description'] ?? '-'));
+            $sheet->setCellValue('J' . $rowNum, $item['creator_name'] ?? '-');
+            $sheet->setCellValue('K' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:K' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'K') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Tasks_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

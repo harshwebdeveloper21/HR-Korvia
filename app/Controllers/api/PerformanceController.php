@@ -7,6 +7,11 @@ use App\Models\PerformanceModel;
 use App\Services\AuthService;
 use CodeIgniter\RESTful\ResourceController;
 use App\Libraries\EmailService;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class PerformanceController extends ResourceController
 {
@@ -606,5 +611,124 @@ class PerformanceController extends ResourceController
         }
 
         return $this->response->setJSON($response);
+    }
+
+    /**
+     * Export Performance reviews to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $departmentId = $this->request->getGet('department_id');
+        $search = $this->request->getGet('search');
+
+        $builder = $this->performanceModel->builder();
+        $builder->select('performance.*, user_info.firstname, user_info.lastname, department.department_name, designation.designation_name, reviewer.firstname as reviewer_first, reviewer.lastname as reviewer_last')
+            ->join('user_info', 'user_info.user_id = performance.user_id', 'left')
+            ->join('department', 'department.id = user_info.department_id', 'left')
+            ->join('designation', 'designation.id = performance.designation_id', 'left')
+            ->join('user_info as reviewer', 'reviewer.user_id = performance.reviewer_id', 'left');
+
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            $builder->where('performance.user_id', $user->sub);
+        }
+
+        if (!empty($departmentId)) {
+            $builder->where('department.id', (int)$departmentId);
+        }
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('user_info.firstname', $search)
+                ->orLike('user_info.lastname', $search)
+                ->orLike('department.department_name', $search)
+                ->orLike('designation.designation_name', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('performance.review_date', 'DESC')
+            ->orderBy('performance.id', 'DESC')
+            ->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Performance Reviews');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Employee Name',
+            'C1' => 'Department',
+            'D1' => 'Designation',
+            'E1' => 'Review Date',
+            'F1' => 'Reviewer Name',
+            'G1' => 'Goals Achieved',
+            'H1' => 'Team Work',
+            'I1' => 'Management',
+            'J1' => 'Presentation Skill',
+            'K1' => 'Behaviour',
+            'L1' => 'Overall Rating',
+            'M1' => 'Notes / Feedback'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:M1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $fullName = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? '')) ?: 'N/A';
+            $reviewerName = trim(($item['reviewer_first'] ?? '') . ' ' . ($item['reviewer_last'] ?? '')) ?: ($item['reviewer_id'] ?? '-');
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $fullName);
+            $sheet->setCellValue('C' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('D' . $rowNum, $item['designation_name'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, !empty($item['review_date']) ? date('Y-m-d', strtotime($item['review_date'])) : '-');
+            $sheet->setCellValue('F' . $rowNum, $reviewerName);
+            $sheet->setCellValue('G' . $rowNum, $item['goals_achieved'] ?? '-');
+            $sheet->setCellValue('H' . $rowNum, $item['team_work'] ?? '-');
+            $sheet->setCellValue('I' . $rowNum, $item['management'] ?? '-');
+            $sheet->setCellValue('J' . $rowNum, $item['presentation_skill'] ?? '-');
+            $sheet->setCellValue('K' . $rowNum, $item['behaviour'] ?? '-');
+            $sheet->setCellValue('L' . $rowNum, ((float)($item['rating'] ?? 0)) . ' / 5');
+            $sheet->setCellValue('M' . $rowNum, strip_tags($item['notes'] ?? '-'));
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:M' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Performance_Reviews_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

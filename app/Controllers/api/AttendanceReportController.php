@@ -31,9 +31,8 @@ class AttendanceReportController extends Controller
         $departmentModel = new DepartmentModel();
         $departments = $departmentModel->findAll();
 
-        $userModel = new \App\Models\UserModel();
-        // Fetch employees with role 'employee'
-        $employees = $userModel->whereIn('role', ['hr', 'employee'])->findAll();
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $employees = $userInfoModel->select('user_id as id, firstname, lastname')->orderBy('firstname', 'ASC')->findAll();
         return view('report/attendanceReport',['departments'=>$departments,'employees'=>$employees]);
     }
     public function fetchAttendanceReport()

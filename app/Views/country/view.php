@@ -102,9 +102,14 @@
             <div class="card-body">
                 <div class="d-md-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title">Manage Country</h4>
-                    <a href="/country" class="btn hr-btnbg attendenceall">
-                        <i class="mdi mdi-plus iconfontsize"></i> Add Country
-                    </a>
+                    <div class="d-flex gap-2">
+                        <button type="button" id="btnExportCountry" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
+                        <a href="/country" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-plus iconfontsize"></i> Add Country
+                        </a>
+                    </div>
                 </div>
 
                 <div class="table-responsive">
@@ -280,7 +285,54 @@
                 });
             }
         });
-    }
+        // 📥 Export to Excel functionality
+        $('#btnExportCountry').on('click', function () {
+            const $btn = $(this);
+            const search = $('#country-table_filter input').val() || '';
+            const token = localStorage.getItem('token');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+            const queryParams = new URLSearchParams({ search: search });
+
+            fetch(`<?= base_url('api/country/export') ?>?${queryParams.toString()}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(async response => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                    throw new Error(err.message || 'Export failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const dateStr = new Date().toISOString().slice(0, 10);
+                a.download = `Countries_${dateStr}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exported!',
+                    text: 'Countries exported to Excel successfully.',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                Swal.fire('Export Error', error.message || 'Failed to export countries', 'error');
+            });
+        });
+    });
 </script>
 
 <?= $this->endSection() ?>
