@@ -495,7 +495,15 @@
                                                     <img id="company_logo" src="<?= base_url(env('ImagePath') . 'upload/fab_logo.jpg') ?>" alt="Company Logo" class="img-fluid view-logo" width="150">
                                                 </div>
                                             </div>
-
+                                            <div class="col-lg-6">
+                                                <div class="form-group">
+                                                    <label for="favicon_icon">Upload Favicon Icon</label>
+                                                    <input type="file" class="form-control" name="favicon_icon" id="favicon_icon" accept="image/*,.ico">
+                                                </div>
+                                                <div class="mt-2">
+                                                    <img id="company_favicon" src="<?= getCompanyFavicon() ?>" alt="Company Favicon" class="img-fluid view-favicon" width="48" style="max-height: 48px;">
+                                                </div>
+                                            </div>
                                         </div>
 
 
@@ -1366,6 +1374,13 @@
                             $('#company_logo').attr('src', baseUrl + '/upload/' + data.logo_img);
                         } else {
                             $('#company_logo').attr('src', IMAGE_BASE_URL + '/upload/fab_logo.jpg'); // Fallback image
+                        }
+
+                        // Update company favicon
+                        if (data.favicon_icon) {
+                            $('#company_favicon').attr('src', baseUrl + '/upload/' + data.favicon_icon);
+                        } else {
+                            $('#company_favicon').attr('src', baseUrl + '/favicon.ico');
                         }
 
                         // Update profile image preview

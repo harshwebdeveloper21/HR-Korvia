@@ -1,8 +1,8 @@
 <footer class="footer">
     <div class="container-fluid">
         <div class="row text-muted">
-            <div class="col-6 text-start">
-                <span class="text-center footer-font-size-sm">Copyright © 2026. All rights reserved.</span>
+            <div class="col-12 text-start">
+                <span class="text-center footer-font-size-sm"><a href="https://www.fableadtechnolabs.com/" target="_blank" class="text-muted text-decoration-none">© <?= date('Y') ?> Copyright - Fablead Developers Technolab</a></span>
             </div>
             <!-- <div class="col-6 text-end">
                 <ul class="list-inline">
