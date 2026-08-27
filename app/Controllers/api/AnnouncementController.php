@@ -7,6 +7,11 @@ use App\Models\UserModel;
 use App\Models\DepartmentModel;
 use App\Services\AuthService;
 use CodeIgniter\RESTful\ResourceController;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class AnnouncementController extends ResourceController
 {
@@ -387,5 +392,114 @@ class AnnouncementController extends ResourceController
         $this->announcementModel->markAsRead($id, $user->sub);
 
         return $this->response->setJSON(['status' => 'success', 'message' => 'Marked as read']);
+    }
+
+    /**
+     * Export Announcements to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $type = $this->request->getGet('type');
+        $status = $this->request->getGet('status');
+        $search = $this->request->getGet('search');
+
+        $builder = $this->announcementModel->builder();
+        $builder->select('announcements.*, user_info.firstname, user_info.lastname')
+            ->join('user_info', 'user_info.user_id = announcements.created_by', 'left')
+            ->where('announcements.is_deleted', 0);
+
+        if (!empty($type)) {
+            $builder->where('announcements.type', $type);
+        }
+        if (!empty($status)) {
+            $builder->where('announcements.status', $status);
+        }
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('announcements.title', $search)
+                ->orLike('announcements.description', $search)
+                ->orLike('announcements.type', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('announcements.id', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Announcements');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Title',
+            'C1' => 'Type',
+            'D1' => 'Description',
+            'E1' => 'Target Audience',
+            'F1' => 'Target Roles',
+            'G1' => 'Start Date',
+            'H1' => 'End Date',
+            'I1' => 'Status',
+            'J1' => 'Created By',
+            'K1' => 'Created Date'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:K1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $creator = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? '')) ?: 'Admin';
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $item['title'] ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $item['type'] ?? 'General');
+            $sheet->setCellValue('D' . $rowNum, strip_tags($item['description'] ?? '-'));
+            $sheet->setCellValue('E' . $rowNum, $item['target_audience'] ?? 'All Users');
+            $sheet->setCellValue('F' . $rowNum, $item['target_roles'] ?? 'All');
+            $sheet->setCellValue('G' . $rowNum, !empty($item['start_date']) ? date('Y-m-d', strtotime($item['start_date'])) : '-');
+            $sheet->setCellValue('H' . $rowNum, !empty($item['end_date']) ? date('Y-m-d', strtotime($item['end_date'])) : '-');
+            $sheet->setCellValue('I' . $rowNum, $item['status'] ?? 'Active');
+            $sheet->setCellValue('J' . $rowNum, $creator);
+            $sheet->setCellValue('K' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:K' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'K') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Announcements_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

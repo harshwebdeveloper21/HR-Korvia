@@ -299,6 +299,10 @@
                             <option value="Completed">Completed</option>
                         </select>
                         
+                        <button type="button" id="btnExportTasks" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
+                        
                         <?php $role = session()->get('role'); ?>
                         <?php if ($role !== 'employee') : ?>
                             <a href="/task" class="btn hr-btnbg attendenceall text-nowrap">
@@ -848,6 +852,56 @@
                     Swal.fire('Error', 'Server error occurred.', 'error');
                 }
             }
+        });
+    });
+
+    // 📥 Export to Excel functionality
+        $('#btnExportTasks').on('click', function () {
+            const $btn = $(this);
+            const search = $('#task-table_filter input').val() || '';
+            const status = $('#statusFilter').val() || '';
+            const token = localStorage.getItem('token');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+            const queryParams = new URLSearchParams({ search: search, status: status });
+
+            fetch(`<?= base_url('api/task/export') ?>?${queryParams.toString()}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(async response => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                    throw new Error(err.message || 'Export failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const dateStr = new Date().toISOString().slice(0, 10);
+                a.download = `Tasks_${dateStr}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exported!',
+                    text: 'Tasks exported to Excel successfully.',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                Swal.fire('Export Error', error.message || 'Failed to export tasks', 'error');
+            });
         });
     });
 </script>

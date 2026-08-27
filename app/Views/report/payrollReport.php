@@ -42,7 +42,10 @@
         <div class="header-controls">
             <h4 class="card-title fw-bolder mb-0">Payroll Report</h4>
         </div>
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn hr-btnbg btnpdingam export-page-btn" data-table="#payrollTable" data-filename="Payroll_Salary_Report" style="white-space: nowrap;">
+                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+            </button>
             <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchPayrollReport()">Generate Report</button>
         </div>
     </div>
@@ -64,7 +67,7 @@
         <!-- Employee -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="user_id" class="form-label">Employee:</label>
-            <select id="user_id" name="user_id" class="form-select" onchange="fetchSalaryReport()">
+            <select id="user_id" name="user_id" class="form-select" onchange="fetchPayrollReport()">
                 <option value="">All Employees</option>
             </select>
         </div>
@@ -72,7 +75,7 @@
         <!-- Year -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Year:</label>
-            <select id="year" name="year" class="form-select" onchange="fetchSalaryReport()">
+            <select id="year" name="year" class="form-select" onchange="fetchPayrollReport()">
                 <option value="">All Years</option>
                 <?php
                 $currentYear = date('Y');
@@ -85,7 +88,7 @@
         <!-- Month -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Month:</label>
-            <select id="month" name="month" class="form-select" onchange="fetchSalaryReport()">
+            <select id="month" name="month" class="form-select" onchange="fetchPayrollReport()">
                 <option value="">All Months</option>
                 <option value="1">January</option>
                 <option value="2">February</option>
@@ -105,13 +108,13 @@
         <!-- From Date -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="start_date" class="form-label">From Date:</label>
-            <input type="date" id="start_date" class="form-control" placeholder="Select Start Date" onchange="fetchSalaryReport()">
+            <input type="date" id="start_date" class="form-control" placeholder="Select Start Date" onchange="fetchPayrollReport()">
         </div>
 
         <!-- To Date -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="end_date" class="form-label">To Date:</label>
-            <input type="date" id="end_date" class="form-control" placeholder="Select End Date" onchange="fetchSalaryReport()">
+            <input type="date" id="end_date" class="form-control" placeholder="Select End Date" onchange="fetchPayrollReport()">
         </div>
     </div>
 
@@ -186,13 +189,14 @@
                 refreshCSRF(response);
                 const list = response.employees || [];
                 list.forEach(emp => {
-                    sel.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
+                    const name = (emp.firstname || '') + ' ' + (emp.lastname || '');
+                    sel.innerHTML += `<option value="${emp.id}">${name.trim()}</option>`;
                 });
-                fetchSalaryReport();
+                fetchPayrollReport();
             },
             error: function (xhr) { 
                 console.error('loadEmployees error:', xhr.status, xhr.responseText); 
-                fetchSalaryReport();
+                fetchPayrollReport();
             }
         });
     }
@@ -211,6 +215,7 @@
         $.ajax({
             url: "<?= site_url("report/fetchPayrollReport") ?>",
             type: "POST",
+            dataType: "json",
             data: {
                 ...getCSRFData(),
                 department_id: departmentId,
@@ -222,10 +227,12 @@
             },
             success: function(response) {
                 refreshCSRF(response);
-                populateTable(response.tableData);
-                document.getElementById("table-section").style.display = "block"; // Show Table
-                if (response.tableData.length > 0) {
-                    updateChart(response.tableData[0]);
+                const tableData = (response && Array.isArray(response.tableData)) ? response.tableData : [];
+                populateTable(tableData);
+                document.getElementById("table-section").style.display = "block";
+                
+                if (tableData.length > 0) {
+                    updateChart(tableData);
                 } else {
                     if (salaryChartInstance instanceof Chart) {
                         salaryChartInstance.destroy();
@@ -239,7 +246,15 @@
         });
     }
 
+    // Alias so any other code calling fetchSalaryReport works seamlessly
+    window.fetchSalaryReport = fetchPayrollReport;
+
     function populateTable(data) {
+        // Destroy existing DataTable first
+        if ($.fn.DataTable.isDataTable('#payrollTable')) {
+            $('#payrollTable').DataTable().clear().destroy();
+        }
+
         const tableBody = document.getElementById('salary-table-body');
         tableBody.innerHTML = "";
 
@@ -250,15 +265,21 @@
 
         let rowsHtml = '';
         data.forEach(row => {
+            const fullName = ((row.firstname || '') + ' ' + (row.lastname || '')).trim() || 'N/A';
+            const baseSalary = parseFloat(row.salary_amount) || 0;
+            const bonuses = parseFloat(row.bonuses) || 0;
+            const totalDeductions = (parseFloat(row.tax_deduction) || 0) + (parseFloat(row.salary_deduction) || 0);
+            const netSalary = parseFloat(row.net_salary) || (baseSalary + bonuses - totalDeductions);
+
             rowsHtml += `
                 <tr>
-                    <td class="capitalize-text">${row.firstname || 'N/A'}</td>
+                    <td class="capitalize-text">${fullName}</td>
                     <td class="capitalize-text">${row.department_name || 'N/A'}</td>
-                    <td class="capitalize-text">${row.payment_date || 'N/A'}</td>
-                    <td class="capitalize-text">${row.salary_amount || '0.00'}</td>
-                    <td class="capitalize-text">${row.bonuses || '0.00'}</td>
-                    <td class="capitalize-text">${row.tax_deduction || '0.00'}</td>
-                    <td class="capitalize-text">${row.net_salary || '0.00'}</td>
+                    <td class="capitalize-text">${row.payment_date || row.month_year || 'N/A'}</td>
+                    <td>₹${baseSalary.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td>₹${bonuses.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td>₹${totalDeductions.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td class="fw-bold text-success">₹${netSalary.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>
             `;
         });
@@ -273,13 +294,33 @@
         if (salaryChartInstance instanceof Chart) {
             salaryChartInstance.destroy();
         }
+
+        // Aggregate total base, bonuses, deductions across all filtered records
+        let totalBase = 0;
+        let totalBonuses = 0;
+        let totalDeductions = 0;
+
+        data.forEach(item => {
+            totalBase += parseFloat(item.salary_amount) || 0;
+            totalBonuses += parseFloat(item.bonuses) || 0;
+            totalDeductions += (parseFloat(item.tax_deduction) || 0) + (parseFloat(item.salary_deduction) || 0);
+        });
+
+        const empSelect = document.getElementById('user_id');
+        const selectedEmpName = (empSelect && empSelect.value) ? empSelect.options[empSelect.selectedIndex]?.text : '';
+        const chartTitle = (selectedEmpName && selectedEmpName !== 'All Employees')
+            ? `Salary Breakdown for ${selectedEmpName}`
+            : (data.length === 1
+                ? `Salary Breakdown for ${((data[0].firstname || '') + ' ' + (data[0].lastname || '')).trim()}`
+                : `Total Salary Breakdown (${data.length} Records)`);
+
         salaryChartInstance = new Chart(ctx, {
             type: 'pie',
             data: {
-                labels: ['Base Salary', 'bonuses', 'Deductions'],
+                labels: ['Base Salary', 'Bonuses', 'Deductions'],
                 datasets: [{
                     label: 'Salary Breakdown',
-                    data: [data.salary_amount, data.bonuses, data.tax_deduction],
+                    data: [totalBase, totalBonuses, totalDeductions],
                     backgroundColor: ['#4caf50', '#ff9800', '#f44336']
                 }]
             },
@@ -291,20 +332,17 @@
                     },
                     title: {
                         display: true,
-                        text: `Salary Breakdown for ${data.firstname}`
+                        text: chartTitle
                     }
                 }
             }
         });
     }
-
-    // Load data on page load (moved below after DataTables scripts are loaded)
 </script>
 <!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script>
-    // Initialize DataTable when table is shown
     function initializePayrollDataTable() {
         if ($.fn.DataTable.isDataTable('#payrollTable')) {
             $('#payrollTable').DataTable().destroy();
@@ -325,17 +363,14 @@
             }
         });
     }
-</script>
-<script>
+
     function toggleFilters() {
         const el = document.getElementById('filters-row');
         if (el) el.classList.toggle('d-none');
     }
 
-    // Ensure DataTables scripts are loaded before initial fetch
     $(document).ready(function() {
         fetchPayrollReport();
     });
 </script>
-
 <?= $this->endSection() ?>

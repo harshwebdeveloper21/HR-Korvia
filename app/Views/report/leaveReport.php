@@ -46,9 +46,11 @@
         <div class="header-controls">
             <h4 class="card-title fw-bolder mb-0">Leave Report</h4>
         </div>
-        <div class="d-flex align-items-center">
-            <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchLeaveReport()">Generate
-                Report</button>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn hr-btnbg btnpdingam export-page-btn" data-table="#leaveTable" data-filename="Leave_Report" style="white-space: nowrap;">
+                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+            </button>
+            <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchLeaveReport()">Generate Report</button>
         </div>
     </div>
 

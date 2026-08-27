@@ -5,6 +5,11 @@ use App\Services\AuthService;
 use CodeIgniter\RESTful\ResourceController;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class OfferLetterTemplateController extends ResourceController
 {
@@ -334,4 +339,97 @@ public function getOfferTemplate($id)
         ]
     ]);
 }
+
+    /**
+     * Export Offer Letter Templates to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $search = $this->request->getGet('search');
+
+        $builder = $this->templateModel->builder();
+        $builder->select('offer_letter_templates.*, user_info.firstname, user_info.lastname')
+            ->join('user_info', 'user_info.user_id = offer_letter_templates.created_by', 'left');
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('offer_letter_templates.title', $search)
+                ->orLike('offer_letter_templates.content', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('offer_letter_templates.id', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Offer Templates');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Template ID',
+            'C1' => 'Template Title',
+            'D1' => 'Content Preview',
+            'E1' => 'Created By',
+            'F1' => 'Created Date'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:F1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $creator = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? '')) ?: 'Admin';
+            $preview = strip_tags($item['content'] ?? '');
+            if (mb_strlen($preview) > 150) {
+                $preview = mb_substr($preview, 0, 147) . '...';
+            }
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, 'TMPL-' . sprintf('%03d', $item['id']));
+            $sheet->setCellValue('C' . $rowNum, $item['title'] ?? '-');
+            $sheet->setCellValue('D' . $rowNum, $preview);
+            $sheet->setCellValue('E' . $rowNum, $creator);
+            $sheet->setCellValue('F' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:F' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'F') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Offer_Templates_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
 }

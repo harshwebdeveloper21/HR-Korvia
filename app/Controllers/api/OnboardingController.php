@@ -12,6 +12,11 @@ use App\Models\OfferLetterTemplateModel;
 use App\Models\CandidateModel;
 use App\Models\JobModel;
 use App\Libraries\EmailService;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class OnboardingController extends ResourceController
 {
@@ -486,7 +491,116 @@ class OnboardingController extends ResourceController
     }
     public function singlejob($id = null)
     {
-
         return view('onboarding/display');
+    }
+
+    /**
+     * Export Onboarding records to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $departmentId = $this->request->getGet('department_id');
+        $status = $this->request->getGet('status');
+        $search = $this->request->getGet('search');
+
+        $builder = $this->onboardingModel->builder();
+        $builder->select('onboarding.*, candidate.candidate_name, candidate.email, candidate.phone_number, department.department_name, jobs.job_title')
+            ->join('candidate', 'candidate.id = onboarding.candidate_id', 'left')
+            ->join('department', 'department.id = onboarding.department_id', 'left')
+            ->join('jobs', 'jobs.id = onboarding.job_id', 'left');
+
+        if (!empty($departmentId)) {
+            $builder->where('onboarding.department_id', (int)$departmentId);
+        }
+        if (!empty($status)) {
+            $builder->where('onboarding.onboarding_status', $status);
+        }
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('candidate.candidate_name', $search)
+                ->orLike('candidate.email', $search)
+                ->orLike('candidate.phone_number', $search)
+                ->orLike('department.department_name', $search)
+                ->orLike('jobs.job_title', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('onboarding.id', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Onboarding');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Candidate Name',
+            'C1' => 'Email',
+            'D1' => 'Phone Number',
+            'E1' => 'Department',
+            'F1' => 'Job Position',
+            'G1' => 'Joining Date',
+            'H1' => 'Onboarding Status',
+            'I1' => 'Documents Submitted',
+            'J1' => 'Created At'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:J1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $docs = (!empty($item['docu_submitted']) && $item['docu_submitted'] != '0') ? 'Yes' : 'No';
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $item['candidate_name'] ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $item['email'] ?? '-');
+            $sheet->setCellValueExplicit('D' . $rowNum, (string)($item['phone_number'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('E' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('F' . $rowNum, $item['job_title'] ?? '-');
+            $sheet->setCellValue('G' . $rowNum, !empty($item['start_date']) ? date('Y-m-d', strtotime($item['start_date'])) : '-');
+            $sheet->setCellValue('H' . $rowNum, ucfirst($item['onboarding_status'] ?? 'Pending'));
+            $sheet->setCellValue('I' . $rowNum, $docs);
+            $sheet->setCellValue('J' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:J' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'J') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Onboarding_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

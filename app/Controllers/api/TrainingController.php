@@ -7,6 +7,11 @@ use App\Models\TrainingModel;
 use App\Services\AuthService;
 use CodeIgniter\RESTful\ResourceController;
 use App\Libraries\EmailService;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class TrainingController extends ResourceController
 {
@@ -356,5 +361,118 @@ class TrainingController extends ResourceController
         } else {
             return $this->response->setJSON(['success' => false, 'message' => 'Failed to add department.']);
         }
+    }
+
+    /**
+     * Export Trainings to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized: Token missing or invalid']);
+        }
+
+        $search = $this->request->getGet('search');
+
+        $builder = $this->trainingModel->builder();
+        $builder->select('training.*, users.username as employee_name, ui.firstname, ui.lastname, ui.employee_id, ui.email, dep.department_name, des.designation_name')
+            ->join('users', 'users.id = training.user_id', 'left')
+            ->join('user_info ui', 'ui.user_id = users.id', 'left')
+            ->join('department dep', 'dep.id = training.department_id', 'left')
+            ->join('designation des', 'des.id = ui.designation_id', 'left');
+
+        // Role-based filtering
+        if ($user->role === 'hr') {
+            $builder->where('users.role', 'employee');
+        } elseif ($user->role === 'employee') {
+            $builder->where('training.user_id', $user->sub);
+        }
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('training.training_title', $search)
+                ->orLike('training.location', $search)
+                ->orLike('users.username', $search)
+                ->orLike('ui.firstname', $search)
+                ->orLike('ui.lastname', $search)
+                ->orLike('dep.department_name', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('training.created_at', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Trainings');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Employee ID',
+            'C1' => 'Employee Name',
+            'D1' => 'Department',
+            'E1' => 'Designation',
+            'F1' => 'Training Title',
+            'G1' => 'Start Date',
+            'H1' => 'End Date',
+            'I1' => 'Location',
+            'J1' => 'Description',
+            'K1' => 'Created Date'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:K1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $name = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? '')) ?: ($item['employee_name'] ?? 'N/A');
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValueExplicit('B' . $rowNum, $item['employee_id'] ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('C' . $rowNum, $name);
+            $sheet->setCellValue('D' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $item['designation_name'] ?? '-');
+            $sheet->setCellValue('F' . $rowNum, $item['training_title'] ?? '-');
+            $sheet->setCellValue('G' . $rowNum, $item['start_date'] ?? '-');
+            $sheet->setCellValue('H' . $rowNum, $item['end_date'] ?? '-');
+            $sheet->setCellValue('I' . $rowNum, $item['location'] ?? '-');
+            $sheet->setCellValue('J' . $rowNum, strip_tags($item['description'] ?? '-'));
+            $sheet->setCellValue('K' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:K' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'K') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Trainings_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

@@ -250,6 +250,9 @@
                             <button type="button" id="btnSalarySheetView" class="btn hr-btnbg attendenceall" onclick="generateSalarySheetPDF()">
                                 <i class="mdi mdi-file-pdf iconfontsize"></i> Salary Sheet
                             </button>
+                            <button type="button" id="btnExportPayroll" class="btn hr-btnbg attendenceall text-nowrap">
+                                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                            </button>
 
                             <a href="/payroll" class="btn hr-btnbg attendenceall">
                                 <i class="mdi mdi-plus iconfontsize"></i> Add Payroll
@@ -1096,6 +1099,62 @@
 
         doc.save(fileName);
     }
+
+    // 📥 Export to Excel functionality
+    $('#btnExportPayroll').on('click', function () {
+        const $btn = $(this);
+        const departmentId = $('#departmentFilter').val() || '';
+        const month = $('#monthFilter').val() || '';
+        const year = $('#yearFilter').val() || '';
+        const search = $('#payroll-table_filter input').val() || '';
+        const token = localStorage.getItem('token');
+
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+        const queryParams = new URLSearchParams({
+            department_id: departmentId,
+            month: month,
+            year: year,
+            search: search
+        });
+
+        fetch(`<?= base_url('api/payroll/export') ?>?${queryParams.toString()}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(async response => {
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                throw new Error(err.message || 'Export failed');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.download = `Payroll_Report_${dateStr}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            Swal.fire({
+                icon: 'success',
+                title: 'Exported!',
+                text: 'Payroll records exported to Excel successfully.',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        })
+        .catch(error => {
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            Swal.fire('Export Error', error.message || 'Failed to export payroll records', 'error');
+        });
+    });
 </script>
 
 <?= $this->endSection() ?>

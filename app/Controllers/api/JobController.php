@@ -10,6 +10,11 @@ use App\Services\AuthService;
 use CodeIgniter\RESTful\ResourceController;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\DepartmentModel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class JobController extends ResourceController
 {
@@ -561,5 +566,117 @@ class JobController extends ResourceController
                 'message' => 'Failed to add location. Please try again.'
             ]);
         }
+    }
+
+    /**
+     * Export Jobs to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->user();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $departmentId = $this->request->getGet('department_id');
+        $status = $this->request->getGet('status');
+        $search = $this->request->getGet('search');
+
+        $builder = $this->jobModel->builder();
+        $builder->select('jobs.*, department.department_name, job_locations.job_location')
+            ->join('department', 'department.id = jobs.department_id', 'left')
+            ->join('job_locations', 'job_locations.id = jobs.locations_id', 'left');
+
+        if (!empty($departmentId)) {
+            $builder->where('jobs.department_id', (int)$departmentId);
+        }
+        if (!empty($status)) {
+            $builder->where('jobs.status', $status);
+        }
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('jobs.job_title', $search)
+                ->orLike('jobs.job_type', $search)
+                ->orLike('department.department_name', $search)
+                ->orLike('job_locations.job_location', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('jobs.id', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Job Openings');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Job Title',
+            'C1' => 'Department',
+            'D1' => 'Location',
+            'E1' => 'Job Type',
+            'F1' => 'Experience',
+            'G1' => 'Salary Range',
+            'H1' => 'Gender Preference',
+            'I1' => 'Age Requirement',
+            'J1' => 'Post Date',
+            'K1' => 'Close Date',
+            'L1' => 'Status',
+            'M1' => 'Description'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:M1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $item['job_title'] ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('D' . $rowNum, $item['job_location'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $item['job_type'] ?? '-');
+            $sheet->setCellValue('F' . $rowNum, $item['experience'] ?? '-');
+            $sheet->setCellValue('G' . $rowNum, $item['salary_range'] ?? '-');
+            $sheet->setCellValue('H' . $rowNum, $item['gender'] ?? 'Any');
+            $sheet->setCellValue('I' . $rowNum, $item['age'] ?? 'Any');
+            $sheet->setCellValue('J' . $rowNum, !empty($item['post_date']) ? date('Y-m-d', strtotime($item['post_date'])) : '-');
+            $sheet->setCellValue('K' . $rowNum, !empty($item['close_date']) ? date('Y-m-d', strtotime($item['close_date'])) : '-');
+            $sheet->setCellValue('L' . $rowNum, ucfirst($item['status'] ?? 'Active'));
+            $sheet->setCellValue('M' . $rowNum, strip_tags($item['description'] ?? '-'));
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:M' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Job_Openings_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

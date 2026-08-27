@@ -7,6 +7,11 @@ use App\Models\JobLocationAddressModel;
 use CodeIgniter\Controller;
 use App\Services\AuthService;
 use CodeIgniter\RESTful\ResourceController;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class JobaddressController extends ResourceController {
  
@@ -361,6 +366,103 @@ class JobaddressController extends ResourceController {
         }
 
         return $this->respond(['status' => 'error', 'message' => 'Failed to update job'], 500);
+    }
+
+    /**
+     * Export Job Addresses to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized: Token missing or invalid']);
+        }
+
+        $search = $this->request->getGet('search');
+
+        $builder = $this->jobLocationAddressModel->builder();
+        $builder->select('job_location_addresses.*, job_location.job_location, city.city_name, states.state_name, country.country_name')
+            ->join('job_location', 'job_location.location_id = job_location_addresses.locations_id', 'left')
+            ->join('city', 'city.id = job_location_addresses.city_id', 'left')
+            ->join('states', 'states.id = job_location_addresses.state_id', 'left')
+            ->join('country', 'country.id = job_location_addresses.country_id', 'left');
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('job_location.job_location', $search)
+                ->orLike('job_location_addresses.address', $search)
+                ->orLike('city.city_name', $search)
+                ->orLike('states.state_name', $search)
+                ->orLike('country.country_name', $search)
+                ->orLike('job_location_addresses.postal_code', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('job_location_addresses.created_at', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Job Addresses');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Job Location',
+            'C1' => 'Address',
+            'D1' => 'City',
+            'E1' => 'State',
+            'F1' => 'Country',
+            'G1' => 'Postal Code',
+            'H1' => 'Created Date'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:H1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $item['job_location'] ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $item['address'] ?? '-');
+            $sheet->setCellValue('D' . $rowNum, $item['city_name'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $item['state_name'] ?? '-');
+            $sheet->setCellValue('F' . $rowNum, $item['country_name'] ?? '-');
+            $sheet->setCellValue('G' . $rowNum, $item['postal_code'] ?? '-');
+            $sheet->setCellValue('H' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:H' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'H') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $filename = 'Job_Addresses_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }
 

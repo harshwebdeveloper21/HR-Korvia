@@ -35,14 +35,19 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title">Manage Performances</h4>
-                    <?php $role = session()->get("role"); ?>
-                    <?php if ($role !== "employee"): ?>
-                        <a href="<?= base_url(
-                            "/performance",
-                        ) ?>" class="btn hr-btnbg attendenceall">
-                            <i class="mdi mdi-plus iconfontsize"></i> Add Performance
-                        </a>
-                    <?php endif; ?>
+                    <div class="d-flex gap-2">
+                        <button type="button" id="btnExportPerformance" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
+                        <?php $role = session()->get("role"); ?>
+                        <?php if ($role !== "employee"): ?>
+                            <a href="<?= base_url(
+                                "/performance",
+                            ) ?>" class="btn hr-btnbg attendenceall text-nowrap">
+                                <i class="mdi mdi-plus iconfontsize"></i> Add Performance
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="performance-table">
@@ -276,6 +281,54 @@
                         }
                     });
                 }
+            });
+        });
+
+        // 📥 Export to Excel functionality
+        $('#btnExportPerformance').on('click', function () {
+            const $btn = $(this);
+            const search = $('#performance-table_filter input').val() || '';
+            const token = localStorage.getItem('token');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+            const queryParams = new URLSearchParams({ search: search });
+
+            fetch(`<?= base_url('api/performance/export') ?>?${queryParams.toString()}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(async response => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                    throw new Error(err.message || 'Export failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const dateStr = new Date().toISOString().slice(0, 10);
+                a.download = `Performance_Reviews_${dateStr}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exported!',
+                    text: 'Performance reviews exported to Excel successfully.',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            })
+            .catch(error => {
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                Swal.fire('Export Error', error.message || 'Failed to export performance reviews', 'error');
             });
         });
     });

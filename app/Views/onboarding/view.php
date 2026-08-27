@@ -230,7 +230,10 @@
                                 <!-- Departments will be populated dynamically -->
                             </select>
                         </div>
-                        <div class="filterbtn filterbtnpadd">
+                        <div class="filterbtn filterbtnpadd d-flex gap-2">
+                            <button type="button" id="btnExportOnboarding" class="btn hr-btnbg btnpdingam mb-2 text-nowrap">
+                                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                            </button>
                             <a href="/onboarding" class="btn hr-btnbg btnpdingam mb-2">
                                 <i class="mdi mdi-plus iconfontsize"></i> Add OnBoarding
                             </a>
@@ -483,6 +486,58 @@
                     confirmButtonColor: '#d33'
                 });
             }
+        });
+    });
+
+    // 📥 Export to Excel functionality
+    $('#btnExportOnboarding').on('click', function () {
+        const $btn = $(this);
+        const departmentId = $('#departmentonbordingFilter').val() || '';
+        const search = $('#onboaring-Table_filter input').val() || '';
+        const token = localStorage.getItem('token');
+
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+        const queryParams = new URLSearchParams({
+            department_id: departmentId,
+            search: search
+        });
+
+        fetch(`<?= base_url('api/onboarding/export') ?>?${queryParams.toString()}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(async response => {
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                throw new Error(err.message || 'Export failed');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.download = `Onboarding_${dateStr}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            Swal.fire({
+                icon: 'success',
+                title: 'Exported!',
+                text: 'Onboarding records exported to Excel successfully.',
+                toast: true,
+                position: 'top-end',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        })
+        .catch(error => {
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            Swal.fire('Export Error', error.message || 'Failed to export onboarding records', 'error');
         });
     });
 </script>

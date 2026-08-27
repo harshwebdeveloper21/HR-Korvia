@@ -2,118 +2,230 @@
 
 namespace App\Controllers\Api;
 
-use CodeIgniter\Controller;
-use App\Models\UserModel;
+use CodeIgniter\RESTful\ResourceController;
 use App\Models\LeaveTypeModel;
-
 use App\Models\LeaveModel;
+use App\Services\AuthService;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class LeaveReportController extends Controller
+class LeaveTypeController extends ResourceController
 {
+    private $leaveTypeModel;
+    private $authService;
+
+    public function __construct()
+    {
+        $this->leaveTypeModel = new LeaveTypeModel();
+        $this->authService = new AuthService(service('request'));
+    }
+
+    public function creates()
+    {
+        return view('leave_type/leave_type');
+    }
+
+    public function display()
+    {
+        return view('leave_type/view');
+    }
+
+    // Display All Leave Types
+    public function getAll()
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        }
+
+        $records = $this->leaveTypeModel->orderBy('created_at', 'DESC')->findAll();
+        return $this->respond(['status' => 'success', 'data' => $records]);
+    }
+
+    // Display Single Leave Type
+    public function getById($id = null)
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        }
+
+        $record = $this->leaveTypeModel->find($id);
+        if ($record) {
+            return $this->respond(['status' => 'success', 'data' => $record]);
+        }
+
+        return $this->respond(['status' => 'error', 'message' => 'Leave type not found'], 404);
+    }
+
+    // Create Leave Type
     public function create()
     {
-        $userModel = new \App\Models\UserModel();
-        $employees = $userModel->whereIn('role', ['hr', 'employee'])->findAll();
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        }
 
-        $leaveTypeModel = new \App\Models\LeaveTypeModel();
-        $leaveTypes = $leaveTypeModel->findAll();
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            return $this->failForbidden('Forbidden: You do not have access to this resource');
+        }
 
-        $departmentModel = new \App\Models\DepartmentModel();
-        $departments = $departmentModel->findAll();
+        $data = $this->request->getPost();
 
-        return view('report/leaveReport', [
-            'employees'  => $employees,
-            'leaveTypes' => $leaveTypes,
-            'departments' => $departments
-        ]);
+        if (!$this->validate([
+            'leave_type' => 'required',
+            'number_of_leaves' => 'required|numeric',
+        ])) {
+            return $this->respond([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $this->validator->getErrors()
+            ], 400);
+        }
+
+        $data['created_by'] = $user->sub;
+
+        if ($this->leaveTypeModel->insert($data)) {
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Leave type added successfully'
+            ], 201);
+        }
+
+        return $this->respond([
+            'status' => 'error',
+            'message' => 'Failed to add Leave type'
+        ], 500);
     }
-public function fetchLeaveReport()
+
+    // Update Leave Type
+    public function update($id = null)
     {
-        $leaveModel = new LeaveModel();
-        
-        $employee_id = $this->request->getPost('employee_id');
-        $start_date = $this->request->getPost('start_date');
-        $end_date = $this->request->getPost('end_date');
-        $year = $this->request->getPost('year');
-        $month = $this->request->getPost('month');
-        $leave_type = $this->normalizeLeaveTypeFilter($this->request->getPost('leave_type'));
-        $status = $this->request->getPost('status');
-
-        // Fetch filtered report data
-        $report = $leaveModel->getEmployeeReport($employee_id, $start_date, $end_date, $year, $month, $leave_type, $status);
-
-        // Fetch dynamic chart data
-        $chartQuery = $leaveModel->select('leave_type.leave_type, COUNT(leaves.id) AS total')
-            ->join('leave_type', 'leave_type.id = leaves.leave_id', 'left')
-            ->where('leaves.reason !=', LeaveModel::AUTO_ABSENCE_REASON)
-            ->groupBy('leave_type.leave_type');
-
-        // Apply filters for the chart
-        if ($employee_id) {
-            $chartQuery->where('leaves.user_id', $employee_id);
-        }
-        if ($start_date) {
-            $chartQuery->where('leaves.start_date >=', $start_date);
-        }
-        if ($end_date) {
-            $chartQuery->where('leaves.end_date <=', $end_date);
-        }
-        if ($year) {
-            $chartQuery->where('YEAR(leaves.start_date)', $year);
-        }
-        if ($month) {
-            $chartQuery->where('MONTH(leaves.start_date)', $month);
-        }
-        if ($leave_type) {
-            $chartQuery->where('leaves.leave_id', $leave_type);
-        }
-        if ($status) {
-            $chartQuery->where('leaves.status', $status);
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
         }
 
-        $chartDataResults = $chartQuery->findAll();
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            return $this->failForbidden('Forbidden: You do not have access to this resource');
+        }
 
-        $labels = array_column($chartDataResults, 'leave_type');
-        $data = array_column($chartDataResults, 'total');
+        $data = $this->request->getPost();
 
-        $chartData = [
-            'labels' => $labels,
-            'datasets' => [
-                [
-                    'label' => 'Number of Leaves',
-                    'data' => $data,
-                    'backgroundColor' => ['#17a2b8', '#ff6347', '#28a745', '#d3c75e']
-                ],
-            ]
+        if ($this->leaveTypeModel->update($id, $data)) {
+            return $this->respond(['status' => 'success', 'message' => 'Leave type updated successfully']);
+        }
+
+        return $this->respond(['status' => 'error', 'message' => 'Failed to update Leave type'], 500);
+    }
+
+    // Delete Leave Type
+    public function delete($id = null)
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        }
+
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            return $this->failForbidden('Forbidden: You do not have access to this resource');
+        }
+
+        if ($this->leaveTypeModel->delete($id)) {
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Leave type deleted successfully'
+            ]);
+        }
+
+        return $this->respond(['status' => 'error', 'message' => 'Failed to delete Leave type'], 500);
+    }
+
+    /**
+     * Export Leave Types to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized: Token missing or invalid']);
+        }
+
+        $search = $this->request->getGet('search');
+
+        $builder = $this->leaveTypeModel->builder();
+        $builder->select('leave_type.*');
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('leave_type.leave_type', $search)
+                ->orLike('leave_type.number_of_leaves', $search)
+                ->groupEnd();
+        }
+
+        $records = $builder->orderBy('leave_type.created_at', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Leave Types');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Leave Type',
+            'C1' => 'Number of Leaves',
+            'D1' => 'Allow Half Day',
+            'E1' => 'Created Date'
         ];
 
-        return $this->response->setJSON([
-            'tableData' => $report,
-            'chartData' => $chartData
-        ]);
-    }
-
-    private function normalizeLeaveTypeFilter($leaveType)
-    {
-        if ($leaveType === null) {
-            return null;
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
         }
 
-        $leaveType = trim((string) $leaveType);
-        if ($leaveType === '' || strtolower($leaveType) === 'all' || strtolower($leaveType) === 'all types') {
-            return null;
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:E1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($records as $item) {
+            $halfDay = !empty($item['allow_half_day']) && $item['allow_half_day'] == 1 ? 'Yes' : 'No';
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValue('B' . $rowNum, $item['leave_type'] ?? '-');
+            $sheet->setCellValue('C' . $rowNum, $item['number_of_leaves'] ?? '0');
+            $sheet->setCellValue('D' . $rowNum, $halfDay);
+            $sheet->setCellValue('E' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+            $rowNum++;
         }
 
-        if (ctype_digit($leaveType)) {
-            return (int) $leaveType;
+        $lastRow = $rowNum > 2 ? $rowNum - 1 : 2;
+        $borderStyle = [
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
+        ];
+        $sheet->getStyle('A1:E' . $lastRow)->applyFromArray($borderStyle);
+
+        foreach (range('A', 'E') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $leaveTypeModel = new LeaveTypeModel();
-        $matchedLeaveType = $leaveTypeModel
-            ->select('id')
-            ->where('LOWER(leave_type)', strtolower($leaveType))
-            ->first();
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
 
-        return $matchedLeaveType['id'] ?? null;
+        $filename = 'Leave_Types_' . date('Y_m_d_His') . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 }

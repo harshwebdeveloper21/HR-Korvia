@@ -51,11 +51,13 @@ class PerformanceModel extends Model
         $departmentId = null,
         $employeeId   = null,
         $startDate    = null,
+        $endDate      = null,
         $month        = null,
         $year         = null
     ) {
         $query = $this->select('
                 user_info.firstname,
+                user_info.lastname,
                 department.department_name,
                 performance.review_date,
                 performance.rating
@@ -65,17 +67,22 @@ class PerformanceModel extends Model
             ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)")
             ->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
 
-        if (!empty($departmentId)) {
-            $query->where('department.id', $departmentId);
+        if (!empty($departmentId) && $departmentId !== 'null' && $departmentId !== 'undefined') {
+            $query->where('department.id', (int)$departmentId);
         }
 
-        if (!empty($employeeId)) {
-            $query->where('user_info.user_id', $employeeId);
+        if (!empty($employeeId) && $employeeId !== 'null' && $employeeId !== 'undefined') {
+            $query->where('user_info.user_id', (int)$employeeId);
         }
 
         // From-date filter
         if (!empty($startDate)) {
             $query->where('performance.review_date >=', $startDate);
+        }
+
+        // To-date filter
+        if (!empty($endDate)) {
+            $query->where('performance.review_date <=', $endDate);
         }
 
         // Month filter
