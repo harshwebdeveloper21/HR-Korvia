@@ -1,0 +1,72 @@
+https://hr-portal.fableadtech.in/
+
+Login page
+bottom copyright missing
+new logo not added on login page and favicon all where
+
+Employees
+
+Employee ID -- need editable but not same allow , also its coming same and wrong emp#0 all ? need fix
+Imcrement history coming blank !!!!
+Resigned or Fired / Removed option needed directly on all employees page with reson text comment
+Remaining and used paid and sick leave history where i can see? like every month wise?
+
+Filters on that page needed depart wise , month / year wise etc
+
+Complaints & Feedback --> Both pages need in tabs or separately
+
+Inactive / Resigned --> check not allowed login and also disable
+
+remove increment option also
+
+reason for for removed or resigned etc --
+
+DASHBOARD PAGE
+add 2 boxes more
+
+Tasks and Projects 
+
+Recruitment & Hiring
+
+More 3 boxes
+
+Upcoming Trainings
+
+Employee of the Month
+
+Performance Overview
+
+====================
+
+ALL PAGES
+
+Button border same 
+Button colors and design same
+
+Export option missing on all pages
+Need excel with all fields properly show in excel
+
+CONSOLE ERROR ON ALL PAGES NEED FIXES
+
+CHECK SECURITY IMPLEMENTED BEST 
+
+==========================
+
+Reports page
+Employees reports countings wrong
+leave report not working
+payrol report not working
+attendanceReport -- calendar add and table changes
+performReport issues
+
+=================
+
+MOBILE VIEW
+
+Bottom bar like app
+header issues
+side border issues
+
+All listing pages redesign like other software
+optimize filters
+data etc

@@ -10,6 +10,7 @@ class CompanyLogoModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'logo_img',
+        'favicon_icon',
         'company_name',
         'company_address',      // Added
         'company_phone',        // Added

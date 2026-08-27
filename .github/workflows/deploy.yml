@@ -32,6 +32,8 @@ jobs:
           rm -rf ./build_output/.git
           rm -f ./build_output/.gitignore
           rm -f ./build_output/.gitattributes
+          rm -f ./build_output/.env
+          rm -f ./build_output/.htaccess
  
  
       - name: Deploy to cPanel via FTPS
@@ -52,3 +54,5 @@ jobs:
             **/system/**
             **/uploads/**
             **/public/vendors/**
+            **/.env*
+            **/.htaccess

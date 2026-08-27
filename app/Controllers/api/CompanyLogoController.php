@@ -29,9 +29,15 @@ class CompanyLogoController extends ResourceController
             ? base_url('upload/' . $company['logo_img'])
             : $defaultLogo;
 
+        $defaultFavicon = base_url('favicon.ico');
+        $faviconUrl = ($company && !empty($company['favicon_icon']))
+            ? base_url('upload/' . $company['favicon_icon'])
+            : $defaultFavicon;
+
         return $this->respond([
             'status'          => 'success',
             'logo_img'        => $logoUrl,
+            'favicon_icon'    => $faviconUrl,
             'company_name'    => $company['company_name']    ?? 'Fablead Developers Technolab',
             'company_address' => $company['company_address'] ?? '',
             'company_email'   => $company['company_email']   ?? '',

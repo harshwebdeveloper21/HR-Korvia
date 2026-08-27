@@ -52,6 +52,9 @@
                                     <button class="btn hr-btnbg w-100" type="submit" style="height: 48px;">SIGN IN</button>
                                 </div>
                             </form>
+                            <div class="text-center mt-4">
+                                <a href="https://www.fableadtechnolabs.com/" target="_blank" class="text-muted text-decoration-none" style="font-size: 13px;">© <?= date('Y') ?> Copyright - Fablead Developers Technolab</a>
+                            </div>
                         </div>
                     </div>
                 </div>

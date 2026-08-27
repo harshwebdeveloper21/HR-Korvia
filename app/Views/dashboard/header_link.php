@@ -1,4 +1,4 @@
-<link rel="shortcut icon" href="<?= getCompanyLogo(); ?>" class="title-logo" />
+<link rel="shortcut icon" href="<?= getCompanyFavicon(); ?>" class="title-logo" />
 <link rel="manifest" href="<?= base_url('manifest.json'); ?>">
 <meta name="theme-color" content="#e66136">
 <meta name="mobile-web-app-capable" content="yes">

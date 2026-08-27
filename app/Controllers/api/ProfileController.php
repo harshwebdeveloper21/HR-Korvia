@@ -105,6 +105,7 @@ class ProfileController extends ResourceController
             'country_name' => !empty($country['country_name']) ? $country['country_name'] : 'N/A',
             'company_name' => !empty($company['company_name']) ? $company['company_name'] : 'N/A',
             'logo_img' => !empty($company['logo_img']) ? $company['logo_img'] : 'upload/fab_logo.jpg', // Default fallback
+            'favicon_icon' => !empty($company['favicon_icon']) ? $company['favicon_icon'] : '',
             'profile_image' => !empty($userInfo['profile_image']) ? $userInfo['profile_image'] : 'default-profile.jpg',
             'company_address' => !empty($company['company_address']) ? $company['company_address'] : 'N/A', // Added
             'company_phone' => !empty($company['company_phone']) ? $company['company_phone'] : 'N/A', // Added
@@ -173,6 +174,7 @@ class ProfileController extends ResourceController
         $profileData = array_merge($userData, $userInfo, [
             'company_name' => $company ? $company['company_name'] : 'N/A',
             'logo_img' => $company ? $company['logo_img'] : 'upload/fab_logo.jpg',
+            'favicon_icon' => ($company && !empty($company['favicon_icon'])) ? $company['favicon_icon'] : '',
             'company_address' => $company ? $company['company_address'] : 'N/A', // Added
             'company_phone' => $company ? $company['company_phone'] : 'N/A', // Added
             'company_email' => $company ? $company['company_email'] : 'N/A', // Added
@@ -453,11 +455,26 @@ class ProfileController extends ResourceController
         if ($companyLogo && $companyLogo->isValid()) {
             if ($user->role === 'admin' && $companyLogo && $companyLogo->isValid()) {
                 $rules['logo_img'] = [
-                    'rules' => 'uploaded[logo_img]|is_image[logo_img]|mime_in[logo_img,image/jpg,image/jpeg,image/webp,image/png]',
+                    'rules' => 'uploaded[logo_img]|is_image[logo_img]|mime_in[logo_img,image/jpg,image/jpeg,image/webp,image/png,image/x-icon,image/vnd.microsoft.icon]',
                     'errors' => [
                         'uploaded' => 'Company logo is required.',
                         'is_image' => 'Invalid image format.',
                         'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.'
+                    ]
+                ];
+            }
+        }
+
+        // Handle company favicon validation
+        $companyFavicon = $this->request->getFile('favicon_icon');
+        if ($companyFavicon && $companyFavicon->isValid()) {
+            if ($user->role === 'admin') {
+                $rules['favicon_icon'] = [
+                    'rules' => 'uploaded[favicon_icon]|is_image[favicon_icon]|mime_in[favicon_icon,image/jpg,image/jpeg,image/webp,image/png,image/x-icon,image/vnd.microsoft.icon]',
+                    'errors' => [
+                        'uploaded' => 'Company favicon is required.',
+                        'is_image' => 'Invalid favicon format.',
+                        'mime_in' => 'Only ICO, JPG, JPEG, PNG, and WEBP formats are allowed.'
                     ]
                 ];
             }
@@ -497,10 +514,18 @@ class ProfileController extends ResourceController
             $companyLogoName = $newCompanyLogoName;
         }
 
-        // Update `users` table
+        // Handle company favicon upload if present
+        $companyFaviconName = $company['favicon_icon'] ?? null; // Keep existing favicon by default
+        if ($companyFavicon && $companyFavicon->isValid() && !$companyFavicon->hasMoved()) {
+            $newCompanyFaviconName = $companyFavicon->getRandomName();
+            $companyFavicon->move(FCPATH . 'upload/', $newCompanyFaviconName);
 
+            if (!empty($company['favicon_icon']) && file_exists(FCPATH . 'upload/' . $company['favicon_icon'])) {
+                unlink(FCPATH . 'upload/' . $company['favicon_icon']);
+            }
 
-        // 🔹 Refresh session with updated user info
+            $companyFaviconName = $newCompanyFaviconName;
+        }
 
         // Update `company_logo` table
         // Only update company details if user is admin
@@ -508,6 +533,7 @@ class ProfileController extends ResourceController
             $this->companyLogoModel->update($company['id'], [
                 'company_name' => $data['company_name'],
                 'logo_img' => $companyLogoName,
+                'favicon_icon' => $companyFaviconName,
                 'company_address' => $data['company_address'],
                 'company_phone' => $data['company_phone'],
                 'company_email' => $data['company_email'],
