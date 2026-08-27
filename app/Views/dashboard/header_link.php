@@ -27,11 +27,11 @@
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/insertsm.css?21'); ?>">
-<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/resdepat.css?23'); ?>">
-<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/jobs.css'); ?>">
-<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/style.css?my=42'); ?>">
-<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/mobile-table.css?as91'); ?>">
+<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/insertsm.css?v=' . time()); ?>">
+<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/resdepat.css?v=' . time()); ?>">
+<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/jobs.css?v=' . time()); ?>">
+<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/style.css?v=' . time()); ?>">
+<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/mobile-table.css?v=' . time()); ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
 <meta name="csrf-token" content="<?= csrf_hash() ?>" data-name="<?= csrf_token() ?>">
 <meta name="csrf-name" content="<?= csrf_token() ?>">

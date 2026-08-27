@@ -62,7 +62,7 @@
                             <option value="In Progress">In Progress</option>
                             <option value="Resolved">Resolved</option>
                         </select>
-                        <select class="form-select shadow-none" id="filterType" style="max-width: 130px;">
+                        <select class="form-select shadow-none d-none" id="filterType" style="max-width: 130px;">
                             <option value="">All Types</option>
                             <option value="Complaint">Complaint</option>
                             <option value="Feedback">Feedback</option>
@@ -72,6 +72,22 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Complaints & Feedback Tabs -->
+                <ul class="nav nav-tabs mb-3" id="complaintTabs" role="tablist" style="border-bottom: 2px solid #E66136;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="all-tab" data-type="" type="button" role="tab"
+                            style="color:#E66136; border-bottom: 3px solid #E66136; font-weight:600;">All Requests</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="complaints-tab" data-type="Complaint" type="button" role="tab"
+                            style="color:#6c757d; font-weight:600;"><i class="mdi mdi-alert-circle-outline me-1"></i> Complaints</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="feedback-tab" data-type="Feedback" type="button" role="tab"
+                            style="color:#6c757d; font-weight:600;"><i class="mdi mdi-comment-text-outline me-1"></i> Feedback</button>
+                    </li>
+                </ul>
 
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="complaintsAdminTable">
@@ -250,6 +266,19 @@
         });
 
         $('#filterType, #filterStatus').on('change', function () { table.ajax.reload(); });
+
+        $('#complaintTabs .nav-link').on('click', function () {
+            $('#complaintTabs .nav-link')
+                .removeClass('active')
+                .css({'color': '#6c757d', 'border-bottom': 'none', 'font-weight': '600'});
+            $(this)
+                .addClass('active')
+                .css({'color': '#E66136', 'border-bottom': '3px solid #E66136'});
+
+            const selectedType = $(this).data('type');
+            $('#filterType').val(selectedType);
+            table.ajax.reload();
+        });
 
         // Delegation for View Details button
         $('#complaintsAdminTable').on('click', '.view-details-btn', function (e) {

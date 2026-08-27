@@ -119,6 +119,10 @@ class CreateUserInfoTable extends Migration
                 'constraint' => '100',
                 'null'       => true,
             ],
+            'status_reason' => [
+                'type' => 'TEXT',
+                'null' => true,
+            ],
             'resume' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '255',

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>HR Portal</title>
     <?= $this->include('dashboard/header_link'); ?>
-    <link rel="stylesheet" href="assets/css/login.css">
+    <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/login.css?v=' . time()); ?>">
 </head>
 
 <body class="with-welcome-text">

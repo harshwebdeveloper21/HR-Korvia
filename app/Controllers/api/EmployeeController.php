@@ -238,7 +238,10 @@ class EmployeeController extends ResourceController
             3 => [
                 'employee_id' => [
                     'rules' => 'required',
-                    'errors' => ['required' => 'Employee ID is required.']
+                    'errors' => [
+                        'required' => 'Employee ID is required.',
+                        'is_unique' => 'This Employee ID is already assigned to another employee.'
+                    ]
                 ],
                 'designation_id' => [
                     'rules' => 'required',
@@ -269,9 +272,11 @@ class EmployeeController extends ResourceController
         ];
         if (empty($userId)) {
             $rules[1]['email']['rules'] .= '|is_unique[users.email]';
+            $rules[3]['employee_id']['rules'] .= '|is_unique[user_info.employee_id]';
         } else {
             // ✅ If editing, make sure it’s unique EXCEPT for current ID
             $rules[1]['email']['rules'] .= '|is_unique[users.email,id,' . $userId . ']';
+            $rules[3]['employee_id']['rules'] .= '|is_unique[user_info.employee_id,user_id,' . $userId . ']';
         }
         // Validate step
         if (!$validation->setRules($rules[$step])->withRequest($this->request)->run()) {
@@ -358,7 +363,7 @@ class EmployeeController extends ResourceController
             'city_id' => $data['city_id'] ?? '',
             'country_id' => $data['country_id'] ?? '',
             'contact_number' => $data['contact_number'] ?? '',
-            'employee_id' => isset($data['employee_id']) ? preg_replace('/[^0-9]/', '', $data['employee_id']) : '',
+            'employee_id' => isset($data['employee_id']) ? trim($data['employee_id']) : '',
             'designation_id' => $data['designation_id'] ?? '',
             'department_id' => $data['department_id'] ?? '',
             'joining_date' => $data['joining_date'] ?? '',
@@ -596,6 +601,7 @@ class EmployeeController extends ResourceController
             'working_location' => $data['working_location'] ?? '',
             'role' => $role,
             'status' => $data['status'] ?? 'Active',
+            'status_reason' => $data['status_reason'] ?? null,
             'last_working_day' => !empty($data['last_working_day']) ? $data['last_working_day'] : null,
             'profile_image' => $profileImageName, // Update profile image only if changed
             'face_photo' => $facePhotoName, // Update face photo for biometric attendance
@@ -651,7 +657,7 @@ class EmployeeController extends ResourceController
 
         // Build query with join
         $builder = $this->userModel
-            ->select('users.*, user_info.status, user_info.last_working_day, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, user_info.salary, user_info.last_increment_date, user_info.last_increment_amount, department.department_name, department.id as department_id, employee_leaves.paid_leave, employee_leaves.casual_leave')
+            ->select('users.*, user_info.employee_id, user_info.status, user_info.status_reason, user_info.last_working_day, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, user_info.salary, user_info.last_increment_date, user_info.last_increment_amount, department.department_name, department.id as department_id, employee_leaves.paid_leave, employee_leaves.casual_leave')
             ->join('user_info', 'user_info.user_id = users.id')
             ->join('department', 'department.id = user_info.department_id', 'left')
             ->join('employee_leaves', 'employee_leaves.employee_id = users.id', 'left');
@@ -675,14 +681,14 @@ class EmployeeController extends ResourceController
         // Get view type — 'active' (default) or 'inactive'
         $viewType = $this->request->getGet('view') ?? 'active';
         if ($viewType === 'inactive') {
-            // Show employees whose status is Inactive or Resigned (case-insensitive)
+            // Show employees whose status is Inactive, Resigned, Fired, or Removed
             $builder->groupStart()
-                    ->where("LOWER(user_info.status) IN ('inactive', 'resigned')")
-                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'inactive\', \'resigned\')))')
+                    ->where("LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')")
+                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'inactive\', \'resigned\', \'fired\', \'removed\')))')
                     ->groupEnd();
         } else {
             // Show only active employees — status is Active (or NULL) AND last_working_day hasn't passed
-            $builder->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)");
+            $builder->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned', 'fired', 'removed') OR user_info.status IS NULL)");
             $builder->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
         }
 
@@ -694,6 +700,7 @@ class EmployeeController extends ResourceController
         $employees = [];
 
         foreach ($results as $row) {
+            $empIdDisplay = !empty($row['employee_id']) ? $row['employee_id'] : ('EMP-' . sprintf('%03d', $row['id']));
             $employees[] = [
                 'user' => [
                     'id' => $row['id'],
@@ -703,6 +710,7 @@ class EmployeeController extends ResourceController
                 ],
                 'user_info' => [
                     'id' => $row['user_info_id'],
+                    'employee_id' => $empIdDisplay,
                     'firstname' => $row['firstname'],
                     'lastname' => $row['lastname'],
                     'joining_date' => $row['joining_date'],
@@ -712,6 +720,7 @@ class EmployeeController extends ResourceController
                     'department_name' => $row['department_name'],
                     'salary' => (float) ($row['salary'] ?? 0),
                     'status' => $row['status'] ?? 'Active',
+                    'status_reason' => $row['status_reason'] ?? '',
                     'last_working_day' => $row['last_working_day'],
                     'last_increment_date' => $row['last_increment_date'] ?? 'N/A',
                     'last_increment_amount' => (float) ($row['last_increment_amount'] ?? 0),
@@ -1554,6 +1563,113 @@ class EmployeeController extends ResourceController
             'status'        => 'success',
             'employee_name' => $empName,
             'history'       => $records
+        ]);
+    }
+
+    public function updateStatus()
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized access');
+        }
+
+        $userId = $this->request->getPost('user_id');
+        $status = $this->request->getPost('status');
+        $reason = $this->request->getPost('status_reason');
+        $lastWorkingDay = $this->request->getPost('last_working_day');
+
+        if (empty($userId) || empty($status)) {
+            return $this->respond(['status' => 'error', 'message' => 'User ID and status are required.'], 400);
+        }
+
+        $userInfo = $this->userInfoModel->where('user_id', $userId)->first();
+        if (!$userInfo) {
+            return $this->respond(['status' => 'error', 'message' => 'Employee record not found.'], 404);
+        }
+
+        $updateData = [
+            'status' => $status,
+            'status_reason' => $reason ?: null,
+        ];
+
+        if (!empty($lastWorkingDay)) {
+            $updateData['last_working_day'] = $lastWorkingDay;
+        } elseif (in_array(strtolower($status), ['resigned', 'fired', 'removed', 'inactive']) && empty($userInfo['last_working_day'])) {
+            $updateData['last_working_day'] = date('Y-m-d');
+        }
+
+        $this->userInfoModel->where('user_id', $userId)->set($updateData)->update();
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => 'Employee status updated to ' . ucfirst($status) . ' successfully!'
+        ]);
+    }
+
+    public function leaveHistoryMonthly($userId = null)
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized access');
+        }
+
+        if (empty($userId)) {
+            return $this->respond(['status' => false, 'message' => 'User ID required.'], 400);
+        }
+
+        $userInfo = $this->userInfoModel->where('user_id', $userId)->first();
+        if (!$userInfo) {
+            return $this->respond(['status' => false, 'message' => 'Employee record not found.'], 404);
+        }
+
+        $leaveModel = new \App\Models\LeaveModel();
+        $employeeLeaveModel = new \App\Models\EmployeeLeaveModel();
+
+        $empLeave = $employeeLeaveModel->where('employee_id', $userId)->first();
+
+        $leaves = $leaveModel->where('user_id', $userId)
+            ->orderBy('start_date', 'DESC')
+            ->findAll();
+
+        $monthlyData = [];
+        foreach ($leaves as $leave) {
+            $monthYear = date('M Y', strtotime($leave['start_date'] ?? $leave['created_at']));
+            if (!isset($monthlyData[$monthYear])) {
+                $monthlyData[$monthYear] = [
+                    'month_year' => $monthYear,
+                    'paid_used' => 0,
+                    'sick_used' => 0,
+                    'total_days' => 0,
+                    'records' => []
+                ];
+            }
+
+            $days = (float)($leave['total_days'] ?? 1);
+            $leaveType = strtolower($leave['leave_type'] ?? '');
+
+            if (strpos($leaveType, 'sick') !== false || strpos($leaveType, 'casual') !== false) {
+                $monthlyData[$monthYear]['sick_used'] += $days;
+            } else {
+                $monthlyData[$monthYear]['paid_used'] += $days;
+            }
+            $monthlyData[$monthYear]['total_days'] += $days;
+            $monthlyData[$monthYear]['records'][] = [
+                'leave_type' => $leave['leave_type'] ?? 'N/A',
+                'start_date' => $leave['start_date'] ?? '',
+                'end_date'   => $leave['end_date'] ?? '',
+                'total_days' => $days,
+                'status'     => $leave['status'] ?? 'Approved',
+                'reason'     => $leave['reason'] ?? '',
+            ];
+        }
+
+        return $this->respond([
+            'status' => true,
+            'employee_name' => trim(($userInfo['firstname'] ?? '') . ' ' . ($userInfo['lastname'] ?? '')),
+            'remaining_paid_leave' => (float)($empLeave['paid_leave'] ?? 0),
+            'remaining_sick_leave' => (float)($empLeave['casual_leave'] ?? 0),
+            'monthly_history' => array_values($monthlyData),
+            'all_leaves' => $leaves
         ]);
     }
 }

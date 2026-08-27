@@ -142,7 +142,29 @@
         div.dataTables_wrapper div.dataTables_filter label input {
             width: 321px !important;
         }
+@media (max-width: 767px) {
+    .emp-filter-container {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        width: 100% !important;
     }
+    .emp-filter-container #departmentFilter {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+    .emp-filter-container #monthFilter,
+    .emp-filter-container #yearFilter {
+        flex: 1 1 calc(50% - 4px) !important;
+        width: calc(50% - 4px) !important;
+        min-width: 0 !important;
+    }
+    .emp-filter-container .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 4px !important;
+    }
+}
 </style>
 <div class="row">
     <div class="col-lg-12 grid-margin stretch-card">
@@ -152,9 +174,30 @@
                 <div class="align-items-center d-md-flex justify-content-between mb-3">
 
                     <h4 class="card-title">Manage Employees</h4>
-                    <div class="d-md-flex gap-2">
-                        <select class="form-select" id="departmentFilter" style="border: 2px solid #E66136; color: #E66136; font-weight: 500;">
+                    <div class="d-md-flex gap-2 align-items-center emp-filter-container">
+                        <select class="form-select" id="departmentFilter" style="min-width: 180px; width: auto;">
                             <option value="">All Departments</option>
+                        </select>
+                        <select class="form-select" id="monthFilter" style="min-width: 135px; width: auto;">
+                            <option value="">All Months</option>
+                            <option value="01">Jan</option>
+                            <option value="02">Feb</option>
+                            <option value="03">Mar</option>
+                            <option value="04">Apr</option>
+                            <option value="05">May</option>
+                            <option value="06">Jun</option>
+                            <option value="07">Jul</option>
+                            <option value="08">Aug</option>
+                            <option value="09">Sep</option>
+                            <option value="10">Oct</option>
+                            <option value="11">Nov</option>
+                            <option value="12">Dec</option>
+                        </select>
+                        <select class="form-select" id="yearFilter" style="min-width: 120px; width: auto;">
+                            <option value="">All Years</option>
+                            <?php for ($y = date('Y'); $y >= 2020; $y--): ?>
+                                <option value="<?= $y ?>"><?= $y ?></option>
+                            <?php endfor; ?>
                         </select>
                         <a href="/employee" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-plus iconfontsize"></i> Add Employee
@@ -179,13 +222,14 @@
                         <thead>
                             <tr>
                                 <th style="display:none;">ID</th>
+                                <th>Emp ID</th>
                                 <th>Name</th>
                                 <th class="desktop-only-col">Email</th>
                                 <th class="desktop-only-col">Department</th>
                                 <th class="desktop-only-col">Role</th>
                                 <th class="desktop-only-col">Rem. Paid Leave</th>
                                 <th class="desktop-only-col">Rem. Sick Leave</th>
-                                <th class="desktop-only-col">Increment History</th>
+                                <th class="desktop-only-col">Status / Reason</th>
                                 <th class="desktop-only-col">Action</th>
                                 <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
@@ -234,115 +278,105 @@
     </div>
 </div>
 
-<!-- Salary Increment Modal -->
-<div class="modal fade" id="incrementModal" tabindex="-1" aria-labelledby="incrementModalLabel" aria-hidden="true">
+<!-- Employee Status Modal -->
+<div class="modal fade" id="employeeStatusModal" tabindex="-1" aria-labelledby="employeeStatusModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content" style="border-radius:12px; overflow:hidden;">
             <div class="modal-header" style="background:#E66136; color:white;">
-                <h5 class="modal-title" id="incrementModalLabel">
-                    <i class="mdi mdi-trending-up me-1"></i> Salary Increment
+                <h5 class="modal-title" id="employeeStatusModalLabel">
+                    <i class="mdi mdi-account-cog me-1"></i> Change Employee Status
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form id="incrementForm">
-                    <input type="hidden" name="increment_user_id" id="increment_user_id">
+            <form id="employeeStatusForm">
+                <div class="modal-body">
+                    <input type="hidden" name="user_id" id="status_user_id">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Employee:</label>
-                        <span id="increment_employee_name" class="ms-1"></span>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Current Salary (&#8377;):</label>
-                            <input type="text" class="form-control bg-light" id="current_salary" readonly>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Last Increment Date:</label>
-                            <input type="text" class="form-control bg-light" id="last_increment_date" readonly>
-                        </div>
+                        <label class="form-label fw-bold">Employee Name:</label>
+                        <span id="status_employee_name" class="ms-1 fw-bold text-primary"></span>
                     </div>
                     <div class="mb-3">
-                        <label for="increment_amount" class="form-label fw-bold">New Increment Amount (&#8377;) <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="mdi mdi-plus"></i></span>
-                            <input type="number" class="form-control" id="increment_amount" name="increment_amount" placeholder="e.g. 2000" min="1" required>
-                        </div>
-                        <small class="text-muted">This amount will be added to the current salary.</small>
+                        <label for="status_select" class="form-label fw-bold">Select Status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="status_select" name="status" required>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Resigned">Resigned</option>
+                            <option value="Fired">Fired / Removed</option>
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Effective From Date <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="increment_date" name="increment_date" required value="<?= date('Y-m-d') ?>">
+                        <label for="status_reason" class="form-label fw-bold">Reason / Comment <small class="text-muted">(Required for Resigned/Fired/Inactive)</small></label>
+                        <textarea class="form-control" id="status_reason" name="status_reason" rows="3" placeholder="Enter details or reason for resignation / removal..."></textarea>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer border-top-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="btnSaveIncrement" style="background:#E66136; border-color:#E66136;">
-                    <i class="mdi mdi-check me-1"></i> Update Salary
-                </button>
-            </div>
+                    <div class="mb-3">
+                        <label for="status_last_working_day" class="form-label fw-bold">Last Working Day</label>
+                        <input type="date" class="form-control" id="status_last_working_day" name="last_working_day" value="<?= date('Y-m-d') ?>">
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0" style="background:#f8f9fa;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn hr-btnbg" id="btnSaveStatus">
+                        <i class="mdi mdi-check me-1"></i> Save Status
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     Increment History Modal
-     ══════════════════════════════════════════════════════ -->
-<div class="modal fade" id="incrementHistoryModal" tabindex="-1" aria-labelledby="incrementHistoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+<!-- Month-wise Leave History Modal -->
+<div class="modal fade" id="leaveHistoryMonthlyModal" tabindex="-1" aria-labelledby="leaveHistoryMonthlyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="border-radius:12px; overflow:hidden;">
-
-            <!-- Header -->
             <div class="modal-header" style="background: linear-gradient(135deg,#E66136,#f0845a); color:#fff; padding:18px 24px;">
                 <div>
-                    <h5 class="modal-title mb-0" id="incrementHistoryModalLabel">
-                        <i class="mdi mdi-history me-2"></i>Increment History
+                    <h5 class="modal-title mb-0" id="leaveHistoryMonthlyModalLabel">
+                        <i class="mdi mdi-calendar-clock me-2"></i>Month-wise Leave History
                     </h5>
-                    <small id="ih-employee-name" class="opacity-75"></small>
+                    <small id="lm-employee-name" class="opacity-75"></small>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <div class="modal-body p-3">
+                <div class="d-flex gap-3 mb-3">
+                    <div class="p-2 px-3 rounded bg-light border flex-fill">
+                        <span class="text-muted d-block small">Remaining Paid Leave</span>
+                        <strong id="lm-paid-leave" class="fs-5 text-success">0</strong>
+                    </div>
+                    <div class="p-2 px-3 rounded bg-light border flex-fill">
+                        <span class="text-muted d-block small">Remaining Sick Leave</span>
+                        <strong id="lm-sick-leave" class="fs-5 text-warning">0</strong>
+                    </div>
+                </div>
 
-            <!-- Body -->
-            <div class="modal-body p-0">
-
-                <!-- Loader -->
-                <div id="ih-loader" class="text-center py-5">
-                    <div class="spinner-border" style="color:#E66136; width:2.5rem; height:2.5rem;" role="status">
+                <div id="lm-loader" class="text-center py-4">
+                    <div class="spinner-border" style="color:#E66136;" role="status">
                         <span class="visually-hidden">Loading…</span>
                     </div>
-                    <p class="mt-3 text-muted">Fetching increment history…</p>
+                    <p class="mt-2 text-muted small">Fetching monthly leave breakdown...</p>
                 </div>
 
-                <!-- Empty state -->
-                <div id="ih-empty" class="text-center py-5" style="display:none;">
-                    <i class="mdi mdi-file-search-outline" style="font-size:3rem; color:#ccc;"></i>
-                    <p class="mt-2 text-muted fw-semibold">No Increment History Available</p>
+                <div id="lm-empty" class="text-center py-4" style="display:none;">
+                    <i class="mdi mdi-calendar-blank" style="font-size:2.5rem; color:#ccc;"></i>
+                    <p class="mt-2 text-muted fw-semibold">No leave history records found for this employee</p>
                 </div>
 
-                <!-- Table -->
-                <div id="ih-table-wrapper" style="display:none;">
-                    <table class="table table-hover mb-0" id="ih-table">
-                        <thead style="background:#f8f9fa; position:sticky; top:0; z-index:1;">
+                <div id="lm-table-wrapper" style="display:none;">
+                    <table class="table table-bordered align-middle">
+                        <thead class="bg-light">
                             <tr>
-                                <th class="ps-4">#</th>
-                                <th>Employee Name</th>
-                                <th>Previous Salary (₹)</th>
-                                <th>Increment Amount (₹)</th>
-                                <th>New Salary (₹)</th>
-                                <th>Effective Date</th>
-                                <th>Added On</th>
-                                <th>Remarks</th>
+                                <th>Month & Year</th>
+                                <th>Paid Leave Used</th>
+                                <th>Sick Leave Used</th>
+                                <th>Total Days</th>
                             </tr>
                         </thead>
-                        <tbody id="ih-tbody"></tbody>
+                        <tbody id="lm-tbody"></tbody>
                     </table>
                 </div>
             </div>
-
-            <!-- Footer -->
             <div class="modal-footer" style="background:#f8f9fa;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -356,7 +390,7 @@
             return string ? string.charAt(0).toUpperCase() + string.slice(1).toLowerCase() : '';
         }
         // ✅ Fetch and display employees
-        function fetchEmployees(departmentId = '', viewType = 'active') {
+        function fetchEmployees(departmentId = '', viewType = 'active', month = '', year = '') {
             $.ajax({
                 url: '<?= base_url('/api/employees') ?>',
                 type: 'GET',
@@ -370,29 +404,53 @@
                 },
                 success: function (response) {
                     if (response.status && response.employees) {
-                        const employees = response.employees;
+                        let employees = response.employees;
+
+                        // Filter by month/year joining date if selected
+                        if (month || year) {
+                            employees = employees.filter((emp) => {
+                                if (!emp.user_info.joining_date) return false;
+                                const d = new Date(emp.user_info.joining_date);
+                                if (isNaN(d.getTime())) return false;
+                                const m = String(d.getMonth() + 1).padStart(2, '0');
+                                const y = String(d.getFullYear());
+                                if (month && m !== month) return false;
+                                if (year && y !== year) return false;
+                                return true;
+                            });
+                        }
+
                         let tableRows = '';
 
-
-                        if (employees.length === 0) {
-                            // tableRows += `
-                            //     <tr>
-                            //         <td colspan="6" class="text-center text-muted">No employees found</td>
-                            //     </tr>
-                            // `;
-                        } else {
-
+                        if (employees.length > 0) {
                             employees.forEach((employee) => {
+                                const empIdCode = employee.user_info.employee_id || ('EMP-' + employee.user.id);
                                 const empName = `${capitalizeFirstLetter(employee.user_info.firstname || 'N/A')} ${capitalizeFirstLetter(employee.user_info.lastname || '')}`;
                                 const empEmail = employee.user?.email || 'N/A';
                                 const empDept = employee.user_info?.department_name || 'N/A';
                                 const empRole = employee.user?.role ? employee.user.role.charAt(0).toUpperCase() + employee.user.role.slice(1) : 'N/A';
                                 const empRemPaid = employee.user_info?.remaining_paid_leave !== undefined ? employee.user_info.remaining_paid_leave : 0;
                                 const empRemSick = employee.user_info?.remaining_sick_leave !== undefined ? employee.user_info.remaining_sick_leave : 0;
+                                const empStatus = employee.user_info?.status || 'Active';
+                                const empReason = employee.user_info?.status_reason || '';
+                                const empLastDay = employee.user_info?.last_working_day || '';
+
+                                let statusBadge = '<span class="badge bg-success p-1 px-2">Active</span>';
+                                if (['resigned', 'fired', 'removed', 'inactive'].includes(empStatus.toLowerCase())) {
+                                    const badgeColor = empStatus.toLowerCase() === 'resigned' ? 'bg-warning text-dark' : 'bg-danger';
+                                    statusBadge = `<span class="badge ${badgeColor} p-1 px-2">${empStatus}</span>`;
+                                    if (empReason) {
+                                        statusBadge += `<br><small class="text-muted fst-italic" style="font-size:11px;">Reason: ${empReason}</small>`;
+                                    }
+                                    if (empLastDay) {
+                                        statusBadge += `<br><small class="text-secondary" style="font-size:10px;">LWD: ${empLastDay}</small>`;
+                                    }
+                                }
 
                                 tableRows += `
                                     <tr data-id="${employee.user.id}">
                                         <td style="display:none;">${employee.user.id}</td>
+                                        <td class="fw-bold text-nowrap"><span class="badge bg-secondary p-1 px-2">${empIdCode}</span></td>
                                         <td class="py-1">
                                             <div class="d-flex align-items-start align-items-baseline">
                                                 <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none">
@@ -419,19 +477,19 @@
                                                     </div>
                                                     <div class="detail-row">
                                                         <span class="detail-label">Rem. Paid Leave:</span>
-                                                        <span class="detail-value">${empRemPaid}</span>
+                                                        <span class="detail-value"><a href="#" class="open-leave-history text-decoration-none fw-bold text-success" data-id="${employee.user.id}" data-name="${empName}">${empRemPaid} <i class="mdi mdi-information-outline small text-muted"></i></a></span>
                                                     </div>
                                                     <div class="detail-row">
                                                         <span class="detail-label">Rem. Sick Leave:</span>
-                                                        <span class="detail-value">${empRemSick}</span>
+                                                        <span class="detail-value"><a href="#" class="open-leave-history text-decoration-none fw-bold text-warning" data-id="${employee.user.id}" data-name="${empName}">${empRemSick} <i class="mdi mdi-information-outline small text-muted"></i></a></span>
                                                     </div>
                                                     <div class="detail-actions">
-                                                        <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info.salary || 0}" data-last-date="${employee.user_info.last_increment_date || 'N/A'}" class="btn btn-sm btn-success open-increment-modal" title="Increment"><i class="mdi mdi-cash-plus"></i> Increment</a>
+                                                        <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-status="${empStatus}" data-reason="${empReason}" data-lastday="${empLastDay}" class="btn btn-sm btn-info open-status-modal" title="Change Status"><i class="mdi mdi-account-cog"></i> Status</a>
+                                                        <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="btn btn-sm btn-success open-leave-history" title="Leave History"><i class="mdi mdi-calendar-clock"></i> Leave History</a>
                                                         <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="btn btn-sm btn-secondary open-password-modal" title="Password"><i class="fa fa-key"></i> Password</a>
                                                         <a href="/employee/profile/${employee.user_info.id}" class="btn btn-sm btn-primary" title="View"><i class="mdi mdi-eye text-white"></i> View</a>
                                                         <a href="/employee/${employee.user.id}" class="btn btn-sm btn-warning" title="Edit"><i class="mdi mdi-pencil"></i> Edit</a>
                                                         <a href="#" class="btn btn-sm btn-danger delete-employee" data-id="${employee.user.id}" title="Delete"><i class="mdi mdi-delete"></i> Delete</a>
-                                                        <button class="btn btn-sm open-increment-history" data-id="${employee.user.id}" data-name="${empName}" title="Increment History" style="background:#E66136; color:#fff; border:none;"><i class="mdi mdi-history"></i> History</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -439,18 +497,17 @@
                                         <td class="desktop-only-col">${empEmail}</td>
                                         <td class="desktop-only-col">${empDept}</td>
                                         <td class="desktop-only-col">${empRole}</td>
-                                        <td class="desktop-only-col">${empRemPaid}</td>
-                                        <td class="desktop-only-col">${empRemSick}</td>
-                                       <td class="desktop-only-col">
-                                            <button class="btn btn-sm open-increment-history" data-id="${employee.user.id}" data-name="${empName}" style="white-space:nowrap; background:#E66136; color:#fff; border:none;">
-                                                <i class="mdi mdi-history"></i> History
-                                            </button>
-                                        </td>
+                                        <td class="desktop-only-col"><a href="#" class="open-leave-history text-decoration-none fw-bold text-success" data-id="${employee.user.id}" data-name="${empName}">${empRemPaid} <i class="mdi mdi-information-outline small text-muted"></i></a></td>
+                                        <td class="desktop-only-col"><a href="#" class="open-leave-history text-decoration-none fw-bold text-warning" data-id="${employee.user.id}" data-name="${empName}">${empRemSick} <i class="mdi mdi-information-outline small text-muted"></i></a></td>
+                                        <td class="desktop-only-col">${statusBadge}</td>
                                         <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
-                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info.salary || 0}" data-last-date="${employee.user_info.last_increment_date || 'N/A'}" class="text-success fs-5 open-increment-modal" title="Salary Increment">
-                                                <i class="mdi mdi-cash-plus"></i>
+                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-status="${empStatus}" data-reason="${empReason}" data-lastday="${empLastDay}" class="text-info fs-5 open-status-modal" title="Change Status / Resignation Reason">
+                                                <i class="mdi mdi-account-cog"></i>
                                             </a>
-                                            <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="text-primary fs-5 open-password-modal" title="Password">
+                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="text-success fs-5 open-leave-history" title="Leave History">
+                                                <i class="mdi mdi-calendar-clock"></i>
+                                            </a>
+                                            <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="text-secondary fs-5 open-password-modal" title="Password">
                                                 <i class="fa fa-key" aria-hidden="true"></i>
                                             </a>
                                             <a href="/employee/profile/${employee.user_info.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
@@ -465,53 +522,30 @@
                                 `;
                             });
                         }
-                        // console.log(tableRows);
-
 
                         const $table = $('#employee-table');
 
-                        // Destroy if already initialized
                         if ($.fn.DataTable.isDataTable($table)) {
                             $table.DataTable().clear().destroy();
                         }
 
-                        // Inject rows into <tbody>
                         $('#employee-table-body').html(tableRows);
 
-                        // Delay to let DOM fully update
                         setTimeout(() => {
                             $table.DataTable({
                                 order: [
-                                    [5, 'desc']
+                                    [2, 'asc']
                                 ],
                                 columnDefs: [
-                                    {
-                                        targets: 0,
-                                        visible: false,
-                                        searchable: false
-                                    },
-                                    {
-                                        targets: 7, // Action column — not sortable
-                                        orderable: false,
-                                        searchable: false
-                                    },
-                                    {
-                                        targets: 8, // Increment History column — not sortable
-                                        orderable: false,
-                                        searchable: false
-                                    },
-                                    {
-                                        targets: 9, // mobile expand column
-                                        orderable: false,
-                                        searchable: false
-                                    }
+                                    { targets: 0, visible: false, searchable: false },
+                                    { targets: 9, orderable: false, searchable: false },
+                                    { targets: 10, orderable: false, searchable: false }
                                 ],
                                 language: {
                                     search: "",
                                     searchPlaceholder: "Search"
                                 }
                             });
-                            // Apply mobile visibility
                             if (typeof applyMobileTableVisibility === 'function') {
                                 applyMobileTableVisibility();
                             }
@@ -520,13 +554,13 @@
                     } else {
                         $('#employee-table-body').html(`
                             <tr>
-                                <td colspan="6" class="text-center text-muted">No employees found</td>
+                                <td colspan="10" class="text-center text-muted">No employees found</td>
                             </tr>
                         `);
                     }
                 },
                 error: function () {
-                    Swal.fire('Error', 'Failed to fetch employee', 'error');
+                    Swal.fire('Error', 'Failed to fetch employees', 'error');
                 }
             });
         }
@@ -554,16 +588,21 @@
             });
         }
 
-        // ✅ Department filter change event
-        $('#departmentFilter').on('change', function () {
-            const selectedDeptId = $(this).val();
-            const activeView = $('#employeeTabs .nav-link.active').data('view');
-            fetchEmployees(selectedDeptId, activeView);
+        // ✅ Filter change events
+        function triggerFilter() {
+            const selectedDeptId = $('#departmentFilter').val();
+            const selectedMonth  = $('#monthFilter').val();
+            const selectedYear   = $('#yearFilter').val();
+            const activeView     = $('#employeeTabs .nav-link.active').data('view');
+            fetchEmployees(selectedDeptId, activeView, selectedMonth, selectedYear);
+        }
+
+        $('#departmentFilter, #monthFilter, #yearFilter').on('change', function () {
+            triggerFilter();
         });
 
         // ✅ Tab switch event
         $('#employeeTabs .nav-link').on('click', function () {
-            // Update active tab styling
             $('#employeeTabs .nav-link')
                 .removeClass('active')
                 .css({'color': '#6c757d', 'border-bottom': 'none', 'font-weight': '600'});
@@ -571,14 +610,150 @@
                 .addClass('active')
                 .css({'color': '#E66136', 'border-bottom': '3px solid #E66136'});
 
-            const viewType = $(this).data('view');
-            const selectedDeptId = $('#departmentFilter').val();
-            fetchEmployees(selectedDeptId, viewType);
+            triggerFilter();
         });
 
         // 🚀 Initial calls
         fetchDepartments();
-        fetchEmployees('', 'active'); // Load active employees initially
+        fetchEmployees('', 'active');
+
+        function showBsModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (!el) return;
+            if (window.$ && typeof $('#' + modalId).modal === 'function') {
+                try {
+                    $('#' + modalId).modal('show');
+                    return;
+                } catch (e) {}
+            }
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                try {
+                    let inst = bootstrap.Modal.getInstance(el);
+                    if (!inst) inst = new bootstrap.Modal(el);
+                    inst.show();
+                } catch (e) {}
+            }
+        }
+
+        function hideBsModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (!el) return;
+            if (window.$ && typeof $('#' + modalId).modal === 'function') {
+                try {
+                    $('#' + modalId).modal('hide');
+                    return;
+                } catch (e) {}
+            }
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                try {
+                    let inst = bootstrap.Modal.getInstance(el);
+                    if (inst) inst.hide();
+                } catch (e) {}
+            }
+        }
+
+        // ══════════════════════════════════════════════════════
+        // Status Change Modal Handler
+        // ══════════════════════════════════════════════════════
+        $(document).on('click', '.open-status-modal', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const userId = $(this).data('id');
+            const name   = $(this).data('name');
+            const status = $(this).data('status') || 'Active';
+            const reason = $(this).data('reason') || '';
+            const lwd    = $(this).data('lastday') || new Date().toISOString().split('T')[0];
+
+            $('#status_user_id').val(userId);
+            $('#status_employee_name').text(name);
+            $('#status_select').val(status);
+            $('#status_reason').val(reason);
+            $('#status_last_working_day').val(lwd);
+
+            showBsModal('employeeStatusModal');
+        });
+
+        $('#employeeStatusForm').on('submit', function (e) {
+            e.preventDefault();
+            const formData = $(this).serialize();
+            const token = localStorage.getItem('token');
+
+            $.ajax({
+                url: '<?= base_url("api/employee/updateStatus") ?>',
+                type: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                data: formData,
+                success: function (res) {
+                    if (res.status === 'success') {
+                        Swal.fire('Updated!', res.message, 'success');
+                        hideBsModal('employeeStatusModal');
+                        triggerFilter();
+                    } else {
+                        Swal.fire('Error', res.message || 'Failed to update status', 'error');
+                    }
+                },
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'Server error', 'error');
+                }
+            });
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Month-wise Leave History Modal Handler
+        // ══════════════════════════════════════════════════════
+        $(document).on('click', '.open-leave-history', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const userId = $(this).data('id');
+            const empName = $(this).data('name') || 'Employee';
+            const token = localStorage.getItem('token');
+
+            $('#lm-employee-name').text(empName);
+            $('#lm-loader').show();
+            $('#lm-empty').hide();
+            $('#lm-table-wrapper').hide();
+            $('#lm-tbody').empty();
+
+            showBsModal('leaveHistoryMonthlyModal');
+
+            $.ajax({
+                url: `<?= base_url('api/employee/leaveHistoryMonthly') ?>/${userId}`,
+                type: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+                success: function (res) {
+                    $('#lm-loader').hide();
+                    if (res.status && res.monthly_history) {
+                        $('#lm-paid-leave').text(res.remaining_paid_leave || 0);
+                        $('#lm-sick-leave').text(res.remaining_sick_leave || 0);
+
+                        if (res.monthly_history.length === 0) {
+                            $('#lm-empty').show();
+                            return;
+                        }
+
+                        let rows = '';
+                        res.monthly_history.forEach((m) => {
+                            rows += `
+                                <tr>
+                                    <td class="fw-bold">${m.month_year}</td>
+                                    <td class="text-success fw-bold">${m.paid_used} days</td>
+                                    <td class="text-warning fw-bold">${m.sick_used} days</td>
+                                    <td class="fw-bold">${m.total_days} days</td>
+                                </tr>
+                            `;
+                        });
+                        $('#lm-tbody').html(rows);
+                        $('#lm-table-wrapper').show();
+                    } else {
+                        $('#lm-empty').show();
+                    }
+                },
+                error: function () {
+                    $('#lm-loader').hide();
+                    $('#lm-empty').show();
+                }
+            });
+        });
 
 
         $(document).on('click', '.delete-employee', function (e) {
@@ -674,8 +849,7 @@
         // $('#password').val(userpss); // populate password field
         // $('#confirm_password').val(userpss); // populate password field
 
-        const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
-        modal.show();
+        showBsModal('passwordModal');
     });
 
     $('#passwordForm').submit(function (e) {
@@ -707,8 +881,7 @@
             .then((res) => {
                 if (res.status === 'success') {
                     Swal.fire('Success', res.message, 'success');
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));
-                    modal.hide();
+                    hideBsModal('passwordModal');
                     $('#passwordForm')[0].reset();
                 } else {
                     Swal.fire('Error', res.message, 'error');
@@ -866,8 +1039,3 @@
                 $('#ih-empty').show();
             }
         });
-    });
-
-</script>
-
-<?= $this->endSection(); ?>

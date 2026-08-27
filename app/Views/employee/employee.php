@@ -535,21 +535,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Employee ID</label>
+                                    <label>Employee ID <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><i
-                                                    class="mdi mdi-badge-account-outline fs-5"></i></span>
+                                            <span class="input-group-text"><i class="mdi mdi-badge-account-outline fs-5"></i></span>
                                         </div>
-                                        <!-- <input type="text" class="form-control" name="employee_id" id="employee_id" readonly /> -->
-                                        <!-- Employee ID (Visible to User) -->
-                                        <input type="text" class="form-control" id="employee_id_display" readonly>
-
-                                        <!-- Employee ID (Actual Value for Submission) -->
-                                        <input type="hidden" name="employee_id" id="employee_id">
-
+                                        <input type="text" class="form-control" name="employee_id" id="employee_id" placeholder="Enter Employee ID (e.g. EMP-101)" required />
                                     </div>
-                                    <div class="error" id="employee_id-Error"></div>
+                                    <div class="error text-danger mt-1" id="employee_id-Error"></div>
 
                                 </div>
                             </div>
@@ -1168,11 +1161,7 @@
                         $('#country_id_main').val(userInfo.country_id);
                         $('#contact_number').val(userInfo.contact_number);
                         $('#emergency_contact').val(userInfo.emergency_contact);
-                        // $('#employee_id').val(userInfo.employee_id);
-                        //$('#employee_id').val('EMP#' + userInfo.employee_id);
-                        // Set raw ID in hidden input
-                        $('#employee_id').val(userInfo.employee_id); // raw for backend
-                        $('#employee_id_display').val('EMP#' + userInfo.employee_id); // formatted for user
+                        $('#employee_id').val(userInfo.employee_id || '');
 
                         $('#designation_id').val(userInfo.designation_id);
                         $('#department_id').val(userInfo.department_id);
