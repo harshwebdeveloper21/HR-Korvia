@@ -58,6 +58,23 @@ class AuthController extends ResourceController
             );
         }
 
+        // Check if user account is active
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $userInfo = $userInfoModel->where('user_id', $user['id'])->first();
+
+        if ($userInfo && !empty($userInfo['status'])) {
+            $statusLower = strtolower(trim($userInfo['status']));
+            if (in_array($statusLower, ['inactive', 'resigned', 'fired', 'removed'])) {
+                return $this->respond(
+                    [
+                        "status" => "error",
+                        "message" => "Your account is marked as " . ucfirst($statusLower) . ". Login is not allowed.",
+                    ],
+                    403
+                );
+            }
+        }
+
         // ✅ JWT token
         $jwtToken = $this->authService->attempt($email, $password);
 

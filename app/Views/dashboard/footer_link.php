@@ -16,8 +16,8 @@
 <script src="<?= base_url(env('ImagePath').'assets/js/datatable.js'); ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/progressbar.js/1.0.1/progressbar.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/script.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/mobile-table.js'); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/script.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/mobile-table.js?v=' . time()); ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
 
 <!-- 404 Detection and Redirect Script -->

@@ -61,6 +61,22 @@
             </div>
             
             <div class="card-body pt-4">
+                <!-- Complaints & Feedback Tabs -->
+                <ul class="nav nav-tabs mb-3" id="userComplaintTabs" role="tablist" style="border-bottom: 2px solid #E66136;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="user-all-tab" data-type="" type="button" role="tab"
+                            style="color:#E66136; border-bottom: 3px solid #E66136; font-weight:600;">All Requests</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="user-complaints-tab" data-type="Complaint" type="button" role="tab"
+                            style="color:#6c757d; font-weight:600;"><i class="mdi mdi-alert-circle-outline me-1"></i> Complaints</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="user-feedback-tab" data-type="Feedback" type="button" role="tab"
+                            style="color:#6c757d; font-weight:600;"><i class="mdi mdi-comment-text-outline me-1"></i> Feedback</button>
+                    </li>
+                </ul>
+
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="userComplaintsTable">
                         <thead>
@@ -232,6 +248,18 @@ $(document).ready(function() {
             searchPlaceholder: "Search",
             lengthMenu: "Show _MENU_ entries"
         }
+    });
+
+    $('#userComplaintTabs .nav-link').on('click', function () {
+        $('#userComplaintTabs .nav-link')
+            .removeClass('active')
+            .css({'color': '#6c757d', 'border-bottom': 'none', 'font-weight': '600'});
+        $(this)
+            .addClass('active')
+            .css({'color': '#E66136', 'border-bottom': '3px solid #E66136'});
+
+        const selectedType = $(this).data('type');
+        table.column(2).search(selectedType).draw();
     });
 
     // Delegation for View Details button

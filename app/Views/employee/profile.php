@@ -93,6 +93,7 @@
 
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#compensation"><i class="fa fa-tasks" aria-hidden="true"></i> Job Details</a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#emergency"><i class="fa fa-bank"> </i> Bank Details</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#leaveHistoryTabPane" id="leaveHistoryTab"><i class="mdi mdi-calendar-clock"></i> Leave History</a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#incrementHistory" id="incrementHistoryTab"><i class="mdi mdi-cash-plus"></i> Increment History</a></li>
 
             </ul>
@@ -586,6 +587,44 @@
                                 <tbody id="incrementHistoryBody">
                                     <tr><td colspan="5" class="text-center text-muted">Click the tab to load history.</td></tr>
                                 </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leave History Tab -->
+                <div class="tab-pane fade" id="leaveHistoryTabPane">
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="section-title mb-0">Leave History</h6>
+                        </div>
+                        <div class="d-flex gap-3 mb-3">
+                            <div class="p-3 rounded bg-light border flex-fill">
+                                <span class="text-muted d-block small">Remaining Paid Leave</span>
+                                <strong id="prof-paid-leave" class="fs-4 text-success">0</strong>
+                            </div>
+                            <div class="p-3 rounded bg-light border flex-fill">
+                                <span class="text-muted d-block small">Remaining Sick Leave</span>
+                                <strong id="prof-sick-leave" class="fs-4 text-warning">0</strong>
+                            </div>
+                        </div>
+                        <div id="profLeaveLoading" class="text-center py-4">
+                            <div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div>
+                        </div>
+                        <div id="profLeaveEmpty" class="text-center py-4" style="display:none;">
+                            <p class="text-muted">No leave history records found.</p>
+                        </div>
+                        <div class="table-responsive" id="profLeaveTableWrapper" style="display:none;">
+                            <table class="table table-bordered table-hover align-middle">
+                                <thead style="background-color:#E66136; color:#fff;">
+                                    <tr>
+                                        <th>Month & Year</th>
+                                        <th>Paid Leave Used</th>
+                                        <th>Sick Leave Used</th>
+                                        <th>Total Days</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="profLeaveBody"></tbody>
                             </table>
                         </div>
                     </div>
@@ -1169,6 +1208,59 @@
                 },
                 error: function () {
                     $tbody.html('<tr><td colspan="5" class="text-center text-danger">Failed to load increment history. Please try again.</td></tr>');
+                }
+            });
+        });
+
+        // ---- Leave History Tab ----
+        let leaveHistoryLoaded = false;
+
+        $(document).on('click shown.bs.tab', '#leaveHistoryTab', function () {
+            if (leaveHistoryLoaded) return;
+            const token = localStorage.getItem('token');
+            const targetUserId = $('#users-id').text() || '<?= $id; ?>';
+
+            $('#profLeaveLoading').show();
+            $('#profLeaveEmpty').hide();
+            $('#profLeaveTableWrapper').hide();
+
+            $.ajax({
+                url: '<?= base_url("api/employee/leaveHistoryMonthly/") ?>' + targetUserId,
+                type: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token },
+                dataType: 'json',
+                success: function (res) {
+                    $('#profLeaveLoading').hide();
+                    if (res.status && res.monthly_history) {
+                        $('#prof-paid-leave').text(res.remaining_paid_leave || 0);
+                        $('#prof-sick-leave').text(res.remaining_sick_leave || 0);
+
+                        if (res.monthly_history.length === 0) {
+                            $('#profLeaveEmpty').show();
+                            leaveHistoryLoaded = true;
+                            return;
+                        }
+
+                        let rows = '';
+                        res.monthly_history.forEach(function (m) {
+                            rows += `<tr>
+                                <td class="fw-bold">${m.month_year}</td>
+                                <td class="text-success fw-bold">${m.paid_used} days</td>
+                                <td class="text-warning fw-bold">${m.sick_used} days</td>
+                                <td class="fw-bold">${m.total_days} days</td>
+                            </tr>`;
+                        });
+                        $('#profLeaveBody').html(rows);
+                        $('#profLeaveTableWrapper').show();
+                        leaveHistoryLoaded = true;
+                    } else {
+                        $('#profLeaveEmpty').show();
+                        leaveHistoryLoaded = true;
+                    }
+                },
+                error: function () {
+                    $('#profLeaveLoading').hide();
+                    $('#profLeaveEmpty').show();
                 }
             });
         });

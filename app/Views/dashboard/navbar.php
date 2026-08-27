@@ -170,7 +170,7 @@ $role = $user ? $user->role : null;
         }
 
         .sidebar-offcanvas {
-            left: -220px !important;
+            left: -240px !important;
         }
 
         .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown {
@@ -247,7 +247,7 @@ $role = $user ? $user->role : null;
         }
 
         .sidebar-offcanvas {
-            left: -220px !important;
+            left: -240px !important;
         }
         .navbar .navbar-brand-wrapper{
             background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
