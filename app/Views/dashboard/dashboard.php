@@ -1257,9 +1257,177 @@
                                             <a href="/complaints/admin" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
                                         </div>
                                         <div id="latestComplaintsListAdmin" class="mt-3" style="max-height: 250px; overflow-y: auto;">
-                                            <div class="d-flex align-items-center justify-content-center text-center p-4">
-                                                <h5 class="text-muted txtclr">No complaints and feedback found</h5>
-                                            </div>
+                                            <?php if (!empty($complaintsData)) : ?>
+                                                <?php foreach ($complaintsData as $complaint) : ?>
+                                                    <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
+                                                        <img src="/upload/<?= !empty($complaint['profile_image']) ? $complaint['profile_image'] : 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <div style="flex-grow: 1;">
+                                                            <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $complaint['subject'] ?></div>
+                                                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                                                <div class="small text-muted mb-1">
+                                                                    By: <?= $complaint['name'] ?: $complaint['username'] ?> | Type: <?= $complaint['type'] ?>
+                                                                </div>
+                                                                <span class="badge <?= $complaint['status'] == 'pending' ? 'bg-warning' : ($complaint['status'] == 'resolved' ? 'bg-success' : 'bg-secondary') ?>"><?= $complaint['status'] ?></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else : ?>
+                                                <div class="d-flex align-items-center justify-content-center text-center p-4">
+                                                    <h5 class="text-muted txtclr">No complaints and feedback found</h5>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-4 col-lg-6 d-flex flex-column grid-margin sm-grid-margin stretch-card">
+                                <div class="card card-rounded todaybday">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start align-items-sm-center">
+                                            <h4 class="card-title card-title-dash sm-bar-chart-size mb-0">Tasks and Projects</h4>
+                                            <a href="/alltask" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
+                                        </div>
+                                        <div id="tasksAndProjects" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                                            <?php if (!empty($tasksData)) : ?>
+                                                <?php foreach ($tasksData as $task) : ?>
+                                                    <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
+                                                        <img src="/upload/<?= $task['profile_image'] ?: 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <div>
+                                                            <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $task['task_title'] ?></div>
+                                                            <div class="small text-muted mb-1">
+                                                                Assigned to: <?= $task['username'] ?> | Due: <?= date('d M Y', strtotime($task['due_date'])) ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else : ?>
+                                                <div class="d-flex align-items-center justify-content-center text-center p-4">
+                                                    <h5 class="text-muted txtclr">No tasks and projects found</h5>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-4 col-lg-6 d-flex flex-column grid-margin sm-grid-margin stretch-card">
+                                <div class="card card-rounded todaybday">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start align-items-sm-center">
+                                            <h4 class="card-title card-title-dash sm-bar-chart-size mb-0">Recruitment & Hiring</h4>
+                                            <a href="/jobview" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
+                                        </div>
+                                        <div id="recruitmentAndHiring" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                                            <?php if (!empty($jobsData)) : ?>
+                                                <?php foreach ($jobsData as $job) : ?>
+                                                    <div class="border rounded p-3 mb-2 attendance-item">
+                                                        <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $job['job_title'] ?></div>
+                                                        <div class="d-flex justify-content-between align-items-center mt-1">
+                                                            <div class="small text-muted">
+                                                                Type: <?= $job['job_type'] ?> | Status: <span class="badge <?= $job['status'] == 'Open' ? 'bg-success' : 'bg-secondary' ?>"><?= $job['status'] ?></span>
+                                                            </div>
+                                                            <div class="small text-muted">
+                                                                Posted: <?= date('d M Y', strtotime($job['post_date'])) ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else : ?>
+                                                <div class="d-flex align-items-center justify-content-center text-center p-4">
+                                                    <h5 class="text-muted txtclr">No recruitment & hiring data found</h5>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-4 col-lg-6 d-flex flex-column grid-margin sm-grid-margin stretch-card">
+                                <div class="card card-rounded todaybday">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start align-items-sm-center">
+                                            <h4 class="card-title card-title-dash sm-bar-chart-size mb-0">Upcoming Trainings</h4>
+                                            <a href="/trainingview" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
+                                        </div>
+                                        <div id="upcomingTrainings" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                                            <?php if (!empty($upcomingTrainings)) : ?>
+                                                <?php foreach ($upcomingTrainings as $training) : ?>
+                                                    <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
+                                                        <img src="/upload/<?= $training['profile_image'] ?: 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <div>
+                                                            <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $training['training_title'] ?> - <?= $training['username'] ?></div>
+                                                            <div class="small text-muted mb-1">
+                                                                <?= date('d M Y', strtotime($training['start_date'])) ?> to <?= date('d M Y', strtotime($training['end_date'])) ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else : ?>
+                                                <div class="d-flex align-items-center justify-content-center text-center p-4">
+                                                    <h5 class="text-muted txtclr">No upcoming trainings found</h5>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-4 col-lg-6 d-flex flex-column grid-margin sm-grid-margin stretch-card">
+                                <div class="card card-rounded todaybday">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start align-items-sm-center">
+                                            <h4 class="card-title card-title-dash sm-bar-chart-size mb-0">Employee of the Month</h4>
+                                            <a href="/all-empof-month" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
+                                        </div>
+                                        <div id="employeeOfTheMonth" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                                            <?php if (!empty($employeeOfTheMonthData)) : ?>
+                                                <?php foreach ($employeeOfTheMonthData as $eom) : ?>
+                                                    <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
+                                                        <img src="/upload/<?= $eom['profile_image'] ?: 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <div>
+                                                            <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $eom['user_name'] ?></div>
+                                                            <div class="small text-muted mb-1"><?= $eom['month_year'] ?></div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else : ?>
+                                                <div class="d-flex align-items-center justify-content-center text-center p-4">
+                                                    <h5 class="text-muted txtclr">No data found</h5>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-4 col-lg-6 d-flex flex-column grid-margin sm-grid-margin stretch-card">
+                                <div class="card card-rounded todaybday">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start align-items-sm-center">
+                                            <h4 class="card-title card-title-dash sm-bar-chart-size mb-0">Performance Overview</h4>
+                                            <a href="/performanceview" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
+                                        </div>
+                                        <div id="performanceOverview" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                                            <?php if (!empty($performanceOverviewData)) : ?>
+                                                <?php foreach ($performanceOverviewData as $perf) : ?>
+                                                    <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
+                                                        <img src="/upload/<?= $perf['profile_image'] ?: 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <div>
+                                                            <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $perf['username'] ?></div>
+                                                            <div class="small text-muted mb-1">
+                                                                Rating: <span class="badge bg-success"><?= $perf['rating'] ?></span>
+                                                                | <?= date('d M Y', strtotime($perf['review_date'])) ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else : ?>
+                                                <div class="d-flex align-items-center justify-content-center text-center p-4">
+                                                    <h5 class="text-muted txtclr">No performance data found</h5>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>

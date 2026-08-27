@@ -168,6 +168,58 @@ class AdminController extends ResourceController
         $announcementModel = new \App\Models\AnnouncementModel();
         $activeAnnouncements = $announcementModel->getActiveAnnouncements($user->sub, $role, 5);
 
+        // Fetch Employee of the Month Data (Top 5)
+        $eomModel = new \App\Models\EmployeeOfMonthPerformanceModel();
+        $eomData = $eomModel->select('employee_of_month_certificates.*, users.username as user_name, user_info.profile_image')
+            ->join('users', 'users.id = employee_of_month_certificates.user_id')
+            ->join('user_info', 'user_info.user_id = employee_of_month_certificates.user_id', 'left')
+            ->orderBy('employee_of_month_certificates.created_at', 'DESC')
+            ->limit(5)
+            ->findAll();
+
+        // Fetch Performance Overview Data (Top 5)
+        $performanceModel = new \App\Models\PerformanceModel();
+        $performanceData = $performanceModel->select('performance.*, users.username, user_info.profile_image')
+            ->join('users', 'users.id = performance.user_id')
+            ->join('user_info', 'user_info.user_id = performance.user_id', 'left')
+            ->orderBy('performance.created_at', 'DESC')
+            ->limit(5)
+            ->findAll();
+
+        // Fetch Upcoming Trainings (Top 5)
+        $trainingModel = new \App\Models\TrainingModel();
+        $upcomingTrainings = $trainingModel->select('training.*, users.username, user_info.profile_image')
+            ->join('users', 'users.id = training.user_id')
+            ->join('user_info', 'user_info.user_id = training.user_id', 'left')
+            ->where('training.end_date >=', date('Y-m-d'))
+            ->orderBy('training.start_date', 'ASC')
+            ->limit(5)
+            ->findAll();
+
+        // Fetch Tasks (Top 5)
+        $taskModel = new \App\Models\TaskModel();
+        $tasksData = $taskModel->select('task.*, users.username, user_info.profile_image')
+            ->join('users', 'users.id = task.user_id')
+            ->join('user_info', 'user_info.user_id = task.user_id', 'left')
+            ->orderBy('task.created_at', 'DESC')
+            ->limit(5)
+            ->findAll();
+
+        // Fetch Recruitment & Hiring (Top 5 Jobs)
+        $jobModel = new \App\Models\JobModel();
+        $jobsData = $jobModel->orderBy('created_at', 'DESC')
+            ->limit(5)
+            ->findAll();
+
+        // Fetch Complaints (Top 5)
+        $complaintModel = new \App\Models\ComplaintModel();
+        $complaintsData = $complaintModel->select('complaints.*, users.username, user_info.profile_image')
+            ->join('users', 'users.id = complaints.user_id', 'left')
+            ->join('user_info', 'user_info.user_id = complaints.user_id', 'left')
+            ->orderBy('complaints.created_at', 'DESC')
+            ->limit(5)
+            ->findAll();
+
         return view('dashboard/dashboard', [
             'role' => $role,
             'employees' => $employees,
@@ -175,7 +227,13 @@ class AdminController extends ResourceController
             'candidates' => $candidates ?? 0,
             'todayCheckinCheckoutHistory' => $todayCheckinCheckoutHistory,
             'todayHoursData' => $todayHoursData,
-            'activeAnnouncements' => $activeAnnouncements
+            'activeAnnouncements' => $activeAnnouncements,
+            'employeeOfTheMonthData' => $eomData,
+            'performanceOverviewData' => $performanceData,
+            'upcomingTrainings' => $upcomingTrainings,
+            'tasksData' => $tasksData,
+            'jobsData' => $jobsData,
+            'complaintsData' => $complaintsData
         ]);
     }
 

@@ -32,13 +32,13 @@ class PerformanceReportController extends Controller
     public function fetchtPerformanceReport()
     {
         if ($this->request->isAJAX()) {
-            $departmentId = $this->request->getPost('department_id');
-            $employeeId = $this->request->getPost('employee_id');
-            $month = $this->request->getPost('month');   // 1-12 or empty
-            $year = $this->request->getPost('year');    // YYYY or empty
+            $departmentId = $this->request->getVar('department_id');
+            $employeeId = $this->request->getVar('employee_id');
+            $month = $this->request->getVar('month');   // 1-12 or empty
+            $year = $this->request->getVar('year');    // YYYY or empty
 
             // start_date: only parse if a non-empty value was posted
-            $rawDate = $this->request->getPost('start_date');
+            $rawDate = $this->request->getVar('start_date');
             $startDate = (!empty($rawDate) && strtotime($rawDate))
                 ? date('Y-m-d', strtotime($rawDate))
                 : null;

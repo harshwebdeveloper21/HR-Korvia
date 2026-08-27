@@ -284,8 +284,9 @@
             return;
         }
 
+        let rowsHtml = '';
         data.forEach(row => {
-            tableBody.innerHTML += `
+            rowsHtml += `
                 <tr>
                     <td class="capitalize-text">${row.firstname} ${row.lastname || ''}</td>
                     <td class="capitalize-text">${row.department_name || 'N/A'}</td>
@@ -294,6 +295,7 @@
                 </tr>
             `;
         });
+        tableBody.innerHTML = rowsHtml;
 
         // Now initialize fresh DataTable with the new rows only
         $('#attendanceTable').DataTable({
@@ -301,7 +303,7 @@
             "searching": true,
             "ordering": true,
             "info": true,
-            "responsive": true,
+            "responsive": false,
             "pageLength": 10,
             "language": {
                 "search": "Search attendance:",
@@ -374,7 +376,7 @@
             "searching": true,
             "ordering": true,
             "info": true,
-            "responsive": true,
+            "responsive": false,
             "pageLength": 10,
             "language": {
                 "search": "Search attendance:",
@@ -394,7 +396,7 @@
 
     // Table starts empty - data loads only when user selects filters or clicks Generate Report
     $(document).ready(function () {
-        // Do not auto-fetch on page load
+        fetchAttenReport();
     });
 </script>
 

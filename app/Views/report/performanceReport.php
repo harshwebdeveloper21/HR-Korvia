@@ -81,7 +81,7 @@
         <!-- Employee -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="user_id" class="form-label">Employee:</label>
-            <select id="user_id" name="user_id" class="form-select">
+            <select id="user_id" name="user_id" class="form-select" onchange="fetchPerformanceReport()">
                 <option value="" disabled selected>Select Employee</option>
             </select>
         </div>
@@ -89,7 +89,7 @@
         <!-- Month -->
         <div class="col-12 col-sm-6 col-md-2">
             <label for="filter_month" class="form-label">Month:</label>
-            <select id="filter_month" class="form-select">
+            <select id="filter_month" class="form-select" onchange="fetchPerformanceReport()">
                 <option value="">All Months</option>
                 <option value="1">January</option>
                 <option value="2">February</option>
@@ -109,7 +109,7 @@
         <!-- Year -->
         <div class="col-12 col-sm-6 col-md-2">
             <label for="filter_year" class="form-label">Year:</label>
-            <select id="filter_year" class="form-select">
+            <select id="filter_year" class="form-select" onchange="fetchPerformanceReport()">
                 <option value="">All Years</option>
                 <?php $cy = date('Y'); for ($i = $cy; $i >= $cy - 10; $i--): ?>
                     <option value="<?= $i ?>" <?= $i == $cy ? 'selected' : '' ?>><?= $i ?></option>
@@ -120,7 +120,7 @@
         <!-- Start Date -->
         <div class="col-12 col-sm-6 col-md-2">
             <label for="start_date" class="form-label">From Date:</label>
-            <input type="date" id="start_date" class="form-control">
+            <input type="date" id="start_date" class="form-control" onchange="fetchPerformanceReport()">
         </div>
     </div>
 </div>
@@ -190,6 +190,9 @@ function refreshCSRF(r) { if (r && r.csrfHash) csrfTokenValue = r.csrfHash; }
 function loadEmployees(departmentId) {
     const sel = document.getElementById('user_id');
     sel.innerHTML = '<option value="" disabled selected>Select Employee</option>';
+    const employeeSelect = document.getElementById('user_id');
+    employeeSelect.innerHTML = '<option value="" disabled selected>Select Employee</option>';
+    
     $.ajax({
         url: '<?= site_url("report/fetchEmployeesByDepartment") ?>',
         type: 'POST',
@@ -199,10 +202,15 @@ function loadEmployees(departmentId) {
             refreshCSRF(response);
             const list = response.employees || [];
             list.forEach(emp => {
-                sel.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
+                const name = (emp.firstname || '') + ' ' + (emp.lastname || '');
+                employeeSelect.innerHTML += `<option value="${emp.id}">${name.trim()}</option>`;
             });
+            fetchPerformanceReport();
         },
-        error: function(xhr) { console.error('loadEmployees error:', xhr.status, xhr.responseText); }
+        error: function (xhr) {
+            console.error("Error loading employees:", xhr.status, xhr.responseText);
+            fetchPerformanceReport();
+        }
     });
 }
 
@@ -275,12 +283,13 @@ function populateTable(data) {
         return;
     }
 
+    let rowsHtml = '';
     data.forEach((row, idx) => {
         const reviewDate = row.review_date
             ? new Date(row.review_date).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'})
             : 'N/A';
         const stars = '★'.repeat(Math.round(row.rating)) + '☆'.repeat(5 - Math.round(row.rating));
-        tbody.innerHTML += `
+        rowsHtml += `
             <tr>
                 <td>${idx + 1}</td>
                 <td class="capitalize-text fw-semibold">${row.firstname || 'N/A'}</td>
@@ -294,6 +303,7 @@ function populateTable(data) {
                 </td>
             </tr>`;
     });
+    tbody.innerHTML = rowsHtml;
     document.getElementById("table-section").style.display = "block";
 }
 

@@ -46,13 +46,13 @@ class EmployeeReportController extends ResourceController
         }
 
         $filters = [
-            'department_id' => $this->request->getPost('department_id'),
-            'employee_id'   => $this->request->getPost('employee_id'),
-            'status'        => $this->request->getPost('status') ?? 'active',
-            'joining_from'  => $this->request->getPost('joining_from'),
-            'joining_to'    => $this->request->getPost('joining_to'),
-            'year'          => $this->request->getPost('year'),
-            'month'         => $this->request->getPost('month'),
+            'department_id' => $this->request->getVar('department_id'),
+            'employee_id'   => $this->request->getVar('employee_id'),
+            'status'        => $this->request->getVar('status') ?? 'active',
+            'joining_from'  => $this->request->getVar('joining_from'),
+            'joining_to'    => $this->request->getVar('joining_to'),
+            'year'          => $this->request->getVar('year'),
+            'month'         => $this->request->getVar('month'),
         ];
 
         $employeeModel = new UserModel();
@@ -62,7 +62,8 @@ class EmployeeReportController extends ResourceController
         return $this->response->setJSON([
             'tableData' => $report,
             'chartData' => $this->prepareChartData($report),
-            'summary'   => $summary
+            'summary'   => $summary,
+            'csrfHash'  => csrf_hash()
         ]);
     }
 
@@ -71,7 +72,13 @@ class EmployeeReportController extends ResourceController
         $yearlyData = [];
 
         foreach ($report as $emp) {
+            if (empty($emp['joining_date']) || $emp['joining_date'] === '0000-00-00') {
+                continue;
+            }
             $year = date('Y', strtotime($emp['joining_date']));
+            if ($year === '1970') {
+                continue;
+            }
             $yearlyData[$year] = ($yearlyData[$year] ?? 0) + 1;
         }
 
@@ -98,6 +105,8 @@ class EmployeeReportController extends ResourceController
         $builder = $userModel
             ->select('users.id, user_info.firstname, user_info.lastname')
             ->join('user_info', 'user_info.user_id = users.id', 'left')
+            ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)")
+            ->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())")
             ->whereIn('users.role', ['hr', 'employee']);
 
         if (!empty($departmentId)) {

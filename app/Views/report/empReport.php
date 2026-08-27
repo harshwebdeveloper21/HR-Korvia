@@ -110,7 +110,7 @@
         <!-- Employee -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Employee:</label>
-            <select id="user_id" name="user_id" class="form-select">
+            <select id="user_id" name="user_id" class="form-select" onchange="fetchSalaryReport()">
                 <option value="">All Employees</option>
             </select>
         </div>
@@ -118,7 +118,7 @@
         <!-- Year -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Year:</label>
-            <select id="year" name="year" class="form-select">
+            <select id="year" name="year" class="form-select" onchange="fetchSalaryReport()">
                 <option value="">All Years</option>
                 <?php
                 $currentYear = date('Y');
@@ -131,7 +131,7 @@
         <!-- Month -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Month:</label>
-            <select id="month" name="month" class="form-select">
+            <select id="month" name="month" class="form-select" onchange="fetchSalaryReport()">
                 <option value="">All Months</option>
                 <option value="1">January</option>
                 <option value="2">February</option>
@@ -151,13 +151,13 @@
         <!-- Joining From -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Joining From:</label>
-            <input type="date" id="joining_from" class="form-control">
+            <input type="date" id="joining_from" class="form-control" onchange="fetchSalaryReport()">
         </div>
 
         <!-- Joining To -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Joining To:</label>
-            <input type="date" id="joining_to" class="form-control">
+            <input type="date" id="joining_to" class="form-control" onchange="fetchSalaryReport()">
         </div>
 
     </div>
@@ -245,8 +245,12 @@
                 list.forEach(emp => {
                     sel.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
                 });
+                fetchSalaryReport(); // Auto-update report when department changes
             },
-            error: function(xhr) { console.error('loadEmployees error:', xhr.status, xhr.responseText); }
+            error: function(xhr) { 
+                console.error('loadEmployees error:', xhr.status, xhr.responseText); 
+                fetchSalaryReport(); // Auto-update report even if error
+            }
         });
     }
 
@@ -352,9 +356,11 @@
         if (!rows.length) {
             tableBody.innerHTML = `<tr><td colspan="5" class="text-center">No records found</td></tr>`;
         } else {
+            let rowsHtml = '';
             rows.forEach(r => {
-                tableBody.innerHTML += `<tr><td class="capitalize-text">${r[0]}</td><td class="capitalize-text">${r[1]}</td><td class="capitalize-text">${r[2]}</td><td class="capitalize-text">${r[3]}</td><td class="capitalize-text">${r[4]}</td></tr>`;
+                rowsHtml += `<tr><td class="capitalize-text">${r[0]}</td><td class="capitalize-text">${r[1]}</td><td class="capitalize-text">${r[2]}</td><td class="capitalize-text">${r[3]}</td><td class="capitalize-text">${r[4]}</td></tr>`;
             });
+            tableBody.innerHTML = rowsHtml;
         }
 
         // Initialize DataTable once with current rows

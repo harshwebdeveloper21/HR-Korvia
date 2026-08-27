@@ -42,11 +42,9 @@
                                                 $topEmployees
                                                 as $employee
                                             ): ?>
-                                                <option value="<?= $employee[
-                                                    "id"
-                                                ] ?>"><?= $employee[
-    "username"
-] ?> (Rating: <?= $employee["rating"] ?>)</option>
+                                                <option value="<?= $employee['id'] ?>">
+                                                    <?= $employee['username'] ?> <?= $employee['rating'] ? '(Rating: ' . $employee['rating'] . ')' : '(No Rating Yet)' ?>
+                                                </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -115,9 +113,28 @@
         </div>
     </div>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section("scripts") ?>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
+    $(document).ready(function() {
+        // Initialize Select2
+        $('#employee_id').select2({
+            placeholder: "Select Employee",
+            allowClear: true,
+            width: '100%'
+        });
+        
+        $('#template_id').select2({
+            placeholder: "Select Template",
+            allowClear: true,
+            width: '100%'
+        });
+    });
     $('#generatePdfBtn').on('click', function() {
         // Clear previous error messages and reset error class
         $('.error').text(''); // Clear all error messages
@@ -134,11 +151,11 @@
             isValid = false;
         }
 
-        // Custom validation for Template Name
-        if (!template_id) {
-            $('#template_id-Error').text('Template is required.');
-            isValid = false;
-        }
+        // Custom validation for Template Name (Removed as requested)
+        // if (!template_id) {
+        //     $('#template_id-Error').text('Template is required.');
+        //     isValid = false;
+        // }
 
         // Custom validation for Month & Year
         if (!month_year) {
@@ -220,15 +237,33 @@
                 $('#loader').hide();
 
                 // Handle custom validation error messages
-                if (xhr.status === 400) { // Check for validation errors
-                    const response = xhr.responseJSON; // Parse the response as JSON
-
-                    // Handle specific server-side validation errors
-                    if (response && response.message) {
-                        Swal.fire('Error', response.message, 'error'); // Display server-side error message
+                if (xhr.status === 400) {
+                    if (xhr.response && xhr.response instanceof Blob) {
+                        const reader = new FileReader();
+                        reader.onload = function() {
+                            try {
+                                const response = JSON.parse(this.result);
+                                if (response && response.message) {
+                                    Swal.fire('Error', response.message, 'error');
+                                } else {
+                                    Swal.fire('Error', 'Validation error occurred.', 'error');
+                                }
+                            } catch (e) {
+                                Swal.fire('Error', 'Validation error occurred.', 'error');
+                            }
+                        };
+                        reader.readAsText(xhr.response);
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        Swal.fire('Error', xhr.responseJSON.message, 'error');
+                    } else if (xhr.responseText) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            Swal.fire('Error', response.message || 'Validation error.', 'error');
+                        } catch(e) {
+                            Swal.fire('Error', 'Validation error occurred.', 'error');
+                        }
                     } else {
-                        // Display a generic error message for other issues
-                        Swal.fire('Error', 'Certificate already generated for this employee in this month.', 'error');
+                        Swal.fire('Error', 'Validation error occurred.', 'error');
                     }
                 } else {
                     // Handle non-validation errors (e.g., network issues)
@@ -264,7 +299,5 @@
         });
     });
 </script>
-
-
 
 <?= $this->endSection() ?>

@@ -66,14 +66,38 @@
                 <div class="tab-content">
                     <!-- Employee Info Tab -->
                     <div class="tab-pane fade show active" id="employee" role="tabpanel">
-                        <div class="section-header"><i class="fas fa-user-circle me-2" style="color: #E66136;"></i> Employee Information</div>
-                        <div class="d-flex align-items-center">
-                            <img id="employeePhoto" class="employee-photo shadow emp-photo-profile" width="100" height="100" style="border-radius: 50%; object-fit: cover;">
-                            <div class="ms-4">
-                                <p class="text-muted fontsize-sm-payr capitalize-text"><i class="fas fa-user me-2" style="color: #E66136;"></i> <span id="employeeName"></span></p>
-                                <p class="text-muted fontsize-sm-payr capitalize-text"><i class="fas fa-id-badge me-2" style="color: #E66136;"></i> EMP# <span id="employee_id"></span></p>
-                                <p class="text-muted fontsize-sm-payr capitalize-text"><i class="fas fa-envelope me-2" style="color: #E66136;"></i> <span id="employeeEmail"></span></p>
-                                <p class="text-muted fontsize-sm-payr capitalize-text   "><i class="fas fa-briefcase me-2" style="color: #E66136;"></i> <span id="employeeDesignation"></span></p>
+                        <div class="card border-1 shadow-sm mt-3" style="border-radius: 12px;">
+                            <div class="card-body p-4">
+                                <img id="employeePhoto" class="employee-photo shadow emp-photo-profile mb-3" width="70" height="70" style="border-radius: 12px; object-fit: cover; border: 1px solid #ddd;">
+                                
+                                <h5 id="employeeName" class="mb-1 font-weight-bold" style="color: #000; font-weight: 600; font-size: 1.1rem;"></h5>
+                                <div class="text-muted small mb-3"><span id="employeeDepartment"></span> • <span id="employeeDesignation"></span></div>
+                                
+
+                                <table class="table table-borderless table-sm mb-0">
+                                    <tbody>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td class="text-muted py-3" style="width: 40%; font-size: 0.9rem;">Employee ID</td>
+                                            <td class="text-end fw-bold py-3" style="font-size: 0.9rem;"><span id="employee_id"></span></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td class="text-muted py-3" style="font-size: 0.9rem;">Email</td>
+                                            <td class="text-end py-3" style="font-size: 0.9rem;"><span id="employeeEmail"></span></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td class="text-muted py-3" style="font-size: 0.9rem;">Pay cycle</td>
+                                            <td class="text-end fw-bold py-3" style="font-size: 0.9rem;">Monthly</td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td class="text-muted py-3" style="font-size: 0.9rem;">Salary month</td>
+                                            <td class="text-end fw-bold py-3" style="font-size: 0.9rem;"><span id="salary_month_info"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted py-3" style="font-size: 0.9rem;">Payment date</td>
+                                            <td class="text-end fw-bold py-3" style="font-size: 0.9rem;"><span id="payment_date_info"></span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -81,87 +105,107 @@
                     <!-- Salary Breakdown Tab -->
                     <div class="tab-pane fade" id="salary" role="tabpanel">
                         <div class="section-header"><i class="fas fa-file-invoice-dollar me-2" style="color: #E66136;"></i> Salary</div>
-                        <table class="table table-striped">
-                            <tbody>
-                                <tr>
-                                    <td><i class="mdi mdi-cash me-1" style="color: #E66136;"></i> Base Salary</td>
-                                    <td><span id="salary_amount" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-month me-1" style="color: #E66136;"></i> Month & Year</td>
-                                    <td><span id="month_year" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-remove me-1" style="color: #E66136;"></i> Total Applied Leaves</td>
-                                    <td><span id="total_leaves" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-check me-1" style="color: #E66136;"></i> Total Paid Leaves</td>
-                                    <td><span id="total_paid_leaves" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-check me-1" style="color: #E66136;"></i> Total Half-day Leaves</td>
-                                    <td><span id="total_hald_day_leaves" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-format-list-bulleted me-1" style="color: #E66136;"></i> Leave Type</td>
-                                    <td><span id="leave_type" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-clock me-1" style="color: #E66136;"></i> Remaining Paid Leaves</td>
-                                    <td><span id="remaining_paid_leaves" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-multiple-check me-1" style="color: #E66136;"></i> Used Paid Leaves</td>
-                                    <td><span id="used_paid_leaves" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-remove-outline me-1" style="color: #E66136;"></i> Unpaid Leaves</td>
-                                    <td><span id="unpaid_leaves" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-week me-1" style="color: #E66136;"></i> Working Days</td>
-                                    <td><span id="working_days" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-clock-outline me-1" style="color: #E66136;"></i> Worked Hours</td>
-                                    <td><span id="worked_hours" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-clock-plus-outline me-1" style="color: #E66136;"></i> Overtime Hours</td>
-                                    <td><span id="overtime_hours" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-cash-plus me-1" style="color: #E66136;"></i> Overtime Pay</td>
-                                    <td><span id="overtime_pay" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-gift-outline me-1" style="color: #E66136;"></i> Bonuses</td>
-                                    <td><span id="bonuses" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-percent me-1" style="color: #E66136;"></i> Tax Deduction</td>
-                                    <td><span id="tax_deduction" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-percent me-1" style="color: #E66136;"></i> Salary Deduction</td>
-                                    <td>
-                                        <span id="salary_deduction" class="capitalize-text"></span>
-                                        <button type="button" class="btn btn-sm btn-link text-primary ms-1 p-0 align-middle" id="profileDeductionInfoBtn" title="Why is this amount deducted?" style="display:none;">
-                                            <i class="mdi mdi-information-outline" style="font-size:1.2rem;"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-check-circle-outline me-1" style="color: #E66136;"></i> Payment Status</td>
-                                    <td><span id="payment_status" class="capitalize-text"></span></td>
-                                </tr>
-                                <tr>
-                                    <td><i class="mdi mdi-calendar-outline me-1" style="color: #E66136;"></i> Payment Date</td>
-                                    <td><span id="payment_date" class="capitalize-text"></span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="row mt-2">
+                            <!-- Earnings -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; border-top: 4px solid #4CAF50 !important;">
+                                    <div class="card-header bg-white border-0 pt-4 pb-0">
+                                        <h6 class="mb-0 fw-bold" style="color: #4CAF50;"><i class="fas fa-coins me-2"></i> Earnings</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                            <span class="text-muted"><i class="mdi mdi-cash me-1"></i> Base Salary</span>
+                                            <span id="salary_amount" class="fw-bold"></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                            <span class="text-muted"><i class="mdi mdi-cash-plus me-1"></i> Overtime Pay</span>
+                                            <span id="overtime_pay" class="text-success fw-bold"></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted"><i class="mdi mdi-gift-outline me-1"></i> Bonuses</span>
+                                            <span id="bonuses" class="text-success fw-bold"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Deductions -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; border-top: 4px solid #F44336 !important;">
+                                    <div class="card-header bg-white border-0 pt-4 pb-0">
+                                        <h6 class="mb-0 fw-bold" style="color: #F44336;"><i class="fas fa-hand-holding-usd me-2"></i> Deductions</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                            <span class="text-muted"><i class="mdi mdi-percent me-1"></i> Tax Deduction</span>
+                                            <span id="tax_deduction" class="text-danger fw-bold"></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted"><i class="mdi mdi-percent me-1"></i> Salary Deduction</span>
+                                            <div>
+                                                <span id="salary_deduction" class="text-danger fw-bold"></span>
+                                                <button type="button" class="btn btn-sm btn-link text-danger ms-1 p-0 align-middle" id="profileDeductionInfoBtn" title="Why is this amount deducted?" style="display:none;">
+                                                    <i class="mdi mdi-information-outline" style="font-size:1.2rem;"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Attendance & Leaves -->
+                            <div class="col-12 mb-3">
+                                <div class="card shadow-sm border-0" style="border-radius: 12px; border-top: 4px solid #2196F3 !important;">
+                                    <div class="card-header bg-white border-0 pt-4 pb-0">
+                                        <h6 class="mb-0 fw-bold" style="color: #2196F3;"><i class="fas fa-calendar-alt me-2"></i> Attendance & Leaves</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                                                    <span class="text-muted small">Month & Year</span>
+                                                    <span id="month_year" class="fw-bold small"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                                                    <span class="text-muted small">Working Days</span>
+                                                    <span id="working_days" class="fw-bold small"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                                                    <span class="text-muted small">Worked Hours</span>
+                                                    <span id="worked_hours" class="fw-bold small"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                                                    <span class="text-muted small">Overtime Hours</span>
+                                                    <span id="overtime_hours" class="fw-bold small"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2 pb-2">
+                                                    <span class="text-muted small">Leave Type</span>
+                                                    <span id="leave_type" class="fw-bold small"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                                                    <span class="text-muted small">Total Applied Leaves</span>
+                                                    <span id="total_leaves" class="fw-bold small"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                                                    <span class="text-muted small">Total Paid / Half-day Leaves</span>
+                                                    <span class="fw-bold small"><span id="total_paid_leaves"></span> / <span id="total_hald_day_leaves"></span></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                                                    <span class="text-muted small">Used / Remaining Paid Leaves</span>
+                                                    <span class="fw-bold small"><span id="used_paid_leaves"></span> / <span id="remaining_paid_leaves"></span></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                                                    <span class="text-muted small">Unpaid Leaves</span>
+                                                    <span id="unpaid_leaves" class="fw-bold small text-danger"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Deduction breakdown modal (same calculation as Manage Salary & Add Payroll) -->
                         <div class="modal fade" id="profileDeductionBreakdownModal" tabindex="-1">
@@ -179,8 +223,21 @@
                             </div>
                         </div>
 
-                        <div class="net-salary-card text-center">
-                            <i class="fas fa-wallet me-2"></i> Net Salary: <span id="net_salary"></span>
+                        <!-- Final Net Salary -->
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <div class="card shadow-sm border-0" style="border-radius: 12px; background: linear-gradient(135deg, #E66136 0%, #d5532b 100%); color: white;">
+                                    <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap">
+                                        <div>
+                                            <h5 class="mb-1 fw-bold text-white"><i class="fas fa-wallet me-2"></i> Net Salary</h5>
+                                            <div class="small" style="opacity: 0.85;">
+                                                <span><i class="mdi mdi-calendar-outline"></i> <span id="payment_date"></span></span>
+                                            </div>
+                                        </div>
+                                        <h3 class="mb-0 fw-bold text-white mt-2 mt-md-0" id="net_salary"></h3>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -223,6 +280,10 @@
                     $("#employee_id").text(d.employee_id ?? 'N/A');
                     $("#employeeEmail").text(d.email ?? 'N/A');
                     $("#employeeDesignation").text(d.designation ?? 'N/A');
+                    $("#employeeDepartment").text(d.department ?? 'N/A');
+                    $("#salary_month_info").text(d.month_year ?? 'N/A');
+                    $("#payment_date_info").text(d.payment_date ?? 'N/A');
+                    $("#payment_status_badge").text((d.payment_status && d.payment_status.toLowerCase() == 'pending') ? 'Payment pending' : (d.payment_status ?? 'Payment pending'));
 
                     const profileImg = d.profile_image ?
                         "<?= base_url("upload/") ?>" + d.profile_image :
@@ -240,9 +301,9 @@
                     $("#leave_type").text(d.leave_type ?? 'N/A');
                     $("#remaining_paid_leaves").text(d.remaining_paid_leaves ?? '0');
                     $("#used_paid_leaves").text(d.used_paid_leaves ?? '0');
-                    $("#unpaid_leaves").text('N/A'); // Not stored
-                    $("#working_days").text('N/A'); // Not stored
-                    $("#worked_hours").text(d.worked_hours ? d.worked_hours + ' hours' : 'N/A');
+                    $("#unpaid_leaves").text(d.unpaid_leaves ?? '0'); 
+                    $("#working_days").text(d.working_days ?? 'N/A'); 
+                    $("#worked_hours").text((d.worked_hours && d.worked_hours > 0) ? d.worked_hours + ' hours' : 'N/A');
                     $("#overtime_hours").text(d.total_overtime_hours ? d.total_overtime_hours + ' hours' : 'N/A');
                     $("#overtime_pay").text(d.overtime_pay ? `+₹${parseFloat(d.overtime_pay).toFixed(2)}` : 'N/A');
                     $("#bonuses").text(d.bonuses ? `+₹${parseFloat(d.bonuses).toFixed(2)}` : 'N/A');

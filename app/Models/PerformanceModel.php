@@ -61,7 +61,9 @@ class PerformanceModel extends Model
                 performance.rating
             ')
             ->join('user_info',   'user_info.user_id = performance.user_id',          'left')
-            ->join('department',  'department.id = user_info.department_id',           'left');
+            ->join('department',  'department.id = user_info.department_id',           'left')
+            ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)")
+            ->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
 
         if (!empty($departmentId)) {
             $query->where('department.id', $departmentId);

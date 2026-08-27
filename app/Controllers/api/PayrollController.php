@@ -548,16 +548,56 @@ class PayrollController extends ResourceController
         // Fetch payroll details along with user and designation info
         $record = $this->payrollModel
             ->select(
-                "payroll.*,payroll.salary_amount, users.username as employee_name, user_info.profile_image, user_info.firstname, user_info.lastname, user_info.email, user_info.employee_id,leave_type.leave_type",
+                "payroll.*,payroll.salary_amount, users.username as employee_name, user_info.profile_image, user_info.firstname, user_info.lastname, user_info.email, user_info.employee_id,leave_type.leave_type, designation.designation_name as designation, department.department_name as department",
             )
             ->join("users", "users.id = payroll.user_id", "left")
             ->join("leave_type", "leave_type.id = payroll.leave_type", "left")
-            ->join("user_info", "user_info.user_id = users.id", "left") // Join user_info table
+            ->join("user_info", "user_info.user_id = users.id", "left")
+            ->join("designation", "designation.id = user_info.designation_id", "left")
+            ->join("department", "department.id = user_info.department_id", "left")
             ->where("payroll.id", $id)
             ->first();
 
         if (!$record) {
             return $this->failNotFound("Payroll record not found");
+        }
+
+        $workingDays = 'N/A';
+        $unpaidLeaves = 0;
+        $monthYear = is_array($record) ? ($record['month_year'] ?? '') : ($record->month_year ?? '');
+        
+        // Calculate working days dynamically
+        if (!empty($monthYear)) {
+            $parts = explode('-', $monthYear);
+            if (count($parts) === 2) {
+                $year = (int)$parts[0];
+                $monthNum = (int)$parts[1];
+                
+                $holidayModel = new \App\Models\HolidayCalendarModel();
+                $holidayRows = $holidayModel
+                    ->where("MONTH(holiday_date)", $monthNum)
+                    ->where("YEAR(holiday_date)", $year)
+                    ->findAll();
+                $holidayDates = array_column($holidayRows, "holiday_date");
+                
+                $workingDaysData = $this->getWorkingDaysData($monthNum, $year, $company_rules, $holidayDates);
+                $workingDays = $workingDaysData['working_days'] ?? 'N/A';
+            }
+        }
+
+        // Calculate unpaid leaves dynamically
+        $totalLeaves = (float)(is_array($record) ? ($record["total_leaves"] ?? 0) : ($record->total_leaves ?? 0));
+        $usedPaidLeaves = (float)(is_array($record) ? ($record["used_paid_leaves"] ?? 0) : ($record->used_paid_leaves ?? 0));
+        $usedSickLeaves = (float)(is_array($record) ? ($record["used_sick_leaves"] ?? 0) : ($record->used_sick_leaves ?? 0));
+        $halfDaysCount = (float)(is_array($record) ? ($record["total_half_day"] ?? 0) : ($record->total_half_day ?? 0));
+        $unpaidLeaves = max($totalLeaves + ($halfDaysCount * 0.5) - $usedPaidLeaves - $usedSickLeaves, 0);
+
+        if (is_array($record)) {
+            $record['working_days'] = $workingDays;
+            $record['unpaid_leaves'] = $unpaidLeaves;
+        } else {
+            $record->working_days = $workingDays;
+            $record->unpaid_leaves = $unpaidLeaves;
         }
 
         return $this->respond([

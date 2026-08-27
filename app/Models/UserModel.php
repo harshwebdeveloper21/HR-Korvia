@@ -18,7 +18,7 @@ class UserModel extends Model
         $hasEmployeeFilter = !empty($filters['employee_id']);
 
         $builder = $this->db->table('users u')
-            ->select('ui.firstname, ui.lastname, ui.joining_date,
+            ->select('ui.firstname, ui.lastname, ui.joining_date, ui.status, ui.last_working_day,
                     d.department_name, des.designation_name, u.is_deleted, u.updated_at')
             ->join('user_info ui', 'ui.user_id = u.id')
             ->join('department d', 'd.id = ui.department_id', 'left')
@@ -50,6 +50,18 @@ class UserModel extends Model
             $builder->where('MONTH(ui.joining_date)', $filters['month']);
         }
 
+        if (!empty($filters['status']) && strtolower($filters['status']) !== 'all' && strtolower($filters['status']) !== 'all status') {
+            if (strtolower($filters['status']) === 'active') {
+                $builder->where("(LOWER(ui.status) NOT IN ('inactive', 'resigned') OR ui.status IS NULL)");
+                $builder->where("(ui.last_working_day IS NULL OR ui.last_working_day >= CURDATE())");
+            } else {
+                $builder->groupStart()
+                        ->where("LOWER(ui.status) IN ('inactive', 'resigned')")
+                        ->orWhere('(ui.last_working_day IS NOT NULL AND ui.last_working_day < CURDATE() AND (ui.status IS NULL OR LOWER(ui.status) NOT IN (\'inactive\', \'resigned\')))')
+                        ->groupEnd();
+            }
+        }
+
         return $builder->orderBy('ui.joining_date', 'DESC')->get()->getResultArray();
     }
 
@@ -73,6 +85,8 @@ class UserModel extends Model
         $builder = $this->db->table('users u')
             ->select('COUNT(u.id) as total_employees')
             ->join('user_info ui', 'ui.user_id = u.id')
+            ->where("(LOWER(ui.status) NOT IN ('inactive', 'resigned') OR ui.status IS NULL)")
+            ->where("(ui.last_working_day IS NULL OR ui.last_working_day >= CURDATE())")
             ->whereIn('u.role', ['employee', 'hr']);
 
         if (!empty($filters['department_id']) && !$hasEmployeeFilter) {
@@ -106,6 +120,8 @@ class UserModel extends Model
             ->select('d.department_name, COUNT(u.id) as total')
             ->join('user_info ui', 'ui.user_id = u.id')
             ->join('department d', 'd.id = ui.department_id')
+            ->where("(LOWER(ui.status) NOT IN ('inactive', 'resigned') OR ui.status IS NULL)")
+            ->where("(ui.last_working_day IS NULL OR ui.last_working_day >= CURDATE())")
             ->whereIn('u.role', ['employee', 'hr'])
             ->groupBy('d.id, d.department_name')
             ->orderBy('d.department_name');
@@ -138,8 +154,19 @@ class UserModel extends Model
 
         $activeEmployees = 0;
         $deletedEmployees = 0;
-        foreach ($this->getEmployeeReport($filters) as $employee) {
-            if ((string) ($employee['is_deleted'] ?? '0') === '1') {
+        
+        $summaryFilters = $filters;
+        $summaryFilters['status'] = 'all';
+
+        foreach ($this->getEmployeeReport($summaryFilters) as $employee) {
+            $isInactive = false;
+            if (isset($employee['status']) && in_array(strtolower($employee['status']), ['inactive', 'resigned'])) {
+                $isInactive = true;
+            } elseif (!empty($employee['last_working_day']) && $employee['last_working_day'] < date('Y-m-d')) {
+                $isInactive = true;
+            }
+
+            if ($isInactive) {
                 $deletedEmployees++;
             } else {
                 $activeEmployees++;

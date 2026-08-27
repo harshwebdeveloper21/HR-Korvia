@@ -153,7 +153,7 @@
 
                     <h4 class="card-title">Manage Employees</h4>
                     <div class="d-md-flex gap-2">
-                        <select class="form-select" id="departmentFilter">
+                        <select class="form-select" id="departmentFilter" style="border: 2px solid #E66136; color: #E66136; font-weight: 500;">
                             <option value="">All Departments</option>
                         </select>
                         <a href="/employee" class="btn hr-btnbg attendenceall text-nowrap">

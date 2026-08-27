@@ -72,7 +72,7 @@
         <!-- Employee/HR -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="user_id" class="form-label">Employee/HR:</label>
-            <select class="form-select" id="user_id">
+            <select class="form-select" id="user_id" onchange="fetchLeaveReport()">
                 <option value="">All Employees</option>
             </select>
         </div>
@@ -80,7 +80,7 @@
         <!-- Leave Type -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="leave_type" class="form-label">Leave Type:</label>
-            <select class="form-select" id="leave_type">
+            <select class="form-select" id="leave_type" onchange="fetchLeaveReport()">
                 <option value="">All Types</option>
                 <?php foreach ($leaveTypes as $type): ?>
                     <option value="<?= $type["id"] ?>"><?= esc($type["leave_type"]) ?></option>
@@ -91,7 +91,7 @@
         <!-- Status -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="status" class="form-label">Status:</label>
-            <select class="form-select" id="status">
+            <select class="form-select" id="status" onchange="fetchLeaveReport()">
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
@@ -102,7 +102,7 @@
         <!-- Year -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Year:</label>
-            <select id="year" name="year" class="form-select">
+            <select id="year" name="year" class="form-select" onchange="fetchLeaveReport()">
                 <option value="">All Years</option>
                 <?php
                 $currentYear = date('Y');
@@ -115,7 +115,7 @@
         <!-- Month -->
         <div class="col-12 col-sm-6 col-md-3">
             <label class="form-label">Month:</label>
-            <select id="month" name="month" class="form-select">
+            <select id="month" name="month" class="form-select" onchange="fetchLeaveReport()">
                 <option value="">All Months</option>
                 <option value="1">January</option>
                 <option value="2">February</option>
@@ -135,13 +135,13 @@
         <!-- Start Date -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="start_date" class="form-label">From Date:</label>
-            <input type="date" id="start_date" class="form-control">
+            <input type="date" id="start_date" class="form-control" onchange="fetchLeaveReport()">
         </div>
 
         <!-- End Date -->
         <div class="col-12 col-sm-6 col-md-3">
             <label for="end_date" class="form-label">To Date:</label>
-            <input type="date" id="end_date" class="form-control">
+            <input type="date" id="end_date" class="form-control" onchange="fetchLeaveReport()">
         </div>
     </div>
 
@@ -152,8 +152,8 @@
 
     <!-- Table -->
     <div class="table-responsive mt-4" id="table-section" style="display: none;">
-        <table id="leaveTable" class="table table-bordered">
-            <thead class="table-light">
+        <table id="leaveTable" class="table table-striped table-bordered">
+            <thead>
                 <tr>
                     <th>Employee Name</th>
                     <th>Leave Type</th>
@@ -199,8 +199,12 @@
                 list.forEach(emp => {
                     sel.innerHTML += `<option value="${emp.id}">${emp.firstname} ${emp.lastname}</option>`;
                 });
+                fetchLeaveReport();
             },
-            error: function(xhr) { console.error('loadEmployees error:', xhr.status, xhr.responseText); }
+            error: function(xhr) { 
+                console.error('loadEmployees error:', xhr.status, xhr.responseText); 
+                fetchLeaveReport();
+            }
         });
     }
 
@@ -308,8 +312,9 @@
             return;
         }
 
+        let rowsHtml = '';
         data.forEach(row => {
-            tbody.innerHTML += `
+            rowsHtml += `
             <tr>
                 <td class="capitalize-text">${row.username || 'N/A'}</td>
                 <td class="capitalize-text">${row.leave_type || 'N/A'}</td>
@@ -318,6 +323,7 @@
                 <td class="capitalize-text">${row.status || 'N/A'}</td>
             </tr>`;
         });
+        tbody.innerHTML = rowsHtml;
 
         initializeLeaveDataTable();
     }
@@ -372,6 +378,9 @@
     }
 
     /* NOTE: Auto-fetch removed — click "Generate Report" to load data */
+    document.addEventListener("DOMContentLoaded", function() {
+        fetchLeaveReport();
+    });
 </script>
 
 <?= $this->endSection() ?>

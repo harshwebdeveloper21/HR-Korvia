@@ -1,22 +1,22 @@
-<footer class="footer">
+<footer class="footer" style="background: #E66136; color: white;">
     <div class="container-fluid">
-        <div class="row text-muted">
-            <div class="col-12 text-start">
-                <span class="text-center footer-font-size-sm"><a href="https://www.fableadtechnolabs.com/" target="_blank" class="text-muted text-decoration-none">© <?= date('Y') ?> Copyright - Fablead Developers Technolab</a></span>
+        <div class="row">
+            <div class="col-12 text-center">
+                <span class="text-center footer-font-size-sm" style="color: white !important;">© 2026 Copyright - Fablead Developers Technolab</span>
             </div>
             <!-- <div class="col-6 text-end">
                 <ul class="list-inline">
                     <li class="list-inline-item">
-                        <a class="text-dark" href="" target="_blank">Support</a>
+                        <a class="text-white" href="" target="_blank">Support</a>
                     </li>
                     <li class="list-inline-item">
-                        <a class="text-dark" href="" target="_blank">Help Center</a>
+                        <a class="text-white" href="" target="_blank">Help Center</a>
                     </li>
                     <li class="list-inline-item">
-                        <a class="text-dark" href="" target="_blank">Privacy</a>
+                        <a class="text-white" href="" target="_blank">Privacy</a>
                     </li>
                     <li class="list-inline-item">
-                        <a class="text-dark" href="" target="_blank">Terms</a>
+                        <a class="text-white" href="" target="_blank">Terms</a>
                     </li>
                 </ul>
             </div> -->
