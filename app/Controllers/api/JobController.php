@@ -583,9 +583,9 @@ class JobController extends ResourceController
         $search = $this->request->getGet('search');
 
         $builder = $this->jobModel->builder();
-        $builder->select('jobs.*, department.department_name, job_locations.job_location')
+        $builder->select('jobs.*, department.department_name, job_location.job_location')
             ->join('department', 'department.id = jobs.department_id', 'left')
-            ->join('job_locations', 'job_locations.id = jobs.locations_id', 'left');
+            ->join('job_location', 'job_location.location_id = jobs.locations_id', 'left');
 
         if (!empty($departmentId)) {
             $builder->where('jobs.department_id', (int)$departmentId);
@@ -598,7 +598,7 @@ class JobController extends ResourceController
                 ->like('jobs.job_title', $search)
                 ->orLike('jobs.job_type', $search)
                 ->orLike('department.department_name', $search)
-                ->orLike('job_locations.job_location', $search)
+                ->orLike('job_location.job_location', $search)
                 ->groupEnd();
         }
 

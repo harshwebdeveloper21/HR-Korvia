@@ -359,6 +359,8 @@
                     });
                 }
             });
+        });
+
         // 📥 Export to Excel functionality
         $('#btnExportTrainings').on('click', function () {
             const $btn = $(this);

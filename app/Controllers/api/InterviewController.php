@@ -426,12 +426,12 @@ class InterviewController extends ResourceController
         }
 
         $status = $this->request->getGet('status');
-        $search = $this->request->getGet('search');
+        $search = trim((string)$this->request->getGet('search'));
 
         $builder = $this->interviewModel->builder();
         $builder->select('interviews.*, candidate.candidate_name, candidate.email, candidate.phone_number, jobs.job_title, department.department_name')
             ->join('candidate', 'candidate.id = interviews.candidate_id', 'left')
-            ->join('jobs', 'jobs.id = interviews.job_id', 'left')
+            ->join('jobs', 'jobs.id = COALESCE(interviews.job_id, candidate.job_id)', 'left')
             ->join('department', 'department.id = jobs.department_id', 'left');
 
         if (!empty($status)) {
@@ -443,6 +443,7 @@ class InterviewController extends ResourceController
                 ->orLike('candidate.email', $search)
                 ->orLike('candidate.phone_number', $search)
                 ->orLike('jobs.job_title', $search)
+                ->orLike('department.department_name', $search)
                 ->orLike('interviews.description', $search)
                 ->groupEnd();
         }

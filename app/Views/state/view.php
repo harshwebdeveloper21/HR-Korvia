@@ -289,6 +289,9 @@
                 });
             }
         });
+    }
+
+    $(document).ready(function() {
         // 📥 Export to Excel functionality
         $('#btnExportState').on('click', function () {
             const $btn = $(this);
