@@ -58,10 +58,10 @@ self.addEventListener('push', (event) => {
   console.log('Push event received:', event);
   
   let notificationData = {
-    title: 'SanviHR Notification',
+    title: 'Fablead HRMS Notification',
     body: 'You have a new notification',
-    icon: '/public/assets/images/fab_logo.jpg',
-    badge: '/public/assets/images/fab_logo.jpg',
+    icon: '/public/assets/images/fab_fav_icon.png',
+    badge: '/public/assets/images/fab_fav_icon.png',
     vibrate: [200, 100, 200],
     data: {}
   };
@@ -88,11 +88,11 @@ self.addEventListener('push', (event) => {
   // Build notification options
   const notificationOptions = {
     body: notificationData.body,
-    icon: notificationData.icon || '/favicon.ico',
-    badge: notificationData.badge || '/favicon.ico',
+    icon: notificationData.icon || '/public/assets/images/fab_fav_icon.png',
+    badge: notificationData.badge || '/public/assets/images/fab_fav_icon.png',
     data: notificationData.data,
     requireInteraction: notificationData.requireInteraction || false,
-    tag: 'sanvihr-notification',
+    tag: 'fablead-notification',
     renotify: true,
     silent: false
   };

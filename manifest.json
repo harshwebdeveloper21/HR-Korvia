@@ -1,7 +1,7 @@
 {
-  "name": "SanviHR - HR Management System",
-  "short_name": "SanviHR",
-  "description": "HR Management System with Attendance Tracking",
+  "name": "Fablead HRMS - HR Management System",
+  "short_name": "Fablead HRMS",
+  "description": "Fablead HRMS - HR Management & Attendance Tracking Portal",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,13 +9,25 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/public/assets/images/fab_logo.jpg",
+      "src": "/assets/images/fab_fav_icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/public/assets/images/fab_logo.jpg",
+      "src": "/assets/images/fab_fav_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/public/assets/images/fab_fav_icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/public/assets/images/fab_fav_icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -31,7 +43,7 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/public/assets/images/fab_logo.jpg",
+          "src": "/public/assets/images/fab_fav_icon.png",
           "sizes": "96x96"
         }
       ]
@@ -43,11 +55,10 @@
       "url": "/attendance",
       "icons": [
         {
-          "src": "/public/assets/images/fab_logo.jpg",
+          "src": "/public/assets/images/fab_fav_icon.png",
           "sizes": "96x96"
         }
       ]
     }
   ]
 }
-

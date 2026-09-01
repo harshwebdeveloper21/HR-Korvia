@@ -520,9 +520,6 @@
                         <button type="button" id="btnExportLeaves" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
                         </button>
-                        <a href="/manage-leaves" id="manage-leaves-btn" class="btn hr-btnbg" style="display: none;">
-                            <i class="mdi mdi-format-list-bulleted icon-leave-size"></i> Total Employee Leaves
-                        </a>
                         <a href="/addleave" class="btn hr-btnbg">
                             <i class="mdi mdi-plus icon-leave-size"></i>Add Leave
                         </a>

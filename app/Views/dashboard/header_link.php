@@ -1,10 +1,14 @@
-<link rel="shortcut icon" href="<?= getCompanyFavicon(); ?>" class="title-logo" />
+<link rel="shortcut icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png'); ?>" type="image/png" class="title-logo" />
+<link rel="icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png'); ?>" type="image/png" />
+<link rel="apple-touch-icon" sizes="180x180" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png'); ?>" />
+<link rel="apple-touch-icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png'); ?>" />
 <link rel="manifest" href="<?= base_url('manifest.json'); ?>">
 <meta name="theme-color" content="#e66136">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="SanviHR">
+<meta name="apple-mobile-web-app-title" content="Fablead HRMS">
+<meta name="application-name" content="Fablead HRMS">
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/feather/feather.css'); ?>">
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/mdi/css/materialdesignicons.min.css'); ?>">
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/ti-icons/css/themify-icons.css'); ?>">

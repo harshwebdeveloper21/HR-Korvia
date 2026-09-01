@@ -29,80 +29,127 @@
         text-transform: capitalize;
     }
 </style>
-<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/profile.css') ?>">
-<div class="container py-4">
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="d-flex justify-content-end">
-          
-            <a href="#" id="editOverviewBtn"
-                class="align-items-center btn btn-sm d-flex justify-content-center rounded"
-                style="background-color: #E66136; color: #fff; padding: 10px; text-decoration: none;">
-                <i class="mdi mdi-pencil-outline fs-6" style="color: #fff;"></i> Edit Profile
-            </a>
+<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/profile.css?v=' . time()) ?>">
+<div class="container-fluid py-3 px-lg-4">
+    <!-- Top Action Bar -->
+    <div class="d-flex justify-content-end align-items-center mb-3">
+        <a href="#" id="editOverviewBtn"
+            class="btn btn-sm d-inline-flex align-items-center"
+            style="background: linear-gradient(135deg, #E66136 0%, #f05929 100%); color: #fff; border-radius: 8px; padding: 7px 14px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 10px rgba(230, 97, 54, 0.25);">
+            <i class="mdi mdi-pencil-outline me-1"></i> Edit Profile
+        </a>
+    </div>
 
-        </div>
-
-
-        <div class="col-md-4">
-            <div class="card p-3 lg-card-margin">
-                <div class="text-center">
+    <div class="row g-3">
+        <!-- Sidebar Profile Card -->
+        <div class="col-lg-4 col-xl-3">
+            <div class="profile-sidebar-card mb-3">
+                <div class="text-center position-relative">
                     <input type="file" id="profile_image_input" name="profile_image" accept="image/*" style="display: none;" />
                     <input type="hidden" name="id_change_image" id="id_change_image">
-                    <label for="profile_image_input" style="cursor: pointer;">
-                        <img id="profile_image"
-                            src="<?= base_url(env('ImagePath') . 'upload/default-profile.jpg'); ?>"
-                            alt="Profile Avatar"
-                            class="rounded-circle"
-                            width="130"
-                            height="130"
-                            title="Click to change profile image" />
-                    </label>
-                    <h5 class="mb-0 capitalize-text mt-2" id="user_info-firstname"></h5>
+                    
+                    <div class="profile-avatar-wrapper">
+                        <label for="profile_image_input" style="cursor: pointer;" title="Click to change profile picture">
+                            <img id="profile_image"
+                                src="<?= base_url(env('ImagePath') . 'upload/default-profile.jpg'); ?>"
+                                alt="Profile Avatar"
+                                onerror="this.onerror=null; this.src='<?= base_url(env('ImagePath') . 'upload/default-profile.jpg'); ?>';" />
+                            <div class="avatar-edit-badge" title="Upload new photo">
+                                <i class="mdi mdi-camera"></i>
+                            </div>
+                        </label>
+                    </div>
+
+                    <h5 class="fw-bold mb-1 mt-3 capitalize-text" id="user_info-firstname">Employee Name</h5>
+                    <div class="d-flex justify-content-center align-items-center gap-1 flex-wrap mb-2">
+                        <span id="profile-role-badge" class="badge bg-light text-secondary border" style="font-size: 11px;">Employee</span>
+                        <span id="profile-status-badge" class="badge bg-success-subtle text-success" style="font-size: 11px;">Active</span>
+                    </div>
+                    <div class="text-muted small" id="user_info-designation-top"></div>
                 </div>
 
+                <hr class="my-3" style="opacity: 0.1;">
 
-                <hr>
                 <div>
-                    <p class="section-title">About</p>
-                    <p><i class="mdi mdi-phone me-2"></i><span class="info-label">Phone:</span><span id="profile-phone"></span></p>
-                    <p><i class="mdi mdi-email-outline me-2"></i><span class="info-label">Email:</span><span id="profile-email"></span></p>
+                    <p class="section-title mb-2" style="font-size: 14px;"><i class="mdi mdi-account-outline text-primary me-1"></i> About</p>
+                    <div class="mb-2 small d-flex align-items-center">
+                        <i class="mdi mdi-phone me-2 text-muted fs-6"></i>
+                        <span class="info-label">Phone:</span>
+                        <span id="profile-phone" class="fw-semibold text-dark">N/A</span>
+                    </div>
+                    <div class="mb-2 small d-flex align-items-center">
+                        <i class="mdi mdi-email-outline me-2 text-muted fs-6"></i>
+                        <span class="info-label">Email:</span>
+                        <span id="profile-email" class="fw-semibold text-dark text-truncate" style="max-width: 170px;">N/A</span>
+                    </div>
                 </div>
 
-                <hr>
+                <hr class="my-3" style="opacity: 0.1;">
+
                 <div>
-                    <p class="section-title">Address</p>
-                    <p><i class="mdi mdi-map-marker me-2"></i><span class="info-label">Address:</span><span id="address1" class="capitalize-text">390 Market Street</span></p>
-                    <p><i class="mdi mdi-city me-2"></i><span class="info-label">City:</span><span id="city1" class="capitalize-text">San Francisco</span></p>
-                    <p><i class="mdi mdi-numeric me-2"></i><span class="info-label">Postcode:</span><span id="postcode1" class="capitalize-text">94102</span></p>
+                    <p class="section-title mb-2" style="font-size: 14px;"><i class="mdi mdi-map-marker-outline text-primary me-1"></i> Address</p>
+                    <div class="mb-2 small d-flex align-items-start">
+                        <i class="mdi mdi-map-marker me-2 text-muted fs-6 mt-1"></i>
+                        <div>
+                            <span id="address1" class="capitalize-text fw-semibold text-dark">N/A</span>
+                        </div>
+                    </div>
+                    <div class="mb-2 small d-flex align-items-center">
+                        <i class="mdi mdi-city me-2 text-muted fs-6"></i>
+                        <span class="info-label">City:</span>
+                        <span id="city1" class="capitalize-text fw-semibold text-dark">N/A</span>
+                    </div>
+                    <div class="mb-1 small d-flex align-items-center">
+                        <i class="mdi mdi-numeric me-2 text-muted fs-6"></i>
+                        <span class="info-label">Postcode:</span>
+                        <span id="postcode1" class="capitalize-text fw-semibold text-dark">N/A</span>
+                    </div>
                 </div>
-                <hr>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="col-md-8">
-            <!-- Tabs -->
-            <ul class="nav nav-tabs ul-sm-fontsize" id="profileTabs">
+        <!-- Main Content Area -->
+        <div class="col-lg-8 col-xl-9">
+            <div class="profile-content-card">
+                
+                <!-- Modern Segmented Pill Tabs -->
+                <ul class="nav nav-pills profile-tabs-nav" id="profileTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#overview" type="button" role="tab">
+                            <i class="fa fa-info-circle" aria-hidden="true"></i> Overview
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#compnydetail" type="button" role="tab">
+                            <i class="fa fa-address-card" aria-hidden="true"></i> Address & Contacts
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#compensation" type="button" role="tab">
+                            <i class="fa fa-tasks" aria-hidden="true"></i> Job Details
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#emergency" type="button" role="tab">
+                            <i class="fa fa-bank"></i> Bank Details
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#leaveHistoryTabPane" id="leaveHistoryTab" type="button" role="tab">
+                            <i class="mdi mdi-calendar-clock"></i> Leave History
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#incrementHistory" id="incrementHistoryTab" type="button" role="tab">
+                            <i class="mdi mdi-cash-plus"></i> Increment History
+                        </button>
+                    </li>
+                </ul>
 
-                <li class="nav-item">
-                    <a class="nav-link active" data-bs-toggle="tab" href="#overview"><i class="fa fa-info-circle" aria-hidden="true"></i> Overview</a>
-                </li>
-
-                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#compnydetail"><i class="fa fa-address-card" aria-hidden="true"></i> Address & Contacts</a></li>
-
-                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#compensation"><i class="fa fa-tasks" aria-hidden="true"></i> Job Details</a></li>
-                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#emergency"><i class="fa fa-bank"> </i> Bank Details</a></li>
-                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#leaveHistoryTabPane" id="leaveHistoryTab"><i class="mdi mdi-calendar-clock"></i> Leave History</a></li>
-                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#incrementHistory" id="incrementHistoryTab"><i class="mdi mdi-cash-plus"></i> Increment History</a></li>
-
-            </ul>
-
-            <!-- Tab Content -->
-            <div class="tab-content">
-                <!-- Overview Tab -->
-
-                <div class="tab-pane fade show active" id="overview">
+                <!-- Tab Content Panes -->
+                <div class="tab-content">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
                     <div class="row mt-3">
                         <div class="col-12">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -565,29 +612,109 @@
                 </div>
 
                 <!-- Increment History Tab -->
-                <div class="tab-pane fade" id="incrementHistory">
+                <div class="tab-pane fade" id="incrementHistory" role="tabpanel">
                     <div class="mt-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="section-title">Increment History</h6>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <h6 class="section-title mb-1">Salary & Increment Management</h6>
+                                <p class="text-muted small mb-0">Track and manage salary increments for this employee</p>
+                            </div>
+                            <button type="button" class="btn btn-sm d-inline-flex align-items-center" style="background: linear-gradient(135deg, #E66136 0%, #f05929 100%); color: #fff; border-radius: 8px; font-weight: 600; padding: 7px 14px; box-shadow: 0 4px 10px rgba(230, 97, 54, 0.25);" id="btnOpenAddIncrementModal">
+                                <i class="mdi mdi-cash-plus me-1"></i> Add Increment
+                            </button>
                         </div>
-                        <div id="incrementHistoryLoading" class="text-center py-4" style="display:none !important;">
+
+                        <!-- KPI Summary Cards -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-4">
+                                <div class="kpi-metric-card">
+                                    <div class="kpi-metric-title">Current Salary</div>
+                                    <h4 class="kpi-metric-value text-dark" id="prof-current-salary">&#8377;0</h4>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="kpi-metric-card">
+                                    <div class="kpi-metric-title">Total Increments</div>
+                                    <h4 class="kpi-metric-value text-primary" id="prof-total-increments">0</h4>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="kpi-metric-card">
+                                    <div class="kpi-metric-title">Latest Increment</div>
+                                    <h4 class="kpi-metric-value text-success" id="prof-latest-increment">&#8377;0</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div id="incrementHistoryLoading" class="text-center py-4" style="display:none;">
                             <div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div>
                         </div>
-                        <div class="table-responsive">
+
+                        <!-- Empty State -->
+                        <div id="incrementHistoryEmpty" class="text-center py-4 text-muted" style="display:none;">
+                            <i class="mdi mdi-information-outline fs-3 text-muted d-block mb-1"></i>
+                            <p class="mb-0">No salary increment records found for this employee.</p>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="table-responsive" id="incrementHistoryTableWrapper">
                             <table class="table table-bordered table-hover align-middle" id="incrementHistoryTable">
                                 <thead style="background-color:#E66136; color:#fff;">
                                     <tr>
-                                        <th>#</th>
-                                        <th>Increment Amount (&#8377;)</th>
-                                        <th>Previous Salary (&#8377;)</th>
-                                        <th>New Salary (&#8377;)</th>
-                                        <th>Updated At</th>
+                                        <th style="width: 50px;">#</th>
+                                        <th>Increment Amount</th>
+                                        <th>Previous Salary</th>
+                                        <th>New Salary</th>
+                                        <th>Effective Date</th>
+                                        <th>Recorded On</th>
                                     </tr>
                                 </thead>
                                 <tbody id="incrementHistoryBody">
-                                    <tr><td colspan="5" class="text-center text-muted">Click the tab to load history.</td></tr>
+                                    <tr><td colspan="6" class="text-center text-muted">Click the tab to load history.</td></tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Increment Modal -->
+                <div class="modal fade" id="profileAddIncrementModal" tabindex="-1" aria-labelledby="profileAddIncrementModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow">
+                            <div class="modal-header text-white" style="background: linear-gradient(135deg, #E66136 0%, #f05929 100%);">
+                                <h5 class="modal-title fs-6 fw-bold" id="profileAddIncrementModalLabel"><i class="mdi mdi-cash-plus me-1"></i> Add Salary Increment</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <div class="alert alert-light border mb-3 p-2 d-flex align-items-center justify-content-between">
+                                    <span class="small text-muted">Employee:</span>
+                                    <strong class="text-dark" id="modal_inc_emp_name">Employee</strong>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Current Salary (&#8377;)</label>
+                                    <input type="text" class="form-control bg-light fw-bold text-dark" id="modal_inc_current_salary" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Increment Amount (&#8377;) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="modal_inc_amount" placeholder="e.g. 5000" min="1" step="1">
+                                    <div class="form-text small text-muted">Enter the amount to add to current salary.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">New Salary Preview (&#8377;)</label>
+                                    <input type="text" class="form-control bg-light fw-bold text-success" id="modal_inc_new_salary_preview" readonly value="&#8377; 0">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Effective From Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="modal_inc_date">
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-light py-2">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-sm text-white" id="btnSaveProfileIncrement" style="background-color: #E66136;">
+                                    <i class="mdi mdi-check me-1"></i> Save Increment
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -659,14 +786,21 @@
 <div id="error-message" class="alert alert-danger d-none"></div>
 
 <script>
+    // Global state variables for profile and increment management
+    var currentEmployeeSalary = 0;
+    var currentEmployeeUserId = '<?= $id; ?>';
+    var currentEmployeeName = '';
+    var currentEmployeeStatus = 'Active';
+
     document.addEventListener('DOMContentLoaded', function() {
         const editOverviewBtn = document.getElementById('editOverviewBtn');
-
-        editOverviewBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const profileEmployeeId = editOverviewBtn.getAttribute('data-id'); // get the profile id
-            window.location.href = `/employee/${profileEmployeeId}`; // redirect to edit page
-        });
+        if (editOverviewBtn) {
+            editOverviewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const profileEmployeeId = editOverviewBtn.getAttribute('data-id') || currentEmployeeUserId;
+                window.location.href = `/employee/${profileEmployeeId}`;
+            });
+        }
     });
 </script>
 
@@ -704,7 +838,8 @@
 
                         setText('#users-email', user.email);
                         setText('#profile-email', user.email);
-                        setText('#user_info-firstname', user.firstname + ' ' + (user.lastname || ''));
+                        const fullName = $.trim((user.firstname || '') + ' ' + (user.lastname || '')) || user.username || 'Employee';
+                        setText('#user_info-firstname', fullName);
                         setText('#user_info-gender', user.gender);
                         setText('#user_info-lastname', user.lastname);
                         setText('#user_info-date_of_birth', user.date_of_birth);
@@ -722,7 +857,18 @@
                         setText('#number1', user.contact_number);
                         setText('#profile-phone', user.contact_number);
                         setText('#user_info-designation_name', user.designation_name);
+                        setText('#user_info-designation-top', user.designation_name || user.department_name || '');
                         setText('#user_info-department_name', user.department_name);
+                        
+                        const empRole = user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Employee';
+                        $('#profile-role-badge').text(empRole);
+
+                        const empStatus = (user.status || 'Active').trim();
+                        const isInactive = ['inactive', 'resigned', 'fired', 'removed'].includes(empStatus.toLowerCase());
+                        $('#profile-status-badge')
+                            .attr('class', 'badge ' + (isInactive ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle'))
+                            .text(empStatus);
+
                         const displayEmpId = user.employee_id && user.employee_id !== '0'
                             ? (String(user.employee_id).startsWith('EMP-') || String(user.employee_id).startsWith('EMP#') ? user.employee_id : 'EMP-' + String(user.employee_id).padStart(3, '0'))
                             : ('EMP-' + (user.user_id || '001'));
@@ -730,21 +876,27 @@
                         setText('#user_info-joining_date', user.joining_date);
                         setText('#user_info-working_location', user.working_location);
                         setText('#user_info-role', user.role);
-                        setText('#user_info-salary', user.salary);
+
+                        currentEmployeeSalary = parseFloat(user.salary || 0);
+                        currentEmployeeUserId = user.user_id;
+                        currentEmployeeName = fullName;
+                        currentEmployeeStatus = empStatus;
+
+                        setText('#user_info-salary', '₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                        $('#prof-current-salary').html('&#8377; ' + currentEmployeeSalary.toLocaleString('en-IN'));
+
                         setText('#acc_number', user.acc_number);
                         setText('#bank_name', user.bank_name);
                         setText('#ifsc_code', user.ifsc_code);
                         setText('#acc_in_name', user.acc_in_name);
                         setText('#branch_name', user.branch_name);
                         setText('#branch_code', user.branch_code);
-                        // setText('#id_change_image', user.id);
+                        
                         $('#id_change_image').val(user.user_id);
                         $('#user-id').val(user.user_id);
                         $('#user-lg-id').val(user.user_id);
                         $('#user-lg').val(user.user_id);
                         $('#editOverviewBtn').attr('data-id', user.user_id);
-
-
 
                         let profileImage = user.profile_image ? user.profile_image : '<?= base_url(env('ImagePath') . "upload/default-profile.jpg"); ?>';
                         $('#profile_image').attr('src', profileImage);
@@ -1171,64 +1323,175 @@
             });
         });
 
-        // ---- Increment History Tab ----
+        // ══════════════════════════════════════════════════════
+        // Increment History Management & Modal
+        // ══════════════════════════════════════════════════════
         let incrementHistoryLoaded = false;
-        const profileUserInfoId = '<?= $id; ?>';
 
-        $(document).on('shown.bs.tab', '#incrementHistoryTab', function () {
-            if (incrementHistoryLoaded) return;
+        function loadIncrementHistory() {
             const token = localStorage.getItem('token');
+            const targetUserId = currentEmployeeUserId || $('#users-id').text() || '<?= $id; ?>';
             const $tbody = $('#incrementHistoryBody');
 
-            $tbody.html('<tr><td colspan="7" class="text-center"><div class="spinner-border spinner-border-sm text-warning" role="status"></div>&nbsp; Loading...</td></tr>');
+            $('#incrementHistoryLoading').show();
+            $('#incrementHistoryTableWrapper').hide();
+            $('#incrementHistoryEmpty').hide();
 
             $.ajax({
-                url: '<?= base_url("/api/employee/increment-history/") ?>' + profileUserInfoId,
+                url: `/api/employee/increment-history-user/${targetUserId}`,
                 type: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token },
                 dataType: 'json',
                 success: function (res) {
-                    if (res.status === 'success' && res.history.length > 0) {
+                    $('#incrementHistoryLoading').hide();
+                    if (res.status === 'success' && res.history && res.history.length > 0) {
+                        $('#prof-total-increments').text(res.history.length);
+                        const latest = res.history[0];
+                        const latestAmt = parseFloat(latest.increment_amount || 0);
+                        $('#prof-latest-increment').html('+ &#8377; ' + latestAmt.toLocaleString('en-IN'));
+
+                        if (latest.new_salary) {
+                            currentEmployeeSalary = parseFloat(latest.new_salary);
+                            $('#prof-current-salary').html('&#8377; ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                            $('#user_info-salary').text('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                        }
+
                         let rows = '';
                         res.history.forEach(function (r, idx) {
+                            const effDate = r.effective_from_date
+                                ? new Date(r.effective_from_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                                : '-';
                             const createdAt = r.created_at
                                 ? new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                                : 'N/A';
+                                : '-';
+
                             rows += `<tr>
-                                <td>${idx + 1}</td>
-                                <td class="text-success fw-bold">+ &#8377;${parseFloat(r.increment_amount).toLocaleString('en-IN')}</td>
-                                <td>&#8377;${parseFloat(r.previous_salary).toLocaleString('en-IN')}</td>
-                                <td class="fw-bold">&#8377;${parseFloat(r.new_salary).toLocaleString('en-IN')}</td>
-                                <td>${createdAt}</td>
+                                <td class="text-muted fw-bold">${idx + 1}</td>
+                                <td><span class="badge" style="background:#d4edda;color:#155724;font-size:13px;font-weight:600;">+ &#8377; ${parseFloat(r.increment_amount || 0).toLocaleString('en-IN')}</span></td>
+                                <td>&#8377; ${parseFloat(r.previous_salary || 0).toLocaleString('en-IN')}</td>
+                                <td class="fw-bold text-dark">&#8377; ${parseFloat(r.new_salary || 0).toLocaleString('en-IN')}</td>
+                                <td><span class="text-dark">${effDate}</span></td>
+                                <td class="text-muted small">${createdAt}</td>
                             </tr>`;
                         });
                         $tbody.html(rows);
+                        $('#incrementHistoryTableWrapper').show();
                         incrementHistoryLoaded = true;
                     } else {
-                        $tbody.html('<tr><td colspan="5" class="text-center text-muted py-4"><i class="mdi mdi-information-outline me-1"></i> No increment history found.</td></tr>');
+                        $('#prof-total-increments').text('0');
+                        $('#prof-latest-increment').text('None');
+                        $('#incrementHistoryEmpty').show();
                         incrementHistoryLoaded = true;
                     }
                 },
                 error: function () {
-                    $tbody.html('<tr><td colspan="5" class="text-center text-danger">Failed to load increment history. Please try again.</td></tr>');
+                    $('#incrementHistoryLoading').hide();
+                    $tbody.html('<tr><td colspan="6" class="text-center text-danger py-4">Failed to load increment history. Please try again.</td></tr>');
+                    $('#incrementHistoryTableWrapper').show();
+                }
+            });
+        }
+
+        $(document).on('shown.bs.tab', '#incrementHistoryTab, [data-bs-target="#incrementHistory"]', function () {
+            loadIncrementHistory();
+        });
+
+        // Open Add Increment Modal
+        $('#btnOpenAddIncrementModal').on('click', function(e) {
+            e.preventDefault();
+
+            if (['inactive', 'resigned', 'fired', 'removed'].includes(currentEmployeeStatus.toLowerCase())) {
+                Swal.fire('Not Allowed', 'Cannot add salary increment for an inactive or resigned employee.', 'warning');
+                return;
+            }
+
+            $('#modal_inc_emp_name').text(currentEmployeeName || 'Employee');
+            $('#modal_inc_current_salary').val('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+            $('#modal_inc_amount').val('');
+            $('#modal_inc_new_salary_preview').val('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+            $('#modal_inc_date').val(new Date().toISOString().split('T')[0]);
+
+            const modal = new bootstrap.Modal(document.getElementById('profileAddIncrementModal'));
+            modal.show();
+        });
+
+        // Live calculation of new salary preview
+        $('#modal_inc_amount').on('input', function() {
+            const incAmt = parseFloat($(this).val()) || 0;
+            const newSal = currentEmployeeSalary + incAmt;
+            $('#modal_inc_new_salary_preview').val('₹ ' + newSal.toLocaleString('en-IN'));
+        });
+
+        // Save Increment
+        $('#btnSaveProfileIncrement').on('click', function() {
+            const $btn = $(this);
+            const incAmount = parseFloat($('#modal_inc_amount').val());
+            const incDate = $('#modal_inc_date').val();
+            const token = localStorage.getItem('token');
+            const targetUserId = currentEmployeeUserId || $('#users-id').text() || '<?= $id; ?>';
+
+            if (!incAmount || incAmount <= 0) {
+                Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please enter a valid increment amount greater than 0.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+                return;
+            }
+
+            if (!incDate) {
+                Swal.fire({ icon: 'warning', title: 'Required Field', text: 'Please select an effective date.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+                return;
+            }
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Saving...');
+
+            $.ajax({
+                url: '<?= base_url("/api/employee/increment-salary") ?>',
+                type: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                data: {
+                    user_id: targetUserId,
+                    increment_amount: incAmount,
+                    increment_date: incDate
+                },
+                success: function(res) {
+                    $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Save Increment');
+                    if (res.status === 'success') {
+                        bootstrap.Modal.getInstance(document.getElementById('profileAddIncrementModal')).hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Increment Added!',
+                            text: res.message || 'Salary increment has been recorded successfully.',
+                            toast: true,
+                            position: 'top-end',
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                        loadIncrementHistory();
+                    } else {
+                        Swal.fire('Error', res.message || 'Failed to record increment.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Save Increment');
+                    Swal.fire('Error', xhr.responseJSON?.message || 'Server error occurred while saving increment.', 'error');
                 }
             });
         });
 
-        // ---- Leave History Tab ----
+        // ══════════════════════════════════════════════════════
+        // Leave History Tab
+        // ══════════════════════════════════════════════════════
         let leaveHistoryLoaded = false;
 
-        $(document).on('click shown.bs.tab', '#leaveHistoryTab', function () {
+        $(document).on('click shown.bs.tab', '#leaveHistoryTab, [data-bs-target="#leaveHistoryTabPane"]', function () {
             if (leaveHistoryLoaded) return;
             const token = localStorage.getItem('token');
-            const targetUserId = $('#users-id').text() || '<?= $id; ?>';
+            const targetUserId = currentEmployeeUserId || $('#users-id').text() || '<?= $id; ?>';
 
             $('#profLeaveLoading').show();
             $('#profLeaveEmpty').hide();
             $('#profLeaveTableWrapper').hide();
 
             $.ajax({
-                url: '<?= base_url("api/employee/leaveHistoryMonthly/") ?>' + targetUserId,
+                url: '<?= base_url("api/employee/leaveHistoryMonthly/") ?>/' + targetUserId,
                 type: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token },
                 dataType: 'json',
