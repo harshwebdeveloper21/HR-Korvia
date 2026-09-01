@@ -241,6 +241,20 @@
     $(document).ready(function() {
         const token = localStorage.getItem('token');
 
+        function formatHolidayDate(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                const year = parts[0];
+                const monthIndex = parseInt(parts[1], 10) - 1;
+                const day = parseInt(parts[2], 10);
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthName = monthNames[monthIndex] || parts[1];
+                return `${day} ${monthName} ${year}`;
+            }
+            return dateStr;
+        }
+
         function fetchHolidays() {
             $.ajax({
                 url: '<?= base_url('api/get_holidays') ?>',
@@ -254,8 +268,12 @@
                         let tableRows = '';
                         const holidays = response.data;
 
+                        // Sort ascending by holiday_date
+                        holidays.sort((a, b) => new Date(a.holiday_date) - new Date(b.holiday_date));
+
                         holidays.forEach(holiday => {
                             const formattedName = holiday.title.charAt(0).toUpperCase() + holiday.title.slice(1).toLowerCase();
+                            const displayDate = formatHolidayDate(holiday.holiday_date);
                             tableRows += `
                             <tr>
                                 <td class="capitalize-text">
@@ -264,11 +282,11 @@
                                         <div class="expanded-details" id="holiday-details-${holiday.id}" onclick="event.stopPropagation();">
                                             <div class="detail-row">
                                                 <span class="detail-label">Holiday Date:</span>
-                                                <span class="detail-value">${holiday.holiday_date}</span>
+                                                <span class="detail-value">${displayDate}</span>
                                             </div>
                                             <div class="detail-row">
                                                 <span class="detail-label">Description:</span>
-                                                <span class="detail-value">${holiday.description}</span>
+                                                <span class="detail-value">${holiday.description || ''}</span>
                                             </div>
                                             <div class="detail-actions">
                                                 <a href="/edit-holiday/${holiday.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
@@ -277,8 +295,8 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="desktop-only-col capitalize-text">${holiday.holiday_date}</td>
-                                <td class="desktop-only-col capitalize-text">${holiday.description}</td>
+                                <td class="desktop-only-col" data-order="${holiday.holiday_date}">${displayDate}</td>
+                                <td class="desktop-only-col capitalize-text">${holiday.description || ''}</td>
                                 <td class="desktop-only-col">
                                     <a href="/edit-holiday/${holiday.id}" class="text-primary edit-holiday me-2" title="Edit">
                                         <i class="mdi mdi-pencil"></i>
@@ -302,6 +320,7 @@
                         }
 
                         $('#task-table').DataTable({
+                            order: [[1, 'asc']], // Order by Holiday Date ascending
                             columnDefs: [
                                 {
                                     targets: 4, // mobile expand column

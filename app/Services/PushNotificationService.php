@@ -162,8 +162,8 @@ class PushNotificationService
                 $payload = json_encode([
                     'title' => $title,
                     'body' => $message,
-                    'icon' => base_url('assets/images/logo.png'),
-                    'badge' => base_url('assets/images/logo.png'),
+                    'icon' => base_url('assets/images/fab_logo.jpg'),
+                    'badge' => base_url('assets/images/fab_logo.jpg'),
                     'data' => $data,
                     'requireInteraction' => false,
                     'vibrate' => [200, 100, 200]
@@ -248,8 +248,8 @@ class PushNotificationService
                 $payload = json_encode([
                     'title' => $title,
                     'body' => $message,
-                    'icon' => base_url('assets/images/logo.png'),
-                    'badge' => base_url('assets/images/logo.png'),
+                    'icon' => base_url('assets/images/fab_logo.jpg'),
+                    'badge' => base_url('assets/images/fab_logo.jpg'),
                     'data' => $data,
                     'requireInteraction' => false,
                     'vibrate' => [200, 100, 200]
@@ -362,8 +362,8 @@ class PushNotificationService
                 $payload = json_encode([
                     'title' => $title,
                     'body' => $message,
-                    'icon' => base_url('assets/images/logo.png'),
-                    'badge' => base_url('assets/images/logo.png'),
+                    'icon' => base_url('assets/images/fab_logo.jpg'),
+                    'badge' => base_url('assets/images/fab_logo.jpg'),
                     'data' => $data,
                     'requireInteraction' => false,
                     'vibrate' => [200, 100, 200]

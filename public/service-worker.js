@@ -79,8 +79,8 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'SanviHR Notification',
     body: 'You have a new notification',
-    icon: '/assets/images/logo.png',
-    badge: '/assets/images/logo.png',
+    icon: '/assets/images/fab_logo.jpg',
+    badge: '/assets/images/fab_logo.jpg',
     vibrate: [200, 100, 200],
     data: {}
   };

@@ -34,6 +34,7 @@ jobs:
           rm -f ./build_output/.gitattributes
           rm -f ./build_output/.env
           rm -f ./build_output/.htaccess
+          rm -f ./build_output/writable/auto_leave_last_run.txt
  
  
       - name: Deploy to cPanel via FTPS
@@ -51,6 +52,7 @@ jobs:
             **/.git*
             **/vendor/**
             **/writable/**
+            **/writable/auto_leave_last_run.txt
             **/system/**
             **/uploads/**
             **/public/vendors/**
