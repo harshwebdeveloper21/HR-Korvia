@@ -52,6 +52,7 @@
         </div>
         <!-- page-body-wrapper ends -->
     </div>
+    <?= $this->include('dashboard/mobile_bottom_nav.php'); ?>
     <?= $this->include('dashboard/footer_link.php'); ?>
     <?= $this->renderSection('scripts'); ?>
 </body>
