@@ -130,7 +130,7 @@ class EmployeeController extends ResourceController
         ]);
     }
 
-    public function lastEmployeeId()
+    public function getGuaranteedUniqueEmployeeId(?string $preferredId = null): string
     {
         $db = \Config\Database::connect();
         $rows = $db->table('user_info')
@@ -140,27 +140,56 @@ class EmployeeController extends ResourceController
             ->get()
             ->getResultArray();
 
-        $maxNumber = 0;
+        $existing = [];
+        $maxNum = 0;
+
         foreach ($rows as $r) {
-            $rawId = trim((string)($r['employee_id'] ?? ''));
-            if ($rawId === '' || $rawId === '0') {
+            $raw = trim((string)($r['employee_id'] ?? ''));
+            if ($raw === '' || $raw === '0') {
                 continue;
             }
-            // Extract numeric part (e.g. EMP-071 -> 71, EMP#101 -> 101, 19389 -> 19389)
-            if (preg_match('/(\d+)/', $rawId, $matches)) {
-                $val = (int)$matches[1];
-                if ($val > $maxNumber) {
-                    $maxNumber = $val;
+            $existing[strtolower($raw)] = true;
+
+            // Match digits
+            if (preg_match('/(\d+)/', $raw, $m)) {
+                $num = (int)$m[1];
+                if ($num > $maxNum) {
+                    $maxNum = $num;
                 }
+                $existing['emp-' . str_pad($num, 3, '0', STR_PAD_LEFT)] = true;
+                $existing['emp-' . $num] = true;
+                $existing[(string)$num] = true;
             }
         }
 
-        $nextEmployeeId = $maxNumber > 0 ? ($maxNumber + 1) : 1;
-        $formattedId = 'EMP-' . str_pad($nextEmployeeId, 3, '0', STR_PAD_LEFT);
+        if (!empty($preferredId)) {
+            $cleanPref = strtolower(trim($preferredId));
+            if (!isset($existing[$cleanPref])) {
+                return trim($preferredId);
+            }
+        }
+
+        $nextNum = max($maxNum + 1, 1);
+        while (
+            isset($existing['emp-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT)]) ||
+            isset($existing['emp-' . $nextNum]) ||
+            isset($existing[(string)$nextNum])
+        ) {
+            $nextNum++;
+        }
+
+        return 'EMP-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+    }
+
+    public function lastEmployeeId()
+    {
+        $formattedId = $this->getGuaranteedUniqueEmployeeId();
+        preg_match('/(\d+)/', $formattedId, $m);
+        $nextEmployeeId = isset($m[1]) ? (int)$m[1] : 1;
 
         return $this->respond([
             'status'           => true,
-            'employee_id'      => $maxNumber,
+            'employee_id'      => max($nextEmployeeId - 1, 0),
             'next_employee_id' => $nextEmployeeId,
             'formatted_id'     => $formattedId
         ]);
@@ -260,8 +289,7 @@ class EmployeeController extends ResourceController
                 'employee_id' => [
                     'rules' => 'required',
                     'errors' => [
-                        'required' => 'Employee ID is required.',
-                        'is_unique' => 'This Employee ID is already assigned to another employee.'
+                        'required' => 'Employee ID is required.'
                     ]
                 ],
                 'designation_id' => [
@@ -276,11 +304,6 @@ class EmployeeController extends ResourceController
                     'rules' => 'required',
                     'errors' => ['required' => 'Joining date is required.']
                 ],
-                'role' => [
-                    'rules' => 'required',
-                    'errors' => ['required' => 'Role is required.']
-                ],
-
                 'salary' => [
                     'rules' => 'required|decimal|greater_than[0]',
                     'errors' => [
@@ -293,18 +316,34 @@ class EmployeeController extends ResourceController
         ];
         if (empty($userId)) {
             $rules[1]['email']['rules'] .= '|is_unique[users.email]';
-            $rules[3]['employee_id']['rules'] .= '|is_unique[user_info.employee_id]';
         } else {
-            // ✅ If editing, make sure it’s unique EXCEPT for current ID
             $rules[1]['email']['rules'] .= '|is_unique[users.email,id,' . $userId . ']';
-            $rules[3]['employee_id']['rules'] .= '|is_unique[user_info.employee_id,user_id,' . $userId . ']';
         }
+
         // Validate step
         if (!$validation->setRules($rules[$step])->withRequest($this->request)->run()) {
             return $this->response->setJSON([
                 'status' => false,
                 'errors' => $validation->getErrors()
             ]);
+        }
+
+        // Check employee_id uniqueness directly for step 3
+        if ($step == 3) {
+            $empId = trim((string)$this->request->getPost('employee_id'));
+            if (!empty($empId)) {
+                $db = \Config\Database::connect();
+                $chkBuilder = $db->table('user_info')->where('TRIM(LOWER(employee_id))', strtolower($empId));
+                if (!empty($userId)) {
+                    $chkBuilder->where('user_id !=', $userId);
+                }
+                if ($chkBuilder->countAllResults() > 0) {
+                    return $this->response->setJSON([
+                        'status' => false,
+                        'errors' => ['employee_id' => 'This Employee ID (' . htmlspecialchars($empId) . ') is already assigned to another employee.']
+                    ]);
+                }
+            }
         }
 
         return $this->response->setJSON(['status' => true]);
@@ -331,12 +370,17 @@ class EmployeeController extends ResourceController
             return $this->failValidationErrors(['This email is already registered. Please use a different one.']);
         }
 
-        // Check if the employee_id is already assigned
+        // Ensure employee_id is set and unique
         $empId = isset($data['employee_id']) ? trim($data['employee_id']) : '';
-        if (!empty($empId)) {
+        if (empty($empId)) {
+            $empId = $this->getGuaranteedUniqueEmployeeId();
+            $data['employee_id'] = $empId;
+        } else {
             $duplicateEmp = $this->userInfoModel->where('employee_id', $empId)->first();
             if ($duplicateEmp) {
-                return $this->failValidationErrors(['employee_id' => 'This Employee ID is already assigned to another employee.']);
+                // Auto-resolve to next unique ID so employee creation is always smooth
+                $empId = $this->getGuaranteedUniqueEmployeeId();
+                $data['employee_id'] = $empId;
             }
         }
 

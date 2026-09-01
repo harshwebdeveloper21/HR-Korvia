@@ -1041,10 +1041,44 @@ class AttendanceController extends ResourceController
         foreach ($users as $user) {
             $userId = $user['id'];
 
-            // Filter user attendance
+            // Filter user attendance for this month
             $userAttendance = array_filter($attendanceData, function ($row) use ($userId) {
                 return $row['user_id'] == $userId;
             });
+
+            $userInfo = $userInfoMap[$userId] ?? [];
+            $userStatus = strtolower(trim($userInfo['status'] ?? 'Active'));
+            $lastWorkingDay = !empty($userInfo['last_working_day']) ? trim($userInfo['last_working_day']) : null;
+            $joiningDate = !empty($userInfo['joining_date']) ? trim($userInfo['joining_date']) : null;
+
+            $hasAttendance = !empty($userAttendance);
+            $hasLeaves = !empty($leavesByUser[$userId]);
+            $hasActivityInMonth = $hasAttendance || $hasLeaves;
+
+            $isInactive = in_array($userStatus, ['inactive', 'resigned', 'fired', 'removed']);
+
+            // 1. If employee joined after the selected month and has no activity in this month -> skip
+            if ($joiningDate && $joiningDate > $endOfMonthDate && !$hasActivityInMonth) {
+                continue;
+            }
+
+            // 2. If employee has last_working_day before this month began and has no activity in this month -> skip
+            if ($lastWorkingDay && $lastWorkingDay < $startOfMonthDate && !$hasActivityInMonth) {
+                continue;
+            }
+
+            // 3. If employee is inactive/resigned without last_working_day and has no activity in this month
+            if ($isInactive && empty($lastWorkingDay) && !$hasActivityInMonth) {
+                $updatedDate = !empty($userInfo['updated_at']) ? substr($userInfo['updated_at'], 0, 10) : (!empty($user['updated_at']) ? substr($user['updated_at'], 0, 10) : null);
+                if ($updatedDate && $updatedDate < $startOfMonthDate) {
+                    continue;
+                }
+                // If it's the current or future month and employee is already inactive with no activity, skip
+                $currentMonthStart = date('Y-m-01');
+                if ($startOfMonthDate >= $currentMonthStart) {
+                    continue;
+                }
+            }
 
             // ── Group all sessions by date ────────────────────────────────────────
             $byDate = [];
