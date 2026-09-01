@@ -690,7 +690,7 @@
                         </div>
 
                         <div class="row">
-                            <input type="hidden" name="role" value="employee">
+                            <input type="hidden" name="role" id="role" value="employee">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Profile Image</label>
@@ -962,12 +962,39 @@
         });
     });
 
+    function fetchNextEmployeeId(callback) {
+        if ($('#id').val()) return; // Don't overwrite in edit mode
+        const currentVal = $('#employee_id').val();
+        if (currentVal && currentVal.trim() !== '') {
+            if (typeof callback === 'function') callback();
+            return; // Don't overwrite what the user has already entered!
+        }
+        const token = localStorage.getItem('token');
+        $.ajax({
+            url: '<?= base_url("api/employee/lastEmployeeId") ?>',
+            type: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function (response) {
+                if (response.status && response.formatted_id) {
+                    if (!$('#employee_id').val() || $('#employee_id').val().trim() === '') {
+                        $('#employee_id').val(response.formatted_id);
+                        $('#employee_id_display').val(response.formatted_id);
+                    }
+                }
+                if (typeof callback === 'function') callback(response);
+            }
+        });
+    }
+
     $('#next2').click(function () {
         validateStep(2, function (isValid) {
             if (isValid) {
                 currentStep++;
                 showStep(currentStep);
                 updateProgress(currentStep);
+                fetchNextEmployeeId();
             }
         });
     });
@@ -1092,9 +1119,12 @@
                 if (response.status) {
                     let formattedId = response.formatted_id || (response.next_employee_id ? `EMP-${String(response.next_employee_id).padStart(3, '0')}` : 'EMP-001');
 
-                    // ✅ Set both hidden and visible fields
-                    $('#employee_id').val(formattedId); // For submission
-                    $('#employee_id_display').val(formattedId); // For UI display
+                    if (!$('#id').val()) {
+                        if (!$('#employee_id').val() || $('#employee_id').val().trim() === '') {
+                            $('#employee_id').val(formattedId);
+                            $('#employee_id_display').val(formattedId);
+                        }
+                    }
                 }
             },
             error: function () {

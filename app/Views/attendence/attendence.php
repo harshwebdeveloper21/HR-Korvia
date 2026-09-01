@@ -337,13 +337,32 @@
 
             users.forEach(user => {
                 const attendance = user.attendance || [];
+                const userStatus = (user.status || 'Active').toLowerCase();
+                const isInactive = ['inactive', 'resigned', 'fired', 'removed'].includes(userStatus);
+                const startOfMonthStr = `${year}-${String(month).padStart(2, '0')}-01`;
+                const endOfMonthStr = `${year}-${String(month).padStart(2, '0')}-${String(totalDaysInMonth).padStart(2, '0')}`;
 
                 // Calculate employment boundaries for this user
                 let lwd = null;
-                if (user.status && user.status.toLowerCase() !== 'active' && user.last_working_day) {
+                if (isInactive && user.last_working_day) {
                     lwd = user.last_working_day;
                 }
                 let jd = user.joining_date || null;
+
+                const hasAnyPunch = attendance.some(a => {
+                    const st = (a.status || '').toLowerCase();
+                    return ['present', 'half-day'].includes(st) || (a.check_in_time && a.check_in_time !== '00:00:00');
+                });
+
+                // Skip if joined after this month and had no activity
+                if (jd && jd > endOfMonthStr && !hasAnyPunch) {
+                    return;
+                }
+
+                // Skip if resigned before this month began and had no activity
+                if (lwd && lwd < startOfMonthStr && !hasAnyPunch) {
+                    return;
+                }
 
                 // Calculate total working days for this user specifically
                 let userWorkingDays = 0;
@@ -545,6 +564,10 @@
                 tbody.appendChild(row);
                 tbody.appendChild(historyRow);
             });
+
+            if (tbody.children.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">No attendance records found for this period</td></tr>';
+            }
 
             // Add click event listeners for desktop view history buttons
             document.querySelectorAll('.view-history-btn').forEach(btn => {

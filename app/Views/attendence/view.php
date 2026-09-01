@@ -678,9 +678,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const defaultImagePath = "<?= base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>";
         
         // Filter users
-        const filteredUsers = users.filter(user => 
-            user.employee_name.toLowerCase().includes(searchTerm)
-        );
+        const startOfMonthStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+        const endOfMonthStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+
+        const filteredUsers = users.filter(user => {
+            if (!user.employee_name.toLowerCase().includes(searchTerm)) {
+                return false;
+            }
+            const userStatus = (user.status || 'Active').toLowerCase();
+            const isInactive = ['inactive', 'resigned', 'fired', 'removed'].includes(userStatus);
+            const hasAnyPunch = (user.attendance || []).some(a => {
+                const st = (a.status || '').toLowerCase();
+                return ['present', 'half-day'].includes(st) || (a.check_in_time && a.check_in_time !== '00:00:00');
+            });
+            if (user.joining_date && user.joining_date > endOfMonthStr && !hasAnyPunch) {
+                return false;
+            }
+            if (isInactive && user.last_working_day && user.last_working_day < startOfMonthStr && !hasAnyPunch) {
+                return false;
+            }
+            return true;
+        });
 
         // Build header
         let headerHTML = '<tr><th class="employee-name" style="position: sticky; left: 0; background: #000; z-index: 11; color: white;">Employee Name</th>';
