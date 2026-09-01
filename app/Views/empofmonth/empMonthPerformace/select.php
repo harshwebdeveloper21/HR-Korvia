@@ -33,9 +33,7 @@
                                 <label class="col-sm-4 col-form-label leave-sm-emp">Employee Name</label>
                                 <div class="col-sm-8">
                                     <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-domain fs-5"></i></span>
-                                        </div>
+                                        <span class="input-group-text"><i class="mdi mdi-domain fs-5"></i></span>
                                         <select class="form-select" name="employee_id" id="employee_id">
                                             <option value="">Select Employee</option>
                                             <?php foreach (
@@ -57,9 +55,7 @@
                                 <label class="col-sm-4 col-form-label leave-sm-emp">Template Name</label>
                                 <div class="col-sm-8">
                                     <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-calendar fs-5"></i></span>
-                                        </div>
+                                        <span class="input-group-text"><i class="mdi mdi-calendar fs-5"></i></span>
                                         <select class="form-select" name="template_id" id="template_id">
                                             <option value="">Select Template</option>
                                             <?php foreach (
@@ -89,9 +85,7 @@
                                 <label class="col-sm-4 col-form-label leave-sm-emp">Month & Year</label>
                                 <div class="col-sm-8">
                                     <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-calendar-month fs-5"></i></span>
-                                        </div>
+                                        <span class="input-group-text"><i class="mdi mdi-calendar-month fs-5"></i></span>
                                         <input type="month" class="form-control" name="month_year" id="month_year" />
                                     </div>
                                     <div class="error text-danger" id="month_year-Error"></div>

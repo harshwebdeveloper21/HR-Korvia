@@ -3,38 +3,62 @@
   "short_name": "Fablead HRMS",
   "description": "Fablead HRMS - HR Management & Attendance Tracking Portal",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#e66136",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
     {
       "src": "/assets/images/fab_fav_icon.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/assets/images/fab_fav_icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/public/assets/images/fab_fav_icon.png",
+      "src": "/assets/images/fab_fav_icon.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
-      "src": "/public/assets/images/fab_fav_icon.png",
+      "src": "/assets/images/fab_fav_icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/fab_fav_icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/fab_fav_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["business", "productivity"],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Dashboard",
@@ -43,8 +67,8 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/public/assets/images/fab_fav_icon.png",
-          "sizes": "96x96"
+          "src": "/assets/images/fab_fav_icon.png",
+          "sizes": "192x192"
         }
       ]
     },
@@ -55,8 +79,8 @@
       "url": "/attendance",
       "icons": [
         {
-          "src": "/public/assets/images/fab_fav_icon.png",
-          "sizes": "96x96"
+          "src": "/assets/images/fab_fav_icon.png",
+          "sizes": "192x192"
         }
       ]
     }

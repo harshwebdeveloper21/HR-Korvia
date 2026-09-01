@@ -6,8 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>HR Portal - Sign In</title>
     <link rel="shortcut icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>" type="image/png">
-    <link rel="icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>" type="image/png">
-    <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/mdi/css/materialdesignicons.min.css'); ?>">
+    <link rel="icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>" type="image/png" sizes="192x192">
+    <link rel="icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>" type="image/png" sizes="512x512">
+    <link rel="icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>" type="image/png" sizes="32x32">
+    <link rel="icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>">
+    <link rel="apple-touch-icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>">
+    <link rel="manifest" href="<?= base_url('manifest.json') ?>">
+    <meta name="msapplication-TileImage" content="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>">
+    <meta name="msapplication-TileColor" content="#e66136">
+    <meta name="theme-color" content="#e66136">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Fablead HRMS">
+    <meta name="application-name" content="Fablead HRMS">
+    <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/mdi/css/materialdesignicons.min.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= base_url(env("ImagePath") . "assets/css/login.css?v=" . time()) ?>">
 </head>

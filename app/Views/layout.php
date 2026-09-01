@@ -67,6 +67,77 @@
             min-height: 36px !important;
         }
 
+        /* ══════════════════════════════════════════════════════════════════════════
+           Global Fix for Input Groups & Prepend/Append Icons Alignment
+           ══════════════════════════════════════════════════════════════════════════ */
+        .input-group {
+            position: relative;
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            align-items: stretch !important;
+            width: 100% !important;
+        }
+
+        .input-group > .input-group-prepend,
+        .input-group > .input-group-append,
+        .input-group-prepend,
+        .input-group-append {
+            display: flex !important;
+            align-items: stretch !important;
+            margin: 0 !important;
+        }
+
+        .input-group-prepend .input-group-text,
+        .input-group-append .input-group-text,
+        .input-group > .input-group-text {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: auto !important;
+            min-height: 38px !important;
+            padding: 0.375rem 0.75rem !important;
+            background-color: #E66136 !important;
+            color: #ffffff !important;
+            border: 1px solid #dee2e6 !important;
+        }
+
+        .input-group-prepend .input-group-text,
+        .input-group > .input-group-text:first-child {
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            border-top-left-radius: 4px !important;
+            border-bottom-left-radius: 4px !important;
+        }
+
+        .input-group-append .input-group-text,
+        .input-group > .input-group-text:last-child {
+            border-top-left-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+            border-top-right-radius: 4px !important;
+            border-bottom-right-radius: 4px !important;
+        }
+
+        .input-group > .input-group-prepend ~ .form-control,
+        .input-group > .input-group-prepend ~ .form-select,
+        .input-group > .input-group-text ~ .form-control,
+        .input-group > .input-group-text ~ .form-select {
+            border-top-left-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+            border-top-right-radius: 4px !important;
+            border-bottom-right-radius: 4px !important;
+            flex: 1 1 auto !important;
+            width: 1% !important;
+            min-width: 0 !important;
+            height: auto !important;
+            min-height: 38px !important;
+        }
+
+        .input-group > .form-control:not(:last-child),
+        .input-group > .form-select:not(:last-child) {
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+        }
+
         /* Protect all inline-hidden elements from being overridden */
         [style*="display: none"], [style*="display:none"], [hidden] {
             display: none !important;

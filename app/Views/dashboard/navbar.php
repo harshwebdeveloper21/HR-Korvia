@@ -22,13 +22,23 @@ $role = $user ? $user->role : null;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    /* Targeted logo sizing & visibility across devices */
+    /* Default Logo Styling (On Initial Load / Top) */
+    .navbar .navbar-brand-wrapper .navbar-brand img,
     .sidebar-logo {
-        max-width: 130px !important;
-        max-height: 50px !important;
         width: auto !important;
         height: auto !important;
         object-fit: contain !important;
+        border-radius: 10px !important;
+        transition: max-width 0.2s ease, max-height 0.2s ease;
+    }
+
+    /* On Scroll Logo Sizing (Added when header scrolls to ensure top and bottom breathing space) */
+    .navbar.headerLight .navbar-brand-wrapper .navbar-brand img,
+    .navbar.headerLight .sidebar-logo,
+    .navbar.is-scrolled .navbar-brand-wrapper .navbar-brand img,
+    .navbar.is-scrolled .sidebar-logo {
+        max-width: 130px !important;
+        max-height: 50px !important;
     }
 
     /* Desktop View (>= 992px) */
@@ -2244,4 +2254,17 @@ $role = $user ? $user->role : null;
             console.error('Error testing notification:', error);
         }
     };
+
+    // Dynamic Navbar Scroll Detection for Brand Logo Sizing
+    function handleNavbarScroll() {
+        const navbar = document.querySelector('.navbar');
+        if (!navbar) return;
+        if (window.scrollY > 20) {
+            navbar.classList.add('is-scrolled');
+        } else {
+            navbar.classList.remove('is-scrolled');
+        }
+    }
+    window.addEventListener('scroll', handleNavbarScroll, { passive: true });
+    handleNavbarScroll();
 </script>
