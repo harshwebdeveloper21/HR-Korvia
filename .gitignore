@@ -1,6 +1,8 @@
 writable/debugbar/*
 writable/session/*
 writable/logs/*
+writable/auto_leave_last_run.txt
+writable/*.txt
 vendor/*
 public/upload/*
 /app/config/*

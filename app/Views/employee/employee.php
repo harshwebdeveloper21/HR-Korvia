@@ -521,7 +521,7 @@
                             </div>
                         </div>
                         <div class="form-group text-end">
-                            <button type="button" class="btn hr-btnbg prev-step interviewsmbtn" id="prev2"
+                            <button type="button" class="btn btn-secondary prev-step interviewsmbtn me-2" id="prev2"
                                 style="display: none;">Previous</button>
                             <button type="button" class="btn hr-btnbg next-step interviewsmbtn" id="next2"
                                 style="display: none;">Next</button>
@@ -750,11 +750,11 @@
                     </div>
 
                     <div class="form-group text-end">
-                        <button type="button" class="btn hr-btnbg prev-step interviewsmbtn" id="prev3"
+                        <button type="button" class="btn btn-secondary prev-step interviewsmbtn me-2" id="prev3"
                             style="display: none;">Previous</button>
                         <button type="submit" class="btn hr-btnbg submit-form interviewsmbtn" id="submitForm"
                             style="display: none;">Submit</button>
-                        <button type="button" class="btn btn-warning interviewsmbtn" id="updateForm"
+                        <button type="button" class="btn hr-btnbg interviewsmbtn" id="updateForm"
                             style="display: none;">Update</button>
                     </div>
                 </form>

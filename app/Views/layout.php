@@ -15,11 +15,62 @@
         @media (max-width: 768px) {
             .modal .modal-dialog { max-height: 90vh; overflow-y: auto; }
         }
-        /* Touch-friendly: no 300ms delay, deduction triggers work on mobile */
-        .payroll-deduction-info, .btn-deduction-info-single, #profileDeductionInfoBtn, .btn-deduction-info {
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            cursor: pointer;
+        /* Global Uniform Button Styling */
+        .btn-secondary, .modal-footer .btn-secondary, .btn-light-secondary {
+            background-color: #6c757d !important;
+            border: 2px solid #6c757d !important;
+            color: #ffffff !important;
+            border-radius: 4px !important;
+            font-family: Poppins, sans-serif !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            padding: 6px 14px !important;
+            min-height: 36px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1.2 !important;
+            transition: all 0.2s ease !important;
+        }
+        .btn-secondary:hover, .btn-secondary:focus {
+            background-color: #5a6268 !important;
+            border-color: #545b62 !important;
+            color: #ffffff !important;
+        }
+
+        .hr-btnbg, .btn-primary.hr-btnbg, button.hr-btnbg, a.hr-btnbg {
+            background-color: #E66136 !important;
+            border: 2px solid #F05929 !important;
+            border-radius: 4px !important;
+            color: #ffffff !important;
+            font-family: Poppins, sans-serif !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            padding: 6px 14px !important;
+            min-height: 36px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1.2 !important;
+            transition: all 0.2s ease !important;
+        }
+        .hr-btnbg:hover {
+            border: 2px solid #e66136 !important;
+            background-color: #ffffff !important;
+            color: #e66136 !important;
+        }
+        .hr-btnbg:disabled, .hr-btnbg[disabled] {
+            background-color: #f0845a !important;
+            border-color: #f0845a !important;
+            color: #ffffff !important;
+            opacity: 0.8 !important;
+            cursor: not-allowed !important;
+        }
+
+        .interviewsmbtn {
+            font-size: 14px !important;
+            padding: 6px 16px !important;
+            min-height: 36px !important;
         }
     </style>
 </head>

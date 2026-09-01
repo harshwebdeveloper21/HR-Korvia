@@ -2299,47 +2299,44 @@
 
                 const hasInterviewData = total > 0;
                 // Toggle blur & no-data messages
+                const acceptedContainer = document.getElementById("acceptedApplications");
                 if (!hasInterviewData) {
                     $("#acceptedApplications, #rejectedApplications").addClass("blurred");
                     $(".no-data-overlay").removeClass("d-none");
                 } else {
                     $(".no-data-overlay").addClass("d-none");
                     $("#acceptedApplications, #rejectedApplications").removeClass("blurred");
-                    // ProgressBar: Completed
-                    const completedCircle = new ProgressBar.Circle("#acceptedApplications", {
-                        color: "#fff",
-                        trailColor: "#000000",
-                        trailWidth: 15,
-                        duration: 1400,
-                        easing: "easeInOut",
-                        strokeWidth: 15,
-                        from: {
+                    // ProgressBar: Completed (safely initialize only if element exists)
+                    if (acceptedContainer && typeof ProgressBar !== 'undefined') {
+                        acceptedContainer.innerHTML = '';
+                        const completedCircle = new ProgressBar.Circle(acceptedContainer, {
                             color: "#fff",
-                            width: 15
-                        },
+                            trailColor: "#000000",
+                            trailWidth: 15,
+                            duration: 1400,
+                            easing: "easeInOut",
+                            strokeWidth: 15,
+                            from: {
+                                color: "#fff",
+                                width: 15
+                            },
+                            to: {
+                                color: "#fff",
+                                width: 15
+                            },
+                            step: function(state, circle) {
+                                const percentage = Math.round((completed / total) * 100);
+                                circle.setText(`<tspan style="font-size: 16px">${percentage}</tspan><tspan style="font-size: 10px">%</tspan>`);
+                            },
+                        });
 
-                        to: {
-
-                            color: "#fff",
-
-                            width: 15
-
-                        },
-
-                        step: function(state, circle) {
-
-                            const percentage = Math.round((completed / total) * 100);
-
-                            circle.setText(`<tspan style="font-size: 16px">${percentage}</tspan><tspan style="font-size: 10px">%</tspan>`);
-
-                        },
-
-                    });
-
-                    completedCircle.text.style.fontFamily = '"Arial", sans-serif';
-                    completedCircle.text.style.fontSize = "25px";
-                    completedCircle.text.style.color = "white";
-                    completedCircle.animate(completed / total);
+                        if (completedCircle.text) {
+                            completedCircle.text.style.fontFamily = '"Arial", sans-serif';
+                            completedCircle.text.style.fontSize = "25px";
+                            completedCircle.text.style.color = "white";
+                        }
+                        completedCircle.animate(completed / total);
+                    }
                 }
 
                 // --- Latest Complaints Rendering ---
