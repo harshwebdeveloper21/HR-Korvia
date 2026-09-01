@@ -250,9 +250,6 @@
                             <button type="button" id="btnSalarySheetView" class="btn hr-btnbg attendenceall" onclick="generateSalarySheetPDF()">
                                 <i class="mdi mdi-file-pdf iconfontsize"></i> Salary Sheet
                             </button>
-                            <button type="button" id="btnExportPayroll" class="btn hr-btnbg attendenceall text-nowrap">
-                                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
-                            </button>
 
                             <a href="/payroll" class="btn hr-btnbg attendenceall">
                                 <i class="mdi mdi-plus iconfontsize"></i> Add Payroll
