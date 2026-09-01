@@ -22,110 +22,111 @@ $role = $user ? $user->role : null;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    @media (max-width: 768px) {
-        .navbar .navbar-menu-wrapper {
-            width: calc(95% - 85px) !important;
-        }
-        .navbar .navbar-menu-wrapper {
-            background: none !important;
-        }
-        .navbar {
-            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
+    /* =====================================
+       GLOBAL HEADER & LOGO RESPONSIVE RULES
+       ===================================== */
+    .navbar .navbar-brand-wrapper {
+        display: flex !important;
+        align-items: center !important;
+        background: #F4F5F7;
+        transition: width 0.25s ease, background 0.25s ease;
+    }
+
+    .navbar .navbar-brand-wrapper .brand-logo {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        text-decoration: none !important;
+    }
+
+    .navbar .navbar-brand-wrapper .brand-logo-mini {
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        text-decoration: none !important;
+    }
+
+    .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo {
+        display: none !important;
+    }
+
+    .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo-mini {
+        display: flex !important;
+    }
+
+    .navbar .navbar-brand-wrapper .sidebar-logo {
+        display: block !important;
+        max-height: 52px !important;
+        max-width: 165px !important;
+        width: auto !important;
+        height: auto !important;
+        object-fit: contain !important;
+        background: #ffffff !important;
+        padding: 4px 10px !important;
+        border-radius: 0 !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    /* Desktop View (>= 992px) */
+    @media (min-width: 992px) {
+        .navbar .navbar-brand-wrapper {
+            width: 240px !important;
+            height: 97px !important;
+            padding: 0 16px !important;
+            justify-content: flex-start !important;
         }
 
-        .sidebar-logo {
-            max-width: 127px !important;
+        .navbar .navbar-brand-wrapper .sidebar-logo {
+            max-height: 52px !important;
+            max-width: 165px !important;
         }
 
-        .check-in-out-container:not(.role-admin) {
-            display: flex !important;
+        .sidebar-icon-only .navbar .navbar-brand-wrapper {
+            width: 70px !important;
+            padding: 0 8px !important;
+            justify-content: center !important;
         }
 
-        .check-in-out-container.role-admin {
-            display: none !important;
-        }
-
-        /* #check-in-btn {
-            display: none !important;
-        } */
-
-        .check-in-out-container:not(.role-admin) #check-out-btn {
-            /* display: flex !important; */
-            align-items: center;
-            padding: 6px 12px !important;
-            font-size: 14px !important;
-            height: 36px;
-            white-space: nowrap;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
-            color: white !important;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .check-in-out-container:not(.role-admin) #check-out-btn i {
-            font-size: 16px !important;
-            margin-right: 5px !important;
-        }
-
-        .navbar-nav.ms-auto {
-            gap: 8px !important;
-            margin-left: -10px !important;
-        }
-
-        .navbar-nav.ms-auto .nav-item {
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-        }
-
-        .notification-dropdown {
-            margin-left: 0 !important;
-        }
-
-        .user-dropdown.nav-profile {
-            margin-left: 0 !important;
-        }
-
-        .nav-link-profile {
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            padding: 4px !important;
-        }
-
-        .nav-link.count-indicator {
-            padding: 4px !important;
-        }
-
-        .navbar-menu-wrapper .navbar-nav.ms-auto>li:not(:last-child) {
-            margin-right: 0 !important;
+        .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo-mini .sidebar-logo {
+            max-height: 40px !important;
+            max-width: 48px !important;
+            padding: 2px 4px !important;
         }
     }
 
-    /* =======================
-   TABLET VIEW (768px–1024px)
-   ======================= */
-    @media (min-width: 768px) and (max-width: 1024px) {
-
-        /* Let flexbox handle width */
+    /* Tablet View (768px–1024px) */
+    @media (min-width: 768px) and (max-width: 991.98px) {
         .navbar-menu-wrapper {
             width: auto !important;
             flex: 1 1 auto;
             padding-right: 8px;
         }
 
-        /* Reduce logo size slightly */
-        .sidebar-logo {
-            max-width: 110px !important;
-            height: auto !important;
+        .navbar .navbar-brand-wrapper {
+            width: auto !important;
+            min-width: 170px !important;
+            height: 70px !important;
+            padding: 0 12px !important;
+            gap: 10px !important;
+            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
         }
 
-        /* Hide long greeting on tablet */
+        .navbar .navbar-brand-wrapper .sidebar-logo {
+            max-height: 44px !important;
+            max-width: 140px !important;
+            padding: 4px 8px !important;
+        }
+
         .welcome-text {
             display: none !important;
         }
 
-        /* Check-out button compact */
         .check-in-out-container:not(.role-admin) #check-out-btn {
-            /* display: flex !important; */
             align-items: center;
             padding: 6px 12px !important;
             font-size: 14px !important;
@@ -139,7 +140,6 @@ $role = $user ? $user->role : null;
             margin-right: 4px;
         }
 
-        /* Right side icons spacing */
         .navbar-nav.ms-auto {
             display: flex;
             align-items: center;
@@ -152,17 +152,13 @@ $role = $user ? $user->role : null;
             padding: 6px !important;
         }
 
-        /* DateTime optional: hide if crowded */
         #datetime-display {
             display: none !important;
         }
 
         .navbar .navbar-brand-wrapper .navbar-toggler {
-            font-size: 2rem !important;
-        }
-
-        .navbar .navbar-brand-wrapper {
-            width: 105px;
+            font-size: 1.8rem !important;
+            color: #ffffff !important;
         }
 
         .sidebar-offcanvas.active {
@@ -179,8 +175,45 @@ $role = $user ? $user->role : null;
         }
     }
 
+    /* Mobile View (< 768px) */
+    @media (max-width: 767.98px) {
+        .navbar {
+            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
+            height: 62px !important;
+            min-height: 62px !important;
+        }
 
-    @media (min-width: 320px) and (max-width: 667px) {
+        .navbar .navbar-brand-wrapper {
+            width: auto !important;
+            height: 62px !important;
+            padding: 0 6px 0 10px !important;
+            gap: 8px !important;
+            background: transparent !important;
+            justify-content: flex-start !important;
+        }
+
+        .navbar .navbar-brand-wrapper .sidebar-logo {
+            max-height: 38px !important;
+            max-width: 125px !important;
+            padding: 3px 8px !important;
+            border-radius: 0 !important;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        .navbar .navbar-brand-wrapper .navbar-toggler-right {
+            color: #ffffff !important;
+            padding: 2px 4px !important;
+            font-size: 1.6rem !important;
+        }
+
+        .navbar .navbar-menu-wrapper {
+            width: auto !important;
+            flex: 1 1 auto !important;
+            height: 62px !important;
+            background: transparent !important;
+            padding: 0 8px 0 0 !important;
+        }
+
         .check-in-out-container:not(.role-admin) {
             display: flex !important;
         }
@@ -189,30 +222,30 @@ $role = $user ? $user->role : null;
             display: none !important;
         }
 
-        /* #check-in-btn {
-            display: none !important;
-        } */
-
         .check-in-out-container:not(.role-admin) #check-out-btn {
-            /* display: flex !important; */
             align-items: center;
-            padding: 4px 8px !important;
-            font-size: 14px !important;
+            padding: 4px 10px !important;
+            font-size: 13px !important;
+            height: 32px;
             white-space: nowrap;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.2) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
 
         .check-in-out-container:not(.role-admin) #check-out-btn i {
-            font-size: 18px !important;
+            font-size: 16px !important;
             margin-right: 4px !important;
         }
 
         .navbar-all-sm {
-            padding: 8px 4px !important;
+            padding: 4px 6px !important;
         }
 
         .navbar-nav.ms-auto {
-            gap: 8px !important;
-            margin-left: -10px !important;
+            gap: 6px !important;
+            margin-left: 0 !important;
         }
 
         .navbar-nav.ms-auto .nav-item {
@@ -220,26 +253,12 @@ $role = $user ? $user->role : null;
             margin-right: 0 !important;
         }
 
-        .notification-dropdown {
-            margin-left: 0 !important;
-        }
-
-        .user-dropdown.nav-profile {
-            margin-left: 0 !important;
-        }
-
         .nav-link-profile {
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            padding: 4px !important;
+            padding: 2px !important;
         }
 
         .nav-link.count-indicator {
-            padding: 4px !important;
-        }
-
-        .navbar .navbar-brand-wrapper .navbar-toggler {
-            font-size: 2rem !important;
+            padding: 2px !important;
         }
 
         .sidebar-offcanvas.active {
@@ -249,28 +268,25 @@ $role = $user ? $user->role : null;
         .sidebar-offcanvas {
             left: -240px !important;
         }
-        .navbar .navbar-brand-wrapper{
-            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
-        }
     }
 </style>
 <nav class="navbar default-layout col-lg-12 col-12 p-0 fixed-top d-flex align-items-top flex-row">
 
-    <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-start">
-        <div class="me-3">
-            <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-bs-toggle="minimize">
+    <div class="navbar-brand-wrapper d-flex align-items-center justify-content-start">
+        <div class="me-2 d-none d-lg-block">
+            <button class="navbar-toggler navbar-toggler align-self-center p-0" type="button" data-bs-toggle="minimize">
                 <span class="icon-menu"></span>
             </button>
         </div>
-        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center p-1" type="button" data-bs-toggle="offcanvas">
+        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center p-0 me-2" type="button" data-bs-toggle="offcanvas">
             <span class="mdi mdi-menu"></span>
         </button>
-        <div>
+        <div class="d-flex align-items-center">
             <a class="navbar-brand brand-logo" href="/dashboard">
-                <img src="<?= getCompanyLogo(); ?>" alt="logo" class="sidebar-logo" style="height: 70px; width: 120px;" />
+                <img src="<?= getCompanyLogo(); ?>" alt="logo" class="sidebar-logo" />
             </a>
             <a class="navbar-brand brand-logo-mini" href="/dashboard">
-                <img src="<?= getCompanyLogo(); ?>" alt="logo" class="sidebar-logo" style="height: 90px;" />
+                <img src="<?= getCompanyLogo(); ?>" alt="logo" class="sidebar-logo" />
             </a>
         </div>
     </div>

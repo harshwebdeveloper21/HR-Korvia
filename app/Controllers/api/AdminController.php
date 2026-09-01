@@ -1146,8 +1146,29 @@ class AdminController extends ResourceController
         }
         $offSaturdays = $this->getOffSaturdaysInMonth($saturdayPattern);
 
-        // ✅ Get all employees and HRs
-        $users = $userModel->where('is_deleted', 0)->whereIn('role', ['employee', 'hr'])->findAll();
+        // 🧹 Clean up any auto-absence leaves mistakenly created for inactive/resigned/deleted employees or outside active employment period
+        $db = \Config\Database::connect();
+        $db->query("DELETE leaves FROM leaves
+            INNER JOIN users ON users.id = leaves.user_id
+            LEFT JOIN user_info ON user_info.user_id = users.id
+            WHERE leaves.reason = 'Auto leave for full-day absence'
+            AND (
+                users.is_deleted = 1
+                OR LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')
+                OR (user_info.last_working_day IS NOT NULL AND leaves.start_date > user_info.last_working_day)
+                OR (user_info.joining_date IS NOT NULL AND leaves.start_date < user_info.joining_date)
+            )");
+
+        // ✅ Get only ACTIVE employees and HRs (exclude inactive, resigned, fired, removed)
+        $users = $db->table('users')
+            ->select('users.id, users.role, user_info.status, user_info.joining_date, user_info.last_working_day')
+            ->join('user_info', 'user_info.user_id = users.id', 'left')
+            ->where('users.is_deleted', 0)
+            ->whereIn('users.role', ['employee', 'hr'])
+            ->where("(user_info.status IS NULL OR LOWER(user_info.status) NOT IN ('inactive', 'resigned', 'fired', 'removed'))")
+            ->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())")
+            ->get()
+            ->getResultArray();
 
         // ✅ Get logged-in user ID and role
         $currentUserId = session()->get('user_id');
@@ -1162,6 +1183,8 @@ class AdminController extends ResourceController
         }
         foreach ($users as $user) {
             $userId = $user['id'];
+            $joiningDate = !empty($user['joining_date']) ? $user['joining_date'] : null;
+            $lastWorkingDay = !empty($user['last_working_day']) ? $user['last_working_day'] : null;
 
             $current = strtotime($monthStart);
             $end = strtotime($today);
@@ -1169,6 +1192,16 @@ class AdminController extends ResourceController
             while ($current <= $end) {
                 $date = date('Y-m-d', $current);
                 $dayOfWeek = date('w', $current); // 0 = Sunday
+
+                // Skip if date is before employee's joining date or after their last working day
+                if ($joiningDate && $date < $joiningDate) {
+                    $current = strtotime('+1 day', $current);
+                    continue;
+                }
+                if ($lastWorkingDay && $date > $lastWorkingDay) {
+                    $current = strtotime('+1 day', $current);
+                    continue;
+                }
 
                 if (
                     $dayOfWeek == 0 ||
