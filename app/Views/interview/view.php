@@ -121,15 +121,15 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-striped" id="interviews-Table">
-                        <thead>
+                    <table class="table table-striped w-100" id="interviews-Table">
+                        <thead class="table-light">
                             <tr>
-                                <th>No.</th>
-                                <th>Interviewer Name</th>
-                                <th>Title</th>
-                                <th>Status</th>
-                                <th>Schedule Date</th>
-                                <th>Action</th>
+                                <th>Candidate Name</th>
+                                <th class="desktop-only-col">Job Title</th>
+                                <th class="desktop-only-col">Schedule Date</th>
+                                <th class="desktop-only-col">Status</th>
+                                <th class="desktop-only-col action-column" style="width: 100px;">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                         <tbody id="interviews-Table-Body">
@@ -146,7 +146,7 @@
     document.addEventListener("DOMContentLoaded", function () {
         const token = localStorage.getItem('token'); // JWT token from login
 
-        // Fetch leave types when the page loads
+        // Fetch interviews when the page loads
         fetch('/api/interviews', {
             method: 'GET',
             headers: {
@@ -157,45 +157,76 @@
             .then((response) => response.json())
             .then((responseData) => {
                 if (responseData.status === 'success') {
-                    const interviews = responseData.data; // Get the leave types data
+                    const interviews = responseData.data;
                     let tableRows = '';
 
                     interviews.forEach((interview, index) => {
-                        // Create a row for each leave type
-                        const row = document.createElement('tr');
-
                         tableRows += `
                      <tr data-id="${interview.id}">
-                        <td>${index + 1}</td>
-                        <td class="capitalize-text">${interview.candidate_name}</td>
-                        <td class="capitalize-text">${interview.job_title}</td>
-                          <td class="py-1">
-                            <select class="form-select status-select capitalize-text" data-id="${interview.id}">
+                        <td class="capitalize-text">
+                            <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <a href="/interview/display/${interview.id}" class="text-decoration-none text-dark fw-bold">${interview.candidate_name || 'Candidate'}</a>
+                                    <div class="expanded-details" id="interview-details-${interview.id}" onclick="event.stopPropagation();">
+                                        <div class="detail-row">
+                                            <span class="detail-label">Job Title:</span>
+                                            <span class="detail-value">${interview.job_title || 'N/A'}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Schedule Date:</span>
+                                            <span class="detail-value">${interview.schedule_date || 'N/A'}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Status:</span>
+                                            <span class="detail-value capitalize-text">${interview.status || 'N/A'}</span>
+                                        </div>
+                                        <div class="detail-actions">
+                                            <a href="/interview/display/${interview.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
+                                            <a href="#" class="btn btn-sm btn-danger" data-id="${interview.id}" data-status="${interview.status}" onclick="deleteInterview(event)"><i class="mdi mdi-delete"></i> Delete</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="desktop-only-col capitalize-text">${interview.job_title || 'N/A'}</td>
+                        <td class="desktop-only-col">${interview.schedule_date || 'N/A'}</td>
+                        <td class="desktop-only-col py-1">
+                            <select class="form-select status-select capitalize-text shadow-none" data-id="${interview.id}" style="height: 32px; font-size: 12px; padding: 2px 8px;">
                                 <option value="scheduled" ${interview.status === 'scheduled' ? 'selected' : ''}>Scheduled</option>
                                 <option value="completed" ${interview.status === 'completed' ? 'selected' : ''}>Completed</option>
                                 <option value="cancelled" ${interview.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
                             </select>
                         </td>
-                           <td>${interview.schedule_date}</td>
-                        <td style="display: flex; align-items: center; gap: 8px;">
-                            <a href="/interview/display/${interview.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
-
-                            <a href="#" class="text-danger fs-5" title="Delete"
-                               data-id="${interview.id}"
-                               data-status="${interview.status}"
-                               onclick="deleteInterview(event)">
-                               <i class="mdi mdi-delete"></i>
-                            </a>
+                        <td class="desktop-only-col">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <a href="/interview/display/${interview.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
+                                <a href="#" class="text-danger fs-5" title="Delete"
+                                   data-id="${interview.id}"
+                                   data-status="${interview.status}"
+                                   onclick="deleteInterview(event)">
+                                   <i class="mdi mdi-delete"></i>
+                                </a>
+                            </div>
                         </td>
-                        </tr>
+                        <td class="mobile-expand-col text-center">
+                            <button type="button" class="expand-toggle" data-target="interview-details-${interview.id}" aria-label="Expand details"></button>
+                        </td>
+                    </tr>
                     `;
                     });
                     $('#interviews-Table-Body').html(tableRows);
-                    // $('#interviews-Table').DataTable(); // Append the row to the table body
                     if ($.fn.DataTable.isDataTable('#interviews-Table')) {
                         $('#interviews-Table').DataTable().clear().destroy();
                     }
                     $('#interviews-Table').DataTable({
+                        order: [[2, 'desc']],
+                        columnDefs: [
+                            {
+                                targets: [4, 5],
+                                orderable: false,
+                                searchable: false
+                            }
+                        ],
                         language: {
                             search: "",
                             searchPlaceholder: "Search"

@@ -39,15 +39,9 @@ $role = $user ? $user->role : null;
         .navbar .navbar-brand-wrapper .brand-logo-mini {
             display: none !important;
         }
-        .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo {
-            display: none !important;
-        }
+        .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo,
         .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo-mini {
-            display: inline-block !important;
-        }
-        .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo-mini .sidebar-logo {
-            max-width: 45px !important;
-            max-height: 40px !important;
+            display: none !important;
         }
     }
 

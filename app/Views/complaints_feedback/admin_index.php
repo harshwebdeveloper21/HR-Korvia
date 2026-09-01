@@ -94,15 +94,16 @@
 
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="complaintsAdminTable">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th style="display:none;">ID</th>
                                 <th>Name</th>
-                                <th>Category</th>
-                                <th>Subject</th>
-                                <th class="text-center">Status</th>
-                                <th>Submitted</th>
-                                <th>Action</th>
+                                <th class="desktop-only-col">Category</th>
+                                <th class="desktop-only-col">Subject</th>
+                                <th class="desktop-only-col text-center">Status</th>
+                                <th class="desktop-only-col">Submitted</th>
+                                <th class="desktop-only-col action-column" style="width: 100px;">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                     </table>
@@ -196,17 +197,61 @@
                 { data: 'id', visible: false },
                 {
                     data: null,
-                    render: function (data) {
+                    render: function (data, type, row) {
+                        let color = row.type === 'Complaint' ? '#ef4444' : '#0ea5e9';
+                        let typeBadge = `<span class="badge border-0 px-2 py-1 fw-semibold text-white" style="background-color: ${color}; border-radius: 4px; font-size: 0.7rem;">${(row.type || '').toUpperCase()}</span>`;
+                        let statusColor = '#E66136';
+                        if (row.status === 'In Progress') statusColor = '#4B49AC';
+                        if (row.status === 'Resolved') statusColor = '#34B1AA';
+                        let statusDisplay = `<span class="fw-bold" style="color: ${statusColor}; font-size: 0.75rem;">${(row.status || '').toUpperCase()}</span>`;
+                        let d = new Date(row.created_at);
+                        let dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
                         return `
-                        <div class="py-1">
-                            <span class="fw-bold d-block text-dark">${data.name}</span>
-                            <span class="text-muted small d-block">${data.email}</span>
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div style="flex: 1;">
+                                <span class="fw-bold d-block text-dark">${row.name || 'Anonymous'}</span>
+                                <span class="text-muted small d-block">${row.email || ''}</span>
+                                <div class="expanded-details" id="complaint-details-${row.id}" onclick="event.stopPropagation();">
+                                    <div class="detail-row">
+                                        <span class="detail-label">Type:</span>
+                                        <span class="detail-value">${typeBadge}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Subject:</span>
+                                        <span class="detail-value">${row.subject}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value">${statusDisplay}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Submitted:</span>
+                                        <span class="detail-value">${dateStr}</span>
+                                    </div>
+                                    <div class="detail-actions">
+                                        <a href="#" class="btn btn-sm btn-info text-white view-details-btn" 
+                                           data-id="${row.id}"
+                                           data-subject="${row.subject}" 
+                                           data-message="${row.message}"
+                                           data-remark="${row.admin_remark || 'Not provided yet.'}"
+                                           data-status="${row.status}"
+                                           data-file="${row.file || ''}"
+                                           data-res-file="${row.resolution_file || ''}">
+                                           <i class="mdi mdi-eye"></i> View
+                                        </a>
+                                        <a href="<?= base_url('complaints/update') ?>/${row.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
+                                        <a href="#" class="btn btn-sm btn-danger delete-btn" data-id="${row.id}"><i class="mdi mdi-delete"></i> Delete</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    `;
+                        `;
                     }
                 },
                 {
                     data: 'type',
+                    className: 'desktop-only-col',
                     render: function (data) {
                         let color = data === 'Complaint' ? '#ef4444' : '#0ea5e9';
                         return `<span class="badge border-0 px-2 py-1 fw-semibold text-white" style="background-color: ${color}; border-radius: 4px; font-size: 0.7rem;">${data.toUpperCase()}</span>`;
@@ -214,13 +259,14 @@
                 },
                 {
                     data: 'subject',
+                    className: 'desktop-only-col',
                     render: function (data) {
                         return `<span class="text-muted small lh-sm d-inline-block text-wrap" style="max-width: 200px;">${data}</span>`;
                     }
                 },
                 {
                     data: 'status',
-                    className: 'text-center',
+                    className: 'desktop-only-col text-center',
                     render: function (data) {
                         let color = '#E66136';
                         if (data === 'In Progress') color = '#4B49AC';
@@ -230,6 +276,7 @@
                 },
                 {
                     data: 'created_at',
+                    className: 'desktop-only-col',
                     render: function (data) {
                         let d = new Date(data);
                         return `<span class="text-muted small">${d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>`;
@@ -258,9 +305,25 @@
                         </div>
                     `;
                     }
+                },
+                {
+                    data: null,
+                    className: 'mobile-expand-col text-center',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data) {
+                        return `<button type="button" class="expand-toggle" data-target="complaint-details-${data.id}" aria-label="Expand details"></button>`;
+                    }
                 }
             ],
             order: [[0, 'desc']],
+            columnDefs: [
+                {
+                    targets: [6, 7],
+                    orderable: false,
+                    searchable: false
+                }
+            ],
             language: {
                 search: "",
                 searchPlaceholder: "Search",

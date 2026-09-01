@@ -4,165 +4,471 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>HR Portal</title>
-    <?= $this->include("dashboard/header_link") ?>
-    <!-- <link rel="stylesheet" href="assets/css/login.css"> -->
-        <link rel="stylesheet" href="<?= base_url(env("ImagePath") . "assets/css/login.css?v=" . time()) ?>">
+    <title>HR Portal - Sign In</title>
+    <link rel="shortcut icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>" type="image/png">
+    <link rel="icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>" type="image/png">
+    <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/mdi/css/materialdesignicons.min.css'); ?>">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?= base_url(env("ImagePath") . "assets/css/login.css?v=" . time()) ?>">
+    <style>
+        :root {
+            --primary-color: #E66136;
+            --primary-hover: #d8542b;
+            --primary-light: rgba(230, 97, 54, 0.1);
+            --primary-glow: rgba(230, 97, 54, 0.25);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --bg-input: #f8fafc;
+        }
+
+        body.login-page-body {
+            background: radial-gradient(circle at 10% 15%, rgba(230, 97, 54, 0.06) 0%, transparent 45%),
+                        radial-gradient(circle at 90% 85%, rgba(230, 97, 54, 0.08) 0%, transparent 50%),
+                        linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .login-card-wrapper {
+            width: 100%;
+            max-width: 440px;
+            margin: auto;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 40px 36px 36px 36px;
+            border: 1px solid rgba(226, 232, 240, 0.85);
+            box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.06), 
+                        0 25px 45px -15px rgba(230, 97, 54, 0.08),
+                        0 0 0 1px rgba(230, 97, 54, 0.03);
+        }
+
+        .login-logo-container {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .login-logo-container img {
+            max-height: 58px;
+            width: auto;
+            max-width: 240px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.04));
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 26px;
+        }
+
+        .login-header h4 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+            margin: 0 0 6px 0;
+        }
+
+        .login-header p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .login-form-group {
+            margin-bottom: 20px;
+        }
+
+        .login-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 7px;
+            letter-spacing: 0.2px;
+        }
+
+        .login-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .login-input-wrapper .input-icon {
+            position: absolute;
+            left: 14px;
+            font-size: 19px;
+            color: #94a3b8;
+            pointer-events: none;
+            transition: color 0.2s ease;
+        }
+
+        .login-input-wrapper .form-control {
+            height: 48px;
+            width: 100%;
+            background-color: var(--bg-input);
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 16px 10px 44px;
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            box-shadow: none;
+        }
+
+        .login-input-wrapper .form-control::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .login-input-wrapper .form-control:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px var(--primary-light);
+            outline: none;
+        }
+
+        .login-input-wrapper:focus-within .input-icon {
+            color: var(--primary-color);
+        }
+
+        .login-input-wrapper .toggle-password {
+            position: absolute;
+            right: 14px;
+            font-size: 19px;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .login-input-wrapper .toggle-password:hover {
+            color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+
+        .login-field-error {
+            font-size: 12px;
+            font-weight: 500;
+            color: #dc2626;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .login-options-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 4px;
+            margin-bottom: 22px;
+        }
+
+        .login-checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            font-size: 13.5px;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            user-select: none;
+            margin: 0;
+        }
+
+        .login-checkbox-label input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            border-radius: 5px;
+            margin-right: 8px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .btn-login-submit {
+            width: 100%;
+            height: 48px;
+            background: linear-gradient(135deg, #E66136 0%, #f05929 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 14.5px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 18px -4px rgba(230, 97, 54, 0.42);
+            transition: all 0.25s ease;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .btn-login-submit:hover {
+            background: linear-gradient(135deg, #d8542b 0%, #e64f1e 100%);
+            box-shadow: 0 10px 22px -3px rgba(230, 97, 54, 0.52);
+            transform: translateY(-1px);
+            color: #ffffff;
+        }
+
+        .btn-login-submit:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px -2px rgba(230, 97, 54, 0.4);
+        }
+
+        .btn-login-submit:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-alert-box {
+            margin-top: 16px;
+        }
+
+        .login-alert-box .alert {
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 0;
+            border: none;
+        }
+
+        .login-alert-box .alert-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .login-alert-box .alert-success {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .login-footer a {
+            font-size: 12.5px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .login-footer a:hover {
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 22px 28px 22px;
+                border-radius: 16px;
+            }
+            .login-logo-container {
+                margin-bottom: 22px;
+            }
+            .login-header h4 {
+                font-size: 20px;
+            }
+        }
+    </style>
 </head>
 
-<body class="with-welcome-text">
-    <div class="container-scroller">
-        <div class="container-fluid page-body-wrapper full-page-wrapper">
-            <div class="content-wrapper d-flex align-items-center auth px-0">
-                <div class="row w-100 mx-0">
-                    <div class="col-lg-4 mx-auto">
-                        <div class="auth-form-light text-left pb-4 pt-2 px-4 px-sm-5">
-                            <div class="brand-logo mb-0 text-center">
-                                <img src="<?= getCompanyLogo() ?>" alt="logo" class="login-logo mb-1">
-                            </div>
-                            <h4 class="text-center">Hello! Let's get started</h4>
-                            <h6 class="fw-light text-center">Sign in to continue.</h6>
-                            <form id="loginForm" class="pt-3">
-                                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
-                                <div class="form-group">
-                                    <label for="exampleInputEmail1">Email Address</label>
-                                    <div class="input-wrapper">
-                                        <i class="mdi mdi-email"></i>
-                                        <input type="email" class="form-control form-control-lg" id="exampleInputEmail1" placeholder="Enter your email" name="email">
-                                    </div>
-                                    <span id="emailError" class="text-danger"></span>
-                                </div>
-                                <div class="form-group">
-                                    <label for="exampleInputPassword1">Password</label>
-                                    <div class="input-wrapper" style="position: relative;">
-                                        <i class="mdi mdi-lock"></i>
-                                        <input type="password" name="password" class="form-control form-control-lg" id="exampleInputPassword1" placeholder="Enter your password" style="padding-right: 40px;">
-                                        <i class="mdi mdi-eye-outline toggle-password" style="position: absolute; right: 15px; left: auto; top: 50%; transform: translateY(-50%); cursor: pointer; color: #a9a9a9; font-size: 1.2rem;"></i>
-                                    </div>
-                                    <span id="passwordError" class="text-danger"></span>
-                                </div>
-                                <label class="mt-2">
-                                    <input type="checkbox" name="remember_me" value="1">
-                                    Remember Me
-                                </label>
+<body class="login-page-body">
 
-                                <div id="loginError" class="error-message" style="color: red;"></div>
-                                <div class="mt-3 w-100">
-                                    <button class="btn hr-btnbg w-100" type="submit" style="height: 48px;">SIGN IN</button>
-                                </div>
-                            </form>
-                            <div class="text-center mt-4">
-                                <a href="https://www.fableadtechnolabs.com/" target="_blank" class="text-muted text-decoration-none" style="font-size: 13px;">© <?= date('Y') ?> Copyright - Fablead Developers Technolab</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Loading overlay -->
+    <div id="loader" style="display: none;">
+        <div class="loader-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <div class="login-card-wrapper">
+        <div class="login-card">
+            
+            <!-- Brand Logo -->
+            <div class="login-logo-container">
+                <a href="https://www.fableadtechnolabs.com/" target="_blank" title="Fablead Developers Technolab">
+                    <img src="<?= base_url(env('ImagePath') . 'assets/images/fab_logo.png') ?>" alt="Fablead HRMS" class="login-logo">
+                </a>
             </div>
+
+            <!-- Welcome Header with proper breathing room -->
+            <div class="login-header">
+                <h4>Hello! Let's get started</h4>
+                <p>Sign in to continue to your HR portal</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" novalidate>
+                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+                
+                <!-- Email Address -->
+                <div class="login-form-group">
+                    <label for="exampleInputEmail1" class="login-label">Email Address</label>
+                    <div class="login-input-wrapper">
+                        <i class="mdi mdi-email-outline input-icon"></i>
+                        <input type="email" class="form-control" id="exampleInputEmail1" placeholder="name@company.com" name="email" autocomplete="email" required>
+                    </div>
+                    <span id="emailError" class="login-field-error"></span>
+                </div>
+
+                <!-- Password -->
+                <div class="login-form-group">
+                    <label for="exampleInputPassword1" class="login-label">Password</label>
+                    <div class="login-input-wrapper">
+                        <i class="mdi mdi-lock-outline input-icon"></i>
+                        <input type="password" name="password" class="form-control" id="exampleInputPassword1" placeholder="Enter your password" autocomplete="current-password" required>
+                        <i class="mdi mdi-eye-outline toggle-password" title="Toggle password visibility"></i>
+                    </div>
+                    <span id="passwordError" class="login-field-error"></span>
+                </div>
+
+                <!-- Options Row: Remember Me -->
+                <div class="login-options-row">
+                    <label class="login-checkbox-label">
+                        <input type="checkbox" name="remember_me" value="1">
+                        <span>Remember Me</span>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button class="btn-login-submit" id="btnSubmit" type="submit">
+                    <span>SIGN IN</span>
+                </button>
+
+                <!-- Feedback / Status Alerts -->
+                <div id="loginAlertBox" class="login-alert-box" style="display: none;"></div>
+            </form>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                <a href="https://www.fableadtechnolabs.com/" target="_blank">
+                    © <?= date('Y') ?> Copyright - Fablead Developers Technolab
+                </a>
+            </div>
+
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        $(document).on('submit', '#loginForm', function(e) {
-            e.preventDefault();
+        $(document).ready(function() {
 
-            let hasError = false;
+            $('#loginForm').on('submit', function(e) {
+                e.preventDefault();
 
-            // Get input values
-            const email = $('#exampleInputEmail1').val().trim();
-            const password = $('#exampleInputPassword1').val().trim();
+                let hasError = false;
+                const email = $('#exampleInputEmail1').val().trim();
+                const password = $('#exampleInputPassword1').val().trim();
 
-            // Validate email
-            if (!email) {
-                $('#emailError').text('Email is required.');
-                hasError = true;
-            } else {
-                $('#emailError').text(''); // Clear error when field is filled
-            }
+                // Validate email
+                if (!email) {
+                    $('#emailError').text('Email is required.');
+                    hasError = true;
+                } else {
+                    $('#emailError').text('');
+                }
 
-            // Validate password
-            if (!password) {
-                $('#passwordError').text('Password is required.');
-                hasError = true;
-            } else {
-                $('#passwordError').text(''); // Clear error when field is filled
-            }
+                // Validate password
+                if (!password) {
+                    $('#passwordError').text('Password is required.');
+                    hasError = true;
+                } else {
+                    $('#passwordError').text('');
+                }
 
-            if (hasError) return; // Stop execution if errors exist
-            $('#loader').show();
+                if (hasError) return;
 
-            $.ajax({
-                url: '/login',
-                method: 'POST',
-                data: $(this).serialize(),
-                success: function(response) {
-                    if (response.status === 'success') {
-                        $('#loader').hide();
+                const $btn = $('#btnSubmit');
+                const originalBtnText = $btn.html();
+                
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Signing in...');
+                $('#loginAlertBox').hide().empty();
 
-                        localStorage.setItem('token', response.token);
+                $.ajax({
+                    url: '/login',
+                    method: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            localStorage.setItem('token', response.token);
 
-                        // // Show SweetAlert
-                        // Swal.fire({
-                        //     icon: 'success',
-                        //     title: 'Login Successful',
-                        //     // text: 'You will be redirected to the dashboard shortly...',
-                        //     timer: 2000, // 2 seconds
-                        //     showConfirmButton: false
-                        // }).then(() => {
-                        //     // Redirect after SweetAlert closes
-                        //     window.location.href = '/dashboard';
-                        // });
-                        // Show styled success alert in the loginError div
-                        $('#loginError')
-                            .html('<div class="alert alert-success" role="alert">Login Successful!</div>')
-                            .show();
+                            $('#loginAlertBox')
+                                .html('<div class="alert alert-success"><i class="mdi mdi-check-circle-outline me-2"></i>Login Successful! Redirecting...</div>')
+                                .slideDown(200);
 
-                        // Redirect after a short delay
-                        setTimeout(() => {
-                            window.location.href = '/dashboard';
-                        }, 1000);
-                    }
-
-                },
-                error: function(xhr) {
-                    $('#loader').hide();
-
-                    if (xhr.status === 400) {
-                        const errors = xhr.responseJSON.errors;
-                        if (errors.email) {
-                            $('#emailError').text(errors.email);
+                            setTimeout(() => {
+                                window.location.href = response.redirect || '/dashboard';
+                            }, 800);
+                        } else {
+                            $btn.prop('disabled', false).html(originalBtnText);
+                            $('#loginAlertBox')
+                                .html('<div class="alert alert-danger"><i class="mdi mdi-alert-circle-outline me-2"></i>' + (response.message || 'Login failed.') + '</div>')
+                                .slideDown(200);
                         }
-                        if (errors.password) {
-                            $('#passwordError').text(errors.password);
+                    },
+                    error: function(xhr) {
+                        $btn.prop('disabled', false).html(originalBtnText);
+
+                        let errorMsg = 'Invalid email or password.';
+
+                        if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.errors) {
+                            const errors = xhr.responseJSON.errors;
+                            if (errors.email) $('#emailError').text(errors.email);
+                            if (errors.password) $('#passwordError').text(errors.password);
+                            return;
                         }
-                    } else if (xhr.status === 401) {
-                        $('#loginError').text('Invalid email or password');
-                    } else {
-                        $('#loginError').text('Invalid email or password.');
+
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
+
+                        $('#loginAlertBox')
+                            .html('<div class="alert alert-danger"><i class="mdi mdi-alert-circle-outline me-2"></i>' + errorMsg + '</div>')
+                            .slideDown(200);
                     }
+                });
+            });
+
+            // Clear errors on input
+            $('#exampleInputEmail1, #exampleInputPassword1').on('input', function() {
+                $('#loginAlertBox').slideUp(150).empty();
+                $('#emailError').text('');
+                $('#passwordError').text('');
+            });
+
+            // Toggle password visibility
+            $('.toggle-password').on('click', function() {
+                $(this).toggleClass('mdi-eye-outline mdi-eye-off-outline');
+                const input = $('#exampleInputPassword1');
+                if (input.attr('type') === 'password') {
+                    input.attr('type', 'text');
+                } else {
+                    input.attr('type', 'password');
                 }
             });
-        });
 
-        // Clear error message when user starts typing
-        $('#email, #password').on('input', function() {
-            $(this).next('.error-message').text('');
-        });
-
-        // Toggle password visibility
-        $('.toggle-password').click(function() {
-            $(this).toggleClass('mdi-eye-outline mdi-eye-off-outline');
-            var input = $(this).siblings('input');
-            if (input.attr('type') === 'password') {
-                input.attr('type', 'text');
-            } else {
-                input.attr('type', 'password');
-            }
         });
     </script>
-    <?= $this->include("dashboard/footer_link.php") ?>
 </body>
 
 </html>

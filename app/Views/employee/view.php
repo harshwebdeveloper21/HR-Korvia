@@ -144,29 +144,25 @@
         }
     }
 
-@media (max-width: 767px) {
-    .emp-filter-container {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 8px !important;
+@media (min-width: 768px) {
+    .table-responsive {
+        overflow-x: visible !important;
+    }
+    #employee-table {
+        table-layout: auto !important;
         width: 100% !important;
+        white-space: normal !important;
     }
-    .emp-filter-container #departmentFilter {
-        width: 100% !important;
-        min-width: 100% !important;
+    #employee-table th,
+    #employee-table td {
+        padding: 8px 6px !important;
+        font-size: 0.8125rem;
+        vertical-align: middle;
     }
-    .emp-filter-container #monthFilter,
-    .emp-filter-container #yearFilter {
-        flex: 1 1 calc(50% - 4px) !important;
-        width: calc(50% - 4px) !important;
-        min-width: 0 !important;
-    }
-    .emp-filter-container #btnExportEmployees,
-    .emp-filter-container a.btn {
-        flex: 1 1 calc(50% - 4px) !important;
-        width: calc(50% - 4px) !important;
-        justify-content: center !important;
-        margin-top: 4px !important;
+    #employee-table th.action-column,
+    #employee-table td.action-column {
+        width: 95px !important;
+        min-width: 95px !important;
     }
 }
 
@@ -244,18 +240,18 @@
 
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="employee-table">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th style="display:none;">ID</th>
-                                <th>Emp ID</th>
+                                <th style="width: 80px;">Emp ID</th>
                                 <th>Name</th>
                                 <th class="desktop-only-col">Email</th>
                                 <th class="desktop-only-col">Department</th>
                                 <th class="desktop-only-col">Role</th>
-                                <th class="desktop-only-col">Rem. Paid Leave</th>
-                                <th class="desktop-only-col">Rem. Sick Leave</th>
-                                <th class="desktop-only-col">Status / Reason</th>
-                                <th class="desktop-only-col">Action</th>
+                                <th class="desktop-only-col text-center" style="width: 85px;">Rem. Paid</th>
+                                <th class="desktop-only-col text-center" style="width: 85px;">Rem. Sick</th>
+                                <th class="desktop-only-col text-center" style="width: 90px;">Status</th>
+                                <th class="desktop-only-col text-center action-column" style="width: 95px;">Action</th>
                                 <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
@@ -570,15 +566,15 @@
                                 tableRows += `
                                     <tr data-id="${employee.user.id}">
                                         <td style="display:none;">${employee.user.id}</td>
-                                        <td class="fw-bold text-nowrap"><span class="badge bg-secondary p-1 px-2">${empIdCode}</span></td>
-                                        <td class="py-1">
-                                            <div class="d-flex align-items-start align-items-baseline">
-                                                <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none">
-                                                    <img src="${employee.user_info.profile_image_url}" alt="Profile" width="40" height="40" class="rounded-circle me-2"
+                                        <td class="fw-bold text-nowrap"><span class="badge bg-secondary p-1 px-2" style="font-size: 11px;">${empIdCode}</span></td>
+                                        <td class="py-2">
+                                            <div class="d-flex align-items-center">
+                                                <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none me-2">
+                                                    <img src="${employee.user_info.profile_image_url}" alt="Profile" width="32" height="32" class="rounded-circle"
                                                         onerror="this.onerror=null; this.src='<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>';">
                                                 </a>
-                                                <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none text-dark">
-                                                    <span>${empName}</span>
+                                                <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none text-dark fw-semibold text-truncate d-inline-block" style="max-width: 140px;" title="${empName}">
+                                                    ${empName}
                                                 </a>                                                
                                             </div>
                                             <div style="flex: 1;" class="align-self-center">                                                
@@ -616,33 +612,65 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="desktop-only-col">${empEmail}</td>
-                                        <td class="desktop-only-col">${empDept}</td>
-                                        <td class="desktop-only-col">${empRole}</td>
-                                        <td class="desktop-only-col"><a href="#" class="open-leave-history text-decoration-none fw-bold text-success" data-id="${employee.user.id}" data-name="${empName}">${empRemPaid} <i class="mdi mdi-information-outline small text-muted"></i></a></td>
-                                        <td class="desktop-only-col"><a href="#" class="open-leave-history text-decoration-none fw-bold text-warning" data-id="${employee.user.id}" data-name="${empName}">${empRemSick} <i class="mdi mdi-information-outline small text-muted"></i></a></td>
-                                        <td class="desktop-only-col">${statusBadge}</td>
-                                        <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
-                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-status="${empStatus}" data-reason="${empReason}" data-lastday="${empLastDay}" class="text-info fs-5 open-status-modal" title="Change Status / Resignation Reason">
-                                                <i class="mdi mdi-account-cog"></i>
-                                            </a>
-                                            ${!isInactive ? `
-                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info?.salary || 0}" data-last-date="${employee.user_info?.last_increment_date || ''}" class="text-success fs-5 open-increment-modal" title="Add Salary Increment">
-                                                <i class="mdi mdi-cash-plus"></i>
-                                            </a>
-                                            ` : ''}
-                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="text-secondary fs-5 open-increment-history" title="Increment History">
-                                                <i class="mdi mdi-history"></i>
-                                            </a>
-                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="text-success fs-5 open-leave-history" title="Leave History">
-                                                <i class="mdi mdi-calendar-clock"></i>
-                                            </a>
-                                            <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="text-secondary fs-5 open-password-modal" title="Password">
-                                                <i class="fa fa-key" aria-hidden="true"></i>
-                                            </a>
-                                            <a href="/employee/profile/${employee.user_info.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
-                                            <a href="/employee/${employee.user.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                            <a href="#" class="text-danger fs-5 delete-employee" data-id="${employee.user.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                                        <td class="desktop-only-col">
+                                            <span class="text-muted small d-inline-block text-truncate" style="max-width: 140px;" title="${empEmail}">${empEmail}</span>
+                                        </td>
+                                        <td class="desktop-only-col">
+                                            <span class="text-truncate d-inline-block" style="max-width: 120px;" title="${empDept}">${empDept}</span>
+                                        </td>
+                                        <td class="desktop-only-col"><span class="badge badge-outline-secondary" style="font-size: 11px;">${empRole}</span></td>
+                                        <td class="desktop-only-col text-center"><a href="#" class="open-leave-history text-decoration-none fw-bold text-success" data-id="${employee.user.id}" data-name="${empName}">${empRemPaid} <i class="mdi mdi-information-outline small text-muted"></i></a></td>
+                                        <td class="desktop-only-col text-center"><a href="#" class="open-leave-history text-decoration-none fw-bold text-warning" data-id="${employee.user.id}" data-name="${empName}">${empRemSick} <i class="mdi mdi-information-outline small text-muted"></i></a></td>
+                                        <td class="desktop-only-col text-center">${statusBadge}</td>
+                                        <td class="desktop-only-col text-center">
+                                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                                <a href="/employee/profile/${employee.user_info.id}" class="text-primary fs-5 me-1" title="View Profile">
+                                                    <i class="mdi mdi-eye"></i>
+                                                </a>
+                                                <a href="/employee/${employee.user.id}" class="text-warning fs-5 me-1" title="Edit Employee">
+                                                    <i class="mdi mdi-pencil"></i>
+                                                </a>
+                                                <div class="dropdown d-inline-block">
+                                                    <a href="javascript:void(0)" class="text-secondary fs-5" data-bs-toggle="dropdown" aria-expanded="false" title="More Actions">
+                                                        <i class="mdi mdi-dots-vertical"></i>
+                                                    </a>
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 13px; z-index: 1060; border-radius: 8px;">
+                                                        <li>
+                                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-status="${empStatus}" data-reason="${empReason}" data-lastday="${empLastDay}" class="dropdown-item py-2 open-status-modal">
+                                                                <i class="mdi mdi-account-cog text-info me-2 fs-6"></i> Change Status
+                                                            </a>
+                                                        </li>
+                                                        ${!isInactive ? `
+                                                        <li>
+                                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info?.salary || 0}" data-last-date="${employee.user_info?.last_increment_date || ''}" class="dropdown-item py-2 open-increment-modal">
+                                                                <i class="mdi mdi-cash-plus text-success me-2 fs-6"></i> Add Increment
+                                                            </a>
+                                                        </li>
+                                                        ` : ''}
+                                                        <li>
+                                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="dropdown-item py-2 open-increment-history">
+                                                                <i class="mdi mdi-history text-secondary me-2 fs-6"></i> Increment History
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="dropdown-item py-2 open-leave-history">
+                                                                <i class="mdi mdi-calendar-clock text-success me-2 fs-6"></i> Leave History
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="dropdown-item py-2 open-password-modal">
+                                                                <i class="fa fa-key text-secondary me-2"></i> Change Password
+                                                            </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider my-1"></li>
+                                                        <li>
+                                                            <a href="#" class="dropdown-item py-2 text-danger delete-employee" data-id="${employee.user.id}">
+                                                                <i class="mdi mdi-delete me-2 fs-6"></i> Delete Employee
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
                                         </td>
                                        
                                         <td class="mobile-expand-col text-center">

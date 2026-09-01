@@ -84,17 +84,17 @@
 
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="userComplaintsTable">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th style="display:none;">ID</th>
                                 <th>Subject & Details</th>
-                                <th class="text-center">Category</th>
-                                <th class="text-center">Status</th>
-                                <th>Submitted</th>
-                                <th class="text-end">Action</th>
+                                <th class="desktop-only-col text-center">Category</th>
+                                <th class="desktop-only-col text-center">Status</th>
+                                <th class="desktop-only-col">Submitted</th>
+                                <th class="desktop-only-col text-end action-column" style="width: 90px;">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
-                    </table>
                     </table>
                 </div>
             </div>
@@ -186,17 +186,58 @@ $(document).ready(function() {
             { 
                 data: null,
                 render: function(data) {
+                    let color = data.type === 'Complaint' ? '#ef4444' : '#0ea5e9';
+                    let typeBadge = `<span class="badge border-0 px-2 py-1 fw-semibold text-white" style="background-color: ${color}; border-radius: 4px; font-size: 0.7rem;">${(data.type || '').toUpperCase()}</span>`;
+                    let statusColor = '#E66136';
+                    if (data.status === 'In Progress') statusColor = '#4B49AC';
+                    if (data.status === 'Resolved') statusColor = '#34B1AA';
+                    let statusDisplay = `<span class="fw-bold" style="color: ${statusColor}; font-size: 0.75rem;">${(data.status || '').toUpperCase()}</span>`;
+                    let d = new Date(data.created_at);
+                    let dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
                     return `
-                        <div>
-                            <span class="fw-bold d-block text-dark small">${data.subject}</span>
-                            <span class="text-muted x-small d-block text-truncate" style="max-width:300px;">${data.message.substring(0, 80)}...</span>
+                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                            <div style="flex: 1;">
+                                <span class="fw-bold d-block text-dark small">${data.subject}</span>
+                                <span class="text-muted x-small d-block text-truncate" style="max-width:300px;">${data.message.substring(0, 80)}...</span>
+                                <div class="expanded-details" id="user-complaint-details-${data.id}" onclick="event.stopPropagation();">
+                                    <div class="detail-row">
+                                        <span class="detail-label">Category:</span>
+                                        <span class="detail-value">${typeBadge}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value">${statusDisplay}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Submitted:</span>
+                                        <span class="detail-value">${dateStr}</span>
+                                    </div>
+                                    <div class="detail-actions">
+                                        <button type="button" class="btn btn-sm btn-info text-white view-details-btn" 
+                                                data-id="${data.id}"
+                                                data-subject="${data.subject}" 
+                                                data-message="${data.message}"
+                                                data-remark="${data.admin_remark || 'Our HR team will review your submission shortly.'}"
+                                                data-status="${data.status}"
+                                                data-file="${data.file || ''}"
+                                                data-res-file="${data.resolution_file || ''}">
+                                            <i class="mdi mdi-eye"></i> View
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger delete-btn" 
+                                                data-id="${data.id}">
+                                            <i class="mdi mdi-delete"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     `;
                 }
             },
             { 
                 data: 'type',
-                className: 'text-center',
+                className: 'desktop-only-col text-center',
                 render: function(data) {
                     let color = data === 'Complaint' ? '#ef4444' : '#0ea5e9';
                     return `<span class="badge border-0 px-2 py-1 fw-semibold text-white" style="background-color: ${color}; border-radius: 4px; font-size: 0.7rem;">${data.toUpperCase()}</span>`;
@@ -204,7 +245,7 @@ $(document).ready(function() {
             },
             { 
                 data: 'status',
-                className: 'text-center',
+                className: 'desktop-only-col text-center',
                 render: function(data) {
                     let color = '#E66136';
                     if (data === 'In Progress') color = '#4B49AC';
@@ -214,6 +255,7 @@ $(document).ready(function() {
             },
             { 
                 data: 'created_at',
+                className: 'desktop-only-col',
                 render: function(data) {
                     let d = new Date(data);
                     return `<span class="text-muted small">${d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>`;
@@ -221,7 +263,7 @@ $(document).ready(function() {
             },
             {
                 data: null,
-                className: 'text-end',
+                className: 'desktop-only-col text-end',
                 orderable: false,
                 render: function(data) {
                     return `
@@ -245,9 +287,25 @@ $(document).ready(function() {
                         </div>
                     `;
                 }
+            },
+            {
+                data: null,
+                className: 'mobile-expand-col text-center',
+                orderable: false,
+                searchable: false,
+                render: function(data) {
+                    return `<button type="button" class="expand-toggle" data-target="user-complaint-details-${data.id}" aria-label="Expand details"></button>`;
+                }
             }
         ],
         order: [[0, 'desc']],
+        columnDefs: [
+            {
+                targets: [5, 6],
+                orderable: false,
+                searchable: false
+            }
+        ],
         language: {
             search: "",
             searchPlaceholder: "Search",

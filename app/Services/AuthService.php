@@ -156,7 +156,14 @@ class AuthService
         $userModel = new UserModel();
         $user = $userModel->find($record->user_id);
 
-        if (!$user) {
+        if (!$user || (!empty($user['is_deleted']) && $user['is_deleted'] == 1)) {
+            $this->forgetUser();
+            return false;
+        }
+
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $userInfo = $userInfoModel->where('user_id', $user['id'])->first();
+        if ($userInfo && !empty($userInfo['status']) && strtolower(trim($userInfo['status'])) !== 'active') {
             $this->forgetUser();
             return false;
         }

@@ -26,9 +26,6 @@
             font-weight: 500 !important;
             padding: 6px 14px !important;
             min-height: 36px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
             line-height: 1.2 !important;
             transition: all 0.2s ease !important;
         }
@@ -48,9 +45,6 @@
             font-weight: 500 !important;
             padding: 6px 14px !important;
             min-height: 36px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
             line-height: 1.2 !important;
             transition: all 0.2s ease !important;
         }
@@ -71,6 +65,11 @@
             font-size: 14px !important;
             padding: 6px 16px !important;
             min-height: 36px !important;
+        }
+
+        /* Protect all inline-hidden elements from being overridden */
+        [style*="display: none"], [style*="display:none"], [hidden] {
+            display: none !important;
         }
     </style>
 </head>
