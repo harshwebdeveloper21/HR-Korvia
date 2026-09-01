@@ -10,286 +10,23 @@
     <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/mdi/css/materialdesignicons.min.css'); ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= base_url(env("ImagePath") . "assets/css/login.css?v=" . time()) ?>">
-    <style>
-        :root {
-            --primary-color: #E66136;
-            --primary-hover: #d8542b;
-            --primary-light: rgba(230, 97, 54, 0.1);
-            --primary-glow: rgba(230, 97, 54, 0.25);
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --bg-input: #f8fafc;
-        }
-
-        body.login-page-body {
-            background: radial-gradient(circle at 10% 15%, rgba(230, 97, 54, 0.06) 0%, transparent 45%),
-                        radial-gradient(circle at 90% 85%, rgba(230, 97, 54, 0.08) 0%, transparent 50%),
-                        linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .login-card-wrapper {
-            width: 100%;
-            max-width: 440px;
-            margin: auto;
-        }
-
-        .login-card {
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 40px 36px 36px 36px;
-            border: 1px solid rgba(226, 232, 240, 0.85);
-            box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.06), 
-                        0 25px 45px -15px rgba(230, 97, 54, 0.08),
-                        0 0 0 1px rgba(230, 97, 54, 0.03);
-        }
-
-        .login-logo-container {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .login-logo-container img {
-            max-height: 58px;
-            width: auto;
-            max-width: 240px;
-            object-fit: contain;
-            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.04));
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 26px;
-        }
-
-        .login-header h4 {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.3px;
-            margin: 0 0 6px 0;
-        }
-
-        .login-header p {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin: 0;
-            font-weight: 400;
-        }
-
-        .login-form-group {
-            margin-bottom: 20px;
-        }
-
-        .login-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #334155;
-            margin-bottom: 7px;
-            letter-spacing: 0.2px;
-        }
-
-        .login-input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .login-input-wrapper .input-icon {
-            position: absolute;
-            left: 14px;
-            font-size: 19px;
-            color: #94a3b8;
-            pointer-events: none;
-            transition: color 0.2s ease;
-        }
-
-        .login-input-wrapper .form-control {
-            height: 48px;
-            width: 100%;
-            background-color: var(--bg-input);
-            border: 1.5px solid var(--border-color);
-            border-radius: 12px;
-            padding: 10px 16px 10px 44px;
-            font-size: 14px;
-            color: var(--text-main);
-            font-weight: 500;
-            transition: all 0.2s ease;
-            box-shadow: none;
-        }
-
-        .login-input-wrapper .form-control::placeholder {
-            color: #94a3b8;
-            font-weight: 400;
-        }
-
-        .login-input-wrapper .form-control:focus {
-            background-color: #ffffff;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px var(--primary-light);
-            outline: none;
-        }
-
-        .login-input-wrapper:focus-within .input-icon {
-            color: var(--primary-color);
-        }
-
-        .login-input-wrapper .toggle-password {
-            position: absolute;
-            right: 14px;
-            font-size: 19px;
-            color: #94a3b8;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .login-input-wrapper .toggle-password:hover {
-            color: var(--primary-color);
-            background-color: var(--primary-light);
-        }
-
-        .login-field-error {
-            font-size: 12px;
-            font-weight: 500;
-            color: #dc2626;
-            margin-top: 5px;
-            display: block;
-        }
-
-        .login-options-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 4px;
-            margin-bottom: 22px;
-        }
-
-        .login-checkbox-label {
-            display: inline-flex;
-            align-items: center;
-            font-size: 13.5px;
-            font-weight: 500;
-            color: #475569;
-            cursor: pointer;
-            user-select: none;
-            margin: 0;
-        }
-
-        .login-checkbox-label input[type="checkbox"] {
-            width: 17px;
-            height: 17px;
-            border-radius: 5px;
-            margin-right: 8px;
-            accent-color: var(--primary-color);
-            cursor: pointer;
-        }
-
-        .btn-login-submit {
-            width: 100%;
-            height: 48px;
-            background: linear-gradient(135deg, #E66136 0%, #f05929 100%);
-            border: none;
-            border-radius: 12px;
-            color: #ffffff;
-            font-size: 14.5px;
-            font-weight: 600;
-            letter-spacing: 0.4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 8px 18px -4px rgba(230, 97, 54, 0.42);
-            transition: all 0.25s ease;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        .btn-login-submit:hover {
-            background: linear-gradient(135deg, #d8542b 0%, #e64f1e 100%);
-            box-shadow: 0 10px 22px -3px rgba(230, 97, 54, 0.52);
-            transform: translateY(-1px);
-            color: #ffffff;
-        }
-
-        .btn-login-submit:active {
-            transform: translateY(0);
-            box-shadow: 0 4px 10px -2px rgba(230, 97, 54, 0.4);
-        }
-
-        .btn-login-submit:disabled {
-            opacity: 0.75;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .login-alert-box {
-            margin-top: 16px;
-        }
-
-        .login-alert-box .alert {
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 0;
-            border: none;
-        }
-
-        .login-alert-box .alert-danger {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-
-        .login-alert-box .alert-success {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 24px;
-        }
-
-        .login-footer a {
-            font-size: 12.5px;
-            color: #94a3b8;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-
-        .login-footer a:hover {
-            color: var(--primary-color);
-        }
-
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 30px 22px 28px 22px;
-                border-radius: 16px;
-            }
-            .login-logo-container {
-                margin-bottom: 22px;
-            }
-            .login-header h4 {
-                font-size: 20px;
-            }
-        }
-    </style>
 </head>
 
 <body class="login-page-body">
+
+    <!-- Floating Background Canvas Elements -->
+    <div class="login-bg-container">
+        <!-- Interactive Particle Wave Canvas -->
+        <canvas id="particleCanvas"></canvas>
+
+        <!-- Radial Dot Grid -->
+        <div class="login-bg-grid"></div>
+
+        <!-- Ambient Glowing Mesh Orbs -->
+        <div class="floating-orb floating-orb-1"></div>
+        <div class="floating-orb floating-orb-2"></div>
+        <div class="floating-orb floating-orb-3"></div>
+    </div>
 
     <!-- Loading overlay -->
     <div id="loader" style="display: none;">
@@ -300,6 +37,7 @@
         </div>
     </div>
 
+    <!-- Main Centered Login Card -->
     <div class="login-card-wrapper">
         <div class="login-card">
             
@@ -468,6 +206,103 @@
             });
 
         });
+
+        // ══════════════════════════════════════════════════════
+        // Interactive Ambient Particle Mesh Canvas
+        // ══════════════════════════════════════════════════════
+        (function() {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let particles = [];
+            const particleCount = 38;
+            const maxDistance = 110;
+            const mouse = { x: null, y: null, radius: 140 };
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            window.addEventListener('mousemove', function(e) {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+
+            window.addEventListener('mouseout', function() {
+                mouse.x = null;
+                mouse.y = null;
+            });
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                    this.vx = (Math.random() - 0.5) * 0.6;
+                    this.vy = (Math.random() - 0.5) * 0.6;
+                    this.radius = Math.random() * 2 + 1.2;
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    if (this.x < 0 || this.x > width) this.vx *= -1;
+                    if (this.y < 0 || this.y > height) this.vy *= -1;
+
+                    // Mouse gentle repulsion
+                    if (mouse.x !== null && mouse.y !== null) {
+                        const dx = mouse.x - this.x;
+                        const dy = mouse.y - this.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < mouse.radius) {
+                            const force = (mouse.radius - dist) / mouse.radius;
+                            this.x -= (dx / dist) * force * 1.5;
+                            this.y -= (dy / dist) * force * 1.5;
+                        }
+                    }
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(230, 97, 54, 0.4)';
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < maxDistance) {
+                            const alpha = (1 - dist / maxDistance) * 0.16;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(230, 97, 54, ${alpha})`;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
     </script>
 </body>
 
