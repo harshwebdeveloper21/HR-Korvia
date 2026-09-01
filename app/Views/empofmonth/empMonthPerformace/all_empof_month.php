@@ -99,12 +99,6 @@
         }
 
     }
-    @media (min-width: 768px) {
-  .btn.hr-btnbg.attendenceall {
-    width: 191px !important;
-  }
-}
-
 </style>
 <div class="row">
     <div class="col-12 grid-margin">

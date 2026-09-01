@@ -92,11 +92,6 @@
     .capitalize-text {
         text-transform: capitalize;
     }
-     @media (min-width: 768px) {
-  .btn.hr-btnbg.attendenceall {
-    width: 193px !important;
-  }
-}
 </style>
 
 <div class="row">

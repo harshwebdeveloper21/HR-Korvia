@@ -308,33 +308,22 @@
     <div class="col-lg-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
-                <div class="main-dec-div flex-direction-column">
-
-                    <h4 class="card-title filtermarginjob">Manage Tasks</h4>
-
-                    <div class="filtermenu">
-                        <div class="filterdept" style="margin-right:10px">
-                          
-                            <select class="form-select form-select-sm departmrgin mb-3" id="statusFilter" style="max-width: 150px; font-size: 14px;padding: 4px 8px;">
-
-                                <option value="">All</option>
-                                <option value="Pending">Pending</option>
-                                <option value="In-Progress">In-Progress</option>
-                                <option value="Completed">Completed</option>
-                            </select>
-                            </select>
-
-                        </div>
+                <div class="d-md-flex justify-content-between align-items-center mb-3">
+                    <h4 class="card-title">Manage Tasks</h4>
+                    <div class="d-md-flex gap-2 align-items-center">
+                        <select class="form-select" id="statusFilter" style="min-width: 140px; width: auto;">
+                            <option value="">All</option>
+                            <option value="Pending">Pending</option>
+                            <option value="In-Progress">In-Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
                         <?php $role = session()->get('role'); ?>
                         <?php if ($role !== 'employee') : ?>
-                            <div class="filterbtn filterbtnpadd">
-                                <a href="/task" class="btn hr-btnbg btnpdingam mb-2">
-                                    <i class="mdi mdi-plus iconfontsize"></i> Add Task
-                                </a>
-                            </div>
+                            <a href="/task" class="btn hr-btnbg attendenceall text-nowrap">
+                                <i class="mdi mdi-plus iconfontsize"></i> Add Task
+                            </a>
                         <?php endif; ?>
                     </div>
-
                 </div>
 
                 <div class="table-responsive">

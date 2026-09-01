@@ -5,12 +5,6 @@
         text-transform: capitalize;
     }
 
-    @media (min-width: 768px) {
-        .attendenceall {
-            width: 193px !important;
-        }
-    }
-
     @media (max-width: 767px) {
         .attendenceall {
             font-size: 8px !important;

@@ -723,7 +723,10 @@
                         setText('#profile-phone', user.contact_number);
                         setText('#user_info-designation_name', user.designation_name);
                         setText('#user_info-department_name', user.department_name);
-                        setText('#user_info-employee_id', 'EMP#' + user.employee_id);
+                        const displayEmpId = user.employee_id && user.employee_id !== '0'
+                            ? (String(user.employee_id).startsWith('EMP-') || String(user.employee_id).startsWith('EMP#') ? user.employee_id : 'EMP-' + String(user.employee_id).padStart(3, '0'))
+                            : ('EMP-' + (user.user_id || '001'));
+                        setText('#user_info-employee_id', displayEmpId);
                         setText('#user_info-joining_date', user.joining_date);
                         setText('#user_info-working_location', user.working_location);
                         setText('#user_info-role', user.role);
@@ -1087,10 +1090,10 @@
                         $('#job-postcode').val(user.postcode);
                         $('#job-salary').val(user.salary);
                         $('#job-role').val(user.role);
-                        if (user.employee_id === '0') {
-                            user.employee_id = 'EMP#' + Math.floor(Math.random() * 90000 + 10000);
-                        }
-                        $('#job-employee-id').val('EMP#' +user.employee_id);
+                        const cleanEmpId = user.employee_id && user.employee_id !== '0'
+                            ? (String(user.employee_id).startsWith('EMP-') || String(user.employee_id).startsWith('EMP#') ? user.employee_id : 'EMP-' + String(user.employee_id).padStart(3, '0'))
+                            : ('EMP-' + (user.user_id || '001'));
+                        $('#job-employee-id').val(cleanEmpId);
 
                         populateSelectOptionsjob('#job-department', departments, user.department_id);
                         populateSelectOptionsjob('#job-designation', designations, user.designation_id);

@@ -516,7 +516,10 @@
             <div class="card-body">
                 <div class="d-md-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title">Leave Calendar</h4>
-                    <div class="d-md-flex gap-2">
+                    <div class="d-md-flex gap-2 align-items-center">
+                        <button type="button" id="btnExportLeaves" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
                         <a href="/manage-leaves" id="manage-leaves-btn" class="btn hr-btnbg" style="display: none;">
                             <i class="mdi mdi-format-list-bulleted icon-leave-size"></i> Total Employee Leaves
                         </a>
@@ -1866,6 +1869,59 @@
             container.appendChild(card);
         });
     }
+
+    // 📥 Export Leaves to Excel
+    $(document).on('click', '#btnExportLeaves', function () {
+        const $btn = $(this);
+        const month = $('#unified-month-select').val() || '';
+        const year = $('#unified-year-select').val() || '';
+        const employeeId = $('#unified-employee-filter').val() || '';
+        const viewMode = $('.view-mode-btn.active').data('view') || 'datewise';
+        const token = localStorage.getItem('token');
+
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
+
+        const queryParams = new URLSearchParams({
+            month: month,
+            year: year,
+            user_id: employeeId,
+            view: viewMode
+        });
+
+        fetch(`<?= base_url('api/leave/export') ?>?${queryParams.toString()}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(async response => {
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({ message: 'Export failed' }));
+                throw new Error(err.message || 'Export failed');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Leaves_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(err => {
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            Swal.fire({
+                icon: 'error',
+                title: 'Export Failed',
+                text: err.message || 'Failed to export leaves data.',
+                confirmButtonColor: '#d33'
+            });
+        });
+    });
 </script>
 
 <?= $this->endSection() ?>

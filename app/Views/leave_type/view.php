@@ -97,11 +97,6 @@
             height: 0px !important;
         }  */
     }
-     @media (min-width: 768px) {
-  .btn.hr-btnbg.attendenceall {
-    width: 193px !important;
-  }
-}
 </style>
 <div class="row">
     <div class="col-lg-13 grid-margin stretch-card">

@@ -287,12 +287,12 @@
     <div class="col-lg-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
-                <div class="d-md-flex justify-content-between mb-3">
+                <div class="d-md-flex justify-content-between align-items-center mb-3">
 
                     <h4 class="card-title">Manage Tasks</h4>
 
-                    <div class="d-md-flex gap-2">
-                        <select class="form-select" id="statusFilter">
+                    <div class="d-md-flex gap-2 align-items-center">
+                        <select class="form-select" id="statusFilter" style="min-width: 140px; width: auto;">
                             <option value="">All</option>
                             <option value="Pending">Pending</option>
                             <option value="In-Progress">In-Progress</option>

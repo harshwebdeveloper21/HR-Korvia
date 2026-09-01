@@ -157,13 +157,25 @@
             display: block;
         }
 
-        .attendenceall {
-            font-size: 8px !important;
-            padding: 12px !important;
+        .attendance-filter-container {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            width: 100% !important;
         }
 
-        .btnpdingam {
-            margin: 0px !important;
+        .attendance-filter-container #month-selector,
+        .attendance-filter-container #year-selector {
+            flex: 1 1 calc(50% - 4px) !important;
+            width: calc(50% - 4px) !important;
+            min-width: 0 !important;
+        }
+
+        .attendance-filter-container a.btn {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+            justify-content: center !important;
+            margin-top: 4px !important;
         }
 
         .cart-sm-title {
@@ -192,8 +204,8 @@
         <div class="card-body">
             <div class="d-md-flex justify-content-between align-items-center mb-3">
                 <h4 class="card-title">Employee Attendance Summary</h4>
-                <div class="d-md-flex gap-2">
-                    <select id="month-selector" class="form-select">
+                <div class="d-md-flex gap-2 align-items-center attendance-filter-container">
+                    <select id="month-selector" class="form-select" style="min-width: 140px; width: auto;">
                         <option value="1">January</option>
                         <option value="2">February</option>
                         <option value="3">March</option>
@@ -207,11 +219,11 @@
                         <option value="11">November</option>
                         <option value="12">December</option>
                     </select>
-                    <select id="year-selector" class="form-select">
+                    <select id="year-selector" class="form-select" style="min-width: 110px; width: auto;">
                         <!-- Will be populated by JS -->
                     </select>
-                    <a href="/view" class="btn hr-btnbg btnpdingam text-nowrap">
-                        All Attendance
+                    <a href="/view" class="btn hr-btnbg attendenceall text-nowrap">
+                        <i class="mdi mdi-calendar-clock iconfontsize"></i> All Attendance
                     </a>
                 </div>
             </div>

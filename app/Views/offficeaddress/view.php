@@ -62,12 +62,6 @@
             /* restore font size for the dropdown */
         }
     }
-
-    @media (min-width: 768px) {
-        .btn.hr-btnbg.attendenceall {
-            width: 193px !important;
-        }
-    }
 </style>
 <div class="row">
     <div class="col-lg-12 grid-margin stretch-card">

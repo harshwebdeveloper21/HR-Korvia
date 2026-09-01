@@ -192,10 +192,10 @@
     <div class="col-lg-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
-                <div class="d-md-flex justify-content-between mb-3">
+                <div class="d-md-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title filtermarginjob">Manage SubTasks</h4>
-                    <div class="d-md-flex gap-2">                         
-                        <select class="form-select" id="statusFilter">
+                    <div class="d-md-flex gap-2 align-items-center">                         
+                        <select class="form-select" id="statusFilter" style="min-width: 150px; width: auto;">
                             <option value="All">All SubTask</option>
                             <option value="Pending">Pending</option>
                             <option value="Reassign">Reassign</option>
