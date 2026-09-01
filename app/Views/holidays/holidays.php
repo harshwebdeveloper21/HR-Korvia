@@ -298,12 +298,14 @@
                                 <td class="desktop-only-col" data-order="${holiday.holiday_date}">${displayDate}</td>
                                 <td class="desktop-only-col capitalize-text">${holiday.description || ''}</td>
                                 <td class="desktop-only-col">
-                                    <a href="/edit-holiday/${holiday.id}" class="text-primary edit-holiday me-2" title="Edit">
-                                        <i class="mdi mdi-pencil"></i>
-                                    </a>
-                                    <a href="#" class="text-danger delete-holiday" data-id="${holiday.id}" title="Delete">
-                                        <i class="mdi mdi-delete"></i>
-                                    </a>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <a href="/edit-holiday/${holiday.id}" class="text-warning fs-5 edit-holiday" title="Edit">
+                                            <i class="mdi mdi-pencil"></i>
+                                        </a>
+                                        <a href="#" class="text-danger fs-5 delete-holiday" data-id="${holiday.id}" title="Delete">
+                                            <i class="mdi mdi-delete"></i>
+                                        </a>
+                                    </div>
                                 </td>
                                 <td class="mobile-expand-col text-center">
                                     <button type="button" class="expand-toggle" data-target="holiday-details-${holiday.id}" aria-label="Expand details"></button>

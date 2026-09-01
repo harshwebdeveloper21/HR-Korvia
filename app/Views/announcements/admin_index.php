@@ -101,10 +101,10 @@
                                     </td>
                                     <td class="desktop-only-col">
                                         <div class="d-flex align-items-center gap-2">
-                                            <a href="javascript:void(0)" class="text-dark me-1" onclick="showAnnouncement(<?= esc(json_encode($announcement)) ?>)" title="View Details">
+                                            <a href="javascript:void(0)" class="text-primary me-1" onclick="showAnnouncement(<?= esc(json_encode($announcement)) ?>)" title="View Details">
                                                 <i class="mdi mdi-eye fs-5"></i>
                                             </a>
-                                            <a href="/announcements/edit/<?= $announcement['id'] ?>" class="text-primary me-1" title="Edit">
+                                            <a href="/announcements/edit/<?= $announcement['id'] ?>" class="text-warning me-1" title="Edit">
                                                 <i class="mdi mdi-pencil fs-5"></i>
                                             </a>
                                             <a href="javascript:void(0);" class="text-danger delete-btn" data-id="<?= $announcement['id'] ?>" title="Delete">

@@ -162,6 +162,7 @@
     let attendanceCalendarInstance = null;
     let currentMatrixData = [];
     let currentMonthDetails = {};
+    let latestCalendarEvents = [];
 
     let csrfTokenName = '<?= csrf_token() ?>';
     let csrfTokenValue = '<?= csrf_hash() ?>';
@@ -238,6 +239,7 @@
                 if (response && response.status === 'success') {
                     currentMatrixData = response.matrixData || [];
                     currentMonthDetails = response.monthDetails || {};
+                    latestCalendarEvents = response.calendarEvents || [];
 
                     // Update Title Label
                     if (currentMonthDetails.monthName) {
@@ -247,8 +249,16 @@
                     // 1. Render Tabular Matrix
                     renderMatrixTable(currentMatrixData, currentMonthDetails);
 
-                    // 2. Render / Update FullCalendar
-                    renderCalendar(response.calendarEvents || [], currentMonthDetails);
+                    // 2. Render Calendar (if calendar tab is active or update data)
+                    if ($('#calendar-pane').is(':visible') || $('#calendar-tab').hasClass('active')) {
+                        initOrUpdateCalendar();
+                    } else if (attendanceCalendarInstance) {
+                        const year = currentMonthDetails.year || new Date().getFullYear();
+                        const month = String(currentMonthDetails.month || (new Date().getMonth() + 1)).padStart(2, '0');
+                        attendanceCalendarInstance.removeAllEvents();
+                        attendanceCalendarInstance.addEventSource(latestCalendarEvents);
+                        attendanceCalendarInstance.gotoDate(`${year}-${month}-01`);
+                    }
 
                     // 3. Update Trend Chart
                     if (response.chartData) {
@@ -355,20 +365,26 @@
     }
 
     // ══════════════════════════════════════════════════════
-    // Render Tab 2: FullCalendar View
+    // Render Tab 2: FullCalendar View (Robust Lazy/Active Init)
     // ══════════════════════════════════════════════════════
-    function renderCalendar(events, monthDetails) {
+    function initOrUpdateCalendar() {
         const calendarEl = document.getElementById('attendanceCalendar');
         if (!calendarEl) return;
 
-        const year = monthDetails.year || new Date().getFullYear();
-        const month = String(monthDetails.month || (new Date().getMonth() + 1)).padStart(2, '0');
+        const year = currentMonthDetails.year || new Date().getFullYear();
+        const month = String(currentMonthDetails.month || (new Date().getMonth() + 1)).padStart(2, '0');
         const initialDate = `${year}-${month}-01`;
 
         if (attendanceCalendarInstance) {
             attendanceCalendarInstance.removeAllEvents();
-            attendanceCalendarInstance.addEventSource(events);
+            attendanceCalendarInstance.addEventSource(latestCalendarEvents || []);
             attendanceCalendarInstance.gotoDate(initialDate);
+            setTimeout(() => {
+                if (attendanceCalendarInstance) {
+                    attendanceCalendarInstance.render();
+                    attendanceCalendarInstance.updateSize();
+                }
+            }, 50);
             return;
         }
 
@@ -385,9 +401,14 @@
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,listMonth'
             },
+            height: 'auto',
+            contentHeight: 650,
+            aspectRatio: 1.5,
+            expandRows: true,
+            windowResizeDelay: 50,
             editable: false,
-            dayMaxEvents: true,
-            events: events,
+            dayMaxEvents: 3,
+            events: latestCalendarEvents || [],
             eventClick: function(info) {
                 if (info.event.title) {
                     if (typeof Swal !== 'undefined') {
@@ -406,16 +427,31 @@
         });
 
         attendanceCalendarInstance.render();
-    }
 
-    // Re-render calendar whenever calendar tab is activated
-    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
-        if (e.target.id === 'calendar-tab' && attendanceCalendarInstance) {
-            setTimeout(() => {
+        setTimeout(() => {
+            if (attendanceCalendarInstance) {
                 attendanceCalendarInstance.render();
                 attendanceCalendarInstance.updateSize();
-            }, 100);
+            }
+        }, 80);
+    }
+
+    // Bind tab activation listeners for Calendar Tab
+    document.addEventListener('DOMContentLoaded', function () {
+        const calTabBtn = document.getElementById('calendar-tab');
+        if (calTabBtn) {
+            calTabBtn.addEventListener('shown.bs.tab', function () {
+                setTimeout(() => {
+                    initOrUpdateCalendar();
+                }, 50);
+            });
         }
+    });
+
+    $(document).on('shown.bs.tab', '#calendar-tab, button[data-bs-target="#calendar-pane"]', function () {
+        setTimeout(() => {
+            initOrUpdateCalendar();
+        }, 50);
     });
 
     // ══════════════════════════════════════════════════════

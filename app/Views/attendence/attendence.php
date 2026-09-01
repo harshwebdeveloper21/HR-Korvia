@@ -27,7 +27,7 @@
     }
 
     .history-content {
-        padding: 20px;
+        padding: 16px 20px;
     }
 
     .history-table {
@@ -40,40 +40,51 @@
         padding: 8px;
         text-align: left;
         font-weight: 600;
-        font-size: 13px;
+        font-size: 12.5px;
     }
 
     .history-table td {
         padding: 8px;
         border-bottom: 1px solid #dee2e6;
-        font-size: 13px;
+        font-size: 12.5px;
     }
 
     .status-badge {
-        padding: 4px 8px;
+        padding: 3px 8px;
         border-radius: 4px;
         font-size: 11px;
         font-weight: 600;
+        text-transform: capitalize;
     }
 
     .status-present {
-        background-color: #d4edda;
-        color: #155724;
+        background-color: #dcfce7;
+        color: #15803d;
     }
 
     .status-absent {
-        background-color: #f8d7da;
-        color: #721c24;
+        background-color: #fee2e2;
+        color: #b91c1c;
     }
 
     .status-half-day {
-        background-color: #fff3cd;
-        color: #856404;
+        background-color: #fef3c7;
+        color: #b45309;
     }
 
     .status-leave {
-        background-color: #d1ecf1;
-        color: #0c5460;
+        background-color: #ffedd5;
+        color: #c2410c;
+    }
+
+    .status-holiday {
+        background-color: #ede9fe;
+        color: #6d28d9;
+    }
+
+    .status-weekoff, .status-week_off {
+        background-color: #f1f5f9;
+        color: #475569;
     }
 
     .loading-spinner {
@@ -81,7 +92,7 @@
         padding: 20px;
     }
 
-    /* Mobile Expand Styles */
+    /* Column Widths & Desktop Non-Scroll Enforcements */
     .desktop-only-col {
         display: table-cell;
     }
@@ -90,13 +101,66 @@
         display: none;
     }
 
+    @media (min-width: 768px) {
+        .attendance-summary-wrapper {
+            overflow-x: hidden !important;
+            overflow-y: visible !important;
+            width: 100% !important;
+        }
+
+        #employee-attendance-table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            font-size: 12.5px;
+            margin-bottom: 0;
+        }
+
+        #employee-attendance-table th,
+        #employee-attendance-table td {
+            padding: 9px 4px !important;
+            vertical-align: middle !important;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #employee-attendance-table th:first-child,
+        #employee-attendance-table td:first-child {
+            text-align: left !important;
+            padding-left: 8px !important;
+        }
+
+        /* Proportional Desktop Column Widths (Sum = 100%) */
+        #col-emp { width: 23%; }
+        #col-total { width: 8%; }
+        #col-present { width: 10%; }
+        #col-work { width: 11%; }
+        #col-ot { width: 10%; }
+        #col-late { width: 10%; }
+        #col-leave { width: 9%; }
+        #col-absent { width: 8%; }
+        #col-action { width: 11%; }
+
+        .stat-pill {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+            min-width: 28px;
+            line-height: 1.3;
+        }
+    }
+
+    /* Mobile Expand Styles */
     .expanded-details {
         display: none;
         margin-top: 12px;
         padding: 12px;
         background-color: #f8f9fa;
         border-radius: 6px;
-        border-left: 3px solid #007bff;
+        border-left: 3px solid #E66136;
     }
 
     .detail-row {
@@ -178,11 +242,6 @@
             margin-top: 4px !important;
         }
 
-        .cart-sm-title {
-            font-size: 12px !important;
-            margin-bottom: 5px !important;
-        }
-
         .history-table {
             font-size: 11px;
         }
@@ -203,9 +262,9 @@
     <div class="card">
         <div class="card-body">
             <div class="d-md-flex justify-content-between align-items-center mb-3">
-                <h4 class="card-title">Employee Attendance Summary</h4>
+                <h4 class="card-title fw-bolder mb-1">Employee Attendance Summary</h4>
                 <div class="d-md-flex gap-2 align-items-center attendance-filter-container">
-                    <select id="month-selector" class="form-select" style="min-width: 140px; width: auto;">
+                    <select id="month-selector" class="form-select font-13" style="min-width: 140px; width: auto;">
                         <option value="1">January</option>
                         <option value="2">February</option>
                         <option value="3">March</option>
@@ -219,34 +278,36 @@
                         <option value="11">November</option>
                         <option value="12">December</option>
                     </select>
-                    <select id="year-selector" class="form-select" style="min-width: 110px; width: auto;">
+                    <select id="year-selector" class="form-select font-13" style="min-width: 110px; width: auto;">
                         <!-- Will be populated by JS -->
                     </select>
-                    <a href="/view" class="btn hr-btnbg attendenceall text-nowrap">
-                        <i class="mdi mdi-calendar-clock iconfontsize"></i> All Attendance
+                    <a href="/view" class="btn hr-btnbg attendenceall text-nowrap font-13">
+                        <i class="mdi mdi-calendar-clock iconfontsize me-1"></i> All Attendance
                     </a>
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-hover" id="employee-attendance-table">
+            <div class="table-responsive attendance-summary-wrapper">
+                <table class="table table-hover align-middle" id="employee-attendance-table">
                     <thead>
                         <tr>
-                            <th>Employee</th>
-                            <th class="desktop-only-col">Total Days</th>
-                            <th class="desktop-only-col">Present Days</th>
-                            <th class="desktop-only-col">Work Hours</th>
-                            <th class="desktop-only-col">Overtime</th>
-                            <th class="desktop-only-col">Late Hours</th>
-                            <th class="desktop-only-col">Leaves</th>
-                            <th class="desktop-only-col">Absent</th>
-                            <th class="desktop-only-col">Action</th>
+                            <th id="col-emp">Employee</th>
+                            <th id="col-total" class="desktop-only-col text-center" title="Total Working Days">Total</th>
+                            <th id="col-present" class="desktop-only-col text-center" title="Present Days">Present</th>
+                            <th id="col-work" class="desktop-only-col text-center" title="Total Work Hours">Work Hrs</th>
+                            <th id="col-ot" class="desktop-only-col text-center" title="Overtime Hours">Overtime</th>
+                            <th id="col-late" class="desktop-only-col text-center" title="Late Hours">Late Hrs</th>
+                            <th id="col-leave" class="desktop-only-col text-center" title="Leave Days">Leaves</th>
+                            <th id="col-absent" class="desktop-only-col text-center" title="Absent Days">Absent</th>
+                            <th id="col-action" class="desktop-only-col text-center">Action</th>
                             <th class="mobile-expand-col" style="width: 50px;">Details</th>
                         </tr>
                     </thead>
                     <tbody id="employee-attendance-body">
                         <tr>
-                            <td colspan="10" class="text-center">Loading...</td>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <span class="spinner-border spinner-border-sm me-2"></span> Loading attendance summary...
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -288,17 +349,23 @@
             const month = document.getElementById('month-selector').value;
             const year = document.getElementById('year-selector').value;
 
+            document.getElementById('employee-attendance-body').innerHTML = 
+                '<tr><td colspan="10" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading attendance summary...</td></tr>';
+
             fetch(`/api/attendance/getAttendance/${month}/${year}`, { headers })
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
                         renderEmployeeTable(data.data, month, year);
+                    } else {
+                        document.getElementById('employee-attendance-body').innerHTML =
+                            '<tr><td colspan="10" class="text-center py-4 text-muted">No attendance data found for this period.</td></tr>';
                     }
                 })
                 .catch(error => {
                     console.error('Error loading attendance:', error);
                     document.getElementById('employee-attendance-body').innerHTML =
-                        '<tr><td colspan="10" class="text-center text-danger">Error loading data</td></tr>';
+                        '<tr><td colspan="10" class="text-center py-4 text-danger">Error loading data. Please try again.</td></tr>';
                 });
         };
 
@@ -306,10 +373,10 @@
             const tbody = document.getElementById('employee-attendance-body');
             tbody.innerHTML = '';
 
-            const users = attendanceData.users;
+            const users = attendanceData.users || [];
             const holidays = attendanceData.holidays || [];
             const saturdayOffDates = attendanceData.saturdayOffDates || [];
-            console.log(saturdayOffDates);
+
             // Calculate total working days (excluding future dates for current month/year)
             const totalDaysInMonth = new Date(year, month, 0).getDate();
             let workingDays = 0;
@@ -328,9 +395,9 @@
                 const dayOfWeek = new Date(date).getDay();
                 const isHoliday = holidays.some(h => h.holiday_date === date);
                 const isSaturdayOff = saturdayOffDates.includes(date);
-                if(attendanceData.isIncludedHoliday == "1"){
+                if (attendanceData.isIncludedHoliday == "1") {
                     workingDays++;
-                }else if (dayOfWeek !== 0 && !isHoliday && !isSaturdayOff) {
+                } else if (dayOfWeek !== 0 && !isHoliday && !isSaturdayOff) {
                     workingDays++;
                 }
             }
@@ -375,9 +442,9 @@
                     const dayOfWeek = new Date(dStr).getDay();
                     const isHoliday = holidays.some(h => h.holiday_date === dStr);
                     const isSaturdayOff = saturdayOffDates.includes(dStr);
-                    if(attendanceData.isIncludedHoliday == "1"){
+                    if (attendanceData.isIncludedHoliday == "1") {
                         userWorkingDays++;
-                    }else if (dayOfWeek !== 0 && !isHoliday && !isSaturdayOff) {
+                    } else if (dayOfWeek !== 0 && !isHoliday && !isSaturdayOff) {
                         userWorkingDays++;
                     }
                 }
@@ -392,7 +459,6 @@
                     return true;
                 });
 
-                // Calculate stats based on effective attendance only
                 // Group records by date to handle multiple check-ins on the same day
                 const recordsByDate = {};
                 effectiveAttendance.forEach(a => {
@@ -431,7 +497,6 @@
                         }
                     });
 
-                    // Determine status based on API status
                     if (hasLeave) {
                         leaveDays++;
                     } else if (hasHoliday || hasWeekOff) {
@@ -458,7 +523,6 @@
                     if (record.work_hours && record.work_hours !== '00:00:00') {
                         totalSeconds += timeToSeconds(record.work_hours);
                     } else if (record.check_in_time && record.check_out_time) {
-                        // Fallback just in case work_hours is not set
                         const workHours = calculateWorkHours(record);
                         totalSeconds += workHours;
                     }
@@ -480,17 +544,16 @@
                     ? `/upload/${user.profile_image}`
                     : defaultImagePath;
 
-                // Employee row - Following the exact pattern from the second file
                 const row = document.createElement('tr');
                 row.className = 'employee-row';
                 row.dataset.userId = user.user_id;
                 row.innerHTML = `
-                    <td class="py-1">
-                        <div style="display: flex; align-items: flex-start; gap: 10px;" class="align-items-center">
+                    <td class="py-2">
+                        <div class="d-flex align-items-center gap-2" style="min-width: 0;">
                             <img src="${profileImage}" alt="Profile"
-                                 style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                            <div style="flex: 1;">
-                                <span>${user.employee_name}</span>                                
+                                 style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                            <div class="text-truncate" style="min-width: 0;">
+                                <span class="fw-semibold text-dark font-13 text-truncate d-block" title="${user.employee_name}">${user.employee_name}</span>                                
                             </div>
                         </div>
                         <div class="expanded-details" id="employee-details-${user.user_id}" onclick="event.stopPropagation();">
@@ -523,22 +586,28 @@
                                 <span class="detail-value">${absentDays > 0 ? absentDays : 0}</span>
                             </div>
                             <div class="detail-actions">
-                                <button class="btn btn-sm btn-info view-history-btn-mobile" data-user-id="${user.user_id}">
+                                <button class="btn btn-sm btn-info view-history-btn-mobile text-white" data-user-id="${user.user_id}">
                                     <i class="mdi mdi-history"></i> View History
                                 </button>
                             </div>
                         </div>
                     </td>
-                    <td class="desktop-only-col">${userWorkingDays}</td>
-                    <td class="desktop-only-col">${presentDays + (halfDays * 0.5)}</td>
-                    <td class="desktop-only-col">${totalWorkHours}</td>
-                    <td class="desktop-only-col">${totalOvertime || '0h 0m'}</td>
-                    <td class="desktop-only-col">${totalLateTime || '0h 0m'}</td>
-                    <td class="desktop-only-col">${leaveDays}</td>
-                    <td class="desktop-only-col">${absentDays > 0 ? absentDays : 0}</td>
-                    <td class="desktop-only-col">
-                        <button class="btn btn-sm btn-info view-history-btn" data-user-id="${user.user_id}">
-                            View History
+                    <td class="desktop-only-col text-center fw-bold text-secondary">${userWorkingDays}</td>
+                    <td class="desktop-only-col text-center">
+                        <span class="stat-pill text-success bg-success-subtle">${presentDays + (halfDays * 0.5)}</span>
+                    </td>
+                    <td class="desktop-only-col text-center font-12 fw-semibold text-dark">${totalWorkHours}</td>
+                    <td class="desktop-only-col text-center font-12 text-muted">${totalOvertime || '0h 0m'}</td>
+                    <td class="desktop-only-col text-center font-12 text-muted">${totalLateTime || '0h 0m'}</td>
+                    <td class="desktop-only-col text-center">
+                        <span class="stat-pill text-warning bg-warning-subtle">${leaveDays}</span>
+                    </td>
+                    <td class="desktop-only-col text-center">
+                        <span class="stat-pill text-danger bg-danger-subtle">${absentDays > 0 ? absentDays : 0}</span>
+                    </td>
+                    <td class="desktop-only-col text-center">
+                        <button class="btn btn-sm hr-btnbg px-2 py-1 view-history-btn" data-user-id="${user.user_id}" style="font-size: 11.5px; border-radius: 6px;">
+                            <i class="mdi mdi-history"></i> History
                         </button>
                     </td>
                     <td class="mobile-expand-col text-center">
@@ -553,7 +622,7 @@
                 historyRow.innerHTML = `
                     <td colspan="10">
                         <div class="history-content">
-                            <h6>Check-in History for ${user.employee_name}</h6>
+                            <h6 class="fw-bold text-dark mb-2"><i class="mdi mdi-calendar-clock text-primary me-1"></i> Check-in History for ${user.employee_name}</h6>
                             <div id="history-data-${user.user_id}">
                                 <div class="loading-spinner">Loading history...</div>
                             </div>
@@ -590,9 +659,9 @@
             // Desktop row click for history (only on desktop)
             document.querySelectorAll('.employee-row').forEach(row => {
                 row.addEventListener('click', (e) => {
-                    // Only trigger on desktop and not when buttons are clicked
                     if (!e.target.closest('.expand-toggle') && 
                         !e.target.closest('.view-history-btn-mobile') && 
+                        !e.target.closest('.view-history-btn') &&
                         window.innerWidth >= 768) {
                         const userId = row.dataset.userId;
                         toggleHistory(userId, month, year);
@@ -652,14 +721,12 @@
                 return;
             }
 
-            // Calculate boundaries for the history view
             let lwd = null;
             if (user && user.status && user.status.toLowerCase() !== 'active' && user.last_working_day) {
                 lwd = user.last_working_day;
             }
             let jd = (user && user.joining_date) ? user.joining_date : null;
 
-            // Exclude future dates and dates outside employment period
             const todayStr = new Date().toISOString().split('T')[0];
             const validAttendance = attendance.filter(r => {
                 const d = (r.date || '').substring(0, 10);
@@ -682,7 +749,8 @@
             html += '</tr></thead><tbody>';
 
             validAttendance.forEach(record => {
-                const statusClass = `status-${record.status}`;
+                const statusClean = (record.status || '').toLowerCase().replace(/\s+/g, '-');
+                const statusClass = `status-${statusClean}`;
                 const lateInfo = record.is_late ? formatMinutesToHours(record.late_minutes) : '-';
                 const overtime = record.overtime ? formatTimeString(record.overtime) : '-';
                 const workHours = calculateWorkHoursDisplay(record);

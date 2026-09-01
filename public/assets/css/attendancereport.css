@@ -246,22 +246,36 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   FullCalendar - Custom Modern Styling & Global Overrides
+   FullCalendar - Custom Modern Styling & Layout Overrides
    ══════════════════════════════════════════════════════════════════════════ */
 
-#attendanceCalendar {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 20px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-    min-height: 680px;
+#calendar-pane {
+    width: 100% !important;
 }
 
-/* Fix FullCalendar Header Rows (Override any black thead) */
-#attendanceCalendar table,
-#attendanceCalendar thead,
-#attendanceCalendar th,
+#attendanceCalendar {
+    width: 100% !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+    min-height: 650px !important;
+}
+
+.fc {
+    width: 100% !important;
+}
+
+.fc table {
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+
+/* Fix FullCalendar Header Rows (Override any global thead { background: black }) */
+#attendanceCalendar table thead,
+#attendanceCalendar table thead tr,
+#attendanceCalendar table thead th,
 #attendanceCalendar .fc-col-header,
 #attendanceCalendar .fc-col-header-cell {
     background-color: #f8fafc !important;
@@ -276,12 +290,13 @@
 
 #attendanceCalendar .fc-col-header-cell-cushion {
     color: #334155 !important;
-    font-size: 12.5px !important;
+    font-size: 13px !important;
     font-weight: 700 !important;
     text-decoration: none !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
     padding: 4px !important;
+    display: inline-block !important;
 }
 
 #attendanceCalendar .fc-day-sun .fc-col-header-cell-cushion {
@@ -298,6 +313,10 @@
     border: 1px solid #e2e8f0 !important;
 }
 
+#attendanceCalendar .fc-daygrid-day-frame {
+    min-height: 90px !important;
+}
+
 #attendanceCalendar .fc-daygrid-day {
     background-color: #ffffff !important;
 }
@@ -306,12 +325,16 @@
     background-color: #fff8f5 !important;
 }
 
+#attendanceCalendar .fc-daygrid-day-top {
+    padding: 4px 6px !important;
+}
+
 #attendanceCalendar .fc-daygrid-day-number {
     color: #334155 !important;
     font-size: 13px !important;
     font-weight: 600 !important;
     text-decoration: none !important;
-    padding: 6px 8px !important;
+    padding: 4px 6px !important;
 }
 
 #attendanceCalendar .fc-day-sun .fc-daygrid-day-number {
@@ -331,12 +354,12 @@
     margin: 2px 4px !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
     border: 1px solid rgba(0, 0, 0, 0.05) !important;
-    cursor: pointer;
-    transition: transform 0.15s ease;
+    cursor: pointer !important;
+    transition: transform 0.15s ease !important;
 }
 
 #attendanceCalendar .fc-daygrid-event:hover {
-    transform: translateY(-1px);
+    transform: translateY(-1px) !important;
 }
 
 #attendanceCalendar .fc-event-title {
@@ -346,6 +369,10 @@
 }
 
 /* FullCalendar Toolbar Header & Buttons */
+#attendanceCalendar .fc-toolbar {
+    margin-bottom: 1.5rem !important;
+}
+
 #attendanceCalendar .fc-toolbar-title {
     font-size: 20px !important;
     font-weight: 700 !important;
