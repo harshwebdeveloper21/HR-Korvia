@@ -134,14 +134,15 @@ class EmployeeController extends ResourceController
     {
         $db = \Config\Database::connect();
         $rows = $db->table('user_info')
-            ->select('employee_id')
-            ->where('employee_id IS NOT NULL')
-            ->where('employee_id !=', '')
+            ->select('user_info.employee_id, user_info.user_id')
+            ->join('users', 'users.id = user_info.user_id')
+            ->where('users.is_deleted', 0)
+            ->where('user_info.employee_id IS NOT NULL')
+            ->where('user_info.employee_id !=', '')
             ->get()
             ->getResultArray();
 
         $existing = [];
-        $maxNum = 0;
 
         foreach ($rows as $r) {
             $raw = trim((string)($r['employee_id'] ?? ''));
@@ -153,13 +154,19 @@ class EmployeeController extends ResourceController
             // Match digits
             if (preg_match('/(\d+)/', $raw, $m)) {
                 $num = (int)$m[1];
-                if ($num > $maxNum) {
-                    $maxNum = $num;
-                }
                 $existing['emp-' . str_pad($num, 3, '0', STR_PAD_LEFT)] = true;
                 $existing['emp-' . $num] = true;
                 $existing[(string)$num] = true;
             }
+        }
+
+        // Also add users.id of active users so fallback IDs don't collide
+        $userRows = $db->table('users')->select('id')->where('is_deleted', 0)->get()->getResultArray();
+        foreach ($userRows as $u) {
+            $uId = (int)$u['id'];
+            $existing['emp-' . str_pad($uId, 3, '0', STR_PAD_LEFT)] = true;
+            $existing['emp-' . $uId] = true;
+            $existing[(string)$uId] = true;
         }
 
         if (!empty($preferredId)) {
@@ -169,7 +176,8 @@ class EmployeeController extends ResourceController
             }
         }
 
-        $nextNum = max($maxNum + 1, 1);
+        // Find the lowest positive integer sequence available
+        $nextNum = 1;
         while (
             isset($existing['emp-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT)]) ||
             isset($existing['emp-' . $nextNum]) ||
@@ -222,7 +230,7 @@ class EmployeeController extends ResourceController
                 'min_length' => 'Password must be at least 6 characters long.'
             ];
         }
-        // Define validation rules with custom error messages
+        // Define validation rules matching required fields
         $rules = [
             1 => [
                 'firstname' => [
@@ -232,7 +240,12 @@ class EmployeeController extends ResourceController
                         'min_length' => 'First name must be at least 3 characters long.'
                     ]
                 ],
-
+                'lastname' => [
+                    'rules' => 'required',
+                    'errors' => [
+                        'required' => 'Last name is required.'
+                    ]
+                ],
                 'email' => [
                     'rules' => 'required|valid_email',
                     'errors' => [
@@ -244,43 +257,30 @@ class EmployeeController extends ResourceController
                 'password' => [
                     'rules' => $passwordRules,
                     'errors' => $passwordErrors
-                ],
-                'gender' => [
-                    'rules' => 'required',
-                    'errors' => [
-                        'required' => 'Gender is required.'
-                    ]
-                ],
+                ]
             ],
             2 => [
                 'address_1' => [
-                    'rules' => 'required',
-                    'errors' => ['required' => 'Address is required.']
+                    'rules' => 'permit_empty'
                 ],
                 'city_id' => [
-                    'rules' => 'required',
-                    'errors' => ['required' => 'City is required.']
+                    'rules' => 'permit_empty'
                 ],
                 'country_id' => [
-                    'rules' => 'required',
-                    'errors' => ['required' => 'Country is required.']
+                    'rules' => 'permit_empty'
                 ],
                 'state_id' => [
-                    'rules' => 'required',
-                    'errors' => ['required' => 'State is required.']
+                    'rules' => 'permit_empty'
                 ],
                 'postcode' => [
-                    'rules' => 'required|max_length[8]',
+                    'rules' => 'permit_empty|max_length[8]',
                     'errors' => [
-                        'required' => 'Postcode is required.',
                         'max_length' => 'Postcode cannot exceed 8 characters.'
                     ]
                 ],
                 'contact_number' => [
-                    'rules' => 'required|exact_length[10]|numeric',
+                    'rules' => 'permit_empty|numeric',
                     'errors' => [
-                        'required' => 'Contact number is required.',
-                        'exact_length' => 'Contact number must be exactly 10 digits.',
                         'numeric' => 'Contact number must contain only numbers.'
                     ]
                 ],
@@ -291,10 +291,6 @@ class EmployeeController extends ResourceController
                     'errors' => [
                         'required' => 'Employee ID is required.'
                     ]
-                ],
-                'designation_id' => [
-                    'rules' => 'required',
-                    'errors' => ['required' => 'Designation is required.']
                 ],
                 'department_id' => [
                     'rules' => 'required',
@@ -328,16 +324,21 @@ class EmployeeController extends ResourceController
             ]);
         }
 
-        // Check employee_id uniqueness directly for step 3
+        // Check employee_id uniqueness directly for step 3 against active users
         if ($step == 3) {
             $empId = trim((string)$this->request->getPost('employee_id'));
             if (!empty($empId)) {
                 $db = \Config\Database::connect();
-                $chkBuilder = $db->table('user_info')->where('TRIM(LOWER(employee_id))', strtolower($empId));
-                if (!empty($userId)) {
-                    $chkBuilder->where('user_id !=', $userId);
-                }
-                if ($chkBuilder->countAllResults() > 0) {
+                // Simple direct check: does any OTHER active user already have this employee_id?
+                $sql = "SELECT COUNT(*) as cnt FROM user_info
+                        INNER JOIN users ON users.id = user_info.user_id
+                        WHERE users.is_deleted = 0
+                        AND LOWER(TRIM(user_info.employee_id)) = LOWER(TRIM(?))
+                        AND user_info.user_id != ?";
+                $bindings = [$empId, (int)($userId ?? 0)];
+                $query = $db->query($sql, $bindings);
+                $cnt = (int)($query->getRow()->cnt ?? 0);
+                if ($cnt > 0) {
                     return $this->response->setJSON([
                         'status' => false,
                         'errors' => ['employee_id' => 'This Employee ID (' . htmlspecialchars($empId) . ') is already assigned to another employee.']
@@ -359,25 +360,30 @@ class EmployeeController extends ResourceController
 
         $data = $this->request->getPost();
 
-        // Validate required fields
-        if (!isset($data['gender'])) {
-            return $this->failValidationErrors(['Gender is required']);
-        }
+        // Default gender if not provided
+        $gender = $data['gender'] ?? 'male';
 
         // Check if the email is already taken
-        $existingUser = $this->userModel->where('email', $data['email'])->first();
+        $existingUser = $this->userModel->where('email', $data['email'])->where('is_deleted', 0)->first();
         if ($existingUser) {
             return $this->failValidationErrors(['This email is already registered. Please use a different one.']);
         }
 
-        // Ensure employee_id is set and unique
+        // Ensure employee_id is set and unique among active users
         $empId = isset($data['employee_id']) ? trim($data['employee_id']) : '';
         if (empty($empId)) {
             $empId = $this->getGuaranteedUniqueEmployeeId();
             $data['employee_id'] = $empId;
         } else {
-            $duplicateEmp = $this->userInfoModel->where('employee_id', $empId)->first();
-            if ($duplicateEmp) {
+            // Check if this employee_id is taken by another active user
+            $db = \Config\Database::connect();
+            $sql = "SELECT COUNT(*) as cnt FROM user_info
+                    INNER JOIN users ON users.id = user_info.user_id
+                    WHERE users.is_deleted = 0
+                    AND LOWER(TRIM(user_info.employee_id)) = LOWER(TRIM(?))";
+            $query = $db->query($sql, [$empId]);
+            $cnt = (int)($query->getRow()->cnt ?? 0);
+            if ($cnt > 0) {
                 // Auto-resolve to next unique ID so employee creation is always smooth
                 $empId = $this->getGuaranteedUniqueEmployeeId();
                 $data['employee_id'] = $empId;
@@ -641,14 +647,22 @@ class EmployeeController extends ResourceController
         $employee_id = isset($data['employee_id']) ? trim($data['employee_id']) : null;
         $role = $data['role'] ?? $existingUser['role']; // Keep old role if not provided
 
-        // Check if employee_id already belongs to another user
+        // Check if employee_id already belongs to another active user
         if (!empty($employee_id)) {
-            $duplicateEmp = $this->userInfoModel->where('employee_id', $employee_id)
-                ->where('user_id !=', $id)
-                ->first();
-            if ($duplicateEmp) {
+            $db = \Config\Database::connect();
+            $sql = "SELECT COUNT(*) as cnt FROM user_info
+                    INNER JOIN users ON users.id = user_info.user_id
+                    WHERE users.is_deleted = 0
+                    AND LOWER(TRIM(user_info.employee_id)) = LOWER(TRIM(?))
+                    AND user_info.user_id != ?";
+            $query = $db->query($sql, [$employee_id, (int)$id]);
+            $cnt = (int)($query->getRow()->cnt ?? 0);
+            if ($cnt > 0) {
                 return $this->failValidationErrors(['employee_id' => 'This Employee ID is already assigned to another employee.']);
             }
+        } else {
+            // If no employee_id posted, keep the existing one
+            $employee_id = $userInfo['employee_id'] ?? null;
         }
 
         // Update the users table
@@ -829,8 +843,14 @@ class EmployeeController extends ResourceController
             return $this->failNotFound('User not found');
         }
         // **Do NOT return hashed password in response**
-        // unset($user['password']);
+        unset($user['password']);
+
         $userInfo = $this->userInfoModel->where('user_id', $id)->first();
+        if ($userInfo) {
+            if (empty($userInfo['employee_id'])) {
+                $userInfo['employee_id'] = 'EMP-' . sprintf('%03d', $user['id']);
+            }
+        }
 
         // Append full image path if profile_image exists
         if ($userInfo && !empty($userInfo['profile_image'])) {

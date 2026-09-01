@@ -247,7 +247,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>First Name</label>
+                                    <label>First Name <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="mdi mdi-account fs-5"></i></span>
@@ -260,7 +260,7 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Last Name</label>
+                                    <label>Last Name <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i
@@ -276,7 +276,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Email</label>
+                                    <label>Email <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i
@@ -290,7 +290,7 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Password</label>
+                                    <label>Password <span class="text-danger password-required-star">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i
@@ -549,7 +549,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
-                                        <label>Department</label>
+                                        <label>Department <span class="text-danger">*</span></label>
                                         <button type="button"
                                             class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white"
                                             style="background-color: #E66136;font-size:14px" data-bs-toggle="modal"
@@ -613,7 +613,7 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Joining Date</label>
+                                    <label>Joining Date <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i
@@ -646,7 +646,7 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Salary</label>
+                                    <label>Salary <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i
@@ -1107,45 +1107,6 @@
 
     $(document).ready(function () {
         const token = localStorage.getItem('token'); // JWT token from login
-
-        // Fetch the last employee ID and increment it
-        $.ajax({
-            url: '<?= base_url("api/employee/lastEmployeeId") ?>',
-            type: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            success: function (response) {
-                if (response.status) {
-                    let formattedId = response.formatted_id || (response.next_employee_id ? `EMP-${String(response.next_employee_id).padStart(3, '0')}` : 'EMP-001');
-
-                    if (!$('#id').val()) {
-                        if (!$('#employee_id').val() || $('#employee_id').val().trim() === '') {
-                            $('#employee_id').val(formattedId);
-                            $('#employee_id_display').val(formattedId);
-                        }
-                    }
-                }
-            },
-            error: function () {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Fetch Failed',
-                    text: 'Failed to fetch the last employee ID.',
-                    confirmButtonText: 'OK',
-                    buttonsStyling: false,
-                    customClass: {
-                        confirmButton: 'hr-btnbg',
-
-                    }
-                });
-            }
-
-        });
-    });
-
-    $(document).ready(function () {
-
         const params = new URLSearchParams(window.location.search);
         let userId = params.get('id');
 
@@ -1159,6 +1120,11 @@
         }
 
         if (userId) {
+            // ================= EDIT MODE =================
+            $('h4.card-title').text('Edit Employee');
+            $('.password-required-star').hide();
+            $('#password').val('').attr('placeholder', 'Leave blank to keep current password');
+
             $.ajax({
                 url: `<?= base_url("api/employee/") ?>${userId}`,
                 type: 'GET',
@@ -1175,8 +1141,8 @@
                         $('#firstname').val(userInfo.firstname);
                         $('#lastname').val(userInfo.lastname);
                         $('#email').val(user.email);
-                        $('#password').val(user.password);
-                        $('input[name="gender"][value="' + userInfo.gender + '"]').prop('checked', true);
+                        $('#password').val(''); // Empty on edit
+                        $('input[name="gender"][value="' + (userInfo.gender || 'male') + '"]').prop('checked', true);
                         $('#marital_status').val(userInfo.marital_status);
                         $('#date_of_birth').val(userInfo.date_of_birth);
                         $('#nationality').val(userInfo.nationality);
@@ -1188,23 +1154,23 @@
                         $('#country_id_main').val(userInfo.country_id);
                         $('#contact_number').val(userInfo.contact_number);
                         $('#emergency_contact').val(userInfo.emergency_contact);
-                        $('#employee_id').val(userInfo.employee_id || '');
+
+                        const empIdVal = userInfo.employee_id || ('EMP-' + String(user.id).padStart(3, '0'));
+                        $('#employee_id').val(empIdVal);
+                        $('#employee_id_display').val(empIdVal);
 
                         $('#designation_id').val(userInfo.designation_id);
                         $('#department_id').val(userInfo.department_id);
                         $('#joining_date').val(userInfo.joining_date);
                         $('#working_location').val(userInfo.working_location);
                         $('#emp_type').val(userInfo.emp_type);
-                        $('#role').val(userInfo.role);
+                        $('#role').val(userInfo.role || 'employee');
                         $('#salary').val(userInfo.salary);
                         $('#remaining_paid_leave').val(userInfo.remaining_paid_leave);
                         $('#remaining_sick_leave').val(userInfo.remaining_sick_leave);
 
                         if (userInfo.profile_image) {
-                            console.log("Profile Image URL:", userInfo.profile_image); // Debugging
-                            $('.profile_image').attr('src', userInfo.profile_image).on('error', function () {
-                                console.error("Image failed to load:", userInfo.profile_image);
-                            }).show();
+                            $('.profile_image').attr('src', userInfo.profile_image).show();
                         } else {
                             $('.profile_image').hide();
                         }
@@ -1221,10 +1187,8 @@
                             empStatus = 'Active';
                         }
                         $('#status').val(empStatus);
-
                         $('#last_working_day').val(userInfo.last_working_day || '');
 
-                        $('h4.card-title').text('Edit Employee');
                         showStep(1);
                     } else {
                         Swal.fire({
@@ -1235,17 +1199,38 @@
                             buttonsStyling: false,
                             customClass: {
                                 confirmButton: 'hr-btnbg',
-
                             }
                         });
                     }
-
                 },
                 error: function () {
                     $('#form_error').text('Error fetching employee data.').show();
                 }
             });
         } else {
+            // ================= CREATE MODE =================
+            $('h4.card-title').text('Add Employee');
+            $('.password-required-star').show();
+            $('#password').val('').attr('placeholder', 'Enter a secure password');
+
+            // Fetch the last employee ID for new employee
+            $.ajax({
+                url: '<?= base_url("api/employee/lastEmployeeId") ?>',
+                type: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                success: function (response) {
+                    if (response.status) {
+                        let formattedId = response.formatted_id || (response.next_employee_id ? `EMP-${String(response.next_employee_id).padStart(3, '0')}` : 'EMP-001');
+
+                        if (!$('#employee_id').val() || $('#employee_id').val().trim() === '') {
+                            $('#employee_id').val(formattedId);
+                            $('#employee_id_display').val(formattedId);
+                        }
+                    }
+                }
+            });
             showStep(1);
         }
     });
