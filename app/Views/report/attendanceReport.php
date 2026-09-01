@@ -2,18 +2,17 @@
 <?= $this->section("content") ?>
 
 <link rel="stylesheet" href="<?= base_url(env("ImagePath") . "assets/css/attendancereport.css?v=" . time()) ?>">
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 
 <div class="filter-section">
     <!-- Header Controls -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
             <h4 class="card-title fw-bolder mb-1">Attendance Report</h4>
-            <p class="text-muted mb-0 font-13" id="currentReportLabel">Monthly overview and daily employee punch tracking</p>
+            <p class="text-muted mb-0 font-13" id="currentReportLabel">Monthly overview and employee daily punch matrix</p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn hr-btnbg btnpdingam" onclick="exportActiveTabExcel();" style="white-space: nowrap;">
-                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+            <button type="button" class="btn hr-btnbg btnpdingam" onclick="exportTabularReportExcel();" style="white-space: nowrap;">
+                <i class="mdi mdi-file-excel iconfontsize"></i> Export Tabular Report
             </button>
             <button type="button" class="btn hr-btnbg btnpdingam" onclick="fetchAttenReport();" style="white-space: nowrap;">
                 <i class="mdi mdi-refresh me-1"></i> Generate Report
@@ -90,11 +89,6 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily-pane" type="button" role="tab" aria-controls="daily-pane" aria-selected="false">
-                <i class="mdi mdi-format-list-bulleted fs-5"></i> Daily Attendance Report
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
             <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-pane" type="button" role="tab" aria-controls="calendar-pane" aria-selected="false">
                 <i class="mdi mdi-calendar-month fs-5"></i> Calendar View
             </button>
@@ -138,31 +132,7 @@
         </div>
 
         <!-- ══════════════════════════════════════════════════════
-             TAB 2: DAILY ATTENDANCE REPORT TABLE
-             ══════════════════════════════════════════════════════ -->
-        <div class="tab-pane fade" id="daily-pane" role="tabpanel" aria-labelledby="daily-tab">
-            <div class="table-responsive p-1">
-                <table id="dailyAttendanceTable" class="table table-striped table-bordered w-100 font-13">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Employee Name</th>
-                            <th>Department</th>
-                            <th>Date</th>
-                            <th>Check-In</th>
-                            <th>Check-Out</th>
-                            <th>Work Hours</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dailyTableBody">
-                        <!-- Populated via AJAX -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ══════════════════════════════════════════════════════
-             TAB 3: CALENDAR VIEW
+             TAB 2: CALENDAR VIEW
              ══════════════════════════════════════════════════════ -->
         <div class="tab-pane fade" id="calendar-pane" role="tabpanel" aria-labelledby="calendar-tab">
             <div id="attendanceCalendar"></div>
@@ -174,7 +144,7 @@
     <div class="attendance-chart-card mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="fw-bold mb-0 text-dark">
-                <i class="mdi mdi-chart-timeline-variant text-primary me-1"></i> Attendance Distribution Trend
+                <i class="mdi mdi-chart-timeline-variant text-primary me-1"></i> Daily Attendance Trend
             </h6>
         </div>
         <div style="height: 260px;">
@@ -184,16 +154,13 @@
 
 </div>
 
-<!-- DataTables & Chart Scripts -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<!-- Chart Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
     let AttendanceChartInstance = null;
     let attendanceCalendarInstance = null;
     let currentMatrixData = [];
-    let currentDailyData = [];
     let currentMonthDetails = {};
 
     let csrfTokenName = '<?= csrf_token() ?>';
@@ -270,7 +237,6 @@
 
                 if (response && response.status === 'success') {
                     currentMatrixData = response.matrixData || [];
-                    currentDailyData = response.dailyData || [];
                     currentMonthDetails = response.monthDetails || {};
 
                     // Update Title Label
@@ -281,13 +247,10 @@
                     // 1. Render Tabular Matrix
                     renderMatrixTable(currentMatrixData, currentMonthDetails);
 
-                    // 2. Render Daily Report Table
-                    renderDailyTable(currentDailyData);
-
-                    // 3. Render / Update FullCalendar
+                    // 2. Render / Update FullCalendar
                     renderCalendar(response.calendarEvents || [], currentMonthDetails);
 
-                    // 4. Update Trend Chart
+                    // 3. Update Trend Chart
                     if (response.chartData) {
                         updateChart(response.chartData);
                     }
@@ -392,72 +355,7 @@
     }
 
     // ══════════════════════════════════════════════════════
-    // Render Tab 2: Daily Attendance Report Table
-    // ══════════════════════════════════════════════════════
-    function renderDailyTable(dailyData) {
-        if ($.fn.DataTable.isDataTable('#dailyAttendanceTable')) {
-            $('#dailyAttendanceTable').DataTable().clear().destroy();
-        }
-
-        const tableBody = document.getElementById('dailyTableBody');
-        tableBody.innerHTML = '';
-
-        if (!dailyData || !dailyData.length) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted">No attendance punch records found for this period</td></tr>';
-            return;
-        }
-
-        let rowsHtml = '';
-        dailyData.forEach(row => {
-            const name = ((row.firstname || '') + ' ' + (row.lastname || '')).trim() || 'Employee #' + (row.user_id || '');
-            const dept = row.department_name || 'N/A';
-            const checkIn = row.check_in_time ? new Date(row.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
-            const checkOut = row.check_out_time ? new Date(row.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
-            const workHours = row.work_hours || '--';
-            
-            const st = (row.status || '').toLowerCase();
-            let statusBadge = '<span class="badge bg-secondary">Unknown</span>';
-            if (st === 'present') {
-                statusBadge = '<span class="badge bg-success">Present</span>';
-            } else if (st === 'half-day' || st === 'half day') {
-                statusBadge = '<span class="badge bg-info text-dark">Half Day</span>';
-            } else if (st === 'absent') {
-                statusBadge = '<span class="badge bg-danger">Absent</span>';
-            }
-
-            rowsHtml += `
-                <tr>
-                    <td class="fw-semibold text-dark">${name}</td>
-                    <td>${dept}</td>
-                    <td>${row.date || ''}</td>
-                    <td><i class="mdi mdi-login text-success me-1"></i>${checkIn}</td>
-                    <td><i class="mdi mdi-logout text-danger me-1"></i>${checkOut}</td>
-                    <td><i class="mdi mdi-clock-outline text-muted me-1"></i>${workHours}</td>
-                    <td>${statusBadge}</td>
-                </tr>
-            `;
-        });
-
-        tableBody.innerHTML = rowsHtml;
-
-        $('#dailyAttendanceTable').DataTable({
-            "paging": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "pageLength": 15,
-            "language": {
-                "search": "Search records:",
-                "lengthMenu": "Show _MENU_ records",
-                "info": "Showing _START_ to _END_ of _TOTAL_ records",
-                "infoEmpty": "No records found",
-                "zeroRecords": "No matching records found"
-            }
-        });
-    }
-
-    // ══════════════════════════════════════════════════════
-    // Render Tab 3: FullCalendar View
+    // Render Tab 2: FullCalendar View
     // ══════════════════════════════════════════════════════
     function renderCalendar(events, monthDetails) {
         const calendarEl = document.getElementById('attendanceCalendar');
@@ -575,73 +473,62 @@
     }
 
     // ══════════════════════════════════════════════════════
-    // Excel Export for Active Tab
+    // Export Tabular Matrix Report to Excel
     // ══════════════════════════════════════════════════════
-    function exportActiveTabExcel() {
+    function exportTabularReportExcel() {
         if (typeof XLSX === 'undefined') {
             alert('Export library is loading. Please try again.');
             return;
         }
 
-        const isTabularActive = $('#tabular-tab').hasClass('active');
-        const year = $('#year').val();
-        const month = $('#month').val();
-        const dateStr = new Date().toISOString().slice(0, 10);
-
-        if (isTabularActive && currentMatrixData.length > 0) {
-            // Export Tabular Matrix
-            const totalDays = currentMonthDetails.totalDays || 31;
-            const headerRow = ['Employee Name', 'Department'];
-            for (let d = 1; d <= totalDays; d++) {
-                headerRow.push('Day ' + d);
-            }
-            headerRow.push('Total Present', 'Total Absent', 'Total Leave', 'Total Half Day');
-
-            const rows = [headerRow];
-
-            currentMatrixData.forEach(emp => {
-                const name = ((emp.firstname || '') + ' ' + (emp.lastname || '')).trim() || 'Employee #' + emp.user_id;
-                const row = [name, emp.department_name || ''];
-
-                for (let d = 1; d <= totalDays; d++) {
-                    const dayObj = emp.days && emp.days[d] ? emp.days[d] : { code: '-' };
-                    row.push(dayObj.code || '-');
-                }
-
-                const sum = emp.summary || { present: 0, absent: 0, leave: 0, half_day: 0 };
-                row.push(sum.present, sum.absent, sum.leave, sum.half_day);
-                rows.push(row);
-            });
-
-            const ws = XLSX.utils.aoa_to_sheet(rows);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Attendance_Matrix");
-            XLSX.writeFile(wb, `Attendance_Matrix_${year}_${month}_${dateStr}.xlsx`);
-        } else if (currentDailyData.length > 0) {
-            // Export Daily Table
-            const headerRow = ['Employee Name', 'Department', 'Date', 'Check In', 'Check Out', 'Work Hours', 'Status'];
-            const rows = [headerRow];
-
-            currentDailyData.forEach(r => {
-                const name = ((r.firstname || '') + ' ' + (r.lastname || '')).trim() || 'Employee #' + r.user_id;
-                rows.push([
-                    name,
-                    r.department_name || '',
-                    r.date || '',
-                    r.check_in_time || '',
-                    r.check_out_time || '',
-                    r.work_hours || '',
-                    r.status || ''
-                ]);
-            });
-
-            const ws = XLSX.utils.aoa_to_sheet(rows);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Daily_Attendance");
-            XLSX.writeFile(wb, `Daily_Attendance_${year}_${month}_${dateStr}.xlsx`);
-        } else {
+        if (!currentMatrixData || currentMatrixData.length === 0) {
             alert('No attendance data available to export.');
+            return;
         }
+
+        const year = $('#year').val() || new Date().getFullYear();
+        const month = $('#month').val() || (new Date().getMonth() + 1);
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const totalDays = currentMonthDetails.totalDays || 31;
+
+        // Build Excel Table Headers
+        const headerRow = ['Employee Name', 'Department'];
+        for (let d = 1; d <= totalDays; d++) {
+            headerRow.push('Day ' + d);
+        }
+        headerRow.push('Total Present', 'Total Absent', 'Total Leave', 'Total Half Day');
+
+        const rows = [headerRow];
+
+        // Build Data Rows
+        currentMatrixData.forEach(emp => {
+            const name = ((emp.firstname || '') + ' ' + (emp.lastname || '')).trim() || ('Employee #' + emp.user_id);
+            const dept = emp.department_name || 'General';
+            const row = [name, dept];
+
+            for (let d = 1; d <= totalDays; d++) {
+                const dayObj = emp.days && emp.days[d] ? emp.days[d] : { code: '-' };
+                row.push(dayObj.code || '-');
+            }
+
+            const sum = emp.summary || { present: 0, absent: 0, leave: 0, half_day: 0 };
+            row.push(sum.present, sum.absent, sum.leave, sum.half_day);
+            rows.push(row);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+
+        // Set column widths for nice readability
+        const colWidths = [{ wch: 24 }, { wch: 18 }];
+        for (let d = 1; d <= totalDays; d++) {
+            colWidths.push({ wch: 6 });
+        }
+        colWidths.push({ wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 });
+        ws['!cols'] = colWidths;
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Attendance_Matrix");
+        XLSX.writeFile(wb, `Attendance_Tabular_Report_${year}_Month_${month}_${dateStr}.xlsx`);
     }
 
     $(document).ready(function () {
