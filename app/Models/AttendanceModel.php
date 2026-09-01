@@ -27,7 +27,7 @@ class AttendanceModel extends Model
     public function getAttendanceReport($departmentId = null, $employeeId = null, $startDate = null, $endDate = null, $year = null, $month = null)
     {
         $builder = $this->db->table('attendance');
-        $builder->select('attendance.user_id, user_info.firstname, user_info.lastname, department.department_name, attendance.date, attendance.status')
+        $builder->select('attendance.id, attendance.user_id, user_info.firstname, user_info.lastname, user_info.employee_id, user_info.profile_image, department.department_name, attendance.date, attendance.status, attendance.check_in_time, attendance.check_out_time, attendance.work_hours, attendance.overtime, attendance.is_late')
                ->join('user_info', 'user_info.user_id = attendance.user_id', 'left')
                ->join('department', 'department.id = user_info.department_id', 'left')
                ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)")
