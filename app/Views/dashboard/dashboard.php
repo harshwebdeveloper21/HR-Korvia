@@ -1324,12 +1324,13 @@
                                                 <?php foreach ($jobsData as $job) : ?>
                                                     <div class="border rounded p-3 mb-2 attendance-item">
                                                         <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $job['job_title'] ?></div>
-                                                        <div class="d-flex justify-content-between align-items-center mt-1">
-                                                            <div class="small text-muted">
+                                                        <div class="d-flex flex-column mt-1">
+                                                            <div class="small text-muted mb-1">
                                                                 Type: <?= $job['job_type'] ?> | Status: <span class="badge <?= $job['status'] == 'Open' ? 'bg-success' : 'bg-secondary' ?>"><?= $job['status'] ?></span>
                                                             </div>
                                                             <div class="small text-muted">
                                                                 Posted: <?= date('d M Y', strtotime($job['post_date'])) ?>
+                                                                <?= !empty($job['close_date']) ? ' | Close Date: ' . date('d M Y', strtotime($job['close_date'])) : '' ?>
                                                             </div>
                                                         </div>
                                                     </div>

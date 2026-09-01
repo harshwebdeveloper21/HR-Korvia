@@ -201,13 +201,20 @@ class AdminController extends ResourceController
         $tasksData = $taskModel->select('task.*, users.username, user_info.profile_image')
             ->join('users', 'users.id = task.user_id')
             ->join('user_info', 'user_info.user_id = task.user_id', 'left')
+            ->where('task.due_date >=', date('Y-m-d'))
             ->orderBy('task.created_at', 'DESC')
             ->limit(5)
             ->findAll();
 
         // Fetch Recruitment & Hiring (Top 5 Jobs)
         $jobModel = new \App\Models\JobModel();
-        $jobsData = $jobModel->orderBy('created_at', 'DESC')
+        $jobsData = $jobModel->groupStart()
+                ->where('close_date >=', date('Y-m-d'))
+                ->orWhere('close_date IS NULL')
+                ->orWhere('close_date', '')
+                ->orWhere('close_date', '0000-00-00')
+            ->groupEnd()
+            ->orderBy('created_at', 'DESC')
             ->limit(5)
             ->findAll();
 
