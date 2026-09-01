@@ -34,9 +34,10 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="exampleInputPassword1">Password</label>
-                                    <div class="input-wrapper">
+                                    <div class="input-wrapper" style="position: relative;">
                                         <i class="mdi mdi-lock"></i>
-                                        <input type="password" name="password" class="form-control form-control-lg" id="exampleInputPassword1" placeholder="Enter your password">
+                                        <input type="password" name="password" class="form-control form-control-lg" id="exampleInputPassword1" placeholder="Enter your password" style="padding-right: 40px;">
+                                        <i class="mdi mdi-eye-outline toggle-password" style="position: absolute; right: 15px; left: auto; top: 50%; transform: translateY(-50%); cursor: pointer; color: #a9a9a9; font-size: 1.2rem;"></i>
                                     </div>
                                     <span id="passwordError" class="text-danger"></span>
                                 </div>
@@ -148,6 +149,17 @@
         // Clear error message when user starts typing
         $('#email, #password').on('input', function() {
             $(this).next('.error-message').text('');
+        });
+
+        // Toggle password visibility
+        $('.toggle-password').click(function() {
+            $(this).toggleClass('mdi-eye-outline mdi-eye-off-outline');
+            var input = $(this).siblings('input');
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+            } else {
+                input.attr('type', 'password');
+            }
         });
     </script>
     <?= $this->include("dashboard/footer_link.php") ?>
