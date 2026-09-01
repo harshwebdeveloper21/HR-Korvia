@@ -138,6 +138,49 @@
             border-bottom-right-radius: 0 !important;
         }
 
+        /* ══════════════════════════════════════════════════════
+           Unified Table Action Icons Standard Across Entire Portal
+           ══════════════════════════════════════════════════════ */
+        table td a.text-primary i,
+        table td a[title*="View" i] i,
+        table td .text-primary i.mdi-eye {
+            color: #2563eb !important;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+        table td a.text-primary:hover i,
+        table td a[title*="View" i]:hover i {
+            color: #1d4ed8 !important;
+            transform: scale(1.15);
+        }
+
+        table td a.text-warning i,
+        table td button.text-warning i,
+        table td a[title*="Edit" i] i,
+        table td .text-warning i.mdi-pencil {
+            color: #f59e0b !important;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+        table td a.text-warning:hover i,
+        table td button.text-warning:hover i,
+        table td a[title*="Edit" i]:hover i {
+            color: #d97706 !important;
+            transform: scale(1.15);
+        }
+
+        table td a.text-danger i,
+        table td button.text-danger i,
+        table td a[title*="Delete" i] i,
+        table td .text-danger i.mdi-delete {
+            color: #ef4444 !important;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+        table td a.text-danger:hover i,
+        table td button.text-danger:hover i,
+        table td a[title*="Delete" i]:hover i {
+            color: #dc2626 !important;
+            transform: scale(1.15);
+        }
+
         /* Protect all inline-hidden elements from being overridden */
         [style*="display: none"], [style*="display:none"], [hidden] {
             display: none !important;

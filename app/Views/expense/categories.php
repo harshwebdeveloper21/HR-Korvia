@@ -50,7 +50,7 @@
                                     <td><?= $index + 1 ?></td>
                                     <td class="fw-semibold text-dark"><?= esc($cat['name']) ?></td>
                                     <td>
-                                        <button type="button" class="btn btn-link text-primary p-0 me-2" title="Edit" onclick="editCategory(<?= $cat['id'] ?>, '<?= esc($cat['name'], 'js') ?>')">
+                                        <button type="button" class="btn btn-link text-warning p-0 me-2" title="Edit" onclick="editCategory(<?= $cat['id'] ?>, '<?= esc($cat['name'], 'js') ?>')">
                                             <i class="mdi mdi-pencil fs-5"></i>
                                         </button>
                                         <a href="javascript:void(0)" class="text-danger" title="Delete"

@@ -323,7 +323,7 @@
                                                 <?php endif; ?>
                                             </td>
                                             <td class="desktop-only-col">
-                                                <a href="<?= base_url('expenses/edit/'.$expense['id']) ?>" class="text-primary me-2" title="Edit">
+                                                <a href="<?= base_url('expenses/edit/'.$expense['id']) ?>" class="text-warning me-2" title="Edit">
                                                     <i class="mdi mdi-pencil fs-5"></i>
                                                 </a>
                                                 <?php if($user->role !== 'employee'): ?>
