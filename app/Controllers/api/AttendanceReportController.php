@@ -280,9 +280,9 @@ class AttendanceReportController extends Controller
                 'title'           => '🎉 ' . $hTitle,
                 'start'           => $hDate,
                 'allDay'          => true,
-                'backgroundColor' => '#6366f1',
-                'borderColor'     => '#4f46e5',
-                'textColor'       => '#ffffff',
+                'backgroundColor' => '#ede9fe',
+                'borderColor'     => '#ddd6fe',
+                'textColor'       => '#6d28d9',
                 'extendedProps'   => [
                     'type'        => 'holiday',
                     'description' => $hTitle
@@ -300,9 +300,9 @@ class AttendanceReportController extends Controller
                         'title'           => '🟢 Present (' . $dInfo['tooltip'] . ')',
                         'start'           => $dInfo['date'],
                         'allDay'          => true,
-                        'backgroundColor' => '#10b981',
-                        'borderColor'     => '#059669',
-                        'textColor'       => '#ffffff'
+                        'backgroundColor' => '#dcfce7',
+                        'borderColor'     => '#bbf7d0',
+                        'textColor'       => '#15803d'
                     ];
                 } elseif ($dInfo['statusType'] === 'halfday') {
                     $calendarEvents[] = [
@@ -310,9 +310,9 @@ class AttendanceReportController extends Controller
                         'title'           => '🟡 Half Day (' . $dInfo['tooltip'] . ')',
                         'start'           => $dInfo['date'],
                         'allDay'          => true,
-                        'backgroundColor' => '#f59e0b',
-                        'borderColor'     => '#d97706',
-                        'textColor'       => '#ffffff'
+                        'backgroundColor' => '#e0f2fe',
+                        'borderColor'     => '#bae6fd',
+                        'textColor'       => '#0369a1'
                     ];
                 } elseif ($dInfo['statusType'] === 'leave') {
                     $calendarEvents[] = [
@@ -320,34 +320,41 @@ class AttendanceReportController extends Controller
                         'title'           => '🟠 Leave (' . $dInfo['tooltip'] . ')',
                         'start'           => $dInfo['date'],
                         'allDay'          => true,
-                        'backgroundColor' => '#f97316',
-                        'borderColor'     => '#ea580c',
-                        'textColor'       => '#ffffff'
+                        'backgroundColor' => '#ffedd5',
+                        'borderColor'     => '#fed7aa',
+                        'textColor'       => '#c2410c'
                     ];
-                } elseif ($dInfo['statusType'] === 'absent') {
-                    $calendarEvents[] = [
-                        'id'              => 'att_' . $dInfo['date'],
-                        'title'           => '🔴 Absent',
-                        'start'           => $dInfo['date'],
-                        'allDay'          => true,
-                        'backgroundColor' => '#ef4444',
-                        'borderColor'     => '#dc2626',
-                        'textColor'       => '#ffffff'
-                    ];
+                } elseif ($dInfo['statusType'] === 'absent' && $dInfo['date'] <= $today) {
+                    $cDayOfWeek = date('w', strtotime($dInfo['date']));
+                    if ($cDayOfWeek != 0 && !isset($holidayMap[$dInfo['date']])) {
+                        $calendarEvents[] = [
+                            'id'              => 'att_' . $dInfo['date'],
+                            'title'           => '🔴 Absent',
+                            'start'           => $dInfo['date'],
+                            'allDay'          => true,
+                            'backgroundColor' => '#fee2e2',
+                            'borderColor'     => '#fecaca',
+                            'textColor'       => '#b91c1c'
+                        ];
+                    }
                 }
             }
         } else {
             // Company-wide summary counts per date
             foreach ($dailySummaryCounts as $dateKey => $cnts) {
+                $cDayOfWeek = date('w', strtotime($dateKey));
+                $isHoliday = isset($holidayMap[$dateKey]);
+                $isFuture = $dateKey > $today;
+
                 if ($cnts['present'] > 0) {
                     $calendarEvents[] = [
                         'id'              => 'p_' . $dateKey,
                         'title'           => '🟢 ' . $cnts['present'] . ' Present',
                         'start'           => $dateKey,
                         'allDay'          => true,
-                        'backgroundColor' => '#10b981',
-                        'borderColor'     => '#059669',
-                        'textColor'       => '#ffffff'
+                        'backgroundColor' => '#dcfce7',
+                        'borderColor'     => '#bbf7d0',
+                        'textColor'       => '#15803d'
                     ];
                 }
                 if ($cnts['leave'] > 0) {
@@ -356,20 +363,20 @@ class AttendanceReportController extends Controller
                         'title'           => '🟠 ' . $cnts['leave'] . ' On Leave',
                         'start'           => $dateKey,
                         'allDay'          => true,
-                        'backgroundColor' => '#f97316',
-                        'borderColor'     => '#ea580c',
-                        'textColor'       => '#ffffff'
+                        'backgroundColor' => '#ffedd5',
+                        'borderColor'     => '#fed7aa',
+                        'textColor'       => '#c2410c'
                     ];
                 }
-                if ($cnts['absent'] > 0) {
+                if ($cnts['absent'] > 0 && !$isFuture && $cDayOfWeek != 0 && !$isHoliday) {
                     $calendarEvents[] = [
                         'id'              => 'a_' . $dateKey,
                         'title'           => '🔴 ' . $cnts['absent'] . ' Absent',
                         'start'           => $dateKey,
                         'allDay'          => true,
-                        'backgroundColor' => '#ef4444',
-                        'borderColor'     => '#dc2626',
-                        'textColor'       => '#ffffff'
+                        'backgroundColor' => '#fee2e2',
+                        'borderColor'     => '#fecaca',
+                        'textColor'       => '#b91c1c'
                     ];
                 }
             }
