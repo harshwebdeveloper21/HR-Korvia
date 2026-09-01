@@ -103,11 +103,6 @@
 
     }
 
-    @media (min-width: 767px) {
-        .attendenceall {
-            width: 191px !important;
-        }
-    }
 </style>
 <div class="row">
     <div class="col-lg-12 grid-margin stretch-card">

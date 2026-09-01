@@ -407,6 +407,100 @@
     </div>
 </div>
 
+<!-- Salary Increment Modal -->
+<div class="modal" id="incrementModal" tabindex="-1" aria-labelledby="incrementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:12px; overflow:hidden;">
+            <div class="modal-header" style="background:#E66136; color:white;">
+                <h5 class="modal-title" id="incrementModalLabel">
+                    <i class="mdi mdi-cash-plus me-1"></i> Add Salary Increment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="increment_user_id">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Employee Name:</label>
+                    <span id="increment_employee_name" class="ms-1 fw-bold text-primary"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Current Salary (&#8377;):</label>
+                    <input type="text" class="form-control" id="current_salary" readonly style="background:#e9ecef;">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Last Increment Date:</label>
+                    <input type="text" class="form-control" id="last_increment_date" readonly style="background:#e9ecef;">
+                </div>
+                <div class="mb-3">
+                    <label for="increment_amount" class="form-label fw-bold">Increment Amount (&#8377;) <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" class="form-control" id="increment_amount" placeholder="e.g. 5000" required>
+                </div>
+                <div class="mb-3">
+                    <label for="increment_date" class="form-label fw-bold">Effective Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="increment_date" value="<?= date('Y-m-d') ?>" required>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0" style="background:#f8f9fa;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn hr-btnbg" id="btnSaveIncrement">
+                    <i class="mdi mdi-check me-1"></i> Update Salary
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Increment History Modal -->
+<div class="modal" id="incrementHistoryModal" tabindex="-1" aria-labelledby="incrementHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:12px; overflow:hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg,#E66136,#f0845a); color:#fff; padding:18px 24px;">
+                <div>
+                    <h5 class="modal-title mb-0" id="incrementHistoryModalLabel">
+                        <i class="mdi mdi-history me-2"></i>Salary Increment History
+                    </h5>
+                    <small id="ih-employee-name" class="opacity-75"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div id="ih-loader" class="text-center py-4">
+                    <div class="spinner-border" style="color:#E66136;" role="status">
+                        <span class="visually-hidden">Loading…</span>
+                    </div>
+                    <p class="mt-2 text-muted small">Fetching increment history...</p>
+                </div>
+
+                <div id="ih-empty" class="text-center py-4" style="display:none;">
+                    <i class="mdi mdi-information-outline" style="font-size:2.5rem; color:#ccc;"></i>
+                    <p class="mt-2 text-muted fw-semibold">No increment history found for this employee.</p>
+                </div>
+
+                <div id="ih-table-wrapper" class="table-responsive" style="display:none;">
+                    <table class="table table-bordered align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Previous Salary</th>
+                                <th>Increment</th>
+                                <th>New Salary</th>
+                                <th>Effective Date</th>
+                                <th>Updated At</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ih-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="background:#f8f9fa;">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     $(document).ready(function () {
         const token = localStorage.getItem('token');
@@ -459,9 +553,10 @@
                                 const empStatus = employee.user_info?.status || 'Active';
                                 const empReason = employee.user_info?.status_reason || '';
                                 const empLastDay = employee.user_info?.last_working_day || '';
+                                const isInactive = ['resigned', 'fired', 'removed', 'inactive'].includes(empStatus.toLowerCase());
 
                                 let statusBadge = '<span class="badge bg-success p-1 px-2">Active</span>';
-                                if (['resigned', 'fired', 'removed', 'inactive'].includes(empStatus.toLowerCase())) {
+                                if (isInactive) {
                                     const badgeColor = empStatus.toLowerCase() === 'resigned' ? 'bg-warning text-dark' : 'bg-danger';
                                     statusBadge = `<span class="badge ${badgeColor} p-1 px-2">${empStatus}</span>`;
                                     if (empReason) {
@@ -510,6 +605,8 @@
                                                     </div>
                                                     <div class="detail-actions">
                                                         <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-status="${empStatus}" data-reason="${empReason}" data-lastday="${empLastDay}" class="btn btn-sm btn-info open-status-modal" title="Change Status"><i class="mdi mdi-account-cog"></i> Status</a>
+                                                        ${!isInactive ? `<a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info?.salary || 0}" data-last-date="${employee.user_info?.last_increment_date || ''}" class="btn btn-sm btn-success open-increment-modal" title="Add Increment"><i class="mdi mdi-cash-plus"></i> Increment</a>` : ''}
+                                                        <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="btn btn-sm btn-outline-secondary open-increment-history" title="Increment History"><i class="mdi mdi-history"></i> Inc. History</a>
                                                         <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="btn btn-sm btn-success open-leave-history" title="Leave History"><i class="mdi mdi-calendar-clock"></i> Leave History</a>
                                                         <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="btn btn-sm btn-secondary open-password-modal" title="Password"><i class="fa fa-key"></i> Password</a>
                                                         <a href="/employee/profile/${employee.user_info.id}" class="btn btn-sm btn-primary" title="View"><i class="mdi mdi-eye text-white"></i> View</a>
@@ -528,6 +625,14 @@
                                         <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
                                             <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-status="${empStatus}" data-reason="${empReason}" data-lastday="${empLastDay}" class="text-info fs-5 open-status-modal" title="Change Status / Resignation Reason">
                                                 <i class="mdi mdi-account-cog"></i>
+                                            </a>
+                                            ${!isInactive ? `
+                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" data-salary="${employee.user_info?.salary || 0}" data-last-date="${employee.user_info?.last_increment_date || ''}" class="text-success fs-5 open-increment-modal" title="Add Salary Increment">
+                                                <i class="mdi mdi-cash-plus"></i>
+                                            </a>
+                                            ` : ''}
+                                            <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="text-secondary fs-5 open-increment-history" title="Increment History">
+                                                <i class="mdi mdi-history"></i>
                                             </a>
                                             <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="text-success fs-5 open-leave-history" title="Leave History">
                                                 <i class="mdi mdi-calendar-clock"></i>

@@ -408,8 +408,10 @@
                 if (response.status === 'success') {
                     let data = response.data;
 
-                    // $("#employee_id").text(data.employee_id ?? 'N/A');
-                    $("#employee_id").text(data.employee_id ? 'EMP#' + data.employee_id : 'N/A');
+                    let empIdDisplay = data.employee_id && data.employee_id !== '0' 
+                        ? (String(data.employee_id).startsWith('EMP-') || String(data.employee_id).startsWith('EMP#') ? data.employee_id : 'EMP-' + String(data.employee_id).padStart(3, '0'))
+                        : 'N/A';
+                    $("#employee_id").text(empIdDisplay);
                     $("#employeeEmail").text(data.email ?? 'N/A'); // optional if email available
                     $("#employeeDesignation").text(data.designation_title ?? 'N/A');
                     $("#employeeDepartment").text(data.department_name ?? 'N/A');

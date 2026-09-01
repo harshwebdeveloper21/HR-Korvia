@@ -1,11 +1,6 @@
 <?= $this->extend("layout") ?>
 <?= $this->section("content") ?>
 <style>
-     @media (min-width: 767px) {
-        .attendenceall {
-            width: 193px !important;
-        }
-    }
     @media (max-width: 767px) {
         .attendenceall {
             font-size: 9px !important;

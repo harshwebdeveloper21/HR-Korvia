@@ -217,29 +217,20 @@
                     </div>
                 </div> -->
 
-                <div class="main-dec-div flex-direction-column">
-
-                    <h4 class="card-title filtermarginjob">Manage Employee OnBoarding</h4>
-
-                    <div class="filtermenu">
-                        <div class="filterdept" style="margin-right:10px">
-                         
-                            <select class="form-select form-select-sm departmrgin mb-3" id="departmentonbordingFilter" style="max-width: 150px; font-size: 14px;">
-
-                                <option value="">All Departments</option>
-                                <!-- Departments will be populated dynamically -->
-                            </select>
-                        </div>
-                        <div class="filterbtn filterbtnpadd d-flex gap-2">
-                            <button type="button" id="btnExportOnboarding" class="btn hr-btnbg btnpdingam mb-2 text-nowrap">
-                                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
-                            </button>
-                            <a href="/onboarding" class="btn hr-btnbg btnpdingam mb-2">
-                                <i class="mdi mdi-plus iconfontsize"></i> Add OnBoarding
-                            </a>
-                        </div>
+                <div class="d-md-flex justify-content-between align-items-center mb-3">
+                    <h4 class="card-title">Manage Employee OnBoarding</h4>
+                    <div class="d-md-flex gap-2 align-items-center">
+                        <select class="form-select" id="departmentonbordingFilter" style="min-width: 180px; width: auto;">
+                            <option value="">All Departments</option>
+                            <!-- Departments will be populated dynamically -->
+                        </select>
+                        <button type="button" id="btnExportOnboarding" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        </button>
+                        <a href="/onboarding" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-plus iconfontsize"></i> Add OnBoarding
+                        </a>
                     </div>
-
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="onboaring-Table">

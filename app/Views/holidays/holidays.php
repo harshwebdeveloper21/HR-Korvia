@@ -204,20 +204,14 @@
     .capitalize-text {
         text-transform: capitalize;
     }
-    @media (min-width: 768px) {
-  .btn.hr-btnbg.attendenceall {
-    width: 193px !important;
-  }
-}
-
 </style>
 <div class="row">
     <div class="col-lg-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
-                <div class="d-md-flex justify-content-between mb-3">
+                <div class="d-md-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title">Manage Holiday</h4>
-                    <a href="/add" class="btn hr-btnbg attendenceall mb-2">
+                    <a href="/add" class="btn hr-btnbg attendenceall text-nowrap">
                         <i class="mdi mdi-plus iconfontsize"></i> Add Holiday
                     </a>
                 </div>

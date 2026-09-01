@@ -139,8 +139,10 @@
                     $("#designation").text(data.designation_name ?? 'N/A'); // already used
                     $("#department").text(data.department_name ?? 'N/A');
                     $("#employeeEmail").text(data.email ?? 'N/A');
-                    // $("#employee_id").text(data.employee_id ?? 'N/A');
-                    $("#employee_id").text(data.employee_id ? 'EMP#' + data.employee_id : 'N/A');
+                    let empIdDisplay = data.employee_id && data.employee_id !== '0' 
+                        ? (String(data.employee_id).startsWith('EMP-') || String(data.employee_id).startsWith('EMP#') ? data.employee_id : 'EMP-' + String(data.employee_id).padStart(3, '0'))
+                        : 'N/A';
+                    $("#employee_id").text(empIdDisplay);
                     $("#employeeDesignation").text(data.designation_name ?? 'N/A');
                     $("#employeeDepartment").text(data.department_name ?? 'N/A');
                     $("#training_title").text(data.training_title ?? 'N/A');

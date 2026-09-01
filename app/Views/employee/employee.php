@@ -1090,14 +1090,11 @@
             },
             success: function (response) {
                 if (response.status) {
-                    let lastEmployeeId = parseInt(response.employee_id);
-                    let newEmployeeId = lastEmployeeId + 1;
-
-                    let newFormattedId = `EMP#${newEmployeeId}`;
+                    let formattedId = response.formatted_id || (response.next_employee_id ? `EMP-${String(response.next_employee_id).padStart(3, '0')}` : 'EMP-001');
 
                     // ✅ Set both hidden and visible fields
-                    $('#employee_id').val(newFormattedId); // For submission
-                    $('#employee_id_display').val(newFormattedId); // For UI display
+                    $('#employee_id').val(formattedId); // For submission
+                    $('#employee_id_display').val(formattedId); // For UI display
                 }
             },
             error: function () {

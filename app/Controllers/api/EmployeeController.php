@@ -132,22 +132,38 @@ class EmployeeController extends ResourceController
 
     public function lastEmployeeId()
     {
-        // Fetch the last inserted employee_id from the user_info table
-        $userInfoModel = new \App\Models\UserInfoModel();
-        $lastEmployee = $userInfoModel->orderBy('employee_id', 'DESC')->first();
+        $db = \Config\Database::connect();
+        $rows = $db->table('user_info')
+            ->select('employee_id')
+            ->where('employee_id IS NOT NULL')
+            ->where('employee_id !=', '')
+            ->get()
+            ->getResultArray();
 
-        if ($lastEmployee) {
-            return $this->respond([
-                'status' => true,
-                'employee_id' => $lastEmployee['employee_id']
-            ]);
-        } else {
-            // If no employee exists, return a default starting ID (e.g., 1000)
-            return $this->respond([
-                'status' => true,
-                'employee_id' => 1
-            ]);
+        $maxNumber = 0;
+        foreach ($rows as $r) {
+            $rawId = trim((string)($r['employee_id'] ?? ''));
+            if ($rawId === '' || $rawId === '0') {
+                continue;
+            }
+            // Extract numeric part (e.g. EMP-071 -> 71, EMP#101 -> 101, 19389 -> 19389)
+            if (preg_match('/(\d+)/', $rawId, $matches)) {
+                $val = (int)$matches[1];
+                if ($val > $maxNumber) {
+                    $maxNumber = $val;
+                }
+            }
         }
+
+        $nextEmployeeId = $maxNumber > 0 ? ($maxNumber + 1) : 1;
+        $formattedId = 'EMP-' . str_pad($nextEmployeeId, 3, '0', STR_PAD_LEFT);
+
+        return $this->respond([
+            'status'           => true,
+            'employee_id'      => $maxNumber,
+            'next_employee_id' => $nextEmployeeId,
+            'formatted_id'     => $formattedId
+        ]);
     }
 
     public function display()
@@ -313,6 +329,15 @@ class EmployeeController extends ResourceController
         $existingUser = $this->userModel->where('email', $data['email'])->first();
         if ($existingUser) {
             return $this->failValidationErrors(['This email is already registered. Please use a different one.']);
+        }
+
+        // Check if the employee_id is already assigned
+        $empId = isset($data['employee_id']) ? trim($data['employee_id']) : '';
+        if (!empty($empId)) {
+            $duplicateEmp = $this->userInfoModel->where('employee_id', $empId)->first();
+            if ($duplicateEmp) {
+                return $this->failValidationErrors(['employee_id' => 'This Employee ID is already assigned to another employee.']);
+            }
         }
 
         // Hash password or generate
@@ -569,8 +594,18 @@ class EmployeeController extends ResourceController
         // Use null coalescing operator (??) to prevent undefined key errors
         $designation_id = $data['designation_id'] ?? null;
         $department_id = $data['department_id'] ?? null;
-        $employee_id = $data['employee_id'] ?? null;
+        $employee_id = isset($data['employee_id']) ? trim($data['employee_id']) : null;
         $role = $data['role'] ?? $existingUser['role']; // Keep old role if not provided
+
+        // Check if employee_id already belongs to another user
+        if (!empty($employee_id)) {
+            $duplicateEmp = $this->userInfoModel->where('employee_id', $employee_id)
+                ->where('user_id !=', $id)
+                ->first();
+            if ($duplicateEmp) {
+                return $this->failValidationErrors(['employee_id' => 'This Employee ID is already assigned to another employee.']);
+            }
+        }
 
         // Update the users table
         $this->userModel->update($id, [
@@ -1332,14 +1367,27 @@ class EmployeeController extends ResourceController
             ]);
         }
 
-        // ✅ Remove 'EMP#' if exists, and keep only the number
-        $data['employee_id'] = str_replace('EMP#', '', $data['employee_id']);
+        // Clean employee_id and check uniqueness
+        $cleanedEmpId = trim(str_replace('EMP#', '', (string)$data['employee_id']));
+        $data['employee_id'] = $cleanedEmpId;
 
         $model = new \App\Models\UserInfoModel();
 
         $existing = $model->where('user_id', $data['user_id'])->first();
         if (!$existing) {
             return $this->response->setJSON(['success' => false, 'message' => 'User not found']);
+        }
+
+        if (!empty($cleanedEmpId)) {
+            $duplicate = $model->where('employee_id', $cleanedEmpId)
+                ->where('user_id !=', $data['user_id'])
+                ->first();
+            if ($duplicate) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'errors'  => ['employee_id' => 'This Employee ID is already assigned to another employee.']
+                ]);
+            }
         }
 
         $model->where('user_id', $data['user_id'])->set([
@@ -1377,6 +1425,11 @@ class EmployeeController extends ResourceController
         $userInfo = $this->userInfoModel->where('user_id', $userId)->first();
         if (!$userInfo) {
             return $this->failNotFound('Employee info not found');
+        }
+
+        // Restrict increment for inactive or resigned employees
+        if (in_array(strtolower($userInfo['status'] ?? ''), ['inactive', 'resigned', 'fired', 'removed'])) {
+            return $this->failValidationErrors('Salary increment cannot be added for inactive or resigned employees.');
         }
 
         $db = \Config\Database::connect();

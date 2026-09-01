@@ -11,6 +11,11 @@ use App\Models\UserInfoModel;
 use App\Models\EmployeeLeaveModel;
 use App\Models\NotificationSettingsModel;
 use App\Services\PushNotificationService;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class LeaveController extends ResourceController
 {
@@ -871,5 +876,173 @@ class LeaveController extends ResourceController
         }
 
         return $this->fail('Failed to delete leave record');
+    }
+
+    /**
+     * Export Leaves to styled Excel (.xlsx)
+     */
+    public function exportExcel()
+    {
+        $authUser = $this->authService->user();
+        if (!$authUser) {
+            return $this->response->setStatusCode(401)->setJSON(['message' => 'Unauthorized']);
+        }
+
+        $month        = $this->request->getGet('month');
+        $year         = $this->request->getGet('year');
+        $status       = $this->request->getGet('status');
+        $departmentId = $this->request->getGet('department_id');
+        $userId       = $this->request->getGet('user_id') ?: $this->request->getGet('employee_id');
+        $leaveType    = $this->request->getGet('leave_type');
+        $view         = $this->request->getGet('view');
+        $search       = $this->request->getGet('search');
+
+        $builder = $this->leaveModel->builder();
+        $builder->select('leaves.*, ui.firstname, ui.lastname, ui.employee_id as emp_code, dep.department_name, lt.leave_type as leave_type_name, creator.username as created_by_username')
+            ->join('user_info ui', 'ui.user_id = leaves.user_id', 'left')
+            ->join('department dep', 'dep.id = ui.department_id', 'left')
+            ->join('leave_type lt', 'lt.id = leaves.leave_id', 'left')
+            ->join('users creator', 'creator.id = leaves.created_by', 'left');
+
+        // Role scoping
+        if (!in_array($authUser->role, ['admin', 'hr'])) {
+            $builder->where('leaves.user_id', $authUser->sub);
+        } elseif (!empty($userId)) {
+            $builder->where('leaves.user_id', $userId);
+        }
+
+        if (!empty($departmentId)) {
+            $builder->where('ui.department_id', $departmentId);
+        }
+
+        if (!empty($leaveType)) {
+            if (is_numeric($leaveType)) {
+                $builder->where('leaves.leave_id', $leaveType);
+            } else {
+                $builder->where('lt.leave_type', $leaveType);
+            }
+        }
+
+        if (!empty($status)) {
+            $builder->where('LOWER(leaves.status)', strtolower($status));
+        } elseif ($view === 'cancelled') {
+            $builder->where('LOWER(leaves.status)', 'cancelled');
+        }
+
+        if (!empty($year)) {
+            $builder->where('YEAR(leaves.start_date)', $year);
+        }
+
+        if (!empty($month)) {
+            $builder->where('MONTH(leaves.start_date)', (int)$month);
+        }
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('ui.firstname', $search)
+                ->orLike('ui.lastname', $search)
+                ->orLike('ui.employee_id', $search)
+                ->orLike('lt.leave_type', $search)
+                ->orLike('leaves.reason', $search)
+                ->groupEnd();
+        }
+
+        // Exclude automatic system-created absence leaves
+        $builder->where('leaves.reason !=', LeaveModel::AUTO_ABSENCE_REASON);
+
+        $leaves = $builder->orderBy('leaves.start_date', 'DESC')->get()->getResultArray();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Leaves Report');
+
+        $headers = [
+            'A1' => 'S.No',
+            'B1' => 'Emp ID',
+            'C1' => 'Employee Name',
+            'D1' => 'Department',
+            'E1' => 'Leave Type',
+            'F1' => 'Start Date',
+            'G1' => 'End Date',
+            'H1' => 'Duration (Days)',
+            'I1' => 'Half Day Type',
+            'J1' => 'Status',
+            'K1' => 'Reason',
+            'L1' => 'Applied On'
+        ];
+
+        foreach ($headers as $cell => $title) {
+            $sheet->setCellValue($cell, $title);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+        ];
+        $sheet->getStyle('A1:L1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        $rowNum = 2;
+        $sno = 1;
+        foreach ($leaves as $item) {
+            $fullName = trim(($item['firstname'] ?? '') . ' ' . ($item['lastname'] ?? ''));
+            if (empty($fullName)) {
+                $fullName = $item['created_by_username'] ?? 'Employee #' . ($item['user_id'] ?? '');
+            }
+
+            $rawCode = (string)($item['emp_code'] ?? '');
+            $empCode = !empty($rawCode) && $rawCode !== '0'
+                ? (str_starts_with($rawCode, 'EMP-') || str_starts_with($rawCode, 'EMP#') ? $rawCode : 'EMP-' . str_pad($rawCode, 3, '0', STR_PAD_LEFT))
+                : ('EMP-' . ($item['user_id'] ?? ''));
+
+            $halfDay = !empty($item['half_day_type']) ? ucfirst($item['half_day_type']) : '-';
+            $statusVal = ucfirst(strtolower($item['status'] ?? 'Pending'));
+
+            $sheet->setCellValue('A' . $rowNum, $sno++);
+            $sheet->setCellValueExplicit('B' . $rowNum, (string)$empCode, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('C' . $rowNum, $fullName);
+            $sheet->setCellValue('D' . $rowNum, $item['department_name'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $item['leave_type_name'] ?? ($item['leave_type'] ?? '-'));
+            $sheet->setCellValue('F' . $rowNum, !empty($item['start_date']) ? date('Y-m-d', strtotime($item['start_date'])) : '-');
+            $sheet->setCellValue('G' . $rowNum, !empty($item['end_date']) ? date('Y-m-d', strtotime($item['end_date'])) : '-');
+            $sheet->setCellValue('H' . $rowNum, (float)($item['no_of_day'] ?? 1));
+            $sheet->setCellValue('I' . $rowNum, $halfDay);
+            $sheet->setCellValue('J' . $rowNum, $statusVal);
+            $sheet->setCellValue('K' . $rowNum, $item['reason'] ?? '-');
+            $sheet->setCellValue('L' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum - 1;
+        if ($lastRow >= 2) {
+            $dataStyle = [
+                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+                'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'DDDDDD']]],
+            ];
+            $sheet->getStyle("A2:L{$lastRow}")->applyFromArray($dataStyle);
+            $sheet->getStyle("A2:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("B2:B{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("F2:H{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("I2:J{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        }
+
+        foreach (range('A', 'L') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'Leaves_Export_' . date('Ymd_His') . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+
+        ob_start();
+        $writer->save('php://output');
+        $excelData = ob_get_clean();
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setHeader('Cache-Control', 'max-age=0')
+            ->setBody($excelData);
     }
 }

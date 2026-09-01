@@ -89,11 +89,6 @@
             width: 57px !important;
         }
     }
-    @media (min-width: 768px) {
-        .btn.hr-btnbg.attendenceall {
-            width: 193px !important;
-        }
-    }
 </style>
 
 <div class="row">
