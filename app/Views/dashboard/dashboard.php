@@ -1256,25 +1256,40 @@
                                             <h4 class="card-title card-title-dash sm-bar-chart-size mb-0">Latest Complaints & Feedback</h4>
                                             <a href="/complaints/admin" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
                                         </div>
-                                        <div id="latestComplaintsListAdmin" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                                        <div id="latestComplaintsListAdmin" class="mt-3" style="max-height: 270px; overflow-y: auto;">
                                             <?php if (!empty($complaintsData)) : ?>
                                                 <?php foreach ($complaintsData as $complaint) : ?>
-                                                    <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
-                                                        <img src="/upload/<?= !empty($complaint['profile_image']) ? $complaint['profile_image'] : 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
-                                                        <div style="flex-grow: 1;">
-                                                            <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $complaint['subject'] ?></div>
-                                                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                                                <div class="small text-muted mb-1">
-                                                                    By: <?= $complaint['name'] ?: $complaint['username'] ?> | Type: <?= $complaint['type'] ?>
+                                                    <?php 
+                                                        $profileImg = !empty($complaint['profile_image']) ? base_url('upload/' . $complaint['profile_image']) : base_url(env('ImagePath') . 'upload/default-profile.jpg');
+                                                        $statusLower = strtolower($complaint['status'] ?? 'pending');
+                                                        $statusClass = $statusLower === 'resolved' ? 'bg-success text-white' : ($statusLower === 'pending' ? 'bg-warning text-dark' : 'bg-secondary text-white');
+                                                        $typeLower = strtolower($complaint['type'] ?? 'complaint');
+                                                    ?>
+                                                    <div class="d-flex align-items-start gap-2 py-2 border-bottom">
+                                                        <img src="<?= $profileImg ?>" alt="Profile" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                                                        <div style="flex: 1; min-width: 0;">
+                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                <div class="fw-semibold text-dark text-truncate" style="font-size: 13px; text-transform: capitalize;" title="<?= esc($complaint['subject']) ?>">
+                                                                    <?= esc($complaint['subject']) ?>
                                                                 </div>
-                                                                <span class="badge <?= $complaint['status'] == 'pending' ? 'bg-warning' : ($complaint['status'] == 'resolved' ? 'bg-success' : 'bg-secondary') ?>"><?= $complaint['status'] ?></span>
+                                                                <small class="text-muted text-nowrap ms-2" style="font-size: 11px;">
+                                                                    <?= !empty($complaint['created_at']) ? date('n/j/Y', strtotime($complaint['created_at'])) : date('n/j/Y') ?>
+                                                                </small>
+                                                            </div>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <?php if ($typeLower === 'complaint') : ?>
+                                                                    <span class="badge bg-danger text-white" style="font-size: 9px; padding: 2px 6px;">COMPLAINT</span>
+                                                                <?php else : ?>
+                                                                    <span class="badge bg-info text-white" style="font-size: 9px; padding: 2px 6px;">FEEDBACK</span>
+                                                                <?php endif; ?>
+                                                                <span class="badge <?= $statusClass ?>" style="font-size: 9px; padding: 2px 6px;"><?= strtoupper($complaint['status']) ?></span>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 <?php endforeach; ?>
                                             <?php else : ?>
                                                 <div class="d-flex align-items-center justify-content-center text-center p-4">
-                                                    <h5 class="text-muted txtclr">No complaints and feedback found</h5>
+                                                    <h6 class="text-muted mb-0" style="font-size: 13px;">No complaints and feedback found</h6>
                                                 </div>
                                             <?php endif; ?>
                                         </div>
@@ -2345,21 +2360,27 @@
                 if (latestComplaints.length > 0) {
                     latestComplaints.forEach(function(item) {
                         var profileImage = item.profile_image ? `upload/${item.profile_image}` : `${baseImagePath}upload/default-profile.jpg`;
-                        var typeLabel = item.type === 'Complaint' ? '<span class="badge border-0 p-1 px-2 text-white bg-danger x-small" style="font-size: 8px;">COMPLAINT</span>' : '<span class="badge border-0 p-1 px-2 text-white bg-info x-small" style="font-size: 8px;">FEEDBACK</span>';
+                        var typeLabel = (item.type && item.type.toLowerCase() === 'complaint') 
+                            ? '<span class="badge bg-danger text-white" style="font-size: 9px; padding: 2px 6px;">COMPLAINT</span>' 
+                            : '<span class="badge bg-info text-white" style="font-size: 9px; padding: 2px 6px;">FEEDBACK</span>';
+                        var statusLower = (item.status || 'pending').toLowerCase();
+                        var statusClass = statusLower === 'resolved' ? 'bg-success text-white' : (statusLower === 'pending' ? 'bg-warning text-dark' : 'bg-secondary text-white');
+                        var formattedDate = item.created_at ? new Date(item.created_at).toLocaleDateString('en-US') : '';
+                        
                         complaintsHTML += `
-                            <div class="wrapper d-flex align-items-center justify-content-between py-2 border-bottom">
-                                <div class="d-flex">
-                                    <img class="img-sm rounded-circle" src="${profileImage}" alt="profile">
-                                    <div class="wrapper ms-3">
-                                        <p class="mb-0 fw-bold capitalize-text small text-dark">${item.subject}</p>
-                                        <div class="d-flex align-items-center gap-2 mt-1">
-                                            ${typeLabel}
-                                            <small class="text-muted x-small">${item.status.toUpperCase()}</small>
+                            <div class="d-flex align-items-start gap-2 py-2 border-bottom">
+                                <img src="${profileImage}" alt="profile" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <div class="fw-semibold text-dark text-truncate" style="font-size: 13px; text-transform: capitalize;" title="${item.subject || ''}">
+                                            ${item.subject || 'No Subject'}
                                         </div>
+                                        <small class="text-muted text-nowrap ms-2" style="font-size: 11px;">${formattedDate}</small>
                                     </div>
-                                </div>
-                                <div class="text-end">
-                                    <small class="text-muted d-block x-small">${new Date(item.created_at).toLocaleDateString()}</small>
+                                    <div class="d-flex align-items-center gap-2">
+                                        ${typeLabel}
+                                        <span class="badge ${statusClass}" style="font-size: 9px; padding: 2px 6px;">${(item.status || 'PENDING').toUpperCase()}</span>
+                                    </div>
                                 </div>
                             </div>
                         `;
@@ -2367,7 +2388,7 @@
                 } else {
                     complaintsHTML = `
                         <div class="d-flex align-items-center justify-content-center text-center p-4" style="min-height: 172px;">
-                            <h5 class="text-muted txtclr small">No complaints and feedback found</h5>
+                            <h6 class="text-muted mb-0" style="font-size: 13px;">No complaints and feedback found</h6>
                         </div>
                     `;
                 }

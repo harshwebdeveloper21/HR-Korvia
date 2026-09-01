@@ -10,7 +10,7 @@ if (!function_exists('getCompanyLogo')) {
 
         return !empty($company['logo_img']) 
             ? base_url('upload/' . $company['logo_img']) 
-            : base_url(env('ImagePath').'upload/fab_logo.jpg');
+            : base_url(env('ImagePath') . 'assets/images/fab_logo.png');
     }
 }
 
@@ -22,6 +22,6 @@ if (!function_exists('getCompanyFavicon')) {
 
         return !empty($company['favicon_icon']) 
             ? base_url('upload/' . $company['favicon_icon']) 
-            : base_url('favicon.ico');
+            : base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png');
     }
 }

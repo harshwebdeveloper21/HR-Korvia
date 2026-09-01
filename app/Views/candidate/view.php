@@ -116,15 +116,15 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-striped" id="candidates-Table">
-                        <thead>
+                    <table class="table table-striped w-100" id="candidates-Table">
+                        <thead class="table-light">
                             <tr>
-                                <th>No</th>
                                 <th>Name</th>
-                                <th>Email</th>
-                                <th>Job Name</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <th class="desktop-only-col">Email</th>
+                                <th class="desktop-only-col">Job Title</th>
+                                <th class="desktop-only-col">Status</th>
+                                <th class="desktop-only-col action-column" style="width: 100px;">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                         <tbody id="candidates-Table-Body">
@@ -150,49 +150,82 @@
             .then((response) => response.json())
             .then((responseData) => {
                 if (responseData.status === 'success') {
-                    const candidates = responseData.data; // Get candidate data
+                    const candidates = responseData.data;
                     let tableRows = '';
 
                     candidates.forEach((candidate, index) => {
-                        // Create a row for each candidate
                         tableRows += `
                         <tr data-id="${candidate.id}">
-                            <td>${index + 1}</td>
-                             <td>
-                             <a href="/candidate/display/${candidate.id}" class="text-decoration-none text-dark capitalize-text">
-                             ${candidate.candidate_name}
-                             </a></td>
-                              <td>${candidate.email}</td>
-                               <td class="capitalize-text">${candidate.job_title}</td>
-
-
-                            <td class="capitalize-text">${candidate.status}</td>
-                            <td style="display: flex; align-items: center; gap: 8px;">
-                                <a href="/candidate/display/${candidate.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
-                                <a href="/candidate/${candidate.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                <a href="#" class="text-danger fs-5" title="Delete"
-                                   data-id="${candidate.id}"
-                                   data-status="${candidate.status}"
-                                   onclick="deleteCandidate(event)">
-                                   <i class="mdi mdi-delete"></i>
-                                </a>
+                            <td class="capitalize-text">
+                                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <a href="/candidate/display/${candidate.id}" class="text-decoration-none text-dark fw-bold">
+                                            ${candidate.candidate_name}
+                                        </a>
+                                        <div class="expanded-details" id="candidate-details-${candidate.id}" onclick="event.stopPropagation();">
+                                            <div class="detail-row">
+                                                <span class="detail-label">Email:</span>
+                                                <span class="detail-value">${candidate.email || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="detail-label">Job:</span>
+                                                <span class="detail-value">${candidate.job_title || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="detail-label">Status:</span>
+                                                <span class="detail-value">${candidate.status || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-actions">
+                                                <a href="/candidate/display/${candidate.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
+                                                <a href="/candidate/${candidate.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
+                                                <a href="#" class="btn btn-sm btn-danger" data-id="${candidate.id}" data-status="${candidate.status}" onclick="deleteCandidate(event)"><i class="mdi mdi-delete"></i> Delete</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="desktop-only-col">${candidate.email || 'N/A'}</td>
+                            <td class="desktop-only-col capitalize-text">${candidate.job_title || 'N/A'}</td>
+                            <td class="desktop-only-col capitalize-text">
+                                <span class="badge badge-outline-secondary" style="font-size: 11px;">${candidate.status || 'N/A'}</span>
+                            </td>
+                            <td class="desktop-only-col">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <a href="/candidate/display/${candidate.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
+                                    <a href="/candidate/${candidate.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
+                                    <a href="#" class="text-danger fs-5" title="Delete"
+                                       data-id="${candidate.id}"
+                                       data-status="${candidate.status}"
+                                       onclick="deleteCandidate(event)">
+                                       <i class="mdi mdi-delete"></i>
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="mobile-expand-col text-center">
+                                <button type="button" class="expand-toggle" data-target="candidate-details-${candidate.id}" aria-label="Expand details"></button>
                             </td>
                         </tr>
                     `;
                     });
 
-                    // Insert rows into table body
-                    $('#candidates-Table-Body').html(tableRows);
-                      if ($.fn.DataTable.isDataTable('#candidates-Table')) {
-                    $('#candidates-Table').DataTable().clear().destroy();
-                }
-                    $('#candidates-Table').DataTable({
-                    language: {
-                        search: "",
-                        searchPlaceholder: "Search"
+                    document.getElementById('candidates-Table-Body').innerHTML = tableRows;
+
+                    if ($.fn.DataTable.isDataTable('#candidates-Table')) {
+                        $('#candidates-Table').DataTable().clear().destroy();
                     }
-                });
-                    // $('#candidates-Table').DataTable(); // Initialize DataTable
+                    $('#candidates-Table').DataTable({
+                        columnDefs: [
+                            {
+                                targets: [4, 5],
+                                orderable: false,
+                                searchable: false
+                            }
+                        ],
+                        language: {
+                            search: "",
+                            searchPlaceholder: "Search"
+                        }
+                    });
                 } else {
                     console.error('Failed to fetch candidates:', responseData.message);
                 }

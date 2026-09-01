@@ -234,14 +234,14 @@
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="onboaring-Table">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
-                                <th>No</th>
-                                <th> Candidate Name</th>
-                                <th>Job Title</th>
-                                <th>Department</th>
-                                <th>Start Date</th>
-                                <th>Action</th>
+                                <th>Candidate Name</th>
+                                <th class="desktop-only-col">Job Title</th>
+                                <th class="desktop-only-col">Department</th>
+                                <th class="desktop-only-col">Start Date</th>
+                                <th class="desktop-only-col action-column" style="width: 120px;">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                         <tbody id="onboaring-Table-Body">
@@ -277,60 +277,88 @@
                         onboardings.forEach((onboarding, index) => {
                             tableRows += `
                         <tr data-id="${onboarding.id}">
-                            <td>${index + 1}</td>
-                            <td>
-                                <a href="/onboarding/display/${onboarding.id}" class="text-decoration-none text-dark capitalize-text">
-                                    ${onboarding.candidate_name}
-                                </a>
+                            <td class="capitalize-text">
+                                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <a href="/onboarding/display/${onboarding.id}" class="text-decoration-none text-dark fw-bold">
+                                            ${onboarding.candidate_name || 'Candidate'}
+                                        </a>
+                                        <div class="expanded-details" id="onboarding-details-${onboarding.id}" onclick="event.stopPropagation();">
+                                            <div class="detail-row">
+                                                <span class="detail-label">Job Title:</span>
+                                                <span class="detail-value">${onboarding.job_title || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="detail-label">Department:</span>
+                                                <span class="detail-value">${onboarding.department_name || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="detail-label">Start Date:</span>
+                                                <span class="detail-value">${onboarding.start_date || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-actions">
+                                                <a href="/onboarding/display/${onboarding.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
+                                                <a href="/onboarding/${onboarding.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
+                                                <a href="#" class="btn btn-sm btn-danger" data-id="${onboarding.id}" onclick="deleteLeave(event)"><i class="mdi mdi-delete"></i> Delete</a>
+                                                <a href="#" 
+                                                    class="btn btn-sm btn-secondary download-offer-letter" 
+                                                    data-candidate-id="${onboarding.candidate_id}" 
+                                                    data-offer-letter-id="${onboarding.offer_later_id}"
+                                                    data-candidate-name="${onboarding.candidate_name}">
+                                                    <i class="mdi mdi-download"></i> Letter
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="capitalize-text">${onboarding.department_name}</td>
-                            <td class="capitalize-text">${onboarding.job_title}</td>
-                            <td>${onboarding.start_date}</td>
-                            <td style="display: flex; align-items: center; gap: 8px;">
-                                <a href="/onboarding/display/${onboarding.id}" class="text-primary fs-5" title="View">
-                                    <i class="mdi mdi-eye"></i>
-                                </a>
-                                <a href="/onboarding/${onboarding.id}" class="text-warning fs-5" title="Edit">
-                                    <i class="mdi mdi-pencil"></i>
-                                </a>
-                                <a href="#" class="text-danger fs-5" title="Delete" data-id="${onboarding.id}" onclick="deleteLeave(event)">
-                                    <i class="mdi mdi-delete"></i>
-                                </a>
-                                <a href="#" 
-                                    class="fs-5 download-offer-letter" 
-                                    title="Download Offer Letter" 
-                                    data-candidate-id="${onboarding.candidate_id}" 
-                                    data-offer-letter-id="${onboarding.offer_later_id}"
-                                    data-candidate-name="${onboarding.candidate_name}" style="color:black">
-                                    <i class="mdi mdi-download"></i>
-                                </a>
+                            <td class="desktop-only-col capitalize-text">${onboarding.job_title || 'N/A'}</td>
+                            <td class="desktop-only-col capitalize-text">${onboarding.department_name || 'N/A'}</td>
+                            <td class="desktop-only-col">${onboarding.start_date || 'N/A'}</td>
+                            <td class="desktop-only-col">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <a href="/onboarding/display/${onboarding.id}" class="text-primary fs-5" title="View">
+                                        <i class="mdi mdi-eye"></i>
+                                    </a>
+                                    <a href="/onboarding/${onboarding.id}" class="text-warning fs-5" title="Edit">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </a>
+                                    <a href="#" class="text-danger fs-5" title="Delete" data-id="${onboarding.id}" onclick="deleteLeave(event)">
+                                        <i class="mdi mdi-delete"></i>
+                                    </a>
+                                    <a href="#" 
+                                        class="fs-5 download-offer-letter" 
+                                        title="Download Offer Letter" 
+                                        data-candidate-id="${onboarding.candidate_id}" 
+                                        data-offer-letter-id="${onboarding.offer_later_id}"
+                                        data-candidate-name="${onboarding.candidate_name}" style="color:black">
+                                        <i class="mdi mdi-download"></i>
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="mobile-expand-col text-center">
+                                <button type="button" class="expand-toggle" data-target="onboarding-details-${onboarding.id}" aria-label="Expand details"></button>
                             </td>
                         </tr>
                     `;
                         });
 
-                        // $('#onboaring-Table-Body').html(tableRows);
-                        // $('#onboaring-Table').DataTable();
-
                         const $table = $('#onboaring-Table');
 
-                        // Destroy if already initialized
                         if ($.fn.DataTable.isDataTable($table)) {
                             $table.DataTable().clear().destroy();
                         }
 
-                        // Inject rows into <tbody>
                         $('#onboaring-Table-Body').html(tableRows);
 
-                        // Delay to let DOM fully update
                         setTimeout(() => {
                             $table.DataTable({
                                 order: [
-                                    [5, 'desc']
+                                    [3, 'desc']
                                 ],
                                 columnDefs: [{
-                                    targets: 0,
-                                    visible: false,
+                                    targets: [4, 5],
+                                    orderable: false,
                                     searchable: false
                                 }],
                                 language: {

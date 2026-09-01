@@ -112,12 +112,12 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-striped" id="templateTable">
-                        <thead class="table-dark">
+                    <table class="table table-striped w-100" id="templateTable">
+                        <thead class="table-light">
                             <tr>
-                                <th>No.</th>
-                                <th>Title</th>
-                                <th>Action</th>
+                                <th>Template Title</th>
+                                <th class="desktop-only-col action-column" style="width: 100px;">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                         <tbody id="templateTableBody">
@@ -146,12 +146,29 @@
                     response.data.forEach((template, index) => {
                         html += `
                             <tr>
-                                <td>${index + 1}</td>
-                                <td>${template.title}</td>
-                                <td style="display: flex; align-items: center; gap: 8px;">
-                                    <a href="/template/view/${template.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
-                                    <a href="/template/${template.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                    <a href="#" class="text-danger fs-5 delete-template" data-id="${template.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                                <td>
+                                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                        <div style="flex: 1;">
+                                            <span class="fw-bold text-dark">${template.title}</span>
+                                            <div class="expanded-details" id="template-details-${template.id}" onclick="event.stopPropagation();">
+                                                <div class="detail-actions">
+                                                    <a href="/template/view/${template.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
+                                                    <a href="/template/${template.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
+                                                    <a href="#" class="btn btn-sm btn-danger delete-template" data-id="${template.id}"><i class="mdi mdi-delete"></i> Delete</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="desktop-only-col">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <a href="/template/view/${template.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
+                                        <a href="/template/${template.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
+                                        <a href="#" class="text-danger fs-5 delete-template" data-id="${template.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                                    </div>
+                                </td>
+                                <td class="mobile-expand-col text-center">
+                                    <button type="button" class="expand-toggle" data-target="template-details-${template.id}" aria-label="Expand details"></button>
                                 </td>
                             </tr>
                         `;
@@ -163,7 +180,13 @@
                         $('#templateTable').DataTable().destroy();
                     }
                     $('#templateTable').DataTable({
-                        responsive: true,
+                        columnDefs: [
+                            {
+                                targets: [1, 2],
+                                orderable: false,
+                                searchable: false
+                            }
+                        ],
                         pageLength: 10,
                         language: {
                             searchPlaceholder: "Search",

@@ -58,17 +58,38 @@ class AuthController extends ResourceController
             );
         }
 
-        // Check if user account is active
+        // Check if user is marked as deleted in users table
+        if (!empty($user['is_deleted']) && $user['is_deleted'] == 1) {
+            return $this->respond(
+                [
+                    "status" => "error",
+                    "message" => "Your account has been removed. Please contact the administrator.",
+                ],
+                403
+            );
+        }
+
+        // Check if user account status in user_info table
         $userInfoModel = new \App\Models\UserInfoModel();
         $userInfo = $userInfoModel->where('user_id', $user['id'])->first();
 
         if ($userInfo && !empty($userInfo['status'])) {
             $statusLower = strtolower(trim($userInfo['status']));
-            if (in_array($statusLower, ['inactive', 'resigned', 'fired', 'removed'])) {
+            if ($statusLower !== 'active') {
+                $statusMsg = "Your account is marked as " . ucfirst($statusLower) . ". Login is not allowed.";
+                if ($statusLower === 'resigned') {
+                    $statusMsg = "Your account is marked as Resigned. Login is no longer allowed.";
+                } elseif ($statusLower === 'fired') {
+                    $statusMsg = "Your account has been terminated (Fired). Access denied.";
+                } elseif ($statusLower === 'removed') {
+                    $statusMsg = "Your account has been removed. Login is not allowed.";
+                } elseif ($statusLower === 'inactive') {
+                    $statusMsg = "Your account is currently Inactive. Please contact HR or Administrator.";
+                }
                 return $this->respond(
                     [
                         "status" => "error",
-                        "message" => "Your account is marked as " . ucfirst($statusLower) . ". Login is not allowed.",
+                        "message" => $statusMsg,
                     ],
                     403
                 );

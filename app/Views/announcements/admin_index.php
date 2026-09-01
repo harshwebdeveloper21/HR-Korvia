@@ -1,12 +1,13 @@
 <?= $this->extend('layout'); ?>
 <?= $this->section('content'); ?>
-<div class="main-container container-fluid">
-    <div class="row">
-        <div class="col-xl-12">
-            <div class="card custom-card">
-                <div class="card-header d-flex justify-content-between align-items-center border-bottom-0 p-2">
-                    <h5 class="card-title fw-bold mb-0">Manage Announcements</h5>
-                    <div class="d-flex gap-2">
+<div class="row">
+    <div class="col-lg-12 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                
+                <div class="d-md-flex justify-content-between align-items-center mb-3">
+                    <h4 class="card-title mb-0">Manage Announcements</h4>
+                    <div class="d-md-flex gap-2 align-items-center mt-2 mt-md-0">
                         <button type="button" id="btnExportAnnouncements" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
                         </button>
@@ -15,85 +16,111 @@
                         </a>
                     </div>
                 </div>
-                <div class="card-body ">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex align-items-center">
-                            <span>Show</span>
-                            <select class="form-select form-select-sm mx-2" style="width: auto;">
-                                <option value="10">10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                            </select>
-                            <span>entries</span>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <input type="text" class="form-control form-control-sm" placeholder="Search" style="border-radius: 4px;">
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table text-nowrap table-bordered table-striped" id="announcementsTable">
-                            <thead style="background-color: #000; color: #fff;">
+
+                <div class="table-responsive">
+                    <table class="table table-striped w-100" id="announcementsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th class="desktop-only-col">Type</th>
+                                <th class="desktop-only-col">Audience</th>
+                                <th class="desktop-only-col">Date Range</th>
+                                <th class="desktop-only-col">Status</th>
+                                <th class="desktop-only-col action-column" style="width: 100px;">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($announcements as $announcement): ?>
+                                <?php
+                                    $badgeClass = 'border-info text-info';
+                                    switch ($announcement['type']) {
+                                        case 'Warning': $badgeClass = 'border-warning text-warning'; break;
+                                        case 'Success': $badgeClass = 'border-success text-success'; break;
+                                        case 'Urgent': $badgeClass = 'border-danger text-danger'; break;
+                                        case 'Event': $badgeClass = 'border-primary text-primary'; break;
+                                    }
+                                    $dateRange = date('d M', strtotime($announcement['start_date'])) . ' - ' . date('d M, Y', strtotime($announcement['end_date']));
+                                ?>
                                 <tr>
-                                    <th class="sort-header">TITLE <i class="mdi mdi-unfold-more-horizontal float-end fs-12 opacity-50"></i></th>
-                                    <th class="sort-header">TYPE <i class="mdi mdi-unfold-more-horizontal float-end fs-12 opacity-50"></i></th>
-                                    <th class="sort-header">AUDIENCE <i class="mdi mdi-unfold-more-horizontal float-end fs-12 opacity-50"></i></th>
-                                    <th class="sort-header">DATE RANGE <i class="mdi mdi-unfold-more-horizontal float-end fs-12 opacity-50"></i></th>
-                                    <th class="sort-header">STATUS <i class="mdi mdi-unfold-more-horizontal float-end fs-12 opacity-50"></i></th>
-                                    <th class="sort-header">ACTION <i class="mdi mdi-unfold-more-horizontal float-end fs-12 opacity-50"></i></th>
+                                    <td>
+                                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                            <div style="flex: 1;">
+                                                <span class="fw-semibold text-dark"><?= esc($announcement['title']) ?></span>
+                                                <div class="expanded-details" id="announcement-details-<?= $announcement['id'] ?>" onclick="event.stopPropagation();">
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Type:</span>
+                                                        <span class="detail-value">
+                                                            <span class="badge bg-transparent border <?= $badgeClass ?>" style="padding: 3px 8px; font-size: 11px;">
+                                                                <?= esc($announcement['type']) ?>
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Audience:</span>
+                                                        <span class="detail-value"><?= esc($announcement['target_audience']) ?></span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Date Range:</span>
+                                                        <span class="detail-value"><?= $dateRange ?></span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Status:</span>
+                                                        <span class="detail-value">
+                                                            <?= $announcement['status'] == 'Active' ? '<span class="text-success fw-bold">Active</span>' : '<span class="text-danger fw-bold">Inactive</span>' ?>
+                                                        </span>
+                                                    </div>
+                                                    <?php if (!empty($announcement['description'])): ?>
+                                                        <div class="detail-row">
+                                                            <span class="detail-label">Details:</span>
+                                                            <span class="detail-value"><?= esc($announcement['description']) ?></span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <div class="detail-actions">
+                                                        <a href="javascript:void(0)" class="btn btn-sm btn-info text-white" onclick="showAnnouncement(<?= esc(json_encode($announcement)) ?>)"><i class="mdi mdi-eye"></i> View</a>
+                                                        <a href="/announcements/edit/<?= $announcement['id'] ?>" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
+                                                        <a href="javascript:void(0);" class="btn btn-sm btn-danger delete-btn" data-id="<?= $announcement['id'] ?>"><i class="mdi mdi-delete"></i> Delete</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="desktop-only-col">
+                                        <span class="badge bg-transparent border <?= $badgeClass ?>" style="padding: 4px 8px; font-weight: 500; font-size: 11px;">
+                                            <?= esc($announcement['type']) ?>
+                                        </span>
+                                    </td>
+                                    <td class="desktop-only-col"><span class="text-muted"><?= esc($announcement['target_audience']) ?></span></td>
+                                    <td class="desktop-only-col text-muted" style="font-size: 0.85rem;"><?= $dateRange ?></td>
+                                    <td class="desktop-only-col">
+                                        <?php if($announcement['status'] == 'Active'): ?>
+                                            <span class="badge bg-success-subtle text-success" style="font-weight: 600;">Active</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-danger-subtle text-danger" style="font-weight: 600;">Inactive</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="desktop-only-col">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <a href="javascript:void(0)" class="text-dark me-1" onclick="showAnnouncement(<?= esc(json_encode($announcement)) ?>)" title="View Details">
+                                                <i class="mdi mdi-eye fs-5"></i>
+                                            </a>
+                                            <a href="/announcements/edit/<?= $announcement['id'] ?>" class="text-primary me-1" title="Edit">
+                                                <i class="mdi mdi-pencil fs-5"></i>
+                                            </a>
+                                            <a href="javascript:void(0);" class="text-danger delete-btn" data-id="<?= $announcement['id'] ?>" title="Delete">
+                                                <i class="mdi mdi-delete fs-5"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td class="mobile-expand-col text-center">
+                                        <button type="button" class="expand-toggle" data-target="announcement-details-<?= $announcement['id'] ?>" aria-label="Expand details"></button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($announcements as $announcement): ?>
-                                    <tr>
-                                        <td>
-                                            <span class="fw-semibold text-dark"><?= esc($announcement['title']) ?></span>
-                                        </td>
-                                        <td>
-                                            <?php
-                                            $badgeClass = 'border-info text-info';
-                                            switch ($announcement['type']) {
-                                                case 'Warning': $badgeClass = 'border-warning text-warning'; break;
-                                                case 'Success': $badgeClass = 'border-success text-success'; break;
-                                                case 'Urgent': $badgeClass = 'border-danger text-danger'; break;
-                                                case 'Event': $badgeClass = 'border-primary text-primary'; break;
-                                            }
-                                            ?>
-                                            <span class="badge bg-transparent border <?= $badgeClass ?>" style="padding: 5px 10px; font-weight: 500;">
-                                                <?= $announcement['type'] ?>
-                                            </span>
-                                        </td>
-                                        <td><span class="text-muted"><?= $announcement['target_audience'] ?></span></td>
-                                        <td>
-                                            <div class="text-muted" style="font-size: 0.85rem;">
-                                                <?= date('d M', strtotime($announcement['start_date'])) ?> - <?= date('d M, Y', strtotime($announcement['end_date'])) ?>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <?php if($announcement['status'] == 'Active'): ?>
-                                                <span class="text-success" style="font-weight: 500;">Active</span>
-                                            <?php else: ?>
-                                                <span class="text-danger" style="font-weight: 500;">Inactive</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <a href="javascript:void(0)" class="btn btn-sm btn-icon btn-view-light" onclick="showAnnouncement(<?= esc(json_encode($announcement)) ?>)" title="View Details">
-                                                    <i class="mdi mdi-eye text-dark fs-18"></i>
-                                                </a>
-                                                <a href="/announcements/edit/<?= $announcement['id'] ?>" class="btn btn-sm btn-icon btn-warning-light" title="Edit">
-                                                    <i class="mdi mdi-pencil fs-18"></i>
-                                                </a>
-                                                <a href="javascript:void(0);" class="btn btn-sm btn-icon btn-danger-light delete-btn" data-id="<?= $announcement['id'] ?>" title="Delete">
-                                                    <i class="mdi mdi-delete fs-18"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
+
             </div>
         </div>
     </div>
@@ -101,36 +128,59 @@
 
 <script>
 $(document).ready(function() {
-    $('.delete-btn').on('click', function() {
+    $('#announcementsTable').DataTable({
+        order: [[3, 'desc']],
+        columnDefs: [
+            {
+                targets: [5, 6], // Action and Expand button
+                orderable: false,
+                searchable: false
+            }
+        ],
+        language: {
+            search: '',
+            searchPlaceholder: 'Search...'
+        }
+    });
+
+    $(document).on('click', '.delete-btn', function() {
         var id = $(this).data('id');
-        // Get CSRF from meta tags (defined in header_link)
         var csrfName = $('meta[name="csrf-token"]').attr('data-name');
         var csrfHash = $('meta[name="csrf-token"]').attr('content');
         
         Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: 'Delete Announcement?',
+            text: "This action cannot be reverted.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: 'Yes, Delete',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                confirmButton: 'btn btn-danger',
+                cancelButton: 'btn btn-secondary ms-2'
+            },
+            buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
                     url: '/announcements/delete/' + id,
-                    type: 'POST', // Use POST for wider server compatibility
+                    type: 'POST',
                     data: {
-                        _method: 'DELETE', // Method spoofing for CI4
+                        _method: 'DELETE',
                         [csrfName]: csrfHash
                     },
                     success: function(response) {
                         if (response.status === 'success') {
-                            Swal.fire('Deleted!', response.message, 'success').then(() => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
                                 location.reload();
                             });
                         } else {
-                            // If CSRF expired or other error, refresh hash for next try
                             if (response.csrfHash) {
                                 $('meta[name="csrf-token"]').attr('content', response.csrfHash);
                             }
@@ -138,14 +188,14 @@ $(document).ready(function() {
                         }
                     },
                     error: function(xhr) {
-                        Swal.fire('Error!', 'Permission denied or security token expired (403). Please refresh the page.', 'error');
+                        Swal.fire('Error!', 'Permission denied or session expired. Please refresh the page.', 'error');
                     }
                 });
             }
         });
     });
 
-    // 📥 Export to Excel functionality
+    // Export to Excel
     $('#btnExportAnnouncements').on('click', function () {
         const $btn = $(this);
         const token = localStorage.getItem('token');
@@ -174,15 +224,6 @@ $(document).ready(function() {
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
-            Swal.fire({
-                icon: 'success',
-                title: 'Exported!',
-                text: 'Announcements exported to Excel successfully.',
-                toast: true,
-                position: 'top-end',
-                timer: 3000,
-                showConfirmButton: false
-            });
         })
         .catch(error => {
             $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
@@ -191,24 +232,22 @@ $(document).ready(function() {
     });
 });
 
-/**
- * Show Announcement Details in a Bootstrap/Premium Styled Modal
- */
 function showAnnouncement(announcement) {
     Swal.fire({
         title: '',
         html: `
             <div class="text-start">
                 <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                    <h4 class="mb-0 fw-bold" style="color: #1e293b; font-size: 1.2rem;">Announcement Details</h4>
+                    <h5 class="mb-0 fw-bold text-dark">Announcement Details</h5>
                     <button type="button" class="btn-close" onclick="Swal.close()" aria-label="Close"></button>
                 </div>
                 <div class="mb-3">
-                    <h5 class="fw-bold mb-1" style="color: #334155;">${announcement.title}</h5>
-                    <p class="text-muted" style="font-size: 0.9rem;">${announcement.description}</p>
+                    <h6 class="fw-bold mb-1 text-primary">${announcement.title}</h6>
+                    <div class="mb-2"><span class="badge bg-secondary">${announcement.type}</span> <small class="text-muted ms-2">${announcement.start_date} to ${announcement.end_date}</small></div>
+                    <p class="text-muted" style="font-size: 0.9rem;">${announcement.description || 'No additional description provided.'}</p>
                 </div>
-                <div class="d-flex justify-content-end mt-4 pt-3">
-                    <button type="button" class="btn btn-info text-white px-4" style="background-color: #00c4ff; border: none; font-weight: 600;" onclick="Swal.close()">Close</button>
+                <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="Swal.close()">Close</button>
                 </div>
             </div>
         `,
@@ -218,98 +257,8 @@ function showAnnouncement(announcement) {
         customClass: {
             popup: 'rounded-3 shadow-lg border-0'
         },
-        showCloseButton: false,
-        backdrop: `rgba(0,0,0,0.4)`
+        showCloseButton: false
     });
 }
 </script>
-
-<style>
-    #announcementsTable {
-        border-collapse: separate;
-        border-spacing: 0;
-        width: 100% !important;
-        margin-top: 20px !important;
-    }
-    #announcementsTable thead th {
-        background-color: #000 !important;
-        color: #fff !important;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        padding: 15px;
-        border: none;
-        vertical-align: middle;
-        letter-spacing: 0.5px;
-    }
-    #announcementsTable tbody td {
-        padding: 15px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 0.85rem;
-        color: #475569;
-    }
-    #announcementsTable tbody tr:hover {
-        background-color: #f8fafc;
-    }
-    .sort-header {
-        cursor: pointer;
-        white-space: nowrap;
-    }
-    .badge {
-        font-weight: 500;
-        border-radius: 6px;
-        padding: 6px 12px;
-    }
-    
-    /* Action Buttons Styling */
-    .btn-icon {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%; /* Pure Circle */
-        padding: 0;
-        transition: all 0.2s ease;
-        border: none;
-    }
-    .fs-18 {
-        font-size: 1.15rem !important;
-    }
-    .btn-view-light {
-        background-color: #f1f5f9;
-        color: #334155;
-    }
-    .btn-view-light:hover {
-        background-color: #334155;
-        color: #fff !important;
-    }
-    .btn-view-light:hover i {
-        color: #fff !important;
-    }
-    .btn-warning-light {
-        background-color: #fffbeb;
-        color: #f59e0b;
-    }
-    .btn-warning-light:hover {
-        background-color: #f59e0b;
-        color: #fff !important;
-    }
-    .btn-danger-light {
-        background-color: #fef2f2;
-        color: #ef4444;
-    }
-    .btn-danger-light:hover {
-        background-color: #ef4444;
-        color: #fff !important;
-    }
-    
-    .avatar.avatar-sm {
-        width: 32px;
-        height: 32px;
-        line-height: 32px;
-        border-radius: 4px;
-    }
-</style>
 <?= $this->endSection(); ?>

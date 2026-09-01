@@ -243,16 +243,16 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-striped" id="jobs-Table">
-                        <thead>
+                    <table class="table table-striped w-100" id="jobs-Table">
+                        <thead class="table-light">
                             <tr>
-                                <th>No</th>
                                 <th>Job Title</th>
-                                <th>Department</th>
-                                <th>Job Type</th>
-                                <th>Salary</th>
-                                <th>Post Date</th>
-                                <th>Action</th>
+                                <th class="desktop-only-col">Department</th>
+                                <th class="desktop-only-col">Job Type</th>
+                                <th class="desktop-only-col">Salary</th>
+                                <th class="desktop-only-col">Post Date</th>
+                                <th class="desktop-only-col action-column" style="width: 100px;">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                         <tbody id="jobs-Table-Body">
@@ -268,13 +268,12 @@
     $(document).ready(function() {
         const token = localStorage.getItem('token');
 
-        // ✅ Fetch and display employees
+        // ✅ Fetch and display jobs
         function fetchJobs(departmentId = '') {
-            const token = localStorage.getItem('token'); // JWT token from login
+            const token = localStorage.getItem('token');
 
-            // Fetch jobs when the page loads
             $.ajax({
-                url: `<?= base_url('api/job') ?>`, // base_url() to get the correct path
+                url: `<?= base_url('api/job') ?>`,
                 method: 'GET',
                 data: departmentId ? {
                     department_id: departmentId
@@ -285,24 +284,56 @@
                 },
                 success: function(responseData) {
                     if (responseData.status === 'success') {
-                        const jobs = responseData.data; // Get the job data
+                        const jobs = responseData.data;
                         let tableRows = '';
 
                         jobs.forEach((job, index) => {
-                            // Create a row for each job
+                            const jobTypeFormatted = job.job_type ? (job.job_type.charAt(0).toUpperCase() + job.job_type.slice(1).toLowerCase()) : '';
                             const row = `
                         <tr data-id="${job.id}">
-                            <td>${index + 1}</td>
-                            <td>
-                            <a href="/job/display/${job.id}" class="text-decoration-none text-dark capitalize-text" title="View">${job.job_title}</a></td>
-                            <td class="capitalize-text">${job.department_name}</td>
-                           <td class="capitalize-text">${job.job_type.charAt(0).toUpperCase() + job.job_type.slice(1).toLowerCase()}</td>
-                            <td>${job.salary_range}</td>
-                            <td>${job.post_date}</td>
-                            <td style="display: flex; align-items: center; gap: 8px;">
-                                <a href="/job/display/${job.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
-                                <a href="/job?id=${job.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                <a href="#" class="text-danger fs-5" title="Delete" data-id="${job.id}" onclick="deleteLeave(event)"><i class="mdi mdi-delete"></i></a>
+                            <td class="capitalize-text">
+                                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <a href="/job/display/${job.id}" class="text-decoration-none text-dark fw-bold" title="View">${job.job_title}</a>
+                                        <div class="expanded-details" id="job-details-${job.id}" onclick="event.stopPropagation();">
+                                            <div class="detail-row">
+                                                <span class="detail-label">Department:</span>
+                                                <span class="detail-value">${job.department_name || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="detail-label">Job Type:</span>
+                                                <span class="detail-value">${jobTypeFormatted}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="detail-label">Salary:</span>
+                                                <span class="detail-value">${job.salary_range || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="detail-label">Post Date:</span>
+                                                <span class="detail-value">${job.post_date || 'N/A'}</span>
+                                            </div>
+                                            <div class="detail-actions">
+                                                <a href="/job/display/${job.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
+                                                <a href="/job?id=${job.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
+                                                <a href="#" class="btn btn-sm btn-danger" data-id="${job.id}" onclick="deleteLeave(event)"><i class="mdi mdi-delete"></i> Delete</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="desktop-only-col capitalize-text">${job.department_name || 'N/A'}</td>
+                            <td class="desktop-only-col capitalize-text"><span class="badge badge-outline-secondary" style="font-size: 11px;">${jobTypeFormatted}</span></td>
+                            <td class="desktop-only-col">${job.salary_range || 'N/A'}</td>
+                            <td class="desktop-only-col">${job.post_date || 'N/A'}</td>
+                            <td class="desktop-only-col">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <a href="/job/display/${job.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
+                                    <a href="/job?id=${job.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
+                                    <a href="#" class="text-danger fs-5" title="Delete" data-id="${job.id}" onclick="deleteLeave(event)"><i class="mdi mdi-delete"></i></a>
+                                </div>
+                            </td>
+                            <td class="mobile-expand-col text-center">
+                                <button type="button" class="expand-toggle" data-target="job-details-${job.id}" aria-label="Expand details"></button>
                             </td>
                         </tr>
                     `;
@@ -314,6 +345,14 @@
                             $('#jobs-Table').DataTable().clear().destroy();
                         }
                         $('#jobs-Table').DataTable({
+                            order: [[4, 'desc']],
+                            columnDefs: [
+                                {
+                                    targets: [5, 6],
+                                    orderable: false,
+                                    searchable: false
+                                }
+                            ],
                             language: {
                                 search: "",
                                 searchPlaceholder: "Search"
