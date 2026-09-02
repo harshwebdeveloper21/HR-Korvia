@@ -27,6 +27,10 @@
             padding: 6px 14px !important;
             min-height: 36px !important;
             line-height: 1.2 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 4px !important;
             transition: all 0.2s ease !important;
         }
         .btn-secondary:hover, .btn-secondary:focus {
@@ -46,6 +50,10 @@
             padding: 6px 14px !important;
             min-height: 36px !important;
             line-height: 1.2 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 4px !important;
             transition: all 0.2s ease !important;
         }
         .hr-btnbg:hover {
@@ -65,6 +73,88 @@
             font-size: 14px !important;
             padding: 6px 16px !important;
             min-height: 36px !important;
+        }
+
+        /* ══════════════════════════════════════════════════════
+           Sidebar Sub-menu (Dropdown) Compact & Clean Hierarchy
+           ══════════════════════════════════════════════════════ */
+        .sidebar .nav.sub-menu {
+            margin: 0 12px 6px 26px !important;
+            padding: 4px 0 6px 0 !important;
+            list-style: none !important;
+            background: #fafafa !important;
+            border-radius: 0 0 10px 10px !important;
+            border-left: 2px solid rgba(230, 97, 54, 0.25) !important;
+        }
+
+        .sidebar .nav.sub-menu .nav-item {
+            position: relative !important;
+            margin: 1px 0 !important;
+            padding: 0 !important;
+        }
+
+        .sidebar .nav.sub-menu .nav-item::before {
+            content: "" !important;
+            position: absolute !important;
+            left: 12px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            width: 5px !important;
+            height: 5px !important;
+            border-radius: 50% !important;
+            background: #94a3b8 !important;
+            margin: 0 !important;
+            transition: all 0.2s ease !important;
+            z-index: 1 !important;
+        }
+
+        .sidebar .nav.sub-menu .nav-item:hover::before,
+        .sidebar .nav.sub-menu .nav-item:has(.nav-link.active)::before {
+            background: #E66136 !important;
+            transform: translateY(-50%) scale(1.3) !important;
+        }
+
+        .sidebar .nav.sub-menu .nav-item .nav-link {
+            display: flex !important;
+            align-items: center !important;
+            padding: 6px 12px 6px 26px !important;
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+            color: #475569 !important;
+            font-weight: 500 !important;
+            border-radius: 6px !important;
+            height: auto !important;
+            white-space: normal !important;
+            transition: all 0.18s ease !important;
+        }
+
+        .sidebar .nav.sub-menu .nav-item .nav-link:hover {
+            color: #E66136 !important;
+            background: rgba(230, 97, 54, 0.08) !important;
+        }
+
+        .sidebar .nav.sub-menu .nav-item .nav-link.active {
+            color: #E66136 !important;
+            font-weight: 600 !important;
+            background: rgba(230, 97, 54, 0.1) !important;
+        }
+
+        /* Submenu Flyout in Minimized/Icon-Only Sidebar Mode */
+        body.sidebar-icon-only .sidebar .nav.sub-menu {
+            margin: 0 !important;
+            padding: 8px 0 !important;
+            border-left: none !important;
+            border-radius: 8px !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+            background: #ffffff !important;
+        }
+
+        body.sidebar-icon-only .sidebar .nav.sub-menu .nav-item::before {
+            display: none !important;
+        }
+
+        body.sidebar-icon-only .sidebar .nav.sub-menu .nav-item .nav-link {
+            padding: 8px 18px !important;
         }
 
         /* ══════════════════════════════════════════════════════════════════════════
@@ -179,6 +269,125 @@
         table td a[title*="Delete" i]:hover i {
             color: #dc2626 !important;
             transform: scale(1.15);
+        }
+
+        /* ══════════════════════════════════════════════════════
+           Independent Sidebar & Main Panel Scrolling Architecture
+           ══════════════════════════════════════════════════════ */
+        @media (min-width: 992px) {
+            .page-body-wrapper {
+                padding-top: 97px !important;
+                display: flex !important;
+                min-height: calc(100vh - 97px) !important;
+                position: relative !important;
+            }
+
+            .sidebar {
+                position: fixed !important;
+                top: 97px !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                width: 241px !important;
+                height: calc(100vh - 97px) !important;
+                max-height: calc(100vh - 97px) !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                overscroll-behavior: contain !important;
+                -ms-scroll-chaining: none !important;
+                -webkit-overflow-scrolling: touch !important;
+                z-index: 100 !important;
+                background: #ffffff !important;
+                border-right: 1px solid #e9ecef !important;
+                transition: width 0.25s ease, transform 0.25s ease !important;
+            }
+
+            .sidebar .nav {
+                overflow: visible !important;
+                margin-bottom: 40px !important;
+                padding-bottom: 30px !important;
+            }
+
+            .main-panel {
+                margin-left: 241px !important;
+                width: calc(100% - 241px) !important;
+                min-height: calc(100vh - 97px) !important;
+                transition: width 0.25s ease, margin-left 0.25s ease !important;
+            }
+
+            /* Collapsed / Minimized Sidebar */
+            body.sidebar-icon-only .sidebar {
+                width: 70px !important;
+                overflow-y: visible !important;
+                overflow-x: visible !important;
+            }
+
+            body.sidebar-icon-only .main-panel {
+                margin-left: 70px !important;
+                width: calc(100% - 70px) !important;
+            }
+
+            /* Hidden Sidebar */
+            body.sidebar-hidden .sidebar {
+                width: 0 !important;
+                display: none !important;
+            }
+
+            body.sidebar-hidden .main-panel {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+        }
+
+        /* Sleek Modern Custom Scrollbar for Sidebar */
+        .sidebar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(230, 97, 54, 0.25) transparent;
+        }
+
+        .sidebar:hover {
+            scrollbar-color: rgba(230, 97, 54, 0.5) transparent;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.12);
+            border-radius: 6px;
+        }
+
+        .sidebar:hover::-webkit-scrollbar-thumb {
+            background: rgba(230, 97, 54, 0.4);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #e66136;
+        }
+
+        /* Mobile View (< 992px) */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                position: fixed !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                overscroll-behavior: contain !important;
+                -webkit-overflow-scrolling: touch !important;
+                z-index: 1050 !important;
+            }
+
+            .main-panel {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
         }
 
         /* Protect all inline-hidden elements from being overridden */

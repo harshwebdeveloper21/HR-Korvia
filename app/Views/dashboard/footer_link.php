@@ -7,7 +7,7 @@
 <script src="<?= base_url(env('ImagePath').'assets/js/off-canvas.js'); ?>"></script>
 <script src="<?= base_url(env('ImagePath').'assets/vendors/datatables.net/jquery.dataTables.js'); ?>"></script>
 <script src="<?= base_url(env('ImagePath').'assets/vendors/datatables.net-bs4/dataTables.bootstrap4.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/template.js'); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/template.js?v=' . time()); ?>"></script>
 <script src="<?= base_url(env('ImagePath').'assets/js/settings.js'); ?>"></script>
 <script src="<?= base_url(env('ImagePath').'assets/js/hoverable-collapse.js'); ?>"></script>
 <script src="<?= base_url(env('ImagePath').'assets/js/todolist.js'); ?>"></script>

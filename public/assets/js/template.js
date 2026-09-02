@@ -111,6 +111,18 @@ $(document).ready(function () {
       }
     }
 
+    // Prevent scroll chaining from sidebar to window when reaching top/bottom
+    sidebar.on('wheel', function (e) {
+      var delta = e.originalEvent.deltaY;
+      var scrollTop = this.scrollTop;
+      var scrollHeight = this.scrollHeight;
+      var height = $(this).outerHeight();
+
+      if ((delta < 0 && scrollTop <= 0) || (delta > 0 && scrollTop + height >= scrollHeight - 1)) {
+        e.preventDefault();
+      }
+    });
+
     // Minimize sidebar toggle
     $('[data-bs-toggle="minimize"]').on("click", function () {
       if ((body.hasClass('sidebar-toggle-display')) || (body.hasClass('sidebar-absolute'))) {

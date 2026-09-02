@@ -486,22 +486,13 @@
                                             <!-- New Fields End -->
                                         </div>
                                         <div class="row">
-                                            <div class="col-lg-6">
+                                            <div class="col-lg-12">
                                                 <div class="form-group">
                                                     <label for="logo_img">Upload Logo</label>
                                                     <input type="file" class="form-control" name="logo_img" id="logo_img" accept="image/*">
                                                 </div>
                                                 <div class="mt-2">
                                                     <img id="company_logo" src="<?= base_url(env('ImagePath') . 'upload/fab_logo.jpg') ?>" alt="Company Logo" class="img-fluid view-logo" width="150">
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-6">
-                                                <div class="form-group">
-                                                    <label for="favicon_icon">Upload Favicon Icon</label>
-                                                    <input type="file" class="form-control" name="favicon_icon" id="favicon_icon" accept="image/*,.ico">
-                                                </div>
-                                                <div class="mt-2">
-                                                    <img id="company_favicon" src="<?= getCompanyFavicon() ?>" alt="Company Favicon" class="img-fluid view-favicon" width="48" style="max-height: 48px;">
                                                 </div>
                                             </div>
                                         </div>

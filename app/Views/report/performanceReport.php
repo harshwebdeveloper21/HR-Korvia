@@ -58,7 +58,7 @@
         <h4 class="card-title fw-bolder mb-0">Employee Performance Report</h4>
         <div class="d-flex gap-2 flex-wrap align-items-center">
             <button type="button" class="btn hr-btnbg btnpdingam export-page-btn" data-table="#performanceTable" data-filename="Performance_Report" style="white-space:nowrap;">
-                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                <i class="mdi mdi-file-excel iconfontsize"></i> Export
             </button>
             <button class="btn hr-btnbg btnpdingam" style="white-space:nowrap;" onclick="fetchPerformanceReport()">
                 <i class="mdi mdi-chart-bar me-1"></i>Generate Report

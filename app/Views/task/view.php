@@ -300,7 +300,7 @@
                         </select>
                         
                         <button type="button" id="btnExportTasks" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
                         
                         <?php $role = session()->get('role'); ?>
@@ -871,7 +871,7 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(async response => {
-                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({ message: 'Export failed' }));
                     throw new Error(err.message || 'Export failed');
@@ -899,7 +899,7 @@
                 });
             })
             .catch(error => {
-                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
                 Swal.fire('Export Error', error.message || 'Failed to export tasks', 'error');
             });
         });

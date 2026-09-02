@@ -613,7 +613,7 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Joining Date <span class="text-danger">*</span></label>
+                                    <label>Joining Date</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i

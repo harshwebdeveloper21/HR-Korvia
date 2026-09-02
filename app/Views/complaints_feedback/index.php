@@ -56,7 +56,7 @@
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <button type="button" id="btnExportUserComplaints" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px; border: none;">
-                            <i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export Excel
+                            <i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export
                         </button>
                         <a href="<?= base_url('complaints/create') ?>" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px; border: none;">
                             <i class="mdi mdi-plus-circle fs-5" style="color: #E66136;"></i> Submit New Request
@@ -417,7 +417,7 @@ $(document).ready(function() {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(async response => {
-                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export Excel');
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export');
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({ message: 'Export failed' }));
                     throw new Error(err.message || 'Export failed');
@@ -445,7 +445,7 @@ $(document).ready(function() {
                 });
             })
             .catch(error => {
-                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export Excel');
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export');
                 Swal.fire('Export Error', error.message || 'Failed to export complaints', 'error');
             });
         });

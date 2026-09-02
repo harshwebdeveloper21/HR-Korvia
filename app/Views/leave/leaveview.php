@@ -518,7 +518,7 @@
                     <h4 class="card-title">Leave Calendar</h4>
                     <div class="d-md-flex gap-2 align-items-center">
                         <button type="button" id="btnExportLeaves" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
                         <a href="/addleave" class="btn hr-btnbg">
                             <i class="mdi mdi-plus icon-leave-size"></i>Add Leave
@@ -1892,7 +1892,7 @@
             }
         })
         .then(async response => {
-            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
             if (!response.ok) {
                 const err = await response.json().catch(() => ({ message: 'Export failed' }));
                 throw new Error(err.message || 'Export failed');
@@ -1910,7 +1910,7 @@
             window.URL.revokeObjectURL(url);
         })
         .catch(err => {
-            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
             Swal.fire({
                 icon: 'error',
                 title: 'Export Failed',
