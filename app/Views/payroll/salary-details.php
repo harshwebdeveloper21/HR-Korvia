@@ -8,16 +8,11 @@
 
   .salary-manage {
     display: flex;
-  }
-
-  .save-all {
-    position: absolute;
-    top: 25px;
-    right: 29px;
-  }
-
-  .slarypadding {
-    padding: 2px;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
   }
 
   @media (max-width: 767px) {
@@ -31,28 +26,8 @@
       padding: 5.3px !important;
     }
 
-    .slarypadding {
-      padding: 0px !important;
-      margin-top: 8px !important;
-      margin-bottom: 8px !important;
-    }
-
     .iconfontsize {
       font-size: 11px !important;
-    }
-
-    .salary-manage {
-      display: unset;
-    }
-
-    /* .salary-control-size {
-      height: 27px !important;
-    } */
-
-    .save-all {
-      position: absolute !important;
-      top: 100px !important;
-      right: 20px !important;
     }
   }
 
@@ -165,29 +140,31 @@
     <div class="card">
       <div class="card-body">
         <div class="salary-manage">
-          <div class="slarypadding flex-grow-1">
+          <div>
             <h4 class="card-title mb-0">Manage Salary of Employee</h4>
           </div>
 
           <?php $role = session()->get("role"); ?>
           <?php if ($role !== "employee"): ?>
-            <div class="slarypadding">
+            <div class="d-flex align-items-center flex-wrap gap-2">
               <?php
               $currentMonth = date("Y-m");
               // Default to last month
               $lastMonth = date("Y-m", strtotime("first day of last month"));
               ?>
               <input type="month" id="salaryMonth" name="salaryMonth"
-                class="form-control form-control-sm salary-control-size" value="<?= esc($month ?? $lastMonth) ?>"
-                max="<?= $currentMonth ?>" />
-            </div>
-            <div class="slarypadding">
-              <input type="text" id="employeeSearch" class="form-control form-control-sm" placeholder="Search employee name..." style="min-width: 200px;">
-            </div>
-            <div class="slarypadding">
-              <a href="/payrollview" class="btn hr-btnbg" style="margin-right: 7.5rem;white-space:nowrap">
-                <i class="mdi mdi-arrow-left iconfontsize"></i>Back
+                class="form-control" value="<?= esc($month ?? $lastMonth) ?>"
+                max="<?= $currentMonth ?>" style="width: auto; min-width: 140px;" />
+
+              <input type="text" id="employeeSearch" class="form-control" placeholder="Search employee name..." style="width: auto; min-width: 180px;">
+
+              <a href="/payrollview" class="btn hr-btnbg text-nowrap">
+                <i class="mdi mdi-arrow-left iconfontsize me-1"></i> Back
               </a>
+
+              <button type="submit" form="saveAllForm" class="btn hr-btnbg text-nowrap">
+                <i class="mdi mdi-content-save-all-outline iconfontsize me-1"></i> Update All
+              </button>
             </div>
           <?php endif; ?>
         </div>
@@ -195,14 +172,9 @@
         <!-- Save All Form -->
         <form action="<?= base_url(
           "/api/payroll/saveAll",
-        ) ?>" method="post" class="individual-save-form">
+        ) ?>" method="post" id="saveAllForm" class="individual-save-form">
           <?= csrf_field() ?>
           <input type="hidden" name="month" value="<?= $month ?>">
-          <div class="text-end d-flex gap-2 justify-content-end">
-            <button type="submit" class="btn hr-btnbg save-all">
-              <i class="mdi mdi-content-save-all-outline me-1 iconfontsize"></i>Update All
-            </button>
-          </div>
           <div class="table-responsive">
             <table class="table table-striped slalary-detail" id="payroll-table">
               <thead>

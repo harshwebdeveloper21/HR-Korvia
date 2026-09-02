@@ -211,9 +211,61 @@
             <div class="card-body">
                 <div class="d-md-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title">Manage Holiday</h4>
-                    <a href="/add" class="btn hr-btnbg attendenceall text-nowrap">
-                        <i class="mdi mdi-plus iconfontsize"></i> Add Holiday
-                    </a>
+
+                    <div class="d-md-flex gap-2 align-items-center">
+                        <!-- Year Filter -->
+                        <select class="form-select" id="holidayYearFilter" style="min-width: 130px; width: auto;">
+                            <!-- Populated dynamically by JS -->
+                        </select>
+
+                        <!-- Auto-Generate Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn hr-btnbg attendenceall dropdown-toggle text-nowrap" type="button" id="btnAutoGenerate" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="mdi mdi-auto-fix iconfontsize"></i> Auto-Generate
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3" aria-labelledby="btnAutoGenerate">
+                                <li>
+                                    <a class="dropdown-item py-2" href="javascript:void(0)" onclick="triggerAutoGenerate('single')">
+                                        <i class="mdi mdi-calendar-check me-2 text-success fs-16"></i> Generate for Selected Year (<span class="lbl-selected-year"><?= date('Y') ?></span>)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2" href="javascript:void(0)" onclick="triggerAutoGenerate('next_5_years')">
+                                        <i class="mdi mdi-calendar-range me-2 text-warning fs-16"></i> Auto-Generate Next 5 Years (<?= date('Y') ?> - <?= date('Y') + 5 ?>)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2" href="javascript:void(0)" onclick="triggerAutoGenerate('all')">
+                                        <i class="mdi mdi-calendar-star me-2 text-primary fs-16"></i> Populate Full Range (2024 - 2030)
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Export Button -->
+                        <button type="button" id="btnExportHoliday" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export
+                        </button>
+
+                        <!-- Add Holiday Button -->
+                        <a href="/add" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-plus iconfontsize"></i> Add Holiday
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Empty State Banner (Shown if selected year has 0 holidays) -->
+                <div id="emptyYearBanner" style="display:none;" class="alert alert-warning d-flex align-items-center justify-content-between rounded-3 border-0 shadow-sm p-3 mb-3 flex-wrap gap-2">
+                    <div class="d-flex align-items-center">
+                        <i class="mdi mdi-alert-circle-outline fs-24 me-3 text-warning"></i>
+                        <div>
+                            <strong class="text-dark">No holidays found for year <span class="lbl-banner-year"></span>.</strong>
+                            <div class="text-muted fs-13">You can auto-generate festival holiday dates with 1 click.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm text-white px-3 fw-bold" style="background-color: #E66136; border-radius: 8px;" onclick="triggerAutoGenerate('single')">
+                        <i class="mdi mdi-auto-fix me-1"></i> Auto-Generate <span class="lbl-banner-year"></span> Holidays
+                    </button>
                 </div>
 
                 <div class="table-responsive">
@@ -238,120 +290,228 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    let selectedYear = '<?= date('Y') ?>';
+
+    function formatHolidayDate(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            const year = parts[0];
+            const monthIndex = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthName = monthNames[monthIndex] || parts[1];
+            return `${day} ${monthName} ${year}`;
+        }
+        return dateStr;
+    }
+
+    function fetchHolidays(yearToFetch) {
+        const token = localStorage.getItem('token');
+        const reqYear = yearToFetch || selectedYear;
+
+        $.ajax({
+            url: `<?= base_url('api/get_holidays') ?>?year=${reqYear}`,
+            type: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    // Populate Year dropdown if not yet populated
+                    if ($('#holidayYearFilter option').length <= 1 && Array.isArray(response.years)) {
+                        let yearOpts = '';
+                        response.years.forEach(yr => {
+                            yearOpts += `<option value="${yr}" ${yr == reqYear ? 'selected' : ''}>${yr}</option>`;
+                        });
+                        yearOpts += `<option value="all" ${reqYear === 'all' ? 'selected' : ''}>All Years</option>`;
+                        $('#holidayYearFilter').html(yearOpts);
+                    }
+
+                    $('.lbl-selected-year').text(reqYear === 'all' ? 'All' : reqYear);
+                    $('.lbl-banner-year').text(reqYear);
+
+                    const holidays = Array.isArray(response.data) ? response.data : [];
+
+                    // Show empty state alert if 0 holidays for specific year
+                    if (holidays.length === 0 && reqYear !== 'all') {
+                        $('#emptyYearBanner').fadeIn();
+                    } else {
+                        $('#emptyYearBanner').hide();
+                    }
+
+                    let tableRows = '';
+                    // Sort ascending by holiday_date
+                    holidays.sort((a, b) => new Date(a.holiday_date) - new Date(b.holiday_date));
+
+                    holidays.forEach(holiday => {
+                        const formattedName = holiday.title.charAt(0).toUpperCase() + holiday.title.slice(1).toLowerCase();
+                        const displayDate = formatHolidayDate(holiday.holiday_date);
+                        tableRows += `
+                        <tr>
+                            <td class="capitalize-text">
+                                <div style="flex: 1;">
+                                    <span>${formattedName}</span>
+                                    <div class="expanded-details" id="holiday-details-${holiday.id}" onclick="event.stopPropagation();">
+                                        <div class="detail-row">
+                                            <span class="detail-label">Holiday Date:</span>
+                                            <span class="detail-value">${displayDate}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Description:</span>
+                                            <span class="detail-value">${holiday.description || ''}</span>
+                                        </div>
+                                        <div class="detail-actions">
+                                            <a href="/edit-holiday/${holiday.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
+                                            <a href="#" class="btn btn-sm btn-danger delete-holiday" data-id="${holiday.id}"><i class="mdi mdi-delete"></i> Delete</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="desktop-only-col" data-order="${holiday.holiday_date}">${displayDate}</td>
+                            <td class="desktop-only-col capitalize-text">${holiday.description || ''}</td>
+                            <td class="desktop-only-col">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <a href="/edit-holiday/${holiday.id}" class="text-warning fs-5 edit-holiday" title="Edit">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </a>
+                                    <a href="#" class="text-danger fs-5 delete-holiday" data-id="${holiday.id}" title="Delete">
+                                        <i class="mdi mdi-delete"></i>
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="mobile-expand-col text-center">
+                                <button type="button" class="expand-toggle" data-target="holiday-details-${holiday.id}" aria-label="Expand details"></button>
+                            </td>
+                        </tr>`;
+                    });
+
+                    // Destroy old DataTable if initialized
+                    if ($.fn.DataTable.isDataTable('#task-table')) {
+                        $('#task-table').DataTable().clear().destroy();
+                    }
+
+                    // Populate table body
+                    $('#task-table tbody').html(tableRows);
+
+                    // Reinitialize DataTable
+                    $('#task-table').DataTable({
+                        order: [[1, 'asc']],
+                        columnDefs: [
+                            {
+                                targets: 4,
+                                orderable: false,
+                                searchable: false
+                            }
+                        ],
+                        language: {
+                            search: '',
+                            searchPlaceholder: 'Search'
+                        }
+                    });
+
+                    if (typeof applyMobileTableVisibility === 'function') {
+                        applyMobileTableVisibility();
+                    }
+                }
+            },
+            error: function() {
+                Swal.fire('Error', 'Failed to fetch holidays for the selected year.', 'error');
+            }
+        });
+    }
+
+    function triggerAutoGenerate(mode) {
+        const token = localStorage.getItem('token');
+        let descText = '';
+        if (mode === 'next_5_years') {
+            descText = `This will automatically populate festival holidays (Makar Sankranti, Holi/Dhuleti, Raksha Bandhan, Janmashtami, Diwali, Bhai Duj, etc.) for the next 5 years (<?= date('Y') ?> to <?= date('Y')+5 ?>). Existing dates will NOT be overwritten.`;
+        } else if (mode === 'all') {
+            descText = `This will generate festival holidays for all supported years (2024 to 2030). Existing records will NOT be overwritten.`;
+        } else {
+            descText = `This will auto-generate festival holidays for year ${selectedYear}. Existing records will NOT be overwritten.`;
+        }
+
+        Swal.fire({
+            title: 'Auto-Generate Holidays?',
+            text: descText,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="mdi mdi-auto-fix me-1"></i> Yes, Generate',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                confirmButton: 'btn text-white px-4 py-2',
+                cancelButton: 'btn btn-secondary ms-2 px-3 py-2'
+            },
+            buttonsStyling: false,
+            didOpen: () => {
+                const btn = Swal.getConfirmButton();
+                if (btn) btn.style.backgroundColor = '#E66136';
+            }
+        }).then((res) => {
+            if (res.isConfirmed) {
+                Swal.fire({
+                    title: 'Generating Holidays...',
+                    text: 'Please wait while holiday dates are being calculated and configured.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: '<?= base_url('api/holidays/auto-generate') ?>',
+                    type: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    data: JSON.stringify({
+                        year: selectedYear,
+                        mode: mode
+                    }),
+                    success: function(resp) {
+                        if (resp.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Holidays Generated!',
+                                text: resp.message,
+                                confirmButtonColor: '#E66136'
+                            }).then(() => {
+                                fetchHolidays(selectedYear);
+                            });
+                        } else {
+                            Swal.fire('Error', resp.message || 'Failed to auto-generate holidays.', 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'An error occurred while generating holidays.', 'error');
+                    }
+                });
+            }
+        });
+    }
+
     $(document).ready(function() {
         const token = localStorage.getItem('token');
 
-        function formatHolidayDate(dateStr) {
-            if (!dateStr) return '';
-            const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                const year = parts[0];
-                const monthIndex = parseInt(parts[1], 10) - 1;
-                const day = parseInt(parts[2], 10);
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const monthName = monthNames[monthIndex] || parts[1];
-                return `${day} ${monthName} ${year}`;
-            }
-            return dateStr;
-        }
+        // Initial fetch
+        fetchHolidays(selectedYear);
 
-        function fetchHolidays() {
-            $.ajax({
-                url: '<?= base_url('api/get_holidays') ?>',
-                type: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                success: function(response) {
-                    if (response.status === 'success' && Array.isArray(response.data)) {
-                        let tableRows = '';
-                        const holidays = response.data;
+        // Year Filter change event
+        $('#holidayYearFilter').on('change', function() {
+            selectedYear = $(this).val();
+            fetchHolidays(selectedYear);
+        });
 
-                        // Sort ascending by holiday_date
-                        holidays.sort((a, b) => new Date(a.holiday_date) - new Date(b.holiday_date));
+        // Export Button
+        $('#btnExportHoliday').on('click', function() {
+            const yr = $('#holidayYearFilter').val() || selectedYear;
+            window.location.href = `<?= base_url('api/holidays/export') ?>?year=${yr}`;
+        });
 
-                        holidays.forEach(holiday => {
-                            const formattedName = holiday.title.charAt(0).toUpperCase() + holiday.title.slice(1).toLowerCase();
-                            const displayDate = formatHolidayDate(holiday.holiday_date);
-                            tableRows += `
-                            <tr>
-                                <td class="capitalize-text">
-                                    <div style="flex: 1;">
-                                        <span>${formattedName}</span>
-                                        <div class="expanded-details" id="holiday-details-${holiday.id}" onclick="event.stopPropagation();">
-                                            <div class="detail-row">
-                                                <span class="detail-label">Holiday Date:</span>
-                                                <span class="detail-value">${displayDate}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <span class="detail-label">Description:</span>
-                                                <span class="detail-value">${holiday.description || ''}</span>
-                                            </div>
-                                            <div class="detail-actions">
-                                                <a href="/edit-holiday/${holiday.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                                <a href="#" class="btn btn-sm btn-danger delete-holiday" data-id="${holiday.id}"><i class="mdi mdi-delete"></i> Delete</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="desktop-only-col" data-order="${holiday.holiday_date}">${displayDate}</td>
-                                <td class="desktop-only-col capitalize-text">${holiday.description || ''}</td>
-                                <td class="desktop-only-col">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <a href="/edit-holiday/${holiday.id}" class="text-warning fs-5 edit-holiday" title="Edit">
-                                            <i class="mdi mdi-pencil"></i>
-                                        </a>
-                                        <a href="#" class="text-danger fs-5 delete-holiday" data-id="${holiday.id}" title="Delete">
-                                            <i class="mdi mdi-delete"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                                <td class="mobile-expand-col text-center">
-                                    <button type="button" class="expand-toggle" data-target="holiday-details-${holiday.id}" aria-label="Expand details"></button>
-                                </td>
-                            </tr>`;
-                        });
-
-                        // Populate table body
-                        $('#task-table tbody').html(tableRows);
-
-                        // Reinitialize DataTable
-                        if ($.fn.DataTable.isDataTable('#task-table')) {
-                            $('#task-table').DataTable().clear().destroy();
-                        }
-
-                        $('#task-table').DataTable({
-                            order: [[1, 'asc']], // Order by Holiday Date ascending
-                            columnDefs: [
-                                {
-                                    targets: 4, // mobile expand column
-                                    orderable: false,
-                                    searchable: false
-                                }
-                            ],
-                            language: {
-                                search: '',
-                                searchPlaceholder: 'Search'
-                            }
-                        });
-                        // Apply mobile visibility
-                        if (typeof applyMobileTableVisibility === 'function') {
-                            applyMobileTableVisibility();
-                        }
-                    } else {
-                        Swal.fire('Error', 'No holiday data found.', 'error');
-                    }
-                },
-                error: function() {
-                    Swal.fire('Error', 'Failed to fetch holidays.', 'error');
-                }
-            });
-        }
-
-        // Call function on page load
-        fetchHolidays();
-
+        // Delete holiday
         $(document).on('click', '.delete-holiday', function(e) {
             e.preventDefault();
             const id = $(this).data('id');
@@ -378,8 +538,7 @@
                         },
                         success: function(response) {
                             Swal.fire('Deleted!', response.message, 'success');
-                            // fetchHolidays();
-                            location.reload();
+                            fetchHolidays(selectedYear);
                         },
                         error: function() {
                             Swal.fire('Error', 'Failed to delete holiday.', 'error');
@@ -388,7 +547,6 @@
                 }
             });
         });
-
     });
 </script>
 

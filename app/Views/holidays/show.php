@@ -157,12 +157,20 @@
         <div class="card">
             <div class="card-body">
                 <!-- Year Header -->
-                <div class="year-header">
-                    <div class="year-title">
-                        <i class="mdi mdi-calendar-star"></i>
-                        Holiday Calendar <span id="currentYear"></span>
+                <div class="year-header d-md-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <div class="year-title mb-1">
+                            <i class="mdi mdi-calendar-star text-primary"></i>
+                            Holiday Calendar <span id="currentYear"></span>
+                        </div>
+                        <div class="year-subtitle">Company observed holidays for the year</div>
                     </div>
-                    <div class="year-subtitle">Company observed holidays for the year</div>
+                    <!-- Year Filter Dropdown -->
+                    <div class="mt-3 mt-md-0">
+                        <select id="userHolidayYearFilter" class="form-select" style="min-width: 130px; width: auto;">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Stats -->
@@ -202,7 +210,7 @@
                 <div id="noHolidaysMessage" style="display:none;" class="no-holidays">
                     <i class="mdi mdi-calendar-remove"></i>
                     <h5>No Holidays Found</h5>
-                    <p>There are no holidays configured for this year.</p>
+                    <p>There are no holidays configured for <span class="lbl-no-holidays-year"></span>.</p>
                 </div>
 
                 <!-- Error Message -->
@@ -215,109 +223,128 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
-    const currentYear = new Date().getFullYear();
-    $('#currentYear').text(currentYear);
+    let currentSelectedYear = new Date().getFullYear();
+    $('#currentYear').text(currentSelectedYear);
     
-    // Hide list initially
-    $('#holidaysList').hide();
-    
-    // Load holidays
-    fetch("<?= base_url('api/get_holidays') ?>")
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success' && data.data.length > 0) {
-                const holidays = data.data;
+    function loadHolidays(yearToFetch) {
+        const reqYear = yearToFetch || currentSelectedYear;
+        $('#currentYear').text(reqYear);
+        $('.lbl-no-holidays-year').text(reqYear);
+        
+        $('#holidaysList').hide();
+        $('#noHolidaysMessage').hide();
+        $('#errorMessage').hide();
+        $('#loadingMessage').show();
+        
+        fetch(`<?= base_url('api/get_holidays') ?>?year=${reqYear}`)
+            .then(response => response.json())
+            .then(data => {
+                $('#loadingMessage').hide();
                 
-                // Filter holidays for current year
-                const currentYearHolidays = holidays.filter(holiday => {
-                    const holidayYear = new Date(holiday.holiday_date).getFullYear();
-                    return holidayYear === currentYear;
-                });
-                
-                if (currentYearHolidays.length === 0) {
-                    showNoHolidays();
-                    return;
-                }
-                
-                // Calculate stats
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                let upcomingCount = 0;
-                let remainingCount = 0;
-                
-                currentYearHolidays.forEach(holiday => {
-                    const holidayDate = new Date(holiday.holiday_date);
-                    holidayDate.setHours(0, 0, 0, 0);
-                    
-                    if (holidayDate >= today) {
-                        upcomingCount++;
-                        remainingCount++;
+                if (data.status === 'success') {
+                    // Populate Year dropdown if not yet populated
+                    if ($('#userHolidayYearFilter option').length <= 1 && Array.isArray(data.years)) {
+                        let yearOpts = '';
+                        data.years.forEach(yr => {
+                            yearOpts += `<option value="${yr}" ${yr == reqYear ? 'selected' : ''}>${yr}</option>`;
+                        });
+                        $('#userHolidayYearFilter').html(yearOpts);
                     }
-                });
-                
-                $('#totalHolidays').text(currentYearHolidays.length);
-                $('#upcomingHolidays').text(upcomingCount);
-                $('#remainingHolidays').text(remainingCount);
-                
-                // Group holidays by month
-                const holidaysByMonth = {};
-                currentYearHolidays.forEach(holiday => {
-                    const date = new Date(holiday.holiday_date);
-                    const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
                     
-                    if (!holidaysByMonth[monthYear]) {
-                        holidaysByMonth[monthYear] = [];
+                    const holidays = data.data || [];
+                    
+                    if (holidays.length === 0) {
+                        showNoHolidays();
+                        return;
                     }
-                    holidaysByMonth[monthYear].push(holiday);
-                });
-                
-                // Render holidays
-                let htmlContent = '';
-                
-                Object.keys(holidaysByMonth).forEach(monthYear => {
-                    htmlContent += `
-                        <div class="month-divider">
-                            <i class="mdi mdi-calendar-month"></i>
-                            ${monthYear}
-                        </div>
-                    `;
                     
-                    holidaysByMonth[monthYear].forEach(holiday => {
-                        const date = new Date(holiday.holiday_date);
-                        const day = date.getDate();
-                        const month = date.toLocaleString('default', { month: 'short' });
-                        const weekday = date.toLocaleString('default', { weekday: 'long' });
-                        const isPast = date < today;
+                    // Calculate stats
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    let upcomingCount = 0;
+                    let remainingCount = 0;
+                    
+                    holidays.forEach(holiday => {
+                        const holidayDate = new Date(holiday.holiday_date);
+                        holidayDate.setHours(0, 0, 0, 0);
                         
+                        if (holidayDate >= today) {
+                            upcomingCount++;
+                            remainingCount++;
+                        }
+                    });
+                    
+                    $('#totalHolidays').text(holidays.length);
+                    $('#upcomingHolidays').text(upcomingCount);
+                    $('#remainingHolidays').text(remainingCount);
+                    
+                    // Group holidays by month
+                    const holidaysByMonth = {};
+                    holidays.forEach(holiday => {
+                        const date = new Date(holiday.holiday_date);
+                        const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                        
+                        if (!holidaysByMonth[monthYear]) {
+                            holidaysByMonth[monthYear] = [];
+                        }
+                        holidaysByMonth[monthYear].push(holiday);
+                    });
+                    
+                    // Render holidays
+                    let htmlContent = '';
+                    
+                    Object.keys(holidaysByMonth).forEach(monthYear => {
                         htmlContent += `
-                            <div class="holiday-card d-flex ${isPast ? 'opacity-75' : ''}">
-                                <div class="holiday-date">
-                                    <div class="holiday-day">${day}</div>
-                                    <div class="holiday-month">${month}</div>
-                                </div>
-                                <div class="holiday-info">
-                                    <div class="holiday-title">${holiday.title}</div>
-                                    ${holiday.description ? `<div class="holiday-description">${holiday.description}</div>` : ''}
-                                    <span class="holiday-weekday">${weekday}</span>
-                                </div>
+                            <div class="month-divider">
+                                <i class="mdi mdi-calendar-month"></i>
+                                ${monthYear}
                             </div>
                         `;
+                        
+                        holidaysByMonth[monthYear].forEach(holiday => {
+                            const date = new Date(holiday.holiday_date);
+                            const day = date.getDate();
+                            const month = date.toLocaleString('default', { month: 'short' });
+                            const weekday = date.toLocaleString('default', { weekday: 'long' });
+                            const isPast = date < today;
+                            
+                            htmlContent += `
+                                <div class="holiday-card d-flex ${isPast ? 'opacity-75' : ''}">
+                                    <div class="holiday-date">
+                                        <div class="holiday-day">${day}</div>
+                                        <div class="holiday-month">${month}</div>
+                                    </div>
+                                    <div class="holiday-info">
+                                        <div class="holiday-title">${holiday.title}</div>
+                                        ${holiday.description ? `<div class="holiday-description">${holiday.description}</div>` : ''}
+                                        <span class="holiday-weekday">${weekday}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
                     });
-                });
-                
-                $('#holidaysList').html(htmlContent);
-                $('#loadingMessage').hide();
-                $('#holidaysList').fadeIn();
-                
-            } else {
-                showNoHolidays();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showError('Failed to load holidays. Please try again later.');
-        });
+                    
+                    $('#holidaysList').html(htmlContent);
+                    $('#holidaysList').fadeIn();
+                } else {
+                    showNoHolidays();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Failed to load holidays. Please try again later.');
+            });
+    }
+    
+    // Initial Load
+    loadHolidays(currentSelectedYear);
+    
+    // Year Change Event
+    $('#userHolidayYearFilter').on('change', function() {
+        currentSelectedYear = $(this).val();
+        loadHolidays(currentSelectedYear);
+    });
     
     function showNoHolidays() {
         $('#loadingMessage').hide();

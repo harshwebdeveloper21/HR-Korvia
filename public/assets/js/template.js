@@ -184,5 +184,19 @@ $(document).ready(function () {
     $("#navbar-search-input").focus();
   });
 
-  // Scroll effect for header disabled to maintain consistent navbar and sidebar alignment
+  // Scroll effect for header (smooth auto-adjust on little scroll)
+  function updateHeaderOnScroll() {
+    var scroll = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || $(window).scrollTop() || 0;
+    if (scroll >= 20) {
+      $(".fixed-top").addClass("headerLight");
+      $("body").addClass("has-scrolled");
+    } else {
+      $(".fixed-top").removeClass("headerLight");
+      $("body").removeClass("has-scrolled");
+    }
+  }
+
+  $(window).on('scroll resize touchmove', updateHeaderOnScroll);
+  $(document).on('scroll', updateHeaderOnScroll);
+  $(document).ready(updateHeaderOnScroll);
 })(jQuery);

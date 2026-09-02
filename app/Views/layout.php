@@ -272,19 +272,41 @@
         }
 
         /* ══════════════════════════════════════════════════════
-           Independent Sidebar & Main Panel Scrolling Architecture (Zero Gap)
+           Spacious Initial Header & Compact Scrolled Navbar (Zero Gap & Seamless BG)
            ══════════════════════════════════════════════════════ */
-        .navbar.default-layout,
-        .navbar.default-layout .navbar-brand-wrapper,
-        .navbar.default-layout .navbar-menu-wrapper,
-        .navbar.headerLight,
-        .navbar.headerLight .navbar-brand-wrapper,
-        .navbar.headerLight .navbar-menu-wrapper {
-            height: 70px !important;
-            min-height: 70px !important;
-            max-height: 70px !important;
+        .navbar.default-layout {
+            height: 97px !important;
+            min-height: 97px !important;
             background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+            border: none !important;
+            transition: all 0.25s ease !important;
+        }
+
+        .navbar.default-layout .navbar-brand-wrapper,
+        .navbar.default-layout .navbar-menu-wrapper {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            height: 97px !important;
+            min-height: 97px !important;
+            transition: height 0.25s ease !important;
+        }
+
+        /* Scrolled Compact Header State */
+        .navbar.default-layout.headerLight,
+        .navbar.headerLight {
+            height: 62px !important;
+            min-height: 62px !important;
+            max-height: 62px !important;
+            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
+        }
+
+        .navbar.headerLight .navbar-brand-wrapper,
+        .navbar.headerLight .navbar-menu-wrapper {
+            height: 62px !important;
+            min-height: 62px !important;
+            max-height: 62px !important;
         }
 
         .navbar.headerLight .welcome-text,
@@ -293,21 +315,30 @@
         }
 
         @media (min-width: 992px) {
+            .navbar .navbar-brand-wrapper {
+                width: 241px !important;
+                min-width: 241px !important;
+                max-width: 241px !important;
+                border-right: 1px solid rgba(255, 255, 255, 0.25) !important;
+                padding-right: 15px !important;
+            }
+
             .page-body-wrapper {
-                padding-top: 70px !important;
+                padding-top: 97px !important;
                 display: flex !important;
-                min-height: calc(100vh - 70px) !important;
+                min-height: calc(100vh - 97px) !important;
                 position: relative !important;
+                transition: padding-top 0.25s ease !important;
             }
 
             .sidebar {
                 position: fixed !important;
-                top: 70px !important;
+                top: 97px !important;
                 left: 0 !important;
                 bottom: 0 !important;
                 width: 241px !important;
-                height: calc(100vh - 70px) !important;
-                max-height: calc(100vh - 70px) !important;
+                height: calc(100vh - 97px) !important;
+                max-height: calc(100vh - 97px) !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
                 overscroll-behavior: contain !important;
@@ -316,7 +347,15 @@
                 z-index: 100 !important;
                 background: #ffffff !important;
                 border-right: 1px solid #e9ecef !important;
-                transition: width 0.25s ease, transform 0.25s ease !important;
+                transition: width 0.25s ease, transform 0.25s ease, top 0.25s ease, height 0.25s ease !important;
+            }
+
+            /* Synced Sidebar Top Offset When Header Is Scrolled (Zero Gap) */
+            body.has-scrolled .sidebar,
+            .navbar.headerLight ~ .page-body-wrapper .sidebar {
+                top: 62px !important;
+                height: calc(100vh - 62px) !important;
+                max-height: calc(100vh - 62px) !important;
             }
 
             .sidebar .nav {
@@ -328,7 +367,7 @@
             .main-panel {
                 margin-left: 241px !important;
                 width: calc(100% - 241px) !important;
-                min-height: calc(100vh - 70px) !important;
+                min-height: calc(100vh - 97px) !important;
                 transition: width 0.25s ease, margin-left 0.25s ease !important;
             }
 
