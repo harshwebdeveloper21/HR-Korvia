@@ -13,6 +13,10 @@
         text-transform: capitalize;
     }
 
+    .home-tab .tab-content {
+        padding: 0 !important;
+    }
+
     .card .card-body {
         padding: 1rem 1rem;
     }
@@ -141,9 +145,12 @@
         .thismonth {
             justify-content: unset !important;
             display: block !important;
-            margin-top: 0px !important;
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.75rem !important;
+        }
 
-
+        .home-tab .dropdown .btn {
+            margin-top: 0 !important;
         }
 
         .filter-icon-inside {

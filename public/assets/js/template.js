@@ -184,8 +184,13 @@ $(document).ready(function () {
     $("#navbar-search-input").focus();
   });
 
-  // Scroll effect for header (smooth auto-adjust on little scroll)
+  // Scroll effect for header (Desktop only: smooth auto-adjust on scroll)
   function updateHeaderOnScroll() {
+    if (window.innerWidth < 992) {
+      $(".fixed-top").removeClass("headerLight");
+      $("body").removeClass("has-scrolled");
+      return;
+    }
     var scroll = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || $(window).scrollTop() || 0;
     if (scroll >= 20) {
       $(".fixed-top").addClass("headerLight");

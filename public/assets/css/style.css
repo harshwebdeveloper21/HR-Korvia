@@ -54971,13 +54971,9 @@ dl li {
 }
 
 .home-tab .tab-content {
-
-  padding: 24px 0;
-
+  padding: 0;
   font-family: "Manrope", sans-serif;
-
   border: none;
-
 }
 
 
@@ -56995,13 +56991,9 @@ dl li {
 }
 
 @media (max-width: 767px) {
-
   .content-wrapper {
-
-    padding: 0 1.5rem 1.5rem 1.5rem;
-
+    padding: 1.25rem 1rem 1.5rem 1rem;
   }
-
 }
 
 
@@ -61408,7 +61400,7 @@ span.icon-menu {
   }
 
   .content-wrapper {
-    padding: 0 0.5rem 1rem 0.5rem;
+    padding: 1rem 0.75rem 1rem 0.75rem;
   }
   i.mdi.mdi-eye {
     color: white;
