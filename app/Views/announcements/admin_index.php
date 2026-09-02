@@ -233,6 +233,13 @@ $(document).ready(function() {
 });
 
 function showAnnouncement(announcement) {
+    function safeEscape(str) {
+        if (!str) return '';
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
     Swal.fire({
         title: '',
         html: `
@@ -242,9 +249,9 @@ function showAnnouncement(announcement) {
                     <button type="button" class="btn-close" onclick="Swal.close()" aria-label="Close"></button>
                 </div>
                 <div class="mb-3">
-                    <h6 class="fw-bold mb-1 text-primary">${announcement.title}</h6>
+                    <h6 class="fw-bold mb-1 text-primary">${safeEscape(announcement.title)}</h6>
                     <div class="mb-2"><span class="badge bg-secondary">${announcement.type}</span> <small class="text-muted ms-2">${announcement.start_date} to ${announcement.end_date}</small></div>
-                    <p class="text-muted" style="font-size: 0.9rem;">${announcement.description || 'No additional description provided.'}</p>
+                    <div class="text-muted" style="font-size: 0.9rem; white-space: pre-wrap; word-break: break-word; line-height: 1.6; text-align: left;">${safeEscape((announcement.description || '').trim()) || 'No additional description provided.'}</div>
                 </div>
                 <div class="d-flex justify-content-end mt-4 pt-3 border-top">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="Swal.close()">Close</button>
