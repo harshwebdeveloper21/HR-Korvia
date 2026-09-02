@@ -54,8 +54,6 @@
         </div>
     </div>
 
-    <button id="toggleFilters" class="btn btnpdingam hr-btnbg mx-0 w-100 d-md-none"
-        onclick="toggleFilters()">Filters</button>
 
     <!-- Filter Form -->
     <div id="filters-row" class="row g-3">
@@ -373,11 +371,6 @@
         });
     }
 
-    /* ── Filters toggle ──────────────────────────────────────────── */
-    function toggleFilters() {
-        const el = document.getElementById('filters-row');
-        if (el) el.classList.toggle('d-none');
-    }
 
     /* NOTE: Auto-fetch removed — click "Generate Report" to load data */
     document.addEventListener("DOMContentLoaded", function() {

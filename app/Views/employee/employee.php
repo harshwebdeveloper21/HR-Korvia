@@ -742,20 +742,19 @@
                                     <img id="face-photo-preview" src="" alt="Face Photo"
                                         style="max-width: 100px; display: none; border-radius: 8px;">
                                     <div class="error" id="face_photo-Error"></div>
-                                    <small class="text-muted d-block mt-1">Upload a clear front-facing photo for face
-                                        recognition check-in.</small>
+                                    <small class="text-muted d-block mt-1">Upload a clear front-facing photo for face recognition check-in.</small>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="form-group text-end">
-                        <button type="button" class="btn btn-secondary prev-step interviewsmbtn me-2" id="prev3"
-                            style="display: none;">Previous</button>
-                        <button type="submit" class="btn hr-btnbg submit-form interviewsmbtn" id="submitForm"
-                            style="display: none;">Submit</button>
-                        <button type="button" class="btn hr-btnbg interviewsmbtn" id="updateForm"
-                            style="display: none;">Update</button>
+                        <div class="form-group text-end mt-4">
+                            <button type="button" class="btn btn-secondary prev-step interviewsmbtn me-2" id="prev3"
+                                style="display: none;">Previous</button>
+                            <button type="submit" class="btn hr-btnbg submit-form interviewsmbtn" id="submitForm"
+                                style="display: none;">Submit</button>
+                            <button type="button" class="btn hr-btnbg interviewsmbtn" id="updateForm"
+                                style="display: none;">Update</button>
+                        </div>
                     </div>
                 </form>
                 <div class="error" id="form_error" style="display: none;"></div>

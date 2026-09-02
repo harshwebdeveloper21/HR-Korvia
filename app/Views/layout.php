@@ -27,10 +27,10 @@
             padding: 6px 14px !important;
             min-height: 36px !important;
             line-height: 1.2 !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            gap: 4px !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
             transition: all 0.2s ease !important;
         }
         .btn-secondary:hover, .btn-secondary:focus {
@@ -50,10 +50,10 @@
             padding: 6px 14px !important;
             min-height: 36px !important;
             line-height: 1.2 !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            gap: 4px !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
             transition: all 0.2s ease !important;
         }
         .hr-btnbg:hover {
@@ -388,11 +388,6 @@
                 margin-left: 0 !important;
                 width: 100% !important;
             }
-        }
-
-        /* Protect all inline-hidden elements from being overridden */
-        [style*="display: none"], [style*="display:none"], [hidden] {
-            display: none !important;
         }
     </style>
 </head>

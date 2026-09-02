@@ -20,10 +20,6 @@
         </div>
     </div>
 
-    <!-- Mobile Filters Toggle -->
-    <button id="toggleFilters" class="btn btnpdingam hr-btnbg mx-0 w-100 d-md-none mb-3" onclick="toggleFilters()">
-        <i class="mdi mdi-filter me-1"></i> Toggle Filters
-    </button>
 
     <!-- Filter Row -->
     <div id="filters-row" class="row g-3 mb-4">
@@ -179,9 +175,6 @@
         }
     }
 
-    function toggleFilters() {
-        $('#filters-row').toggleClass('d-none');
-    }
 
     function loadEmployees(departmentId) {
         const employeeSelect = document.getElementById('user_id');

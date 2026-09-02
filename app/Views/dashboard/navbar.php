@@ -166,9 +166,9 @@ $role = $user ? $user->role : null;
             height: auto !important;
         }
 
-        /* Hide long greeting on tablet */
+        /* Compact greeting font on tablet/laptop */
         .welcome-text {
-            display: none !important;
+            font-size: 1.15rem !important;
         }
 
         /* Check-out button compact */
