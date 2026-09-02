@@ -257,26 +257,10 @@
             transform: scale(1.15);
         }
 
-        table td a.text-danger i,
-        table td button.text-danger i,
-        table td a[title*="Delete" i] i,
-        table td .text-danger i.mdi-delete {
-            color: #ef4444 !important;
-            transition: color 0.15s ease, transform 0.15s ease;
-        }
-        table td a.text-danger:hover i,
-        table td button.text-danger:hover i,
-        table td a[title*="Delete" i]:hover i {
-            color: #dc2626 !important;
-            transform: scale(1.15);
-        }
-
-        /* ══════════════════════════════════════════════════════
-           Spacious Initial Header & Compact Scrolled Navbar (Zero Gap & Seamless BG)
+           /* ══════════════════════════════════════════════════════
+           Unified Seamless Header Styles
            ══════════════════════════════════════════════════════ */
         .navbar.default-layout {
-            height: 97px !important;
-            min-height: 97px !important;
             background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
             border: none !important;
@@ -288,25 +272,6 @@
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            height: 97px !important;
-            min-height: 97px !important;
-            transition: height 0.25s ease !important;
-        }
-
-        /* Scrolled Compact Header State */
-        .navbar.default-layout.headerLight,
-        .navbar.headerLight {
-            height: 62px !important;
-            min-height: 62px !important;
-            max-height: 62px !important;
-            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
-        }
-
-        .navbar.headerLight .navbar-brand-wrapper,
-        .navbar.headerLight .navbar-menu-wrapper {
-            height: 62px !important;
-            min-height: 62px !important;
-            max-height: 62px !important;
         }
 
         .navbar.headerLight .welcome-text,
@@ -314,7 +279,34 @@
             display: block !important;
         }
 
+        /* ── DESKTOP VIEW (>= 992px): 97px on Top -> 62px on Scroll ── */
         @media (min-width: 992px) {
+            .navbar.default-layout {
+                height: 97px !important;
+                min-height: 97px !important;
+            }
+
+            .navbar.default-layout .navbar-brand-wrapper,
+            .navbar.default-layout .navbar-menu-wrapper {
+                height: 97px !important;
+                min-height: 97px !important;
+                transition: height 0.25s ease !important;
+            }
+
+            .navbar.default-layout.headerLight,
+            .navbar.headerLight {
+                height: 62px !important;
+                min-height: 62px !important;
+                max-height: 62px !important;
+            }
+
+            .navbar.headerLight .navbar-brand-wrapper,
+            .navbar.headerLight .navbar-menu-wrapper {
+                height: 62px !important;
+                min-height: 62px !important;
+                max-height: 62px !important;
+            }
+
             .navbar .navbar-brand-wrapper {
                 width: 241px !important;
                 min-width: 241px !important;
@@ -395,6 +387,80 @@
             }
         }
 
+        /* ── MOBILE & TABLET VIEW (< 992px): Constant Fixed Height (62px) On Load & On Scroll ── */
+        @media (max-width: 991.98px) {
+            .navbar.default-layout,
+            .navbar.headerLight,
+            .navbar.default-layout .navbar-brand-wrapper,
+            .navbar.headerLight .navbar-brand-wrapper,
+            .navbar.default-layout .navbar-menu-wrapper,
+            .navbar.headerLight .navbar-menu-wrapper {
+                height: 62px !important;
+                min-height: 62px !important;
+                max-height: 62px !important;
+            }
+
+            .navbar.default-layout {
+                padding: 0 10px !important;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+            }
+
+            .navbar .navbar-brand-wrapper {
+                width: auto !important;
+                min-width: auto !important;
+                max-width: none !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                background: transparent !important;
+                border: none !important;
+                border-right: none !important;
+                flex: 0 0 auto !important;
+            }
+
+            .navbar .navbar-menu-wrapper {
+                width: auto !important;
+                min-width: auto !important;
+                flex: 1 1 auto !important;
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: flex-end !important;
+            }
+
+            .page-body-wrapper {
+                padding-top: 62px !important;
+                min-height: calc(100vh - 62px) !important;
+            }
+
+            .content-wrapper {
+                padding: 1.25rem 0.85rem 1.5rem 0.85rem !important;
+            }
+
+            .sidebar {
+                position: fixed !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                overscroll-behavior: contain !important;
+                -webkit-overflow-scrolling: touch !important;
+                z-index: 1050 !important;
+            }
+
+            .main-panel {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+        }
+
         /* Sleek Modern Custom Scrollbar for Sidebar */
         .sidebar {
             scrollbar-width: thin;
@@ -426,26 +492,6 @@
             background: #e66136;
         }
 
-        /* Mobile View (< 992px) */
-        @media (max-width: 991.98px) {
-            .sidebar {
-                position: fixed !important;
-                top: 0 !important;
-                bottom: 0 !important;
-                height: 100vh !important;
-                max-height: 100vh !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
-                overscroll-behavior: contain !important;
-                -webkit-overflow-scrolling: touch !important;
-                z-index: 1050 !important;
-            }
-
-            .main-panel {
-                margin-left: 0 !important;
-                width: 100% !important;
-            }
-        }
     </style>
 </head>
 

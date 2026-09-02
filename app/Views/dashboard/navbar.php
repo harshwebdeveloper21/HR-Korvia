@@ -22,29 +22,28 @@ $role = $user ? $user->role : null;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    /* Default Logo Styling (On Initial Load / Top of Page) */
-    .navbar .navbar-brand-wrapper .navbar-brand img,
-    .sidebar-logo {
-        max-width: 195px !important;
-        max-height: 60px !important;
-        width: auto !important;
-        height: auto !important;
-        object-fit: contain !important;
-        border-radius: 10px !important;
-        transition: max-width 0.25s ease, max-height 0.25s ease;
-    }
-
-    /* On Scroll Logo Sizing (Compact Mode) */
-    .navbar.headerLight .navbar-brand-wrapper .navbar-brand img,
-    .navbar.headerLight .sidebar-logo,
-    .navbar.is-scrolled .navbar-brand-wrapper .navbar-brand img,
-    .navbar.is-scrolled .sidebar-logo {
-        max-width: 130px !important;
-        max-height: 40px !important;
-    }
-
-    /* Desktop View (>= 992px) */
+    /* Desktop Logo Styling (>= 992px) */
     @media (min-width: 992px) {
+        .navbar .navbar-brand-wrapper .navbar-brand img,
+        .sidebar-logo {
+            max-width: 195px !important;
+            max-height: 60px !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain !important;
+            border-radius: 10px !important;
+            transition: max-width 0.25s ease, max-height 0.25s ease;
+        }
+
+        /* On Scroll Logo Sizing (Compact Mode) */
+        .navbar.headerLight .navbar-brand-wrapper .navbar-brand img,
+        .navbar.headerLight .sidebar-logo,
+        .navbar.is-scrolled .navbar-brand-wrapper .navbar-brand img,
+        .navbar.is-scrolled .sidebar-logo {
+            max-width: 130px !important;
+            max-height: 40px !important;
+        }
+
         .navbar .navbar-brand-wrapper {
             width: 241px !important;
             min-width: 241px !important;
@@ -65,16 +64,24 @@ $role = $user ? $user->role : null;
         }
     }
 
-    /* Mobile & Tablet View (< 992px) */
+    /* Mobile & Tablet View (< 992px) - Constant Fixed 62px Header On Load & Scroll */
     @media (max-width: 991.98px) {
-        .navbar.default-layout {
+        .navbar.default-layout,
+        .navbar.headerLight {
+            height: 62px !important;
+            min-height: 62px !important;
+            max-height: 62px !important;
             padding: 0 10px !important;
             display: flex !important;
             flex-direction: row !important;
             align-items: center !important;
             justify-content: space-between !important;
         }
-        .navbar .navbar-brand-wrapper {
+        .navbar .navbar-brand-wrapper,
+        .navbar.headerLight .navbar-brand-wrapper {
+            height: 62px !important;
+            min-height: 62px !important;
+            max-height: 62px !important;
             width: auto !important;
             min-width: auto !important;
             max-width: none !important;
@@ -83,11 +90,14 @@ $role = $user ? $user->role : null;
             align-items: center !important;
             background: transparent !important;
             border: none !important;
+            border-right: none !important;
             flex: 0 0 auto !important;
         }
         .navbar .navbar-brand-wrapper .brand-logo {
             display: inline-flex !important;
             align-items: center !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         .navbar .navbar-brand-wrapper .brand-logo-mini {
             display: none !important;
@@ -96,16 +106,25 @@ $role = $user ? $user->role : null;
         .sidebar-logo {
             max-width: 110px !important;
             max-height: 38px !important;
+            width: auto !important;
             height: auto !important;
             object-fit: contain !important;
+            border-radius: 8px !important;
         }
-        .navbar .navbar-menu-wrapper {
+        .navbar .navbar-menu-wrapper,
+        .navbar.headerLight .navbar-menu-wrapper {
+            height: 62px !important;
+            min-height: 62px !important;
+            max-height: 62px !important;
             width: auto !important;
             min-width: auto !important;
             flex: 1 1 auto !important;
             background: transparent !important;
             border: none !important;
             padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
         }
     }
 
