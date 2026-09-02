@@ -945,7 +945,7 @@
         const fileName    = 'Salary_Sheet_' + monthLabel.replace(' ', '_') + '.pdf';
 
         const tableBody = [];
-        let totalLeave = 0, totalPaidLeave = 0, totalDeduction = 0, totalSalary = 0, totalTax = 0, totalNetPay = 0, totalSalaryAmt = 0;
+        let totalLeave = 0, totalPaidLeave = 0, totalRemPaidLeave = 0, totalDeductionLeave = 0, totalDeduction = 0, totalSalary = 0, totalTax = 0, totalNetPay = 0;
 
         payrolls.forEach(p => {
             const name       = (p.username || '').trim();
@@ -954,35 +954,55 @@
             const halfLeaves = parseFloat(p.total_half_day)    || 0;
             const paidLeaves = parseFloat(p.used_paid_leaves)  || 0;
             const sickLeaves = parseFloat(p.used_sick_leaves)  || 0;
-            // Unpaid leaves = total (incl. half-day) minus paid and sick leaves
-            const leaves     = Math.max((fullLeaves + halfLeaves * 0.5) - paidLeaves - sickLeaves, 0);
+            
+            // Total leave taken in month
+            const totalTakenLeaves = fullLeaves + (halfLeaves * 0.5);
+
+            // Remaining paid leaves calculation
+            let remPaidLeaves = 0;
+            if (p.remaining_paid_leaves !== null && p.remaining_paid_leaves !== undefined && p.remaining_paid_leaves !== '') {
+                remPaidLeaves = parseFloat(p.remaining_paid_leaves) || 0;
+            } else if (p.total_paid_leaves !== null && p.total_paid_leaves !== undefined && p.total_paid_leaves !== '') {
+                remPaidLeaves = Math.max((parseFloat(p.total_paid_leaves) || 0) - paidLeaves, 0);
+            }
+            if (remPaidLeaves === 0 && p.total_paid_leaves && parseFloat(p.total_paid_leaves) > 0) {
+                remPaidLeaves = Math.max((parseFloat(p.total_paid_leaves) || 0) - paidLeaves, 0);
+            }
+
+            // Deduction leave = Total leave taken minus paid & sick leaves
+            const deductionLeaves = Math.max(totalTakenLeaves - paidLeaves - sickLeaves, 0);
 
             const [yr, mo]    = (rawMonth || '2026-01').split('-');
             const daysInMonth = new Date(parseInt(yr), parseInt(mo), 0).getDate();
             const perDay      = Math.round(salary / daysInMonth);
 
-            // Fetch actual values from the database and round them
+            // Fetch actual deduction & tax values
             const deduction = Math.round(parseFloat(p.salary_deduction) || 0);
             const taxAmt    = Math.round(parseFloat(p.tax_deduction)    || 0);
             
             const taxText = taxAmt > 0 ? 'Rs. ' + taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'No Tax';
 
-            // Fetch Net Pay directly from the database and round it
+            // Net Pay
             const netPay = Math.round(parseFloat(p.net_salary) || 0);
 
-            totalLeave     += leaves;
-            totalPaidLeave += paidLeaves;
-            totalDeduction += deduction;
-            totalSalary    += salary;
-            totalTax       += taxAmt;
-            totalNetPay    += netPay;
+            totalLeave          += totalTakenLeaves;
+            totalPaidLeave      += paidLeaves;
+            totalRemPaidLeave   += remPaidLeaves;
+            totalDeductionLeave += deductionLeaves;
+            totalDeduction      += deduction;
+            totalSalary         += salary;
+            totalTax            += taxAmt;
+            totalNetPay         += netPay;
 
-            // Column order: NAME | SALARY | LEAVE | PAID LEAVE | PER DAY | DEDUCTION | TAX | NET PAY
+            // Column order:
+            // 0: NAME | 1: SALARY | 2: LEAVE (Days) | 3: PAID LEAVE (Days) | 4: REM. PAID LEAVE | 5: DEDUCTION LEAVE | 6: PER DAY | 7: DEDUCTION | 8: TAX | 9: NET PAY
             tableBody.push([
                 name,
                 'Rs. ' + salary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-                leaves % 1 === 0 ? leaves.toString() : leaves.toFixed(1),
+                totalTakenLeaves % 1 === 0 ? totalTakenLeaves.toString() : totalTakenLeaves.toFixed(1),
                 paidLeaves % 1 === 0 ? paidLeaves.toString() : paidLeaves.toFixed(1),
+                remPaidLeaves % 1 === 0 ? remPaidLeaves.toString() : remPaidLeaves.toFixed(1),
+                deductionLeaves % 1 === 0 ? deductionLeaves.toString() : deductionLeaves.toFixed(1),
                 'Rs. ' + perDay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 'Rs. ' + deduction.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 taxText,
@@ -995,6 +1015,8 @@
             'Rs. ' + totalSalary.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
             totalLeave % 1 === 0 ? totalLeave.toString() : totalLeave.toFixed(1),
             totalPaidLeave % 1 === 0 ? totalPaidLeave.toString() : totalPaidLeave.toFixed(1),
+            totalRemPaidLeave % 1 === 0 ? totalRemPaidLeave.toString() : totalRemPaidLeave.toFixed(1),
+            totalDeductionLeave % 1 === 0 ? totalDeductionLeave.toString() : totalDeductionLeave.toFixed(1),
             '',
             'Rs. ' + totalDeduction.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
             'Rs. ' + totalTax.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
@@ -1009,41 +1031,59 @@
         const pageW       = doc.internal.pageSize.getWidth();
         const totalRowIdx = tableBody.length - 1;
 
-        // ── Header: Logo LEFT + Company Name/Address RIGHT ──────────────────────
-        const logoSize = 44;
-        const logoX    = 36;
-        const logoY    = 12;
-        const headerH  = companyAddress ? 64 : 48;
-        const textX    = logoBase64 ? (logoX + logoSize + 14) : 36;
+        // ── Header Box & Banner Dimensions (Uniform Left & Right Margins: 28pt) ──────
+        const marginX  = 28;
+        const contentW = pageW - (marginX * 2);
+        const headerH  = companyAddress ? 64 : 50;
 
         // Border box around header
-        doc.setDrawColor(200, 200, 200);
+        doc.setDrawColor(210, 210, 210);
         doc.setLineWidth(0.5);
-        doc.rect(28, 8, pageW - 56, headerH, 'S');
+        doc.rect(marginX, 10, contentW, headerH, 'S');
 
-        // Logo – drawn from preloaded base64 (no broken image box)
+        // Logo – Preserving natural aspect ratio so it is never distorted/squished
+        let imgW = 110;
+        let imgH = 38;
         if (logoBase64) {
-            try { doc.addImage(logoBase64, logoX, logoY, logoSize, logoSize); } catch(e) {}
+            try {
+                const imgProps = doc.getImageProperties(logoBase64);
+                const maxW = 125;
+                const maxH = 42;
+                const ratio = Math.min(maxW / imgProps.width, maxH / imgProps.height);
+                imgW = Math.round(imgProps.width * ratio);
+                imgH = Math.round(imgProps.height * ratio);
+            } catch (e) {
+                imgW = 100;
+                imgH = 36;
+            }
         }
 
-        // Company Name – bold, left-aligned in text area
+        const logoX = marginX + 10;
+        const logoY = 10 + Math.round((headerH - imgH) / 2);
+
+        if (logoBase64) {
+            try { doc.addImage(logoBase64, logoX, logoY, imgW, imgH); } catch(e) {}
+        }
+
+        // Company Name – bold
+        const textX = logoBase64 ? (logoX + imgW + 16) : (marginX + 12);
         doc.setTextColor(...black);
         doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
-        doc.text(companyName, textX, 34);
+        doc.text(companyName, textX, 33);
 
         // Company Address – normal, grey
         if (companyAddress) {
-            doc.setFontSize(9);
+            doc.setFontSize(8.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(80, 80, 80);
-            doc.text(companyAddress, textX, 50);
+            doc.text(companyAddress, textX, 48);
         }
 
-        // Month / Sheet title row – dark bar below header
-        const titleBarY = headerH + 8 + 12;
+        // Month / Sheet title row – dark bar below header (matching exact marginX)
+        const titleBarY = headerH + 10 + 12;
         doc.setFillColor(...darkBg);
-        doc.rect(28, titleBarY - 14, pageW - 56, 20, 'F');
+        doc.rect(marginX, titleBarY - 14, contentW, 20, 'F');
         doc.setTextColor(...white);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
@@ -1051,24 +1091,51 @@
 
         const tableStartY = titleBarY + 12;
 
-
+        // AutoTable aligned exactly to marginX (28pt left and right)
         doc.autoTable({
             startY: tableStartY,
-            margin: { left: 40, right: 40 },
-            head: [['NAME', 'SALARY\n(Rs)', 'LEAVE\n(Days)', 'PAID LEAVE\n(Days)', 'PER DAY\nSALARY (Rs)', 'DEDUCTION\n(Rs)', 'TAX\n(Rs)', 'NET PAY\n(Rs)']],
+            margin: { left: marginX, right: marginX },
+            head: [[
+                'NAME',
+                'SALARY\n(Rs)',
+                'LEAVE\n(Days)',
+                'PAID LEAVE\n(Days)',
+                'REM. PAID\nLEAVE',
+                'DEDUCTION\nLEAVE (Days)',
+                'PER DAY\nSALARY (Rs)',
+                'DEDUCTION\n(Rs)',
+                'TAX\n(Rs)',
+                'NET PAY\n(Rs)'
+            ]],
             body: tableBody,
-            headStyles: { fillColor: orange, textColor: white, fontStyle: 'bold', fontSize: 7, halign: 'center', valign: 'middle', cellPadding: 3 },
+            headStyles: {
+                fillColor: orange,
+                textColor: white,
+                fontStyle: 'bold',
+                fontSize: 6.8,
+                halign: 'center',
+                valign: 'middle',
+                cellPadding: 3
+            },
             columnStyles: {
                 0: { halign: 'left',   cellWidth: 'auto' },
-                1: { halign: 'right' },
-                2: { halign: 'center', cellWidth: 40 },
-                3: { halign: 'center', cellWidth: 40 },
-                4: { halign: 'right' },
-                5: { halign: 'right' },
-                6: { halign: 'center' },
-                7: { halign: 'right' }
+                1: { halign: 'right',  cellWidth: 68 },
+                2: { halign: 'center', cellWidth: 46 },
+                3: { halign: 'center', cellWidth: 50 },
+                4: { halign: 'center', cellWidth: 52 },
+                5: { halign: 'center', cellWidth: 58 },
+                6: { halign: 'right',  cellWidth: 62 },
+                7: { halign: 'right',  cellWidth: 66 },
+                8: { halign: 'center', cellWidth: 46 },
+                9: { halign: 'right',  cellWidth: 68 }
             },
-            styles: { fontSize: 7.5, cellPadding: { top: 4, bottom: 4, left: 4, right: 4 }, overflow: 'linebreak', lineColor: [220, 220, 220], lineWidth: 0.3 },
+            styles: {
+                fontSize: 7.2,
+                cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+                overflow: 'linebreak',
+                lineColor: [220, 220, 220],
+                lineWidth: 0.3
+            },
             alternateRowStyles: { fillColor: lightGr },
             bodyStyles: { textColor: [30, 30, 30], valign: 'middle' },
             didParseCell: function (data) {
@@ -1076,25 +1143,39 @@
                     data.cell.styles.fillColor = darkBg;
                     data.cell.styles.textColor = white;
                     data.cell.styles.fontStyle = 'bold';
-                    data.cell.styles.fontSize  = 8;
+                    data.cell.styles.fontSize  = 7.5;
                     return;
                 }
-                // Red highlight on Leave (2), Paid Leave (3) and Tax (6) columns
-                if (data.section === 'body' && (data.column.index === 2 || data.column.index === 3 || data.column.index === 6)) {
+                // Paid Leave (col 3) highlight
+                if (data.section === 'body' && data.column.index === 3) {
                     data.cell.styles.textColor = [200, 0, 0];
                 }
-                // Red color for Deduction values (5)
+                // Rem. Paid Leave (col 4) green highlight
+                if (data.section === 'body' && data.column.index === 4) {
+                    data.cell.styles.textColor = [0, 130, 60];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+                // Deduction Leave (col 5) red highlight
                 if (data.section === 'body' && data.column.index === 5) {
                     data.cell.styles.textColor = [200, 0, 0];
                     data.cell.styles.fontStyle = 'bold';
                 }
-                // Green color for Net Pay (7)
+                // Deduction Amount (col 7)
                 if (data.section === 'body' && data.column.index === 7) {
+                    data.cell.styles.textColor = [200, 0, 0];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+                // Tax (col 8)
+                if (data.section === 'body' && data.column.index === 8) {
+                    data.cell.styles.textColor = data.cell.raw !== 'No Tax' ? [200, 0, 0] : [100, 100, 100];
+                }
+                // Net Pay (col 9)
+                if (data.section === 'body' && data.column.index === 9) {
                     data.cell.styles.textColor = [0, 150, 70];
                     data.cell.styles.fontStyle = 'bold';
                 }
             },
-            foot: [['Generated by Fablead HR Portal - ' + monthLabel, '', '', '', '', '', '', '']],
+            foot: [['Generated by Fablead HR Portal - ' + monthLabel, '', '', '', '', '', '', '', '', '']],
             footStyles: { fillColor: [240, 240, 240], textColor: [100, 100, 100], fontSize: 6, halign: 'left', fontStyle: 'italic' },
         });
 

@@ -22,27 +22,37 @@ $role = $user ? $user->role : null;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    /* Default Logo Styling (On Initial Load / Top) */
+    /* Default Logo Styling (On Initial Load / Top of Page) */
     .navbar .navbar-brand-wrapper .navbar-brand img,
     .sidebar-logo {
+        max-width: 195px !important;
+        max-height: 60px !important;
         width: auto !important;
         height: auto !important;
         object-fit: contain !important;
         border-radius: 10px !important;
-        transition: max-width 0.2s ease, max-height 0.2s ease;
+        transition: max-width 0.25s ease, max-height 0.25s ease;
     }
 
-    /* On Scroll Logo Sizing (Added when header scrolls to ensure top and bottom breathing space) */
+    /* On Scroll Logo Sizing (Compact Mode) */
     .navbar.headerLight .navbar-brand-wrapper .navbar-brand img,
     .navbar.headerLight .sidebar-logo,
     .navbar.is-scrolled .navbar-brand-wrapper .navbar-brand img,
     .navbar.is-scrolled .sidebar-logo {
         max-width: 130px !important;
-        max-height: 50px !important;
+        max-height: 40px !important;
     }
 
     /* Desktop View (>= 992px) */
     @media (min-width: 992px) {
+        .navbar .navbar-brand-wrapper {
+            width: 241px !important;
+            min-width: 241px !important;
+            background: transparent !important;
+            border: none !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.25) !important;
+            padding-right: 15px !important;
+        }
         .navbar .navbar-brand-wrapper .brand-logo {
             display: inline-block !important;
         }
@@ -57,32 +67,60 @@ $role = $user ? $user->role : null;
 
     /* Mobile & Tablet View (< 992px) */
     @media (max-width: 991.98px) {
+        .navbar.default-layout {
+            padding: 0 10px !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+        .navbar .navbar-brand-wrapper {
+            width: auto !important;
+            min-width: auto !important;
+            max-width: none !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            background: transparent !important;
+            border: none !important;
+            flex: 0 0 auto !important;
+        }
         .navbar .navbar-brand-wrapper .brand-logo {
-            display: inline-block !important;
+            display: inline-flex !important;
+            align-items: center !important;
         }
         .navbar .navbar-brand-wrapper .brand-logo-mini {
             display: none !important;
         }
-        .navbar .navbar-brand-wrapper .sidebar-logo {
-            max-width: 120px !important;
+        .navbar .navbar-brand-wrapper .sidebar-logo,
+        .sidebar-logo {
+            max-width: 110px !important;
             max-height: 38px !important;
+            height: auto !important;
+            object-fit: contain !important;
+        }
+        .navbar .navbar-menu-wrapper {
+            width: auto !important;
+            min-width: auto !important;
+            flex: 1 1 auto !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
         }
     }
 
     @media (max-width: 768px) {
         .navbar .navbar-menu-wrapper {
-            width: calc(95% - 85px) !important;
-        }
-        .navbar .navbar-menu-wrapper {
-            background: none !important;
+            width: auto !important;
+            background: transparent !important;
         }
         .navbar {
             background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
         }
 
         .sidebar-logo {
-            max-width: 120px !important;
-            max-height: 42px !important;
+            max-width: 110px !important;
+            max-height: 38px !important;
         }
 
         .check-in-out-container:not(.role-admin) {
@@ -93,12 +131,7 @@ $role = $user ? $user->role : null;
             display: none !important;
         }
 
-        /* #check-in-btn {
-            display: none !important;
-        } */
-
         .check-in-out-container:not(.role-admin) #check-out-btn {
-            /* display: flex !important; */
             align-items: center;
             padding: 6px 12px !important;
             font-size: 14px !important;
@@ -158,6 +191,7 @@ $role = $user ? $user->role : null;
             width: auto !important;
             flex: 1 1 auto;
             padding-right: 8px;
+            background: transparent !important;
         }
 
         /* Reduce logo size slightly */
@@ -173,7 +207,6 @@ $role = $user ? $user->role : null;
 
         /* Check-out button compact */
         .check-in-out-container:not(.role-admin) #check-out-btn {
-            /* display: flex !important; */
             align-items: center;
             padding: 6px 12px !important;
             font-size: 14px !important;
@@ -210,7 +243,8 @@ $role = $user ? $user->role : null;
         }
 
         .navbar .navbar-brand-wrapper {
-            width: 105px;
+            width: auto !important;
+            background: transparent !important;
         }
 
         .sidebar-offcanvas.active {
@@ -237,12 +271,7 @@ $role = $user ? $user->role : null;
             display: none !important;
         }
 
-        /* #check-in-btn {
-            display: none !important;
-        } */
-
         .check-in-out-container:not(.role-admin) #check-out-btn {
-            /* display: flex !important; */
             align-items: center;
             padding: 4px 8px !important;
             font-size: 14px !important;
@@ -298,31 +327,31 @@ $role = $user ? $user->role : null;
             left: -240px !important;
         }
         .navbar .navbar-brand-wrapper{
-            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
+            background: transparent !important;
         }
     }
 </style>
-<nav class="navbar default-layout col-lg-12 col-12 p-0 fixed-top d-flex align-items-top flex-row">
+<nav class="navbar default-layout col-lg-12 col-12 p-0 fixed-top d-flex align-items-center flex-row">
 
-    <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-start">
-        <div class="me-3">
-            <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-bs-toggle="minimize">
-                <span class="icon-menu"></span>
+    <div class="navbar-brand-wrapper d-flex align-items-center justify-content-start">
+        <div class="me-3 d-none d-lg-block">
+            <button class="navbar-toggler navbar-toggler align-self-center border-0 bg-transparent text-white" type="button" data-bs-toggle="minimize">
+                <span class="icon-menu text-white"></span>
             </button>
         </div>
-        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center p-1" type="button" data-bs-toggle="offcanvas">
-            <span class="mdi mdi-menu"></span>
+        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center p-1 me-2 border-0 bg-transparent text-white" type="button" data-bs-toggle="offcanvas">
+            <span class="mdi mdi-menu text-white fs-4"></span>
         </button>
-        <div>
-            <a class="navbar-brand brand-logo" href="/dashboard">
+        <div class="d-flex align-items-center">
+            <a class="navbar-brand brand-logo m-0 p-0" href="/dashboard">
                 <img src="<?= getCompanyLogo(); ?>" alt="logo" class="sidebar-logo" />
             </a>
-            <a class="navbar-brand brand-logo-mini" href="/dashboard">
+            <a class="navbar-brand brand-logo-mini m-0 p-0" href="/dashboard">
                 <img src="<?= getCompanyLogo(); ?>" alt="logo" class="sidebar-logo" />
             </a>
         </div>
     </div>
-    <div class="navbar-menu-wrapper d-flex align-items-top navbar-all-sm justify-content-end">
+    <div class="navbar-menu-wrapper d-flex align-items-center navbar-all-sm justify-content-end">
         <ul class="navbar-nav">
             <li class="nav-item fw-semibold d-none d-lg-block ms-0">
                 <h1 class="welcome-text" style="color: white;">
