@@ -166,7 +166,7 @@
                     <h4 class="card-title mb-0">Manage Expenses</h4>
                     <div class="d-md-flex gap-2 align-items-center mt-2 mt-md-0">
                         <button type="button" id="btnExportExpenses" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
                         
                         <?php if ($user->role !== 'employee'): ?>

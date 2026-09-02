@@ -111,7 +111,7 @@
                     <h4 class="card-title">Manage Interviews</h4>
                     <div class="d-flex gap-2">
                         <button type="button" id="btnExportInterviews" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
                         <a href="<?= base_url(
                             "/interviews",
@@ -478,7 +478,7 @@
         })
         .then(async response => {
             btn.disabled = false;
-            btn.innerHTML = '<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel';
+            btn.innerHTML = '<i class="mdi mdi-file-excel iconfontsize"></i> Export';
             if (!response.ok) {
                 const err = await response.json().catch(() => ({ message: 'Export failed' }));
                 throw new Error(err.message || 'Export failed');
@@ -507,7 +507,7 @@
         })
         .catch(error => {
             btn.disabled = false;
-            btn.innerHTML = '<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel';
+            btn.innerHTML = '<i class="mdi mdi-file-excel iconfontsize"></i> Export';
             Swal.fire('Export Error', error.message || 'Failed to export interviews', 'error');
         });
     });

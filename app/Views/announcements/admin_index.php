@@ -9,7 +9,7 @@
                     <h4 class="card-title mb-0">Manage Announcements</h4>
                     <div class="d-md-flex gap-2 align-items-center mt-2 mt-md-0">
                         <button type="button" id="btnExportAnnouncements" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
                         <a href="/announcements/create" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-plus iconfontsize"></i> Add Announcement
@@ -207,7 +207,7 @@ $(document).ready(function() {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(async response => {
-            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
             if (!response.ok) {
                 const err = await response.json().catch(() => ({ message: 'Export failed' }));
                 throw new Error(err.message || 'Export failed');
@@ -226,7 +226,7 @@ $(document).ready(function() {
             window.URL.revokeObjectURL(url);
         })
         .catch(error => {
-            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+            $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
             Swal.fire('Export Error', error.message || 'Failed to export announcements', 'error');
         });
     });

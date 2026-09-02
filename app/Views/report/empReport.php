@@ -89,7 +89,7 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn hr-btnbg btnpdingam export-page-btn" data-table="#employeeTable" data-filename="Employee_Report" style="white-space: nowrap;">
-                <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                <i class="mdi mdi-file-excel iconfontsize"></i> Export
             </button>
             <button class="btn hr-btnbg btnpdingam" style="white-space: nowrap;" onclick="fetchSalaryReport()">Generate Report</button>
         </div>        

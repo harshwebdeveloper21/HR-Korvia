@@ -2,10 +2,6 @@
 
 <?= $this->section('content'); ?>
 <style>
-    .filterbtn {
-        margin-top: -0.5rem !important;
-    }
-
     .bg-light-stripe {
         background-color: #f2f2f2 !important;
     }
@@ -37,41 +33,31 @@
         border: 1px solid #ddd;
         padding: 3px 5px;
     }
-
-    .hr-btnbg {
-        background-color: #E66136 !important;
-        border: 2px solid #F05929 !important;
-        border-radius: 4px !important;
-        color: #fff !important;
-        font-family: Poppins, sans-serif !important;
-        font-size: 14px !important;
-        font-weight: 500 !important;
-    }
 </style>
 
 <div class="row">
     <div class="col-lg-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
-                <div class="align-items-center d-md-flex justify-content-between mb-3">
-                    <h4 class="card-title">Manage Complaints & Feedback</h4>
-                    <div class="d-md-flex gap-2">
-                        <select class="form-select shadow-none" id="filterStatus" style="max-width: 150px;">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <h4 class="card-title mb-0">Manage Complaints & Feedback</h4>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <select class="form-select shadow-none" id="filterStatus" style="width: auto; min-width: 140px; height: 36px; min-height: 36px; font-size: 13.5px; border-radius: 4px; padding: 4px 28px 4px 10px;">
                             <option value="">All Status</option>
                             <option value="Pending">Pending</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Resolved">Resolved</option>
                         </select>
-                        <select class="form-select shadow-none d-none" id="filterType" style="max-width: 130px;">
+                        <select class="form-select shadow-none d-none" id="filterType" style="width: auto; min-width: 130px; height: 36px; min-height: 36px; font-size: 13.5px; border-radius: 4px;">
                             <option value="">All Types</option>
                             <option value="Complaint">Complaint</option>
                             <option value="Feedback">Feedback</option>
                         </select>
-                        <button type="button" id="btnExportComplaints" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                        <button type="button" id="btnExportComplaints" class="btn hr-btnbg text-nowrap d-inline-flex align-items-center justify-content-center gap-1" style="height: 36px; min-height: 36px; font-size: 13.5px; padding: 6px 14px; border-radius: 4px;">
+                            <i class="mdi mdi-file-excel fs-6 me-1"></i> Export
                         </button>
-                        <a href="<?= base_url('complaints/create') ?>" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-plus iconfontsize"></i> Add New Request
+                        <a href="<?= base_url('complaints/create') ?>" class="btn hr-btnbg text-nowrap d-inline-flex align-items-center justify-content-center gap-1" style="height: 36px; min-height: 36px; font-size: 13.5px; padding: 6px 14px; border-radius: 4px;">
+                            <i class="mdi mdi-plus fs-6 me-1"></i> Add New Request
                         </a>
                     </div>
                 </div>
@@ -438,7 +424,7 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(async response => {
-                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({ message: 'Export failed' }));
                     throw new Error(err.message || 'Export failed');
@@ -466,7 +452,7 @@
                 });
             })
             .catch(error => {
-                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
                 Swal.fire('Export Error', error.message || 'Failed to export complaints', 'error');
             });
         });

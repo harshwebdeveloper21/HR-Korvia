@@ -31,7 +31,7 @@
                     <h4 class="card-title">Manage Performances</h4>
                     <div class="d-flex gap-2">
                         <button type="button" id="btnExportPerformance" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-file-excel iconfontsize"></i> Export Excel
+                            <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
                         <?php $role = session()->get("role"); ?>
                         <?php if ($role !== "employee"): ?>
@@ -293,7 +293,7 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(async response => {
-                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({ message: 'Export failed' }));
                     throw new Error(err.message || 'Export failed');
@@ -321,7 +321,7 @@
                 });
             })
             .catch(error => {
-                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export Excel');
+                $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
                 Swal.fire('Export Error', error.message || 'Failed to export performance reviews', 'error');
             });
         });

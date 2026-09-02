@@ -297,8 +297,10 @@ class EmployeeController extends ResourceController
                     'errors' => ['required' => 'Department is required.']
                 ],
                 'joining_date' => [
-                    'rules' => 'required',
-                    'errors' => ['required' => 'Joining date is required.']
+                    'rules' => 'permit_empty|valid_date',
+                    'errors' => [
+                        'valid_date' => 'Please enter a valid joining date.'
+                    ]
                 ],
                 'salary' => [
                     'rules' => 'required|decimal|greater_than[0]',
@@ -446,7 +448,7 @@ class EmployeeController extends ResourceController
             'employee_id' => isset($data['employee_id']) ? trim($data['employee_id']) : '',
             'designation_id' => $data['designation_id'] ?? '',
             'department_id' => $data['department_id'] ?? '',
-            'joining_date' => $data['joining_date'] ?? '',
+            'joining_date' => !empty($data['joining_date']) ? $data['joining_date'] : null,
             'working_location' => $data['working_location'] ?? '',
             'role' => $data['role'] ?? 'employee',
             'salary' => $data['salary'] ?? '',
@@ -695,7 +697,7 @@ class EmployeeController extends ResourceController
             'employee_id' => $employee_id,
             'designation_id' => $designation_id,
             'department_id' => $department_id,
-            'joining_date' => $data['joining_date'] ?? null,
+            'joining_date' => !empty($data['joining_date']) ? $data['joining_date'] : null,
             'working_location' => $data['working_location'] ?? '',
             'role' => $role,
             'status' => $data['status'] ?? 'Active',
@@ -1417,7 +1419,7 @@ class EmployeeController extends ResourceController
             'employee_id' => 'required',
             'department_id' => 'required|integer',
             'designation_id' => 'required|integer',
-            'joining_date' => 'required|valid_date',
+            'joining_date' => 'permit_empty|valid_date',
             'working_location' => 'required',
             'postcode' => 'required',
             'salary' => 'required|numeric',
@@ -1458,7 +1460,7 @@ class EmployeeController extends ResourceController
             'employee_id' => $data['employee_id'],
             'department_id' => $data['department_id'],
             'designation_id' => $data['designation_id'],
-            'joining_date' => $data['joining_date'],
+            'joining_date' => !empty($data['joining_date']) ? $data['joining_date'] : null,
             'working_location' => $data['working_location'],
             'postcode' => $data['postcode'],
             'salary' => $data['salary'],
