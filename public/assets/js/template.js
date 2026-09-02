@@ -184,15 +184,5 @@ $(document).ready(function () {
     $("#navbar-search-input").focus();
   });
 
-  // Scroll effect for header
-  $(window).scroll(function () {
-    var scroll = $(window).scrollTop();
-
-    if (scroll >= 97) {
-      $(".fixed-top").addClass("headerLight");
-    } else {
-      $(".fixed-top").removeClass("headerLight");
-    }
-  });
-
+  // Scroll effect for header disabled to maintain consistent navbar and sidebar alignment
 })(jQuery);

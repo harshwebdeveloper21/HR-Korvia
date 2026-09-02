@@ -272,24 +272,42 @@
         }
 
         /* ══════════════════════════════════════════════════════
-           Independent Sidebar & Main Panel Scrolling Architecture
+           Independent Sidebar & Main Panel Scrolling Architecture (Zero Gap)
            ══════════════════════════════════════════════════════ */
+        .navbar.default-layout,
+        .navbar.default-layout .navbar-brand-wrapper,
+        .navbar.default-layout .navbar-menu-wrapper,
+        .navbar.headerLight,
+        .navbar.headerLight .navbar-brand-wrapper,
+        .navbar.headerLight .navbar-menu-wrapper {
+            height: 70px !important;
+            min-height: 70px !important;
+            max-height: 70px !important;
+            background: linear-gradient(135deg, #e66136, #ff7b4a) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+        }
+
+        .navbar.headerLight .welcome-text,
+        .with-welcome-text .navbar.headerLight .welcome-text {
+            display: block !important;
+        }
+
         @media (min-width: 992px) {
             .page-body-wrapper {
-                padding-top: 97px !important;
+                padding-top: 70px !important;
                 display: flex !important;
-                min-height: calc(100vh - 97px) !important;
+                min-height: calc(100vh - 70px) !important;
                 position: relative !important;
             }
 
             .sidebar {
                 position: fixed !important;
-                top: 97px !important;
+                top: 70px !important;
                 left: 0 !important;
                 bottom: 0 !important;
                 width: 241px !important;
-                height: calc(100vh - 97px) !important;
-                max-height: calc(100vh - 97px) !important;
+                height: calc(100vh - 70px) !important;
+                max-height: calc(100vh - 70px) !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
                 overscroll-behavior: contain !important;
@@ -310,7 +328,7 @@
             .main-panel {
                 margin-left: 241px !important;
                 width: calc(100% - 241px) !important;
-                min-height: calc(100vh - 97px) !important;
+                min-height: calc(100vh - 70px) !important;
                 transition: width 0.25s ease, margin-left 0.25s ease !important;
             }
 

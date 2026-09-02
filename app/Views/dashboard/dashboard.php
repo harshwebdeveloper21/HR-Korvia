@@ -611,6 +611,8 @@
         -webkit-box-orient: vertical;
         overflow: hidden;
         opacity: 0.82;
+        white-space: pre-line;
+        word-break: break-word;
     }
     .ann-card-footer {
         margin-top: 10px;
@@ -2961,6 +2963,14 @@
      * Show Announcement Details in a Bootstrap/Premium Styled Modal
      */
     function showAnnouncement(announcement) {
+        // Helper to safely escape text while preserving exact formatting
+        function safeEscape(str) {
+            if (!str) return '';
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
         // Format the date (using start_date as the 'Posted on' date as seen in cards)
         let postedOn = 'N/A';
         if (announcement.start_date) {
@@ -2984,14 +2994,12 @@
                     </div>
                     <hr class="mt-2 mb-3" style="opacity: 0.1;">
                     <div class="mb-3">
-                        <h5 class="fw-bold mb-2" style="color: #1e293b; font-size: 1.15rem; line-height: 1.4;">${announcement.title}</h5>
+                        <h5 class="fw-bold mb-2" style="color: #1e293b; font-size: 1.15rem; line-height: 1.4;">${safeEscape(announcement.title)}</h5>
                         <div class="d-flex align-items-center text-muted mb-3" style="font-size: 0.85rem;">
                             <i class="mdi mdi-calendar-outline me-1"></i>
                             <span>Posted on: ${postedOn}</span>
                         </div>
-                        <div class="announcement-content" style="font-size: 0.95rem; line-height: 1.6; color: #475569;">
-                            ${announcement.description}
-                        </div>
+                        <div class="announcement-content" style="font-size: 0.95rem; line-height: 1.6; color: #475569; white-space: pre-wrap; word-break: break-word; text-align: left;">${safeEscape((announcement.description || '').trim())}</div>
                     </div>
                     <div class="d-flex justify-content-end mt-4">
                         <button type="button" class="btn text-white px-5 py-2" style="background-color: #E66136; border-radius: 10px; font-weight: 700; font-size: 1rem; border: none; box-shadow: 0 4px 12px rgba(230,97,54,0.2);" onclick="Swal.close()">Close</button>
