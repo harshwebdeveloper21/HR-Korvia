@@ -149,17 +149,17 @@
                             <td>
                                 <div style="flex: 1;">
                                     <span>${formattedName}</span>
-                                    <div class="expanded-details" id="location-details-${location.location_id}" onclick="event.stopPropagation();">
+                                    <div class="expanded-details" id="location-details-${location.location_id}">
                                         <div class="detail-actions">
                                             <a href="/joblocation?id=${location.location_id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                            <a href="#" class="btn btn-sm btn-danger delete-location" data-id="${location.location_id}"><i class="mdi mdi-delete"></i> Delete</a>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteJobLocation(${location.location_id})"><i class="mdi mdi-delete"></i> Delete</button>
                                         </div>
                                     </div>
                                 </div>
                             </td>
                             <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
                                 <a href="/joblocation?id=${location.location_id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                <a href="#" class="text-danger fs-5 delete-location" data-id="${location.location_id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                                <a href="javascript:void(0);" class="text-danger fs-5" title="Delete" onclick="deleteJobLocation(${location.location_id})"><i class="mdi mdi-delete"></i></a>
                             </td>
                             <td class="mobile-expand-col text-center">
                                 <button type="button" class="expand-toggle" data-target="location-details-${location.location_id}" aria-label="Expand details"></button>
@@ -171,7 +171,7 @@
                         if ($.fn.DataTable.isDataTable('#location-table')) {
                             $('#location-table').DataTable().clear().destroy();
                         }
-                        $('#location-table').DataTable({
+                        const dt = $('#location-table').DataTable({
                             columnDefs: [
                                 {
                                     targets: 3,
@@ -184,6 +184,13 @@
                                 searchPlaceholder: "Search"
                             }
                         });
+
+                        dt.on('draw', function() {
+                            if (typeof applyMobileTableVisibility === 'function') {
+                                applyMobileTableVisibility();
+                            }
+                        });
+
                         // Apply mobile visibility
                         if (typeof applyMobileTableVisibility === 'function') {
                             applyMobileTableVisibility();
@@ -203,12 +210,8 @@
         // Call the function to populate departments on page load
         fetchLocation();
 
-        // Handle the delete button click
-        $(document).on('click', '.delete-location', function(e) {
-            e.preventDefault();
-
-            const locationId = $(this).data('id');
-
+        // Global delete handler
+        window.deleteJobLocation = function(locationId) {
             if (!locationId) {
                 Swal.fire('Error', 'Invalid location ID', 'error');
                 return;
@@ -229,37 +232,37 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: `/api/joblocation/${locationId}`, // Ensure this is the correct API route
-                        type: 'DELETE',
+                        url: `/api/joblocation/${locationId}`,
+                        type: 'POST',
+                        data: { _method: 'DELETE' },
                         headers: {
                             'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
                         },
                         success: function(responseData) {
-                            console.log(responseData); // Debugging: See actual response
-
-                            if (responseData && responseData.message) {
-                                Swal.fire('Deleted!', responseData.message, 'success')
+                            if (responseData && (responseData.message || responseData.status === 'success')) {
+                                Swal.fire('Deleted!', responseData.message || 'Location deleted successfully.', 'success')
                                     .then(() => {
-                                        $(`tr[data-id="${locationId}"]`).remove();
+                                        fetchLocation();
                                     });
                             } else {
                                 Swal.fire('Error!', 'Failed to delete the location.', 'error');
                             }
                         },
                         error: function(xhr, status, error) {
-                            console.log(xhr.responseText); // Debugging: See actual error message
-
                             let errorMessage = 'There was an error deleting the location.';
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMessage = xhr.responseJSON.message;
                             }
-
                             Swal.fire('Error!', errorMessage, 'error');
                         }
                     });
                 }
             });
+        };
+
+        $(document).on('click', '.delete-location', function(e) {
+            e.preventDefault();
+            deleteJobLocation($(this).data('id'));
         });
 
         // 📥 Export to Excel functionality

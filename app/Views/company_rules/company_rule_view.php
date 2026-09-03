@@ -108,17 +108,17 @@
                     </a> -->
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-striped" id="leaveTypes-Table">
+                    <table class="table table-striped w-100" id="rules-Table">
                         <thead>
                             <tr>
-                                <!-- <th>#</th> -->
                                 <th>Working Hours</th>
-                                <th>Saturday Off Pattern</th>
-                                <th>Yearly Holidays</th>
-                                <th>Tax</th>
-                                <th>Taxable Salary Amount</th>
-                                <th>Lunch Breack</th>
-                                <th>Action</th>
+                                <th class="desktop-only-col">Saturday Off Pattern</th>
+                                <th class="desktop-only-col">Yearly Holidays</th>
+                                <th class="desktop-only-col">Tax</th>
+                                <th class="desktop-only-col">Taxable Salary Amount</th>
+                                <th class="desktop-only-col">Lunch Break</th>
+                                <th class="desktop-only-col">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                         <tbody id="rules-Table-Body"></tbody>
@@ -159,25 +159,56 @@
                     rules.forEach((rule, index) => {
                         // Convert "1,2" to "1st Saturday and 2nd Saturday"
                         const saturdayOffList = rule.saturday_off_pattern
-                            .split(',')
-                            .map(num => ordinalMap[num.trim()])
-                            .filter(Boolean)
-                            .join(' and ');
+                            ? rule.saturday_off_pattern
+                                .split(',')
+                                .map(num => ordinalMap[num.trim()])
+                                .filter(Boolean)
+                                .join(' and ')
+                            : 'None';
 
                         tableRows += `
                     <tr data-id="${rule.id}">
-                        <td>${rule.working_hours_per_day} hours</td>
-                        <td>${saturdayOffList || 'None'}</td>
-                        <td>${rule.yearly_holidays ?? 0}</td>
-                        <td>${rule.tax ?? 0}</td>
-                        <td>${rule.salary_above_tax ?? 0}</td>
-                        <td>${rule.lunch_break}</td>
-                        <td><a href="/creates-rules" class="text-warning fs-5" title="Edit">
+                        <td>
+                            <div style="flex: 1;">
+                                <span class="fw-bold">${rule.working_hours_per_day} hours</span>
+                                <div class="expanded-details" id="rule-details-${rule.id}">
+                                    <div class="detail-row">
+                                        <span class="detail-label">Saturday Off:</span>
+                                        <span class="detail-value">${saturdayOffList || 'None'}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Yearly Holidays:</span>
+                                        <span class="detail-value">${rule.yearly_holidays ?? 0}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Tax:</span>
+                                        <span class="detail-value">${rule.tax ?? 0}%</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Taxable Salary:</span>
+                                        <span class="detail-value">${rule.salary_above_tax ?? 0}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Lunch Break:</span>
+                                        <span class="detail-value">${rule.lunch_break}</span>
+                                    </div>
+                                    <div class="detail-actions">
+                                        <a href="/creates-rules" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit Rules</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="desktop-only-col">${saturdayOffList || 'None'}</td>
+                        <td class="desktop-only-col">${rule.yearly_holidays ?? 0}</td>
+                        <td class="desktop-only-col">${rule.tax ?? 0}</td>
+                        <td class="desktop-only-col">${rule.salary_above_tax ?? 0}</td>
+                        <td class="desktop-only-col">${rule.lunch_break}</td>
+                        <td class="desktop-only-col"><a href="/creates-rules" class="text-warning fs-5" title="Edit">
                                 <i class="mdi mdi-pencil"></i>
                             </a>
-                            <!-- <a href="#" class="text-danger fs-5" title="Delete" data-id="${rule.id}" onclick="deleteRule(event)">
-                                <i class="mdi mdi-delete"></i>
-                            </a> -->
+                        </td>
+                        <td class="mobile-expand-col text-center">
+                            <button type="button" class="expand-toggle" data-target="rule-details-${rule.id}" aria-label="Expand details"></button>
                         </td>
                     </tr>
                 `;
@@ -189,12 +220,29 @@
                         $('#rules-Table').DataTable().clear().destroy();
                     }
 
-                    $('#rules-Table').DataTable({
+                    const dt = $('#rules-Table').DataTable({
+                        columnDefs: [
+                            {
+                                targets: 7,
+                                orderable: false,
+                                searchable: false
+                            }
+                        ],
                         language: {
                             search: "",
                             searchPlaceholder: "Search"
                         }
                     });
+
+                    dt.on('draw', function() {
+                        if (typeof applyMobileTableVisibility === 'function') {
+                            applyMobileTableVisibility();
+                        }
+                    });
+
+                    if (typeof applyMobileTableVisibility === 'function') {
+                        applyMobileTableVisibility();
+                    }
 
                 } else {
                     console.error('Failed to fetch rules:', responseData.message);

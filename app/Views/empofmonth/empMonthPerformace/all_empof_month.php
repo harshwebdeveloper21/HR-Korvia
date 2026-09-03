@@ -104,9 +104,9 @@
     <div class="col-12 grid-margin">
         <div class="card">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">All EOM Performance</h4>
-                    <div class="d-flex gap-2">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+                    <h4 class="card-title mb-0">All EOM Performance</h4>
+                    <div class="d-flex flex-wrap gap-2">
                         <button type="button" id="btnExportEmpOfMonth" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
@@ -123,9 +123,10 @@
                             <tr>
                                 <th>No.</th>
                                 <th>Employee Name</th>
-                                <th>Template Name</th>
-                                <th>Month & Year</th>
-                                <th>Action</th>
+                                <th class="desktop-only-col">Template Name</th>
+                                <th class="desktop-only-col">Month & Year</th>
+                                <th class="desktop-only-col">Action</th>
+                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                         <tbody id="templateTableBody">
@@ -177,60 +178,104 @@
                     tableBody.append(`
                     <tr>
                         <td>${index + 1}</td>
-                          <td class="py-1">
-                                 <a href="/performance/profile/${item.user_id}" class="text-decoration-none text-dark">
-                                 <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="/upload/${item.profile_image || 'default-profile.jpg'}"
-                 alt="Profile"
-                 style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-            <span class="capitalize-text">${item.user_name}</span>
-        </div>
-                        </a></td>
+                        <td class="py-1">
+                            <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                <a href="/performance/profile/${item.user_id}" class="text-decoration-none">
+                                    <img src="/upload/${item.profile_image || 'default-profile.jpg'}"
+                                         alt="Profile"
+                                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                </a>
+                                <div style="flex: 1;">
+                                    <a href="/performance/profile/${item.user_id}" class="text-decoration-none text-dark fw-bold">
+                                        <span class="capitalize-text">${item.user_name}</span>
+                                    </a>
+                                    <div class="expanded-details" id="eom-details-${item.id}">
+                                        <div class="detail-row">
+                                            <span class="detail-label">Template:</span>
+                                            <span class="detail-value capitalize-text">${item.template_title}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Month & Year:</span>
+                                            <span class="detail-value">${item.month_year}</span>
+                                        </div>
+                                        <div class="detail-actions">
+                                            <a href="javascript:void(0);"
+                                               class="btn btn-sm btn-success text-white download-eom-letter"
+                                               data-employee-id="${item.user_id}"
+                                               data-template-id="${item.template_id}">
+                                                <i class="mdi mdi-download"></i> Download EOM
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deletePerformance(${item.id})">
+                                                <i class="mdi mdi-delete"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
 
-                        <td class="capitalize-text">${item.template_title}</td>
-                        <td class="capitalize-text">${item.month_year}</td>
-                        <td style="display: flex; align-items: center; gap: 8px;">
-                            <a href="#" class="text-danger fs-5" title="Delete" onclick="deletePerformance(${item.id})">
-                                <i class="mdi mdi-delete"></i>
-                            </a>
-                           <a href="#"
+                        <td class="desktop-only-col capitalize-text">${item.template_title}</td>
+                        <td class="desktop-only-col capitalize-text">${item.month_year}</td>
+                        <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
+                            <a href="javascript:void(0);"
                                 class="text-success fs-5 download-eom-letter"
                                 title="Download EOM Letter"
                                 data-employee-id="${item.user_id}"
                                 data-template-id="${item.template_id}">
                                 <i class="mdi mdi-download"></i>
                             </a>
-
+                            <a href="javascript:void(0);" class="text-danger fs-5" title="Delete" onclick="deletePerformance(${item.id})">
+                                <i class="mdi mdi-delete"></i>
+                            </a>
+                        </td>
+                        <td class="mobile-expand-col text-center">
+                            <button type="button" class="expand-toggle" data-target="eom-details-${item.id}" aria-label="Expand details"></button>
                         </td>
                     </tr>
                 `);
                 });
 
                 // Initialize DataTable
-                $('#templateTable').DataTable({
-                    responsive: true,
-
-                    columnDefs: [{
-                        targets: 0,
-                        visible: false,
-                        searchable: false
-                    }],
+                const dt = $('#templateTable').DataTable({
+                    responsive: false,
+                    columnDefs: [
+                        {
+                            targets: 0,
+                            visible: false,
+                            searchable: false
+                        },
+                        {
+                            targets: 5,
+                            orderable: false,
+                            searchable: false
+                        }
+                    ],
                     language: {
                         emptyTable: "No performance records available",
                         search: "",
-                        searchPlaceholder: "Search",
-
+                        searchPlaceholder: "Search"
                     }
                 });
+
+                dt.on('draw', function() {
+                    if (typeof applyMobileTableVisibility === 'function') {
+                        applyMobileTableVisibility();
+                    }
+                });
+
+                if (typeof applyMobileTableVisibility === 'function') {
+                    applyMobileTableVisibility();
+                }
             },
-            error: function(xhr) {
-                console.error('Error:', xhr);
+            error: function(xhr, status, error) {
+                console.error("Failed to load templates:", error);
+                $('#noTemplates').text("Error loading data.").show();
             }
         });
     }
 
-
-    function deletePerformance(id) {
+    window.deletePerformance = function(id) {
+        if (!id) return;
         Swal.fire({
             title: 'Are you sure?',
             text: "You won't be able to revert this!",
@@ -243,7 +288,11 @@
             if (result.isConfirmed) {
                 $.ajax({
                     url: `/api/employee-of-month/delete/${id}`,
-                    type: 'DELETE',
+                    type: 'POST',
+                    data: { _method: 'DELETE' },
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     success: function() {
                         Swal.fire(
                             'Deleted!',
@@ -262,7 +311,7 @@
                 });
             }
         });
-    }
+    };
     $(document).on('click', '.download-eom-letter', function(e) {
         e.preventDefault();
 
