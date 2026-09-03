@@ -27,9 +27,9 @@
             <div class="card-body">
 
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">Manage Performances</h4>
-                    <div class="d-flex gap-2">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+                    <h4 class="card-title mb-0">Manage Performances</h4>
+                    <div class="d-flex flex-wrap gap-2">
                         <button type="button" id="btnExportPerformance" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
@@ -99,7 +99,7 @@
                                 actionButtons = `
                                 <a href="/performance/profile/${performance.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
                                 <a href="/performance/${performance.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                <a href="#" class="text-danger fs-5 delete-performance" data-id="${performance.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                                <a href="javascript:void(0);" class="text-danger fs-5" title="Delete" onclick="deletePerformanceRecord(${performance.id})"><i class="mdi mdi-delete"></i></a>
                             `;
                             } else {
                                 actionButtons = `
@@ -114,7 +114,7 @@
                                     <div class="detail-actions">
                                         <a href="/performance/profile/${performance.id}" class="btn btn-sm btn-primary" title="View"><i class="mdi mdi-eye"></i> View</a>
                                         <a href="/performance/${performance.id}" class="btn btn-sm btn-warning" title="Edit"><i class="mdi mdi-pencil"></i> Edit</a>
-                                        <a href="#" class="btn btn-sm btn-danger delete-performance" data-id="${performance.id}" title="Delete"><i class="mdi mdi-delete"></i> Delete</a>
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="deletePerformanceRecord(${performance.id})"><i class="mdi mdi-delete"></i> Delete</button>
                                     </div>
                                 `;
                             } else {
@@ -138,7 +138,7 @@
                                             <a href="/performance/profile/${performance.id}" class="text-decoration-none text-dark">
                                                 <span class="capitalize-text">${performance.employee_name}</span>
                                             </a>
-                                            <div class="expanded-details" id="details-${performance.id}" onclick="event.stopPropagation();">
+                                            <div class="expanded-details" id="details-${performance.id}">
                                                 <div class="detail-row">
                                                     <span class="detail-label">Designation:</span>
                                                     <span class="detail-value">${performance.designation_name}</span>
@@ -170,8 +170,12 @@
                         `;
                         });
 
+                        if ($.fn.DataTable.isDataTable('#performance-table')) {
+                            $('#performance-table').DataTable().clear().destroy();
+                        }
+
                         $('#performance-table tbody').html(tableRows);
-                        $('#performance-table').DataTable({
+                        const dt = $('#performance-table').DataTable({
                             order: [
                                 [4, 'desc']
                             ], // column index 4 = created_at
@@ -193,12 +197,15 @@
                             }
                         });
 
-                        // Apply mobile visibility after DataTable init
-                        setTimeout(function() {
+                        dt.on('draw', function() {
                             if (typeof applyMobileTableVisibility === 'function') {
                                 applyMobileTableVisibility();
                             }
-                        }, 100);
+                        });
+
+                        if (typeof applyMobileTableVisibility === 'function') {
+                            applyMobileTableVisibility();
+                        }
 
                     } else {
                         Swal.fire('Error', 'Failed to load performance records', 'error');
@@ -212,9 +219,8 @@
 
         fetchPerformance();
 
-        $(document).on('click', '.delete-performance', function(e) {
-            e.preventDefault();
-            const performanceId = $(this).data('id');
+        window.deletePerformanceRecord = function(performanceId) {
+            if (!performanceId) return;
 
             Swal.fire({
                 title: 'Are you sure?',
@@ -232,10 +238,10 @@
                 if (result.isConfirmed) {
                     $.ajax({
                         url: `/api/performance/${performanceId}`,
-                        type: 'DELETE',
+                        type: 'POST',
+                        data: { _method: 'DELETE' },
                         headers: {
                             'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
                         },
                         success: function(response) {
                             if (response.status === 'success') {
@@ -276,6 +282,11 @@
                     });
                 }
             });
+        };
+
+        $(document).on('click', '.delete-performance', function(e) {
+            e.preventDefault();
+            deletePerformanceRecord($(this).data('id'));
         });
 
         // 📥 Export to Excel functionality

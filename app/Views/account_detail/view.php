@@ -155,7 +155,7 @@
                                     <td class="capitalize-text">
                                         <div style="flex: 1;">
                                             <span>${account.username}</span>
-                                            <div class="expanded-details" id="account-details-${account.id}" onclick="event.stopPropagation();">
+                                            <div class="expanded-details" id="account-details-${account.id}">
                                                 <div class="detail-row">
                                                     <span class="detail-label">Account Number:</span>
                                                     <span class="detail-value">${account.acc_number}</span>
@@ -174,7 +174,7 @@
                                                 </div>
                                                 <div class="detail-actions">
                                                     <a href="edit/detail/${account.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                                    <a href="#" class="btn btn-sm btn-danger delete-department" data-id="${account.id}"><i class="mdi mdi-delete"></i> Delete</a>
+                                                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteAccount(${account.id})"><i class="mdi mdi-delete"></i> Delete</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -185,7 +185,7 @@
                                     <td class="desktop-only-col capitalize-text">${account.branch_code}</td>
                                     <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
                                         <a href="edit/detail/${account.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                        <a href="#" class="text-danger fs-5 delete-department" data-id="${account.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                                        <a href="javascript:void(0);" class="text-danger fs-5" title="Delete" onclick="deleteAccount(${account.id})"><i class="mdi mdi-delete"></i></a>
                                     </td>
                                     <td class="mobile-expand-col text-center">
                                         <button type="button" class="expand-toggle" data-target="account-details-${account.id}" aria-label="Expand details"></button>
@@ -199,10 +199,8 @@
                         }
 
                         $('#account-table-body').html(tableRows);
-                        if ($.fn.DataTable.isDataTable('#account-table')) {
-                            $('#account-table').DataTable().clear().destroy();
-                        }
-                        $('#account-table').DataTable({
+
+                        const dt = $('#account-table').DataTable({
                             columnDefs: [
                                 {
                                     targets: 7,
@@ -215,11 +213,17 @@
                                 searchPlaceholder: "Search"
                             }
                         });
+
+                        dt.on('draw', function() {
+                            if (typeof applyMobileTableVisibility === 'function') {
+                                applyMobileTableVisibility();
+                            }
+                        });
+
                         // Apply mobile visibility
                         if (typeof applyMobileTableVisibility === 'function') {
                             applyMobileTableVisibility();
                         }
-                        // $('#account-table').DataTable();
 
                     } else {
                         Swal.fire('Error', 'Failed to load Account details', 'error');
@@ -233,10 +237,9 @@
 
         fetchAccounts(); // Load data initially
 
-        // Delete handler
-        $(document).on('click', '.delete-department', function(e) {
-            e.preventDefault();
-            const accountId = $(this).data('id');
+        // Global delete handler
+        window.deleteAccount = function(accountId) {
+            if (!accountId) return;
 
             Swal.fire({
                 title: 'Are you sure?',
@@ -254,16 +257,15 @@
                 if (result.isConfirmed) {
                     $.ajax({
                         url: `/api/account-detail/delete/${accountId}`,
-                        type: 'DELETE',
+                        type: 'POST',
+                        data: { _method: 'DELETE' },
                         headers: {
                             'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
                         },
                         success: function(responseData) {
                             if (responseData.status === 'success') {
                                 Swal.fire('Deleted!', 'The account detail has been deleted.', 'success')
                                     .then(() => {
-                                        // Reload the table
                                         fetchAccounts();
                                     });
                             } else {
@@ -280,6 +282,11 @@
                     });
                 }
             });
+        };
+
+        $(document).on('click', '.delete-department', function(e) {
+            e.preventDefault();
+            deleteAccount($(this).data('id'));
         });
     });
 </script>

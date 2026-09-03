@@ -353,38 +353,38 @@
                             <td class="capitalize-text">
                                 <div style="flex: 1;">
                                     <span>${formattedName}</span>
-                                    <div class="expanded-details" id="holiday-details-${holiday.id}" onclick="event.stopPropagation();">
-                                        <div class="detail-row">
-                                            <span class="detail-label">Holiday Date:</span>
-                                            <span class="detail-value">${displayDate}</span>
-                                        </div>
-                                        <div class="detail-row">
-                                            <span class="detail-label">Description:</span>
-                                            <span class="detail-value">${holiday.description || ''}</span>
-                                        </div>
-                                        <div class="detail-actions">
-                                            <a href="/edit-holiday/${holiday.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                            <a href="#" class="btn btn-sm btn-danger delete-holiday" data-id="${holiday.id}"><i class="mdi mdi-delete"></i> Delete</a>
-                                        </div>
+                                <div class="expanded-details" id="holiday-details-${holiday.id}">
+                                    <div class="detail-row">
+                                        <span class="detail-label">Holiday Date:</span>
+                                        <span class="detail-value">${displayDate}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Description:</span>
+                                        <span class="detail-value">${holiday.description || ''}</span>
+                                    </div>
+                                    <div class="detail-actions">
+                                        <a href="/edit-holiday/${holiday.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteHoliday(${holiday.id})"><i class="mdi mdi-delete"></i> Delete</button>
                                     </div>
                                 </div>
-                            </td>
-                            <td class="desktop-only-col" data-order="${holiday.holiday_date}">${displayDate}</td>
-                            <td class="desktop-only-col capitalize-text">${holiday.description || ''}</td>
-                            <td class="desktop-only-col">
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <a href="/edit-holiday/${holiday.id}" class="text-warning fs-5 edit-holiday" title="Edit">
-                                        <i class="mdi mdi-pencil"></i>
-                                    </a>
-                                    <a href="#" class="text-danger fs-5 delete-holiday" data-id="${holiday.id}" title="Delete">
-                                        <i class="mdi mdi-delete"></i>
-                                    </a>
-                                </div>
-                            </td>
-                            <td class="mobile-expand-col text-center">
-                                <button type="button" class="expand-toggle" data-target="holiday-details-${holiday.id}" aria-label="Expand details"></button>
-                            </td>
-                        </tr>`;
+                            </div>
+                        </td>
+                        <td class="desktop-only-col" data-order="${holiday.holiday_date}">${displayDate}</td>
+                        <td class="desktop-only-col capitalize-text">${holiday.description || ''}</td>
+                        <td class="desktop-only-col">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <a href="/edit-holiday/${holiday.id}" class="text-warning fs-5 edit-holiday" title="Edit">
+                                    <i class="mdi mdi-pencil"></i>
+                                </a>
+                                <a href="javascript:void(0);" class="text-danger fs-5" title="Delete" onclick="deleteHoliday(${holiday.id})">
+                                    <i class="mdi mdi-delete"></i>
+                                </a>
+                            </div>
+                        </td>
+                        <td class="mobile-expand-col text-center">
+                            <button type="button" class="expand-toggle" data-target="holiday-details-${holiday.id}" aria-label="Expand details"></button>
+                        </td>
+                    </tr>`;
                     });
 
                     // Destroy old DataTable if initialized
@@ -396,7 +396,7 @@
                     $('#task-table tbody').html(tableRows);
 
                     // Reinitialize DataTable
-                    $('#task-table').DataTable({
+                    const dt = $('#task-table').DataTable({
                         order: [[1, 'asc']],
                         columnDefs: [
                             {
@@ -408,6 +408,12 @@
                         language: {
                             search: '',
                             searchPlaceholder: 'Search'
+                        }
+                    });
+
+                    dt.on('draw', function() {
+                        if (typeof applyMobileTableVisibility === 'function') {
+                            applyMobileTableVisibility();
                         }
                     });
 
@@ -512,10 +518,8 @@
         });
 
         // Delete holiday
-        $(document).on('click', '.delete-holiday', function(e) {
-            e.preventDefault();
-            const id = $(this).data('id');
-
+        window.deleteHoliday = function(id) {
+            if (!id) return;
             Swal.fire({
                 title: 'Are you sure?',
                 text: 'This holiday will be deleted permanently!',
@@ -546,6 +550,11 @@
                     });
                 }
             });
+        };
+
+        $(document).on('click', '.delete-holiday', function(e) {
+            e.preventDefault();
+            deleteHoliday($(this).data('id'));
         });
     });
 </script>

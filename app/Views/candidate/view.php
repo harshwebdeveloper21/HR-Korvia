@@ -102,9 +102,9 @@
             <div class="card-body">
 
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">Manage Candidates</h4>
-                    <div class="d-flex gap-2">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+                    <h4 class="card-title mb-0">Manage Candidates</h4>
+                    <div class="d-flex flex-wrap gap-2">
                         <button type="button" id="btnExportCandidates" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
@@ -162,7 +162,7 @@
                                         <a href="/candidate/display/${candidate.id}" class="text-decoration-none text-dark fw-bold">
                                             ${candidate.candidate_name}
                                         </a>
-                                        <div class="expanded-details" id="candidate-details-${candidate.id}" onclick="event.stopPropagation();">
+                                        <div class="expanded-details" id="candidate-details-${candidate.id}">
                                             <div class="detail-row">
                                                 <span class="detail-label">Email:</span>
                                                 <span class="detail-value">${candidate.email || 'N/A'}</span>
@@ -178,7 +178,7 @@
                                             <div class="detail-actions">
                                                 <a href="/candidate/display/${candidate.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
                                                 <a href="/candidate/${candidate.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                                <a href="#" class="btn btn-sm btn-danger" data-id="${candidate.id}" data-status="${candidate.status}" onclick="deleteCandidate(event)"><i class="mdi mdi-delete"></i> Delete</a>
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteCandidateById(${candidate.id}, '${candidate.status || ''}')"><i class="mdi mdi-delete"></i> Delete</button>
                                             </div>
                                         </div>
                                     </div>
@@ -193,10 +193,8 @@
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <a href="/candidate/display/${candidate.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
                                     <a href="/candidate/${candidate.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                    <a href="#" class="text-danger fs-5" title="Delete"
-                                       data-id="${candidate.id}"
-                                       data-status="${candidate.status}"
-                                       onclick="deleteCandidate(event)">
+                                    <a href="javascript:void(0);" class="text-danger fs-5" title="Delete"
+                                       onclick="deleteCandidateById(${candidate.id}, '${candidate.status || ''}')">
                                        <i class="mdi mdi-delete"></i>
                                     </a>
                                 </div>
@@ -213,7 +211,7 @@
                     if ($.fn.DataTable.isDataTable('#candidates-Table')) {
                         $('#candidates-Table').DataTable().clear().destroy();
                     }
-                    $('#candidates-Table').DataTable({
+                    const dt = $('#candidates-Table').DataTable({
                         columnDefs: [
                             {
                                 targets: [4, 5],
@@ -226,6 +224,16 @@
                             searchPlaceholder: "Search"
                         }
                     });
+
+                    dt.on('draw', function() {
+                        if (typeof applyMobileTableVisibility === 'function') {
+                            applyMobileTableVisibility();
+                        }
+                    });
+
+                    if (typeof applyMobileTableVisibility === 'function') {
+                        applyMobileTableVisibility();
+                    }
                 } else {
                     console.error('Failed to fetch candidates:', responseData.message);
                 }
@@ -236,52 +244,49 @@
     });
 
     // Delete candidate — warns if candidate has a completed interview or is hired
-    function deleteCandidate(event) {
-        event.preventDefault();
-        const anchor      = event.target.closest('a');
-        const candidateId = anchor.getAttribute('data-id');
-        const status      = (anchor.getAttribute('data-status') || '').toLowerCase();
+    window.deleteCandidateById = function(candidateId, status) {
+        if (!candidateId) return;
+        status = (status || '').toLowerCase();
 
         // High-risk statuses that warrant an extra warning
         const isHighRisk = ['hired', 'completed', 'scheduled'].includes(status);
 
         function performDelete() {
-            fetch(`/api/candidate/${candidateId}`, {
-                method: 'DELETE',
+            $.ajax({
+                url: `/api/candidate/${candidateId}`,
+                type: 'POST',
+                data: { _method: 'DELETE' },
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json',
                 },
-            })
-            .then(r => r.json())
-            .then(responseData => {
-                if (responseData.status === 'success') {
-                    const row = document.querySelector(`tr[data-id="${candidateId}"]`);
-                    if (row) row.remove();
-                    Swal.fire({
-                        title: 'Deleted!',
-                        text: 'The candidate has been deleted successfully.',
-                        icon: 'success',
-                        buttonsStyling: false,
-                        customClass: { confirmButton: 'hr-btnbg' },
-                        confirmButtonText: 'OK',
-                    });
-                } else {
-                    const msg = responseData.messages?.error
-                        || responseData.message
-                        || 'Failed to delete the candidate. They may have associated interviews.';
-                    Swal.fire({
-                        title: 'Cannot Delete',
-                        text: msg,
-                        icon: 'error',
-                        buttonsStyling: false,
-                        customClass: { confirmButton: 'hr-btnbg' },
-                        confirmButtonText: 'OK',
-                    });
+                success: function(responseData) {
+                    if (responseData.status === 'success') {
+                        $(`tr[data-id="${candidateId}"]`).remove();
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'The candidate has been deleted successfully.',
+                            icon: 'success',
+                            buttonsStyling: false,
+                            customClass: { confirmButton: 'hr-btnbg' },
+                            confirmButtonText: 'OK',
+                        });
+                    } else {
+                        const msg = responseData.messages?.error
+                            || responseData.message
+                            || 'Failed to delete the candidate. They may have associated interviews.';
+                        Swal.fire({
+                            title: 'Cannot Delete',
+                            text: msg,
+                            icon: 'error',
+                            buttonsStyling: false,
+                            customClass: { confirmButton: 'hr-btnbg' },
+                            confirmButtonText: 'OK',
+                        });
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error!', 'An error occurred while deleting the candidate.', 'error');
                 }
-            })
-            .catch(() => {
-                Swal.fire('Error!', 'An error occurred while deleting the candidate.', 'error');
             });
         }
 
@@ -321,7 +326,17 @@
                 if (result.isConfirmed) performDelete();
             });
         }
-    }
+    };
+
+    window.deleteCandidate = function(event) {
+        if (event) event.preventDefault();
+        const anchor = event.target.closest('a') || event.target.closest('button');
+        if (anchor) {
+            const candidateId = anchor.getAttribute('data-id');
+            const status = anchor.getAttribute('data-status');
+            deleteCandidateById(candidateId, status);
+        }
+    };
 
     // 📥 Export to Excel functionality
     document.getElementById('btnExportCandidates')?.addEventListener('click', function () {

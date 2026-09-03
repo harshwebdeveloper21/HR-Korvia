@@ -157,5 +157,21 @@
     .table-responsive table tbody tr td:last-child {
         border-radius: 0 8px 8px 0;
     }
+
+    /* Auto-wrap card headers on mobile screens to prevent button overflow */
+    .card-body > .d-flex.justify-content-between,
+    .card-body > .d-md-flex.justify-content-between {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    .card-body > .d-flex.justify-content-between > div.d-flex,
+    .card-body > .d-flex.justify-content-between > div.d-md-flex,
+    .card-body > .d-md-flex.justify-content-between > div.d-flex,
+    .card-body > .d-md-flex.justify-content-between > div.d-md-flex {
+        flex-wrap: wrap !important;
+        width: 100% !important;
+    }
 }
 

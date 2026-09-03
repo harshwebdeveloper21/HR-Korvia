@@ -107,9 +107,9 @@
             <div class="card-body">
 
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">Manage Interviews</h4>
-                    <div class="d-flex gap-2">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+                    <h4 class="card-title mb-0">Manage Interviews</h4>
+                    <div class="d-flex flex-wrap gap-2">
                         <button type="button" id="btnExportInterviews" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
@@ -167,7 +167,7 @@
                             <div style="display: flex; align-items: flex-start; gap: 10px;">
                                 <div style="flex: 1;">
                                     <a href="/interview/display/${interview.id}" class="text-decoration-none text-dark fw-bold">${interview.candidate_name || 'Candidate'}</a>
-                                    <div class="expanded-details" id="interview-details-${interview.id}" onclick="event.stopPropagation();">
+                                    <div class="expanded-details" id="interview-details-${interview.id}">
                                         <div class="detail-row">
                                             <span class="detail-label">Job Title:</span>
                                             <span class="detail-value">${interview.job_title || 'N/A'}</span>
@@ -182,7 +182,7 @@
                                         </div>
                                         <div class="detail-actions">
                                             <a href="/interview/display/${interview.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
-                                            <a href="#" class="btn btn-sm btn-danger" data-id="${interview.id}" data-status="${interview.status}" onclick="deleteInterview(event)"><i class="mdi mdi-delete"></i> Delete</a>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteInterviewById(${interview.id}, '${interview.status || ''}')"><i class="mdi mdi-delete"></i> Delete</button>
                                         </div>
                                     </div>
                                 </div>
@@ -200,10 +200,8 @@
                         <td class="desktop-only-col">
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <a href="/interview/display/${interview.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
-                                <a href="#" class="text-danger fs-5" title="Delete"
-                                   data-id="${interview.id}"
-                                   data-status="${interview.status}"
-                                   onclick="deleteInterview(event)">
+                                <a href="javascript:void(0);" class="text-danger fs-5" title="Delete"
+                                   onclick="deleteInterviewById(${interview.id}, '${interview.status || ''}')">
                                    <i class="mdi mdi-delete"></i>
                                 </a>
                             </div>
@@ -218,7 +216,7 @@
                     if ($.fn.DataTable.isDataTable('#interviews-Table')) {
                         $('#interviews-Table').DataTable().clear().destroy();
                     }
-                    $('#interviews-Table').DataTable({
+                    const dt = $('#interviews-Table').DataTable({
                         order: [[2, 'desc']],
                         columnDefs: [
                             {
@@ -232,6 +230,16 @@
                             searchPlaceholder: "Search"
                         }
                     });
+
+                    dt.on('draw', function() {
+                        if (typeof applyMobileTableVisibility === 'function') {
+                            applyMobileTableVisibility();
+                        }
+                    });
+
+                    if (typeof applyMobileTableVisibility === 'function') {
+                        applyMobileTableVisibility();
+                    }
 
                 } else {
                     console.error('Failed to fetch leave types:', responseData.message);
@@ -365,30 +373,25 @@
 
 
     // Function to handle interview delete — shows extra warning for completed interviews
-    function deleteInterview(event) {
-        event.preventDefault();
-
-        const anchor = event.target.closest('a');
-        const interviewId = anchor.getAttribute('data-id');
-        const status = (anchor.getAttribute('data-status') || '').toLowerCase();
-        const csrfName = $('meta[name="csrf-token"]').attr('data-name');
-        const csrfHash = $('meta[name="csrf-token"]').attr('content');
+    window.deleteInterviewById = function(interviewId, status) {
+        if (!interviewId) return;
+        status = (status || '').toLowerCase();
+        const csrfName = $('meta[name="csrf-token"]').attr('data-name') || 'csrf_test_name';
+        const csrfHash = $('meta[name="csrf-token"]').attr('content') || '';
 
         // Helper: actually call the delete API
         function performDelete() {
-            fetch(`/api/interviews/${interviewId}`, {
-                method: 'DELETE',
+            $.ajax({
+                url: `/api/interviews/${interviewId}`,
+                type: 'POST',
+                data: JSON.stringify({ [csrfName]: csrfHash, _method: 'DELETE' }),
+                contentType: 'application/json',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ [csrfName]: csrfHash })
-            })
-                .then(r => r.json())
-                .then(responseData => {
+                success: function(responseData) {
                     if (responseData.status === 'success') {
-                        const row = document.querySelector(`tr[data-id="${interviewId}"]`);
-                        if (row) row.remove();
+                        $(`tr[data-id="${interviewId}"]`).remove();
                         Swal.fire({
                             title: 'Deleted!',
                             text: 'The interview has been deleted successfully.',
@@ -406,8 +409,8 @@
                             customClass: { confirmButton: 'btn hr-btnbg' }
                         });
                     }
-                })
-                .catch(() => {
+                },
+                error: function() {
                     Swal.fire({
                         title: 'Error!',
                         text: 'An error occurred while deleting the interview.',
@@ -415,7 +418,8 @@
                         buttonsStyling: false,
                         customClass: { confirmButton: 'btn hr-btnbg' }
                     });
-                });
+                }
+            });
         }
 
         if (status === 'completed') {
@@ -459,7 +463,17 @@
                 }
             });
         }
-    }
+    };
+
+    window.deleteInterview = function(event) {
+        if (event) event.preventDefault();
+        const anchor = event.target.closest('a') || event.target.closest('button');
+        if (anchor) {
+            const interviewId = anchor.getAttribute('data-id');
+            const status = anchor.getAttribute('data-status');
+            deleteInterviewById(interviewId, status);
+        }
+    };
 
     // 📥 Export to Excel functionality
     document.getElementById('btnExportInterviews')?.addEventListener('click', function () {

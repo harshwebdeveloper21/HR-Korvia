@@ -151,12 +151,12 @@
                                         <div style="flex: 1;">
                                             <span class="fw-bold text-dark">${template.title}</span>
                                             ${template.template_header ? `<div class="small text-muted text-truncate" style="max-width: 350px;">${template.template_header}</div>` : ''}
-                                            <div class="expanded-details" id="template-details-${template.id}" onclick="event.stopPropagation();">
+                                            <div class="expanded-details" id="template-details-${template.id}">
                                                 <div class="detail-actions">
                                                     <a href="/template/view/${template.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
                                                     <a href="/offer-templates/preview-pdf/${template.id}" target="_blank" class="btn btn-sm btn-secondary text-white"><i class="mdi mdi-file-pdf-box"></i> PDF</a>
                                                     <a href="/template/${template.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                                    <a href="#" class="btn btn-sm btn-danger delete-template" data-id="${template.id}"><i class="mdi mdi-delete"></i> Delete</a>
+                                                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteOfferTemplate(${template.id})"><i class="mdi mdi-delete"></i> Delete</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -167,7 +167,7 @@
                                         <a href="/template/view/${template.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
                                         <a href="/offer-templates/preview-pdf/${template.id}" target="_blank" class="text-danger fs-5" title="Preview / Download PDF"><i class="mdi mdi-file-pdf-box"></i></a>
                                         <a href="/template/${template.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                        <a href="#" class="text-danger fs-5 delete-template" data-id="${template.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                                        <a href="javascript:void(0);" class="text-danger fs-5" title="Delete" onclick="deleteOfferTemplate(${template.id})"><i class="mdi mdi-delete"></i></a>
                                     </div>
                                 </td>
                                 <td class="mobile-expand-col text-center">
@@ -182,7 +182,7 @@
                     if ($.fn.DataTable.isDataTable('#templateTable')) {
                         $('#templateTable').DataTable().destroy();
                     }
-                    $('#templateTable').DataTable({
+                    const dt = $('#templateTable').DataTable({
                         columnDefs: [
                             {
                                 targets: [1, 2],
@@ -196,6 +196,16 @@
                             search: ""
                         }
                     });
+
+                    dt.on('draw', function() {
+                        if (typeof applyMobileTableVisibility === 'function') {
+                            applyMobileTableVisibility();
+                        }
+                    });
+
+                    if (typeof applyMobileTableVisibility === 'function') {
+                        applyMobileTableVisibility();
+                    }
 
                     $('#noTemplates').hide();
                 } else {
@@ -214,10 +224,8 @@
         loadTemplates();
     });
 
-    $(document).on('click', '.delete-template', function(e) {
-        e.preventDefault();
-        const button = $(this); // store the button reference
-        const templateId = button.data('id');
+    window.deleteOfferTemplate = function(templateId) {
+        if (!templateId) return;
 
         Swal.fire({
             title: 'Are you sure?',
@@ -235,23 +243,13 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: '<?= site_url(
-                        "api/offer-template/delete/",
-                    ) ?>' + templateId,
-                    type: 'DELETE',
+                    url: '<?= site_url("api/offer-template/delete/") ?>' + templateId,
+                    type: 'POST',
+                    data: { _method: 'DELETE' },
                     success: function(res) {
                         if (res.status === 'success') {
-                            Swal.fire('Deleted!', res.message, 'success');
-
-                            // Remove the row directly without reloading the table
-                            const row = button.closest('tr');
-                            $('#templateTable').DataTable().row(row).remove().draw();
-
-                            // If no rows left, show the "noTemplates" message
-                            if ($('#templateTableBody tr').length === 0) {
-                                $('#noTemplates').show();
-                            }
-
+                            Swal.fire('Deleted!', res.message || 'Template deleted.', 'success');
+                            loadTemplates();
                         } else {
                             Swal.fire('Error!', res.message || 'Something went wrong.', 'error');
                         }
@@ -262,6 +260,11 @@
                 });
             }
         });
+    };
+
+    $(document).on('click', '.delete-template', function(e) {
+        e.preventDefault();
+        deleteOfferTemplate($(this).data('id'));
     });
 
     // 📥 Export to Excel functionality

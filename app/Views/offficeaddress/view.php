@@ -131,7 +131,7 @@
                             <td>
                                 <div style="flex: 1;">
                                     <span>${formattedName}</span>
-                                    <div class="expanded-details" id="address-details-${job.address_id}" onclick="event.stopPropagation();">
+                                    <div class="expanded-details" id="address-details-${job.address_id}">
                                         <div class="detail-row">
                                             <span class="detail-label">Address:</span>
                                             <span class="detail-value">${formattedNameaddress}</span>
@@ -142,7 +142,7 @@
                                         </div>
                                         <div class="detail-actions">
                                             <a href="/offficeaddress?id=${job.address_id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                            <a href="#" class="btn btn-sm btn-danger delete-address" data-id="${job.address_id}"><i class="mdi mdi-delete"></i> Delete</a>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteJobAddress(${job.address_id})"><i class="mdi mdi-delete"></i> Delete</button>
                                         </div>
                                     </div>
                                 </div>
@@ -151,7 +151,7 @@
                             <td class="desktop-only-col">${formattedNamecity}</td>
                             <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
                                 <a href="/offficeaddress?id=${job.address_id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                                <a href="#" class="text-danger fs-5 delete-address" data-id="${job.address_id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                                <a href="javascript:void(0);" class="text-danger fs-5" title="Delete" onclick="deleteJobAddress(${job.address_id})"><i class="mdi mdi-delete"></i></a>
                             </td>
                             <td class="mobile-expand-col text-center">
                                 <button type="button" class="expand-toggle" data-target="address-details-${job.address_id}" aria-label="Expand details"></button>
@@ -160,7 +160,10 @@
                         `;
                     });
                     $('#address-table-body').html(tableRows);
-                    $('#address-table').DataTable({
+                    if ($.fn.DataTable.isDataTable('#address-table')) {
+                        $('#address-table').DataTable().clear().destroy();
+                    }
+                    const dt = $('#address-table').DataTable({
                         columnDefs: [
                             {
                                 targets: 5,
@@ -173,6 +176,13 @@
                             searchPlaceholder: "Search"
                         }
                     });
+
+                    dt.on('draw', function() {
+                        if (typeof applyMobileTableVisibility === 'function') {
+                            applyMobileTableVisibility();
+                        }
+                    });
+
                     // Apply mobile visibility
                     if (typeof applyMobileTableVisibility === 'function') {
                         applyMobileTableVisibility();
@@ -187,13 +197,11 @@
             });
 
     });
-    $(document).on('click', '.delete-address', function(e) {
-        e.preventDefault();
-        const token = localStorage.getItem('token'); // JWT token from login
-        const locationId = $(this).data('id');
 
+    window.deleteJobAddress = function(locationId) {
+        const token = localStorage.getItem('token');
         if (!locationId) {
-            Swal.fire('Error', 'Invalid location ID', 'error');
+            Swal.fire('Error', 'Invalid address ID', 'error');
             return;
         }
 
@@ -212,17 +220,17 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `/api/job_address/${locationId}`, // Ensure this matches your API route
-                    type: 'DELETE',
+                    url: `/api/job_address/${locationId}`,
+                    type: 'POST',
+                    data: { _method: 'DELETE' },
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
                     },
                     success: function(responseData) {
-                        if (responseData.status === 'success') {
-                            Swal.fire('Deleted!', responseData.message, 'success')
+                        if (responseData.status === 'success' || responseData.message) {
+                            Swal.fire('Deleted!', responseData.message || 'Address deleted.', 'success')
                                 .then(() => {
-                                    $(`tr[data-id="${locationId}"]`).remove(); // Remove row from table
+                                    $(`tr[data-id="${locationId}"]`).remove();
                                 });
                         } else {
                             Swal.fire('Error!', 'Failed to delete the job address.', 'error');
@@ -238,6 +246,11 @@
                 });
             }
         });
+    };
+
+    $(document).on('click', '.delete-address', function(e) {
+        e.preventDefault();
+        deleteJobAddress($(this).data('id'));
     });
 
     $(document).ready(function() {
