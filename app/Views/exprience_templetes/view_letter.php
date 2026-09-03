@@ -98,7 +98,7 @@
             <div class="card-body">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">All Templates</h4>
+                    <h4 class="card-title">Generated Experience Letters</h4>
 
                     <a href="<?= base_url(
                         "/add-emp-exprience",
@@ -126,7 +126,7 @@
                 </div>
 
                 <div id="noTemplates" class="text-center text-muted mt-4" style="display: none;">
-                    No templates found.
+                    No generated experience letters found.
                 </div>
             </div>
         </div>
@@ -147,17 +147,17 @@
                               <tr data-id="${template.id}">
                                 <td>${index + 1}</td>
                                 <td>${template.firstname}</td>
-                                 <td>${template.title}</td>
-                                  <td>${template.from_date}</td>
-                                   <td>${template.to_date}</td>
-                                <td style="display: flex; align-items: center; gap: 8px;">
-
-                                    <a href="#" class="text-danger fs-5 delete-template" data-id="${template.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
-                            <a href="<?= site_url(
-                                "api/generate-experience/",
-                            ) ?>${template.id}" class="fs-5" title="Download" style="color:black;">
-                                    <i class="mdi mdi-download"></i>
-                                </a>
+                                <td>${template.title}</td>
+                                <td>${template.from_date}</td>
+                                <td>${template.to_date}</td>
+                                <td style="display: flex; align-items: center; gap: 10px;">
+                                    <a href="<?= site_url("api/generate-experience/") ?>${template.id}" class="text-primary fs-5" title="Download PDF">
+                                        <i class="mdi mdi-download"></i>
+                                    </a>
+                                    <a href="#" class="text-danger fs-5 delete-template" data-id="${template.id}" title="Delete">
+                                        <i class="mdi mdi-delete"></i>
+                                    </a>
+                                </td>
                             </tr>
                         `;
                     });

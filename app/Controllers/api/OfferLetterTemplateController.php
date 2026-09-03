@@ -42,8 +42,22 @@ class OfferLetterTemplateController extends ResourceController
         $rules = [
             'title' => 'required|min_length[3]',
             'content' => 'required|min_length[10]',
-            'template_img' => 'uploaded[template_img]|is_image[template_img]|max_size[template_img,2048]|mime_in[template_img,image/jpg,image/jpeg,image/png,image/webp]'
         ];
+
+        $fileImg = $this->request->getFile('template_img');
+        if ($fileImg && $fileImg->isValid() && !$fileImg->hasMoved()) {
+            $rules['template_img'] = 'is_image[template_img]|max_size[template_img,2048]|mime_in[template_img,image/jpg,image/jpeg,image/png,image/webp]';
+        }
+
+        $fileHeader = $this->request->getFile('template_header');
+        if ($fileHeader && $fileHeader->isValid() && !$fileHeader->hasMoved()) {
+            $rules['template_header'] = 'is_image[template_header]|max_size[template_header,2048]|mime_in[template_header,image/jpg,image/jpeg,image/png,image/webp]';
+        }
+
+        $fileFooter = $this->request->getFile('template_footer');
+        if ($fileFooter && $fileFooter->isValid() && !$fileFooter->hasMoved()) {
+            $rules['template_footer'] = 'is_image[template_footer]|max_size[template_footer,2048]|mime_in[template_footer,image/jpg,image/jpeg,image/png,image/webp]';
+        }
 
         $messages = [
             'title' => [
@@ -55,9 +69,18 @@ class OfferLetterTemplateController extends ResourceController
                 'min_length' => 'Content must be at least 10 characters long.',
             ],
             'template_img' => [
-                'uploaded' => 'Upload a template image.',
                 'is_image' => 'Only valid image formats are allowed.',
                 'max_size' => 'The image size must not exceed 2MB.',
+                'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.',
+            ],
+            'template_header' => [
+                'is_image' => 'Header must be a valid image format.',
+                'max_size' => 'Header image size must not exceed 2MB.',
+                'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.',
+            ],
+            'template_footer' => [
+                'is_image' => 'Footer must be a valid image format.',
+                'max_size' => 'Footer image size must not exceed 2MB.',
                 'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.',
             ]
         ];
@@ -72,19 +95,45 @@ class OfferLetterTemplateController extends ResourceController
         $model = new \App\Models\OfferLetterTemplateModel();
         $id = $this->request->getPost('id');
 
+        // Prepare pages array
+        $pages = $this->request->getPost('pages');
+        if (!is_array($pages) || empty($pages)) {
+            $pages = [];
+            $p1 = $this->request->getPost('content');
+            $p2 = $this->request->getPost('content_page2');
+            if ($p1 !== null) $pages[] = $p1;
+            if (!empty($p2)) $pages[] = $p2;
+        }
+        $pages = array_values($pages);
+
         // Prepare data including created_by
         $data = [
             'title' => $this->request->getPost('title'),
-            'content' => $this->request->getPost('content'),
+            'content' => $pages[0] ?? '',
+            'content_page2' => $pages[1] ?? null,
+            'content_pages' => json_encode($pages),
             'created_by' => $user->sub,
         ];
 
         // Handle image upload
-        $file = $this->request->getFile('template_img');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            $newName = $file->getRandomName();
-            $file->move(FCPATH . 'upload/', $newName);
+        if ($fileImg && $fileImg->isValid() && !$fileImg->hasMoved()) {
+            $newName = $fileImg->getRandomName();
+            $fileImg->move(FCPATH . 'upload/', $newName);
             $data['template_img'] = $newName;
+        }
+
+        // Handle header image upload
+        if ($fileHeader && $fileHeader->isValid() && !$fileHeader->hasMoved()) {
+            $headerName = $fileHeader->getRandomName();
+            $fileHeader->move(FCPATH . 'upload/', $headerName);
+            $data['template_header'] = $headerName;
+        }
+
+        // Handle footer image upload
+        if ($fileFooter && $fileFooter->isValid() && !$fileFooter->hasMoved()) {
+            $footerName = $fileFooter->getRandomName();
+            $fileFooter->move(FCPATH . 'upload/', $footerName);
+            $data['template_footer'] = $footerName;
         }
 
         if ($id) {
@@ -146,6 +195,31 @@ class OfferLetterTemplateController extends ResourceController
         $template = $model->find($id);
 
         if ($template) {
+            $headerExists = !empty($template['template_header']) && file_exists(FCPATH . 'upload/' . $template['template_header']);
+            $footerExists = !empty($template['template_footer']) && file_exists(FCPATH . 'upload/' . $template['template_footer']);
+            $imgExists = !empty($template['template_img']) && file_exists(FCPATH . 'upload/' . $template['template_img']);
+
+            $template['template_header_url'] = $headerExists ? base_url('upload/' . $template['template_header']) : '';
+            $template['template_footer_url'] = $footerExists ? base_url('upload/' . $template['template_footer']) : '';
+            $template['template_img_url'] = $imgExists ? base_url('upload/' . $template['template_img']) : '';
+
+            // Extract all pages
+            $pages = [];
+            if (!empty($template['content_pages'])) {
+                $decoded = json_decode($template['content_pages'], true);
+                if (is_array($decoded) && count($decoded) > 0) {
+                    $pages = $decoded;
+                }
+            }
+            if (empty($pages)) {
+                if (!empty($template['content'])) $pages[] = $template['content'];
+                if (!empty($template['content_page2'])) $pages[] = $template['content_page2'];
+            }
+            if (empty($pages)) {
+                $pages = [''];
+            }
+            $template['pages'] = $pages;
+
             return $this->response->setJSON(['status' => 'success', 'data' => $template]);
         } else {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Template not found']);
@@ -157,13 +231,27 @@ class OfferLetterTemplateController extends ResourceController
 
         $rules = [
             'title' => 'required|min_length[3]',
-            'content' => 'required|min_length[10]',
         ];
 
-        // Only validate image if a new one is uploaded
-        $file = $this->request->getFile('template_img');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
+        // Content validation: check pages array or content field
+        $pages = $this->request->getPost('pages');
+        if (!is_array($pages) || empty($pages)) {
+            $rules['content'] = 'required|min_length[10]';
+        }
+
+        $fileImg = $this->request->getFile('template_img');
+        if ($fileImg && $fileImg->isValid() && !$fileImg->hasMoved()) {
             $rules['template_img'] = 'is_image[template_img]|max_size[template_img,2048]|mime_in[template_img,image/jpg,image/jpeg,image/png,image/webp]';
+        }
+
+        $fileHeader = $this->request->getFile('template_header');
+        if ($fileHeader && $fileHeader->isValid() && !$fileHeader->hasMoved()) {
+            $rules['template_header'] = 'is_image[template_header]|max_size[template_header,2048]|mime_in[template_header,image/jpg,image/jpeg,image/png,image/webp]';
+        }
+
+        $fileFooter = $this->request->getFile('template_footer');
+        if ($fileFooter && $fileFooter->isValid() && !$fileFooter->hasMoved()) {
+            $rules['template_footer'] = 'is_image[template_footer]|max_size[template_footer,2048]|mime_in[template_footer,image/jpg,image/jpeg,image/png,image/webp]';
         }
 
         $messages = [
@@ -178,6 +266,16 @@ class OfferLetterTemplateController extends ResourceController
             'template_img' => [
                 'is_image' => 'Only valid image formats are allowed.',
                 'max_size' => 'The image size must not exceed 2MB.',
+                'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.',
+            ],
+            'template_header' => [
+                'is_image' => 'Header must be a valid image format.',
+                'max_size' => 'Header image size must not exceed 2MB.',
+                'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.',
+            ],
+            'template_footer' => [
+                'is_image' => 'Footer must be a valid image format.',
+                'max_size' => 'Footer image size must not exceed 2MB.',
                 'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.',
             ]
         ];
@@ -196,16 +294,41 @@ class OfferLetterTemplateController extends ResourceController
             return $this->response->setJSON(['status' => 'error', 'message' => 'Template not found']);
         }
 
+        if (!is_array($pages) || empty($pages)) {
+            $pages = [];
+            $p1 = $this->request->getPost('content');
+            $p2 = $this->request->getPost('content_page2');
+            if ($p1 !== null) $pages[] = $p1;
+            if (!empty($p2)) $pages[] = $p2;
+        }
+        $pages = array_values($pages);
+
         $data = [
             'title' => $this->request->getPost('title'),
-            'content' => $this->request->getPost('content'),
+            'content' => $pages[0] ?? '',
+            'content_page2' => $pages[1] ?? null,
+            'content_pages' => json_encode($pages),
         ];
 
-        // Only move and save image if uploaded
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            $newName = $file->getRandomName();
-            $file->move(FCPATH . 'upload/', $newName);
+        // Save image if uploaded
+        if ($fileImg && $fileImg->isValid() && !$fileImg->hasMoved()) {
+            $newName = $fileImg->getRandomName();
+            $fileImg->move(FCPATH . 'upload/', $newName);
             $data['template_img'] = $newName;
+        }
+
+        // Save header if uploaded
+        if ($fileHeader && $fileHeader->isValid() && !$fileHeader->hasMoved()) {
+            $headerName = $fileHeader->getRandomName();
+            $fileHeader->move(FCPATH . 'upload/', $headerName);
+            $data['template_header'] = $headerName;
+        }
+
+        // Save footer if uploaded
+        if ($fileFooter && $fileFooter->isValid() && !$fileFooter->hasMoved()) {
+            $footerName = $fileFooter->getRandomName();
+            $fileFooter->move(FCPATH . 'upload/', $footerName);
+            $data['template_footer'] = $footerName;
         }
 
         $model->update($id, $data);
@@ -236,109 +359,286 @@ class OfferLetterTemplateController extends ResourceController
     }
     function parseTemplate($templateContent, $data)
     {
+        // Clean multiple consecutive non-breaking spaces and tabs, preserving <br> and paragraph structure
+        $templateContent = str_replace(["\r", "\t"], '', $templateContent);
+        $templateContent = preg_replace('/(&nbsp;|\xC2\xA0){2,}/u', ' ', $templateContent);
+        $templateContent = preg_replace('/[ \t]{2,}/', ' ', $templateContent);
+        $templateContent = str_replace(['–', '—', '−', '&ndash;', '&mdash;'], '-', $templateContent);
+
+        // Remove <code> and <tt> tags wrapping placeholders (e.g. <code>{{job_title}}</code>)
+        $templateContent = preg_replace('/<code>\s*(\{\{\s*[a-zA-Z0-9_-]+\s*\}\})\s*<\/code>/i', '$1', $templateContent);
+        $templateContent = preg_replace('/<tt>\s*(\{\{\s*[a-zA-Z0-9_-]+\s*\}\})\s*<\/tt>/i', '$1', $templateContent);
+
+        // Replace all placeholders
         foreach ($data as $key => $value) {
-            $templateContent = str_replace('{{' . $key . '}}', $value, $templateContent);
+            if (is_scalar($value)) {
+                $cleanKey = trim($key, '{} ');
+                $valStr = (string) $value;
+                $templateContent = str_replace('{{' . $cleanKey . '}}', $valStr, $templateContent);
+                $templateContent = str_replace('{{ ' . $cleanKey . ' }}', $valStr, $templateContent);
+                $templateContent = str_replace('{' . $cleanKey . '}', $valStr, $templateContent);
+            }
         }
+
+        // Clean any remaining code tags around replaced values
+        $templateContent = preg_replace('/<code>(.*?)<\/code>/i', '$1', $templateContent);
+
+        // Wrap bullet arrows in DejaVu Sans span so they render as crisp unicode glyphs
+        $templateContent = str_replace(['➤', '➢'], '<span class="bullet-icon">➤</span>', $templateContent);
+
         return $templateContent;
     }
 
     public function generateOfferLetter($candidateId, $templateId)
-{
-    $templateModel = new \App\Models\OfferLetterTemplateModel();
-    $candidateModel = new \App\Models\CandidateModel();
-    $jobModel = new \App\Models\JobModel();
-    $departmentModel = new \App\Models\DepartmentModel();
-    $companyModel = new \App\Models\CompanyLogoModel();
-    $userModel = new \App\Models\UserModel();
-    $userInfoModel = new \App\Models\UserInfoModel();
-    $onboardingModel = new \App\Models\OnboardingModel();
+    {
+        $templateModel = new \App\Models\OfferLetterTemplateModel();
+        $candidateModel = new \App\Models\CandidateModel();
+        $jobModel = new \App\Models\JobModel();
+        $departmentModel = new \App\Models\DepartmentModel();
+        $companyModel = new \App\Models\CompanyLogoModel();
+        $userModel = new \App\Models\UserModel();
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $onboardingModel = new \App\Models\OnboardingModel();
 
-    $template = $templateModel->find($templateId);
-    $candidate = $candidateModel->find($candidateId);
-    $company = $companyModel->first();
-    $job = $jobModel->find($candidate['job_id']);
-    $department = $departmentModel->find($job['department_id']);
-    $creator = $userModel->find($template['created_by']);
+        $template = $templateModel->find($templateId);
+        if (!$template) {
+            return $this->response->setStatusCode(404)->setBody('Template not found.');
+        }
 
-    $userInfo = $userInfoModel
-        ->where('user_id', $candidate['id'])
-        ->first();
+        $company = $companyModel->first();
+        $candidate = (!empty($candidateId) && $candidateId !== 'sample' && $candidateId != 0) ? $candidateModel->find($candidateId) : null;
+        $onboarding = $candidate ? $onboardingModel->where('candidate_id', $candidateId)->first() : null;
 
-    $onboarding = $onboardingModel->where('candidate_id', $candidateId)->first();
-    $docuSubmitted = $onboarding['docu_submitted'] ?? '';
+        $job = ($candidate && !empty($candidate['job_id'])) 
+            ? $jobModel->find($candidate['job_id']) 
+            : (($onboarding && !empty($onboarding['job_id'])) ? $jobModel->find($onboarding['job_id']) : null);
 
-    $joiningDate = $userInfo['joining_date'] ?? '';
-    $salary = $userInfo['salary'] ?? '';
+        $departmentId = ($onboarding && !empty($onboarding['department_id'])) 
+            ? $onboarding['department_id'] 
+            : ($job['department_id'] ?? null);
+        $department = $departmentId ? $departmentModel->find($departmentId) : null;
 
-    // ✅ Safely prepare logo
-    $logoImgTag = '<!-- Logo not supported or not found -->';
-    if (!empty($company['logo_img'])) {
-        $logoPath = FCPATH . 'upload/' . $company['logo_img'];
-        if (file_exists($logoPath)) {
-            $mimeType = mime_content_type($logoPath);
-            $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-            if (in_array($mimeType, $allowedTypes)) {
-                $base64 = base64_encode(file_get_contents($logoPath));
-                $logoImgTag = '<img src="data:' . $mimeType . ';base64,' . $base64 . '" height="80" class="offer-letter-logo">';
+        $creator = !empty($template['created_by']) ? $userModel->find($template['created_by']) : null;
+        $userInfo = $candidate ? $userInfoModel->where('user_id', $candidate['id'])->first() : null;
+
+        // Extract documents submitted
+        $rawDocu = !empty($onboarding['docu_submitted']) ? $onboarding['docu_submitted'] : '';
+        if (!empty($rawDocu)) {
+            $docuSubmitted = (strpos($rawDocu, '<') === false) ? nl2br(htmlspecialchars($rawDocu)) : $rawDocu;
+        } else {
+            $docuSubmitted = '1. Class 10th Marksheet (Original)<br>2. ID Proof (Aadhaar Card xerox)<br>3. Address Proof (Electricity Bill Xerox)';
+        }
+
+        // Extract dates with fallback
+        $rawStartDate = !empty($onboarding['start_date'])
+            ? $onboarding['start_date']
+            : (!empty($userInfo['joining_date'])
+                ? $userInfo['joining_date']
+                : (!empty($job['post_date']) ? $job['post_date'] : date('Y-m-d')));
+        $startDate = date('F j, Y', strtotime($rawStartDate));
+        $startDateOrdinal = date('jS F Y', strtotime($rawStartDate));
+
+        $salary = $userInfo['salary'] ?? '';
+
+        // ✅ Safely prepare logo
+        $logoSrc = '';
+        $logoPath = '';
+        if (!empty($template['template_img']) && file_exists(FCPATH . 'upload/' . $template['template_img'])) {
+            $logoPath = FCPATH . 'upload/' . $template['template_img'];
+        } elseif (!empty($company['logo_img']) && file_exists(FCPATH . 'upload/' . $company['logo_img'])) {
+            $logoPath = FCPATH . 'upload/' . $company['logo_img'];
+        }
+
+        if (!empty($logoPath) && file_exists($logoPath)) {
+            $mimeType = mime_content_type($logoPath) ?: 'image/png';
+            $logoSrc = 'data:' . $mimeType . ';base64,' . base64_encode(file_get_contents($logoPath));
+            $logoImgTag = '<img src="' . $logoSrc . '" height="70" class="offer-letter-logo" style="max-height: 70px; max-width: 220px;">';
+        } else {
+            $logoImgTag = '';
+        }
+
+        // Header image banner (if uploaded as a file)
+        $headerImgSrc = '';
+        if (!empty($template['template_header']) && file_exists(FCPATH . 'upload/' . $template['template_header'])) {
+            $hPath = FCPATH . 'upload/' . $template['template_header'];
+            $hMime = mime_content_type($hPath) ?: 'image/png';
+            $headerImgSrc = 'data:' . $hMime . ';base64,' . base64_encode(file_get_contents($hPath));
+        }
+
+        // Footer image banner (if uploaded as a file)
+        $footerImgSrc = '';
+        if (!empty($template['template_footer']) && file_exists(FCPATH . 'upload/' . $template['template_footer'])) {
+            $fPath = FCPATH . 'upload/' . $template['template_footer'];
+            $fMime = mime_content_type($fPath) ?: 'image/png';
+            $footerImgSrc = 'data:' . $fMime . ';base64,' . base64_encode(file_get_contents($fPath));
+        }
+
+        // Header text: prefer template_header if text, else default to standard company location
+        $templateHeader = (!empty($template['template_header']) && !file_exists(FCPATH . 'upload/' . $template['template_header']))
+            ? trim($template['template_header'])
+            : 'Fablead Developers Technolab, Surat , Gujarat , India';
+
+        // Candidate / fallback data matching the reference layout
+        $candidateName = $candidate['candidate_name'] ?? 'Drashti Shah';
+        $candidateEmail = $candidate['email'] ?? '';
+        $candidatePhone = $candidate['phone_number'] ?? '';
+        $jobTitle = $job['job_title'] ?? 'Trainee Digital Marketing SEO Executive';
+        $departmentName = $department['department_name'] ?? 'Digital Marketing';
+        $createdByName = !empty($creator['firstname']) ? trim($creator['firstname'] . ' ' . ($creator['lastname'] ?? '')) : 'Raj Singh';
+        $creatorEmail = $creator['email'] ?? ($company['company_email'] ?? 'hr@fableadtechnolabs.com');
+        $creatorDesignation = $creator['designation'] ?? 'Co-Founder & CEO/CTO';
+        $formattedSalary = !empty($salary) ? $salary : '2-month max will be Training Period then after, your position will be Trainee Digital Marketing SEO Executive and salary Based on your performance';
+
+        $data = [
+            'logo_img'            => $logoImgTag,
+            'logo_src'            => $logoSrc,
+            'header_img_src'      => $headerImgSrc,
+            'footer_img_src'      => $footerImgSrc,
+            'template_title'      => $template['title'] ?? 'JOINING LETTER',
+            'template_header'     => $templateHeader,
+            'company_name'        => $company['company_name'] ?? 'Fablead Developers Technolab',
+            'company_address'     => !empty($company['company_address']) ? $company['company_address'] : 'Fablead Developers Technolab, Surat , Gujarat , India',
+            'company_phone'       => $company['company_phone'] ?? '9909910855',
+            'company_email'       => $company['company_email'] ?? 'info@fableadtechnolabs.com',
+            'today_date'          => date('F j, Y'),
+            'current_date'        => date('F j, Y'),
+            'candidate_name'      => $candidateName,
+            'employee_name'       => $candidateName,
+            'email'               => $candidateEmail,
+            'candidate_email'     => $candidateEmail,
+            'employee_email'      => $candidateEmail,
+            'phone_number'        => $candidatePhone,
+            'candidate_phone'     => $candidatePhone,
+            'employee_phone'      => $candidatePhone,
+            'job_title'           => $jobTitle,
+            'designation'         => $jobTitle,
+            'position'            => $jobTitle,
+            'start_date'          => $startDate,
+            'joining_date'        => $startDate,
+            'start_date_ordinal'  => $startDateOrdinal,
+            'department_name'     => $departmentName,
+            'department'          => $departmentName,
+            'created_by'          => $createdByName,
+            'signer_name'         => $createdByName,
+            'creator_email'       => $creatorEmail,
+            'creator_designation' => $creatorDesignation,
+            'signer_designation'  => $creatorDesignation,
+            'salary'              => $formattedSalary,
+            'salary_terms'        => $formattedSalary,
+            'docu_submitted'      => $docuSubmitted,
+            'documents_submitted' => $docuSubmitted,
+            'submitted_documents' => $docuSubmitted,
+            'reporting_to'        => 'Simran Goswami',
+            'supervisor'          => 'Simran Goswami',
+            'working_hours'       => '09:30 AM till 06:15 PM (Monday to Friday)',
+        ];
+
+        // Extract all pages
+        $pages = [];
+        if (!empty($template['content_pages'])) {
+            $decoded = json_decode($template['content_pages'], true);
+            if (is_array($decoded) && count($decoded) > 0) {
+                $pages = $decoded;
             }
         }
+        if (empty($pages)) {
+            if (!empty($template['content'])) $pages[] = $template['content'];
+            if (!empty($template['content_page2'])) $pages[] = $template['content_page2'];
+        }
+        if (empty($pages)) {
+            $pages = [''];
+        }
+
+        $parsedPages = [];
+        foreach ($pages as $p) {
+            $parsedPages[] = $this->parseTemplate($p, $data);
+        }
+
+        $finalHtml = view('offer_templates/offer_letter_preview', array_merge($data, [
+            'parsed_pages' => $parsedPages,
+            'content' => $parsedPages[0] ?? '',
+            'content_page2' => $parsedPages[1] ?? '',
+        ]));
+
+        // Generate PDF with Dompdf configured for Times New Roman font and clean layout
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'Times-Roman');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($finalHtml, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $safeTitle = preg_replace('/[^A-Za-z0-9_\-]/', '_', $template['title'] ?? 'Offer_Letter');
+        $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $candidateName);
+        $filename = "{$safeTitle}_{$safeName}.pdf";
+
+        return $this->response
+            ->setContentType('application/pdf')
+            ->setHeader('Content-Disposition', 'inline; filename="' . $filename . '"')
+            ->setBody($dompdf->output());
     }
 
-    $data = [
-        'logo_img' => $logoImgTag,
-        'company_name' => $company['company_name'] ?? '',
-        'company_address' => $company['company_address'] ?? '',
-        'company_phone' => $company['company_phone'] ?? '',
-        'company_email' => $company['company_email'] ?? '',
-        'today_date' => date('F j, Y'),
-        'candidate_name' => $candidate['candidate_name'] ?? '',
-        'job_title' => $job['job_title'] ?? '',
-        'start_date' => !empty($job['post_date']) ? date('F j, Y', strtotime($job['post_date'])) : '',
-        'department_name' => $department['department_name'] ?? '',
-        'created_by' => $creator['username'] ?? '',
-        'creator_email' => $creator['email'] ?? '',
-        'creator_designation' => $creator['designation'] ?? '',
-        'joining_date' => !empty($joiningDate) ? date('F j, Y', strtotime($joiningDate)) : '',
-        'salary' => $salary,
-        'docu_submitted' => !empty($docuSubmitted) ? $docuSubmitted : 'No documents submitted yet.',
-    ];
+    /**
+     * Preview sample PDF for a template
+     */
+    public function previewSamplePdf($templateId)
+    {
+        return $this->generateOfferLetter(0, $templateId);
+    }
 
-    $parsedContent = $this->parseTemplate($template['content'], $data);
-    // print_r($parsedContent);die;
-    $finalHtml = view('offer_templates/offer_letter_preview', array_merge($data, ['content' => $parsedContent]));
+    public function getOfferTemplate($id)
+    {
+        $model = new \App\Models\OfferLetterTemplateModel();
+        $template = $model->find($id);
 
-    // Generate PDF
-    $dompdf = new \Dompdf\Dompdf();
-    $dompdf->loadHtml($finalHtml);
-    $dompdf->setPaper('A4', 'portrait');
-    $dompdf->render();
+        if (!$template) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Template not found.'
+            ])->setStatusCode(404);
+        }
 
-    return $this->response
-        ->setContentType('application/pdf')
-        ->setHeader('Content-Disposition', 'inline; filename="Offer Letter.pdf"')
-        ->setBody($dompdf->output());
-}
-public function getOfferTemplate($id)
-{
-    $model = new \App\Models\OfferLetterTemplateModel();
-    $template = $model->find($id);
+        $headerExists = !empty($template['template_header']) && file_exists(FCPATH . 'upload/' . $template['template_header']);
+        $footerExists = !empty($template['template_footer']) && file_exists(FCPATH . 'upload/' . $template['template_footer']);
+        $imgExists = !empty($template['template_img']) && file_exists(FCPATH . 'upload/' . $template['template_img']);
 
-    if (!$template) {
+        $pages = [];
+        if (!empty($template['content_pages'])) {
+            $decoded = json_decode($template['content_pages'], true);
+            if (is_array($decoded) && count($decoded) > 0) {
+                $pages = $decoded;
+            }
+        }
+        if (empty($pages)) {
+            if (!empty($template['content'])) $pages[] = $template['content'];
+            if (!empty($template['content_page2'])) $pages[] = $template['content_page2'];
+        }
+        if (empty($pages)) {
+            $pages = [''];
+        }
+
         return $this->response->setJSON([
-            'status' => false,
-            'message' => 'Template not found.'
-        ])->setStatusCode(404);
+            'status' => true,
+            'data' => [
+                'title' => $template['title'],
+                'template_header' => $headerExists ? base_url('upload/' . $template['template_header']) : '',
+                'template_footer' => $footerExists ? base_url('upload/' . $template['template_footer']) : '',
+                'template_header_url' => $headerExists ? base_url('upload/' . $template['template_header']) : '',
+                'template_footer_url' => $footerExists ? base_url('upload/' . $template['template_footer']) : '',
+                'template_header_file' => $headerExists ? $template['template_header'] : '',
+                'template_footer_file' => $footerExists ? $template['template_footer'] : '',
+                'content' => $template['content'],
+                'content_page2' => $template['content_page2'] ?? '',
+                'content_pages' => $template['content_pages'] ?? '',
+                'pages' => $pages,
+                'template_img' => $imgExists ? base_url('upload/' . $template['template_img']) : '',
+                'template_img_url' => $imgExists ? base_url('upload/' . $template['template_img']) : '',
+            ]
+        ]);
     }
-
-    return $this->response->setJSON([
-        'status' => true,
-        'data' => [
-            'title' => $template['title'],
-            'content' => $template['content'],
-            'template_img' => base_url('upload/' . $template['template_img']),
-        ]
-    ]);
-}
 
     /**
      * Export Offer Letter Templates to styled Excel (.xlsx)
@@ -373,9 +673,10 @@ public function getOfferTemplate($id)
             'A1' => 'S.No',
             'B1' => 'Template ID',
             'C1' => 'Template Title',
-            'D1' => 'Content Preview',
-            'E1' => 'Created By',
-            'F1' => 'Created Date'
+            'D1' => 'Template Header',
+            'E1' => 'Content Preview',
+            'F1' => 'Created By',
+            'G1' => 'Created Date'
         ];
 
         foreach ($headers as $cell => $title) {
@@ -387,7 +688,7 @@ public function getOfferTemplate($id)
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E66136']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
         ];
-        $sheet->getStyle('A1:F1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
         $sheet->getRowDimension(1)->setRowHeight(28);
 
         $rowNum = 2;
@@ -402,9 +703,10 @@ public function getOfferTemplate($id)
             $sheet->setCellValue('A' . $rowNum, $sno++);
             $sheet->setCellValue('B' . $rowNum, 'TMPL-' . sprintf('%03d', $item['id']));
             $sheet->setCellValue('C' . $rowNum, $item['title'] ?? '-');
-            $sheet->setCellValue('D' . $rowNum, $preview);
-            $sheet->setCellValue('E' . $rowNum, $creator);
-            $sheet->setCellValue('F' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
+            $sheet->setCellValue('D' . $rowNum, $item['template_header'] ?? '-');
+            $sheet->setCellValue('E' . $rowNum, $preview);
+            $sheet->setCellValue('F' . $rowNum, $creator);
+            $sheet->setCellValue('G' . $rowNum, !empty($item['created_at']) ? date('Y-m-d H:i', strtotime($item['created_at'])) : '-');
 
             $rowNum++;
         }
@@ -413,9 +715,9 @@ public function getOfferTemplate($id)
         $borderStyle = [
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E0E0E0']]],
         ];
-        $sheet->getStyle('A1:F' . $lastRow)->applyFromArray($borderStyle);
+        $sheet->getStyle('A1:G' . $lastRow)->applyFromArray($borderStyle);
 
-        foreach (range('A', 'F') as $col) {
+        foreach (range('A', 'G') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 

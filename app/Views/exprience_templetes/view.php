@@ -141,10 +141,11 @@ float: left !important;
 
                                 ${template.title}</td>
                                 <td style="display: flex; align-items: center; gap: 8px;">
+                                    <a href="/exprience-templates/preview-pdf/${template.id}" target="_blank" class="text-danger fs-5" title="Preview PDF"><i class="mdi mdi-file-pdf-box"></i></a>
                                     <a href="/exprience/view/${template.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
                                     <a href="edit/template/${template.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
                                     <a href="#" class="text-danger fs-5 delete-template" data-id="${template.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
-
+                                </td>
                             </tr>
                         `;
                     });
