@@ -133,6 +133,60 @@
     </div>
 </div>
 
+<!-- Edit Generated Letter Modal -->
+<div class="modal fade" id="editLetterModal" tabindex="-1" aria-labelledby="editLetterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold" id="editLetterModalLabel">Edit Generated Experience Letter</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editLetterForm">
+                <?= csrf_field() ?>
+                <input type="hidden" name="id" id="edit_letter_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_employee_id" class="form-label font-weight-bold">Employee Name</label>
+                        <select class="form-select" name="employee_id" id="edit_employee_id" required>
+                            <option value="">Select Employee</option>
+                            <?php if (!empty($employee)): ?>
+                                <?php foreach ($employee as $emp): ?>
+                                    <option value="<?= $emp['id'] ?>"><?= esc($emp['username']) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_from_date" class="form-label font-weight-bold">From Date</label>
+                        <input type="date" class="form-control" name="from_date" id="edit_from_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_to_date" class="form-label font-weight-bold">To Date</label>
+                        <input type="date" class="form-control" name="to_date" id="edit_to_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_template_id" class="form-label font-weight-bold">Template Name</label>
+                        <select class="form-select" name="template_id" id="edit_template_id" required>
+                            <option value="">Select Template</option>
+                            <?php if (!empty($templates)): ?>
+                                <?php foreach ($templates as $tmpl): ?>
+                                    <option value="<?= $tmpl['id'] ?>"><?= esc($tmpl['title']) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn hr-btnbg" id="editSubmitBtn">
+                        <i class="mdi mdi-check me-1"></i> Update Letter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- AJAX Script -->
 <script>
     function loadTemplates() {
@@ -143,14 +197,24 @@
                 if (response.status === 'success' && response.data.length > 0) {
                     let html = '';
                     response.data.forEach((template, index) => {
+                        const fullName = (template.firstname || '') + (template.lastname ? ' ' + template.lastname : '');
                         html += `
                               <tr data-id="${template.id}">
                                 <td>${index + 1}</td>
-                                <td>${template.firstname}</td>
+                                <td>${fullName || template.firstname}</td>
                                 <td>${template.title}</td>
                                 <td>${template.from_date}</td>
                                 <td>${template.to_date}</td>
                                 <td style="display: flex; align-items: center; gap: 10px;">
+                                    <a href="#" class="text-warning fs-5 edit-letter" 
+                                       data-id="${template.id}" 
+                                       data-employee-id="${template.employee_id || ''}" 
+                                       data-template-id="${template.template_id || ''}" 
+                                       data-from-date="${template.from_date || ''}" 
+                                       data-to-date="${template.to_date || ''}" 
+                                       title="Edit">
+                                        <i class="mdi mdi-pencil"></i>
+                                    </a>
                                     <a href="<?= site_url("api/generate-experience/") ?>${template.id}" class="text-primary fs-5" title="Download PDF">
                                         <i class="mdi mdi-download"></i>
                                     </a>
@@ -191,6 +255,96 @@
 
     $(document).ready(function() {
         loadTemplates();
+
+        // Handle Edit Letter Click
+        $(document).on('click', '.edit-letter', function(e) {
+            e.preventDefault();
+            const letterId = $(this).data('id');
+            const empId = $(this).data('employee-id');
+            const tmplId = $(this).data('template-id');
+            const fromDate = $(this).data('from-date');
+            const toDate = $(this).data('to-date');
+
+            $('#edit_letter_id').val(letterId);
+            $('#edit_employee_id').val(empId);
+            $('#edit_template_id').val(tmplId);
+            $('#edit_from_date').val(fromDate);
+            $('#edit_to_date').val(toDate);
+
+            // Fetch fresh details from API
+            $.ajax({
+                url: '<?= site_url("api/exprience-data/get/") ?>' + letterId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status === 'success' && res.data) {
+                        $('#edit_employee_id').val(res.data.employee_id);
+                        $('#edit_template_id').val(res.data.template_id);
+                        $('#edit_from_date').val(res.data.from_date);
+                        $('#edit_to_date').val(res.data.to_date);
+                    }
+                }
+            });
+
+            $('#editLetterModal').modal('show');
+        });
+
+        // Auto fetch joining date on employee change in edit modal
+        $('#edit_employee_id').on('change', function() {
+            const empId = $(this).val();
+            if (empId) {
+                $.ajax({
+                    url: '<?= site_url("api/employee/joining-date") ?>/' + empId,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res && res.joining_date) {
+                            $('#edit_from_date').val(res.joining_date);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Submit Edit Form
+        $('#editLetterForm').on('submit', function(e) {
+            e.preventDefault();
+            const letterId = $('#edit_letter_id').val();
+            const formData = $(this).serialize();
+
+            $('#editSubmitBtn').prop('disabled', true).text('Updating...');
+
+            $.ajax({
+                url: '<?= site_url("api/exprience-data/update/") ?>' + letterId,
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(res) {
+                    $('#editSubmitBtn').prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Update Letter');
+                    if (res.status === 'success') {
+                        $('#editLetterModal').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Updated!',
+                            text: res.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        loadTemplates();
+                    } else {
+                        Swal.fire('Error', res.message || 'Failed to update letter.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    $('#editSubmitBtn').prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Update Letter');
+                    let msg = 'Failed to update letter.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Swal.fire('Error', msg, 'error');
+                }
+            });
+        });
     });
 
     $(document).on('click', '.delete-template', function(e) {

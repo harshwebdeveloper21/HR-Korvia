@@ -254,12 +254,15 @@ $(document).ready(function() {
                     let d = new Date(data.created_at);
                     let dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+                    window.userComplaintRows = window.userComplaintRows || {};
+                    window.userComplaintRows[data.id] = data;
+
                     return `
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
                             <div style="flex: 1;">
                                 <span class="fw-bold d-block text-dark small">${data.subject}</span>
                                 <span class="text-muted x-small d-block text-truncate" style="max-width:300px;">${data.message.substring(0, 80)}...</span>
-                                <div class="expanded-details" id="user-complaint-details-${data.id}" onclick="event.stopPropagation();">
+                                <div class="expanded-details" id="user-complaint-details-${data.id}">
                                     <div class="detail-row">
                                         <span class="detail-label">Category:</span>
                                         <span class="detail-value">${typeBadge}</span>
@@ -273,18 +276,10 @@ $(document).ready(function() {
                                         <span class="detail-value">${dateStr}</span>
                                     </div>
                                     <div class="detail-actions">
-                                        <button type="button" class="btn btn-sm btn-info text-white view-details-btn" 
-                                                data-id="${data.id}"
-                                                data-subject="${data.subject}" 
-                                                data-message="${data.message}"
-                                                data-remark="${data.admin_remark || 'Our HR team will review your submission shortly.'}"
-                                                data-status="${data.status}"
-                                                data-file="${data.file || ''}"
-                                                data-res-file="${data.resolution_file || ''}">
+                                        <button type="button" class="btn btn-sm btn-info text-white" onclick="viewUserComplaint(${data.id})">
                                             <i class="mdi mdi-eye"></i> View
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-danger delete-btn" 
-                                                data-id="${data.id}">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteUserComplaint(${data.id})">
                                             <i class="mdi mdi-delete"></i> Delete
                                         </button>
                                     </div>
@@ -327,20 +322,16 @@ $(document).ready(function() {
                 render: function(data) {
                     return `
                         <div class="d-flex justify-content-end gap-2">
-                            <button type="button" class="btn btn-sm btn-icon-custom border-0 view-details-btn" 
-                                    data-id="${data.id}"
-                                    data-subject="${data.subject}" 
-                                    data-message="${data.message}"
-                                    data-remark="${data.admin_remark || 'Our HR team will review your submission shortly.'}"
-                                    data-status="${data.status}"
-                                    data-file="${data.file || ''}"
-                                    data-res-file="${data.resolution_file || ''}"
-                                    style="background-color: #f0f7ff; color: #4B49AC;">
+                            <button type="button" class="btn btn-sm btn-icon-custom border-0" 
+                                    onclick="viewUserComplaint(${data.id})"
+                                    style="background-color: #f0f7ff; color: #4B49AC;"
+                                    title="View Details">
                                 <i class="mdi mdi-eye"></i>
                             </button>
-                            <button type="button" class="btn btn-sm btn-icon-custom border-0 delete-btn" 
-                                    data-id="${data.id}" 
-                                    style="background-color: #fdf2f2; color: #fe5e5e;">
+                            <button type="button" class="btn btn-sm btn-icon-custom border-0" 
+                                    onclick="deleteUserComplaint(${data.id})"
+                                    style="background-color: #fdf2f2; color: #fe5e5e;"
+                                    title="Delete">
                                 <i class="mdi mdi-delete"></i>
                             </button>
                         </div>
@@ -372,6 +363,12 @@ $(document).ready(function() {
         }
     });
 
+    table.on('draw', function() {
+        if (typeof applyMobileTableVisibility === 'function') {
+            applyMobileTableVisibility();
+        }
+    });
+
     $('#userComplaintTabs .nav-link').on('click', function () {
         $('#userComplaintTabs .nav-link')
             .removeClass('active')
@@ -384,41 +381,43 @@ $(document).ready(function() {
         table.column(2).search(selectedType).draw();
     });
 
-    // Delegation for View Details button
-    $('#userComplaintsTable').on('click', '.view-details-btn', function() {
-        let btn = $(this);
-        $('#modalId').text(btn.data('id'));
-        $('#modalSubject').text(btn.data('subject'));
-        $('#modalMessage').text(btn.data('message'));
-        $('#modalRemark').text(btn.data('remark'));
+    window.viewUserComplaint = function(id) {
+        let row = window.userComplaintRows ? window.userComplaintRows[id] : null;
+        if (!row) return;
+
+        $('#modalId').text(row.id);
+        $('#modalSubject').text(row.subject);
+        $('#modalMessage').text(row.message);
+        $('#modalRemark').text(row.admin_remark || 'Our HR team will review your submission shortly.');
         
-        let status = btn.data('status');
+        let status = row.status;
         let statusColor = '#E66136';
         if (status === 'In Progress') statusColor = '#4B49AC';
         if (status === 'Resolved') statusColor = '#34B1AA';
         
         $('#modalStatus').text(status).css('color', statusColor);
         
-        let file = btn.data('file');
-        if(file) {
+        let file = row.file;
+        if (file) {
             $('#modalFile').attr('href', '<?= base_url('uploads/complaints') ?>/' + file);
             $('#attachmentArea').show();
         } else {
             $('#attachmentArea').hide();
         }
 
-        let resFile = btn.data('res-file');
-        if(resFile) {
+        let resFile = row.resolution_file;
+        if (resFile) {
             $('#modalResolutionFile').attr('href', '<?= base_url('uploads/complaints') ?>/' + resFile);
             $('#resolutionAttachmentArea').show();
         } else {
             $('#resolutionAttachmentArea').hide();
         }
         $('#userViewModal').modal('show');
-    });
+    };
 
-    $('.delete-btn').on('click', function() {
-        let id = $(this).data('id');
+    window.deleteUserComplaint = function(id) {
+        if (!id) return;
+        const token = localStorage.getItem('token');
         Swal.fire({
             title: 'Confirm Removal',
             text: "Are you sure you want to delete this case forever?",
@@ -436,6 +435,8 @@ $(document).ready(function() {
                 $.ajax({
                     url: '<?= base_url('api/complaints/delete') ?>/' + id,
                     type: 'POST',
+                    data: { _method: 'DELETE' },
+                    headers: { 'Authorization': `Bearer ${token}` },
                     success: function(response) {
                         if (response.status === 'success') {
                             Swal.fire({
@@ -449,13 +450,17 @@ $(document).ready(function() {
                                 table.ajax.reload();
                             });
                         } else {
-                            Swal.fire('Error!', response.message, 'error');
+                            Swal.fire('Error!', response.message || 'Failed to delete.', 'error');
                         }
+                    },
+                    error: function(xhr) {
+                        let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Permission denied or session expired.';
+                        Swal.fire('Error!', msg, 'error');
                     }
                 });
             }
         });
-    });
+    };
 
     // 📥 Export to Excel functionality
     $('#btnExportUserComplaints').on('click', function () {
