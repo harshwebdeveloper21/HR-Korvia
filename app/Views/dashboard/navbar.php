@@ -2042,18 +2042,26 @@ $role = $user ? $user->role : null;
             return;
         }
 
+        const isMobile = window.innerWidth <= 768;
         const messageDiv = document.createElement('div');
         messageDiv.id = 'notification-permission-message';
-        messageDiv.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: #e66136; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; max-width: 300px;';
+        messageDiv.className = 'notification-permission-toast';
+        messageDiv.style.cssText = isMobile 
+            ? 'position: fixed; bottom: 75px; left: 15px; right: 15px; background: #e66136; color: white; padding: 12px 14px; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 10000; max-width: calc(100% - 30px); margin: 0 auto;'
+            : 'position: fixed; bottom: 25px; right: 25px; background: #e66136; color: white; padding: 14px 18px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); z-index: 10000; max-width: 320px;';
+        
         messageDiv.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <i class="mdi mdi-bell-off" style="font-size: 24px;"></i>
-                <div style="flex: 1;">
-                    <strong>Enable Notifications</strong><br>
-                    <small>Click to enable push notifications for check-in/check-out alerts</small>
+            <div style="display: flex; align-items: center; gap: 10px; position: relative;">
+                <i class="mdi mdi-bell-ring-outline" style="font-size: 22px; flex-shrink: 0;"></i>
+                <div style="flex: 1; padding-right: 18px;">
+                    <strong style="font-size: 13px; display: block; line-height: 1.2;">Enable Notifications</strong>
+                    <small style="font-size: 11px; opacity: 0.9; line-height: 1.2; display: inline-block;">Click to enable push notifications for check-in/out alerts</small>
                 </div>
-                <button onclick="requestNotificationPermission()" style="background: white; color: #e66136; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                <button onclick="requestNotificationPermission()" style="background: white; color: #e66136; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 12px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     Enable
+                </button>
+                <button type="button" onclick="hideNotificationPermissionMessage()" title="Close" style="background: transparent; border: none; color: white; position: absolute; top: -6px; right: -6px; font-size: 18px; cursor: pointer; line-height: 1; opacity: 0.85; padding: 2px;">
+                    &times;
                 </button>
             </div>
         `;

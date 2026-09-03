@@ -19,6 +19,16 @@ class CreateOfferLetterTemplatesTable extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => '255',
             ],
+            'template_header' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
+            'template_footer' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
             'content' => [
                 'type' => 'TEXT',
             ],

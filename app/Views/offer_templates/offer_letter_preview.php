@@ -1,114 +1,265 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Offer Letter</title>
+    <title><?= esc($template_title ?? 'JOINING LETTER') ?></title>
     <style>
         @page {
-            margin: 120px 40px 100px 40px;
-        }
-
-        header {
-            position: fixed;
-            top: -100px;
-            left: 0;
-            right: 0;
-            height: 100px;
-            text-align: center;
-            line-height: 1.4;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-        }
-
-        footer {
-            position: fixed;
-            bottom: -80px;
-            left: 0;
-            right: 0;
-            height: 60px;
-            text-align: center;
-            font-size: 12px;
-            color: #999;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
+            margin-top: 120px;
+            margin-bottom: 45px;
+            margin-left: 70pt;
+            margin-right: 70pt;
         }
 
         body {
-            line-height: 1.5;
+            font-family: 'Times New Roman', Times, 'DejaVu Serif', serif;
+            font-size: 12pt;
+            line-height: 1.28;
             color: #000000;
             background-color: #ffffff;
-        }
-
-        .content {
-            margin-top: 20px;
-        }
-
-        .logo-wrapper img {
-            height: 80px;
-        }
-
-        .company-info {
-            text-align: left;
-            font-size: 12px;
-            color: #000;
-        }
-
-        .company-info h2 {
             margin: 0;
-            font-size: 18px;
+            padding: 0;
+        }
+
+        /* Fixed Header on every page with increased height */
+        header {
+            position: fixed;
+            top: -115px;
+            left: 0;
+            right: 0;
+            height: 110px;
+        }
+
+        .header-banner-img {
+            width: 100%;
+            max-height: 110px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .header-table {
+            width: 100%;
+            height: 110px;
+            border-collapse: collapse;
+            border: none;
+        }
+
+        .header-logo-cell {
+            width: 35%;
+            vertical-align: middle;
+            text-align: left;
+            padding: 0;
+            border: none;
+        }
+
+        .header-logo-cell img {
+            max-height: 88px;
+            max-width: 240px;
+            height: auto;
+            display: block;
+        }
+
+        .header-address-cell {
+            width: 70%;
+            vertical-align: middle;
+            text-align: right;
+            font-family: Calibri, 'DejaVu Sans', Arial, sans-serif;
+            font-size: 11pt;
             font-weight: bold;
+            color: #000000;
+            line-height: 1.3;
+            white-space: nowrap;
+            padding: 0;
+            border: none;
         }
 
-        .company-info p {
-            margin: 2px 0;
-        }
-
-        p {
-            margin: 10px 0;
-            text-align: justify;
-        }
-
-        h3 {
+        /* Fixed Footer on every page (if banner uploaded) */
+        footer {
+            position: fixed;
+            bottom: -35px;
+            left: 0;
+            right: 0;
+            height: 30px;
             text-align: center;
-            margin-bottom: 10px;
+        }
+
+        .footer-banner-img {
+            width: 100%;
+            max-height: 30px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Main Content */
+        .content {
+            margin-top: 5px;
+        }
+
+        .template-title-wrapper {
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 18px;
+        }
+
+        .template-title-wrapper h3 {
+            font-family: Calibri, 'DejaVu Sans', Arial, sans-serif;
+            font-size: 13pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0;
+            color: #000000;
+            display: inline-block;
+        }
+
+        .body-content {
+            font-size: 12pt;
+            line-height: 1.28;
+            color: #000000;
+            text-align: left;
+        }
+
+        .body-content p {
+            margin: 0 0 8px 0;
+            line-height: 1.28;
+        }
+
+        .body-content strong, .body-content b {
+            font-weight: bold;
+            color: #000000;
+        }
+
+        /* Arrow icon list styling for any <ul> or <ul class="arrow-list"> */
+        .body-content ul, ul.arrow-list {
+            list-style: none !important;
+            padding-left: 0 !important;
+            margin: 6px 0 10px 0 !important;
+        }
+
+        .body-content ul li, ul.arrow-list li {
+            margin-bottom: 8px !important;
+            text-indent: -20px !important;
+            padding-left: 20px !important;
+            position: relative !important;
+            line-height: 1.28 !important;
+        }
+
+        .body-content ul li:before, ul.arrow-list li:before {
+            content: "➤ ";
+            font-family: 'DejaVu Sans', sans-serif !important;
+            font-size: 11pt !important;
+            margin-right: 4px !important;
+            color: #000000 !important;
+        }
+
+        /* Ensure bullet arrows render cleanly using DejaVu Sans */
+        .bullet-icon, .arrow-bullet {
+            font-family: 'DejaVu Sans', sans-serif !important;
+            font-size: 11pt;
+        }
+
+        /* Ensure injected variables & code blocks inherit exact body font */
+        code, tt, pre, samp, kbd {
+            font-family: inherit !important;
+            font-size: inherit !important;
+            font-style: inherit !important;
+            font-weight: inherit !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            color: inherit !important;
+        }
+
+        .body-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            table-layout: fixed;
+        }
+
+        .body-content table td {
+            vertical-align: top;
+            padding: 0;
+            border: none;
+        }
+
+        .no-break {
+            page-break-inside: avoid;
         }
     </style>
 </head>
-
 <body>
 
+    <!-- Header (repeats on each page) -->
     <header>
-        <table width="100%">
-            <tr>
-                <td class="company-info" style="text-align: left;">
-                    <h2><?= $company_name ?? 'Your Company Name' ?></h2>
-                    <p><?= $company_address ?? 'Your Company Address' ?></p>
-                    <p><?= $company_phone ?? 'Phone' ?> | <?= $company_email ?? 'Email' ?></p>
-                </td>
-                <td class="logo-wrapper" style="text-align: right;">
-                    <?= $logo_img ?? '' ?>
-                </td>
-            </tr>
-        </table>
+        <?php if (!empty($header_img_src)): ?>
+            <div style="width: 100%; text-align: center;">
+                <img src="<?= $header_img_src ?>" class="header-banner-img" alt="Header">
+            </div>
+        <?php else: ?>
+            <table class="header-table">
+                <tr>
+                    <td class="header-logo-cell">
+                        <?php if (!empty($logo_src)): ?>
+                            <img src="<?= $logo_src ?>" alt="Logo">
+                        <?php elseif (!empty($company_name)): ?>
+                            <h2 style="margin: 0; font-size: 16px; font-weight: bold; color: #000;"><?= esc($company_name) ?></h2>
+                        <?php endif; ?>
+                    </td>
+                    <td class="header-address-cell">
+                        <?= esc($template_header ?? 'Fablead Developers Technolab, Surat , Gujarat , India') ?>
+                    </td>
+                </tr>
+            </table>
+        <?php endif; ?>
     </header>
 
-    <footer>
-        <table width="100%">
-            <tr>
-                <td style="text-align: left;">
-                    <?= $company_name ?? 'Your Company Name' ?>
-                </td>
-                <td style="text-align: right;">
-                    <?= $company_address ?? 'Your Company Address' ?>
-                </td>
-            </tr>
-        </table>
-    </footer>
+    <!-- Footer (repeats on each page if uploaded) -->
+    <?php if (!empty($footer_img_src)): ?>
+        <footer>
+            <img src="<?= $footer_img_src ?>" class="footer-banner-img" alt="Footer">
+        </footer>
+    <?php endif; ?>
 
-    <div class="content">
-        <?= $content ?>
-    </div>
+    <?php if (!empty($parsed_pages) && is_array($parsed_pages)): ?>
+        <?php foreach ($parsed_pages as $idx => $pageHtml): ?>
+            <?php if ($idx > 0): ?>
+                <div style="page-break-before: always;"></div>
+            <?php endif; ?>
+            <div class="content" style="<?= $idx > 0 ? 'padding-top: 5px;' : '' ?>">
+                <?php if ($idx === 0): ?>
+                    <div class="template-title-wrapper">
+                        <h3><u><?= esc($template_title ?? 'JOINING LETTER') ?></u></h3>
+                    </div>
+                <?php endif; ?>
+                <div class="body-content">
+                    <?= $pageHtml ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <!-- Main Content (Page 1) -->
+        <div class="content">
+            <div class="template-title-wrapper">
+                <h3><u><?= esc($template_title ?? 'JOINING LETTER') ?></u></h3>
+            </div>
+
+            <div class="body-content">
+                <?= $content ?>
+            </div>
+        </div>
+
+        <!-- Main Content (Page 2 if provided) -->
+        <?php if (!empty($content_page2)): ?>
+            <div style="page-break-before: always;"></div>
+            <div class="content" style="padding-top: 5px;">
+                <div class="body-content">
+                    <?= $content_page2 ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
 
 </body>
-
 </html>

@@ -42,23 +42,82 @@
         font-size: 14px !important;
         font-weight: 500 !important;
     }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+        .card-header .header-content-wrapper {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 14px !important;
+        }
+        .card-header .header-btn-group {
+            width: 100% !important;
+            display: flex !important;
+            gap: 8px !important;
+        }
+        .card-header .header-btn-group .btn {
+            flex: 1 1 auto !important;
+            justify-content: center !important;
+            font-size: 12px !important;
+            padding: 8px 10px !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+        #userComplaintTabs {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            white-space: nowrap !important;
+            padding-bottom: 4px !important;
+            border-bottom: 2px solid #E66136 !important;
+        }
+        #userComplaintTabs .nav-item {
+            flex: 0 0 auto !important;
+        }
+        #userComplaintTabs .nav-link {
+            font-size: 13px !important;
+            padding: 8px 12px !important;
+        }
+        .dataTables_wrapper .dataTables_filter {
+            float: none !important;
+            text-align: left !important;
+            margin-top: 10px !important;
+            width: 100% !important;
+        }
+        .dataTables_wrapper .dataTables_filter label {
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-top: 5px !important;
+        }
+        .dataTables_wrapper .dataTables_length {
+            float: none !important;
+            margin-bottom: 8px !important;
+        }
+    }
 </style>
 
 <div class="row">
     <div class="col-12 grid-margin stretch-card">
         <div class="card shadow-sm border-0" style="border-radius: 15px; overflow: hidden;">
             <!-- Premium Header -->
-            <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #E66136 0%, #ff8e53 100%);">
-                <div class="d-flex justify-content-between align-items-center">
+            <div class="card-header border-0 p-3 p-sm-4" style="background: linear-gradient(135deg, #E66136 0%, #ff8e53 100%);">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
                     <div class="text-white">
                         <h4 class="card-title mb-1 fw-bold text-white">My Complaints & Feedback</h4>
                         <p class="mb-0 opacity-75 small">Track, manage and check status of your submitted requests.</p>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" id="btnExportUserComplaints" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px; border: none;">
+                    <div class="d-flex align-items-center gap-2 w-100 w-sm-auto flex-wrap flex-sm-nowrap header-btn-group">
+                        <button type="button" id="btnExportUserComplaints" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 py-2 px-3 bg-white flex-fill flex-sm-grow-0" style="border-radius: 8px; border: none; font-size: 13px;">
                             <i class="mdi mdi-file-excel fs-5" style="color: #E66136;"></i> Export
                         </button>
-                        <a href="<?= base_url('complaints/create') ?>" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center gap-2 py-2 px-3 bg-white" style="border-radius: 8px; border: none;">
+                        <a href="<?= base_url('complaints/create') ?>" class="btn btn-white text-dark fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 py-2 px-3 bg-white flex-fill flex-sm-grow-0" style="border-radius: 8px; border: none; font-size: 13px; white-space: nowrap;">
                             <i class="mdi mdi-plus-circle fs-5" style="color: #E66136;"></i> Submit New Request
                         </a>
                     </div>
@@ -67,17 +126,17 @@
             
             <div class="card-body pt-4">
                 <!-- Complaints & Feedback Tabs -->
-                <ul class="nav nav-tabs mb-3" id="userComplaintTabs" role="tablist" style="border-bottom: 2px solid #E66136;">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="user-all-tab" data-type="" type="button" role="tab"
+                <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" id="userComplaintTabs" role="tablist" style="border-bottom: 2px solid #E66136; -webkit-overflow-scrolling: touch;">
+                    <li class="nav-item" role="presentation" style="flex: 0 0 auto;">
+                        <button class="nav-link active text-nowrap" id="user-all-tab" data-type="" type="button" role="tab"
                             style="color:#E66136; border-bottom: 3px solid #E66136; font-weight:600;">All Requests</button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="user-complaints-tab" data-type="Complaint" type="button" role="tab"
+                    <li class="nav-item" role="presentation" style="flex: 0 0 auto;">
+                        <button class="nav-link text-nowrap" id="user-complaints-tab" data-type="Complaint" type="button" role="tab"
                             style="color:#6c757d; font-weight:600;"><i class="mdi mdi-alert-circle-outline me-1"></i> Complaints</button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="user-feedback-tab" data-type="Feedback" type="button" role="tab"
+                    <li class="nav-item" role="presentation" style="flex: 0 0 auto;">
+                        <button class="nav-link text-nowrap" id="user-feedback-tab" data-type="Feedback" type="button" role="tab"
                             style="color:#6c757d; font-weight:600;"><i class="mdi mdi-comment-text-outline me-1"></i> Feedback</button>
                     </li>
                 </ul>

@@ -150,9 +150,11 @@
                                     <div style="display: flex; align-items: flex-start; gap: 10px;">
                                         <div style="flex: 1;">
                                             <span class="fw-bold text-dark">${template.title}</span>
+                                            ${template.template_header ? `<div class="small text-muted text-truncate" style="max-width: 350px;">${template.template_header}</div>` : ''}
                                             <div class="expanded-details" id="template-details-${template.id}" onclick="event.stopPropagation();">
                                                 <div class="detail-actions">
                                                     <a href="/template/view/${template.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
+                                                    <a href="/offer-templates/preview-pdf/${template.id}" target="_blank" class="btn btn-sm btn-secondary text-white"><i class="mdi mdi-file-pdf-box"></i> PDF</a>
                                                     <a href="/template/${template.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
                                                     <a href="#" class="btn btn-sm btn-danger delete-template" data-id="${template.id}"><i class="mdi mdi-delete"></i> Delete</a>
                                                 </div>
@@ -163,6 +165,7 @@
                                 <td class="desktop-only-col">
                                     <div style="display: flex; align-items: center; gap: 8px;">
                                         <a href="/template/view/${template.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
+                                        <a href="/offer-templates/preview-pdf/${template.id}" target="_blank" class="text-danger fs-5" title="Preview / Download PDF"><i class="mdi mdi-file-pdf-box"></i></a>
                                         <a href="/template/${template.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
                                         <a href="#" class="text-danger fs-5 delete-template" data-id="${template.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
                                     </div>

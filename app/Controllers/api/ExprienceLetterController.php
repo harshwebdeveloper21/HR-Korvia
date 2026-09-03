@@ -45,8 +45,17 @@ class ExprienceLetterController extends ResourceController
         $rules = [
             'title' => 'required|min_length[3]',
             'content' => 'required|min_length[10]',
-            'template_img' => 'uploaded[template_img]|is_image[template_img]|max_size[template_img,2048]|mime_in[template_img,image/jpg,image/jpeg,image/png,image/webp]'
         ];
+
+        // Optional header and footer validation
+        $headerFile = $this->request->getFile('template_header');
+        if ($headerFile && $headerFile->isValid() && !$headerFile->hasMoved()) {
+            $rules['template_header'] = 'is_image[template_header]|max_size[template_header,2048]|mime_in[template_header,image/jpg,image/jpeg,image/png,image/webp]';
+        }
+        $footerFile = $this->request->getFile('template_footer');
+        if ($footerFile && $footerFile->isValid() && !$footerFile->hasMoved()) {
+            $rules['template_footer'] = 'is_image[template_footer]|max_size[template_footer,2048]|mime_in[template_footer,image/jpg,image/jpeg,image/png,image/webp]';
+        }
 
         $messages = [
             'title' => [
@@ -57,12 +66,6 @@ class ExprienceLetterController extends ResourceController
                 'required' => 'Content is required.',
                 'min_length' => 'Content must be at least 10 characters long.',
             ],
-            'template_img' => [
-                'uploaded' => 'Upload a template image.',
-                'is_image' => 'Only valid image formats are allowed.',
-                'max_size' => 'The image size must not exceed 2MB.',
-                'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.',
-            ]
         ];
 
         if (!$this->validate($rules, $messages)) {
@@ -82,12 +85,18 @@ class ExprienceLetterController extends ResourceController
             'created_by' => $user->sub,
         ];
 
-        // Handle image upload
-        $file = $this->request->getFile('template_img');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            $newName = $file->getRandomName();
-            $file->move(FCPATH . 'upload/templates/', $newName);
-            $data['template_img'] = $newName;
+        // Handle header image upload
+        if ($headerFile && $headerFile->isValid() && !$headerFile->hasMoved()) {
+            $newName = $headerFile->getRandomName();
+            $headerFile->move(FCPATH . 'upload/templates/', $newName);
+            $data['template_header'] = $newName;
+        }
+
+        // Handle footer image upload
+        if ($footerFile && $footerFile->isValid() && !$footerFile->hasMoved()) {
+            $newName = $footerFile->getRandomName();
+            $footerFile->move(FCPATH . 'upload/templates/', $newName);
+            $data['template_footer'] = $newName;
         }
 
         if ($id) {
@@ -167,10 +176,13 @@ class ExprienceLetterController extends ResourceController
             'content' => 'required|min_length[10]',
         ];
 
-        // Only validate image if a new one is uploaded
-        $file = $this->request->getFile('template_img');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            $rules['template_img'] = 'is_image[template_img]|max_size[template_img,2048]|mime_in[template_img,image/jpg,image/jpeg,image/png,image/webp]';
+        $headerFile = $this->request->getFile('template_header');
+        if ($headerFile && $headerFile->isValid() && !$headerFile->hasMoved()) {
+            $rules['template_header'] = 'is_image[template_header]|max_size[template_header,2048]|mime_in[template_header,image/jpg,image/jpeg,image/png,image/webp]';
+        }
+        $footerFile = $this->request->getFile('template_footer');
+        if ($footerFile && $footerFile->isValid() && !$footerFile->hasMoved()) {
+            $rules['template_footer'] = 'is_image[template_footer]|max_size[template_footer,2048]|mime_in[template_footer,image/jpg,image/jpeg,image/png,image/webp]';
         }
 
         $messages = [
@@ -182,11 +194,6 @@ class ExprienceLetterController extends ResourceController
                 'required' => 'Content is required.',
                 'min_length' => 'Content must be at least 10 characters long.',
             ],
-            'template_img' => [
-                'is_image' => 'Only valid image formats are allowed.',
-                'max_size' => 'The image size must not exceed 2MB.',
-                'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.',
-            ]
         ];
 
         if (!$this->validate($rules, $messages)) {
@@ -208,17 +215,23 @@ class ExprienceLetterController extends ResourceController
             'content' => $this->request->getPost('content'),
         ];
 
-        // Only move and save image if uploaded
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            $newName = $file->getRandomName();
-            $file->move(FCPATH . 'upload/templates/', $newName);
-            $data['template_img'] = $newName;
+        if ($headerFile && $headerFile->isValid() && !$headerFile->hasMoved()) {
+            $newName = $headerFile->getRandomName();
+            $headerFile->move(FCPATH . 'upload/templates/', $newName);
+            $data['template_header'] = $newName;
+        }
+
+        if ($footerFile && $footerFile->isValid() && !$footerFile->hasMoved()) {
+            $newName = $footerFile->getRandomName();
+            $footerFile->move(FCPATH . 'upload/templates/', $newName);
+            $data['template_footer'] = $newName;
         }
 
         $model->update($id, $data);
 
         return $this->response->setJSON(['status' => 'success', 'message' => 'Template updated successfully']);
     }
+
     public function templateView($id)
     {
         $model = new \App\Models\ExprienceLetterModel();
@@ -231,6 +244,9 @@ class ExprienceLetterController extends ResourceController
             ]);
         }
 
+        $companyModel = new \App\Models\CompanyLogoModel();
+        $company = $companyModel->first() ?? [];
+
         // Fix image paths in content (convert relative to absolute)
         $template['content'] = str_replace(
             ['../upload/', 'src="upload/'],
@@ -238,8 +254,12 @@ class ExprienceLetterController extends ResourceController
             $template['content']
         );
 
-        return view('exprience_templetes/template_view', ['templates' => $template]);
+        return view('exprience_templetes/template_view', [
+            'templates' => $template,
+            'company'   => $company
+        ]);
     }
+
     public function addemployeePage()
     {
         $user = $this->authService->check();
@@ -254,22 +274,45 @@ class ExprienceLetterController extends ResourceController
         return view('exprience_templetes/add_exp_emp', ['employee' => $employee, 'template' => $template]);
     }
 
+    protected function parseTemplate($templateContent, $data)
+    {
+        $templateContent = str_replace(["\r", "\t"], '', $templateContent);
+        $templateContent = preg_replace('/(&nbsp;|\xC2\xA0){2,}/u', ' ', $templateContent);
+        $templateContent = preg_replace('/[ \t]{2,}/', ' ', $templateContent);
+        $templateContent = str_replace(['–', '—', '−', '&ndash;', '&mdash;'], '-', $templateContent);
+
+        $templateContent = preg_replace('/<code>\s*(\{\{\s*[a-zA-Z0-9_-]+\s*\}\})\s*<\/code>/i', '$1', $templateContent);
+        $templateContent = preg_replace('/<tt>\s*(\{\{\s*[a-zA-Z0-9_-]+\s*\}\})\s*<\/tt>/i', '$1', $templateContent);
+
+        foreach ($data as $key => $value) {
+            if (is_scalar($value)) {
+                $cleanKey = trim($key, '{} ');
+                $valStr = (string) $value;
+                $templateContent = str_replace('{{' . $cleanKey . '}}', $valStr, $templateContent);
+                $templateContent = str_replace('{{ ' . $cleanKey . ' }}', $valStr, $templateContent);
+                $templateContent = str_replace('{' . $cleanKey . '}', $valStr, $templateContent);
+            }
+        }
+
+        $templateContent = preg_replace('/<code>(.*?)<\/code>/i', '$1', $templateContent);
+        return $templateContent;
+    }
+
     public function generateExperienceLetter($insert = true)
     {
-
         $employeeId = $this->request->getPost('employee_id');
         $templateId = $this->request->getPost('template_id');
         $fromDate = $this->request->getPost('from_date');
         $toDate = $this->request->getPost('to_date');
-        $loggedInUserId = session()->get('user_id'); // 👈 adjust if your session key is different
+        $loggedInUserId = (session_status() === PHP_SESSION_ACTIVE && function_exists('session') && session()->has('user_id')) ? session()->get('user_id') : 1;
 
         $userModel = new \App\Models\UserInfoModel();
         $templateModel = new \App\Models\ExprienceLetterModel();
         $companyModel = new \App\Models\CompanyLogoModel();
         $designationModel = new \App\Models\DesignationModel();
         $departmentModel = new \App\Models\DepartmentModel();
-        $generatedLetterModel = new \App\Models\ExprienceModel(); // 👈 load new model
-        // ✅ INSERT into database
+        $generatedLetterModel = new \App\Models\ExprienceModel();
+
         $existing = $generatedLetterModel
             ->where('employee_id', $employeeId)
             ->first();
@@ -278,11 +321,9 @@ class ExprienceLetterController extends ResourceController
             return $this->response->setJSON([
                 'status' => 'error',
                 'message' => 'Experience letter has already been generated for this employee for the selected period.'
-            ])->setStatusCode(400); // 👈 This triggers `error:` block
+            ])->setStatusCode(400);
         }
 
-
-        // ✅ Insert only if not duplicate
         if ($insert && !$existing) {
             $generatedLetterModel->insert([
                 'employee_id' => $employeeId,
@@ -294,6 +335,9 @@ class ExprienceLetterController extends ResourceController
         }
 
         $employee = $userModel->where('user_id', $employeeId)->first();
+        if (!$employee) {
+            $employee = $userModel->find($employeeId);
+        }
 
         $template = $templateModel->find($templateId);
         $company = $companyModel->first();
@@ -306,63 +350,222 @@ class ExprienceLetterController extends ResourceController
         if (!$employee || !$template || !$company) {
             return redirect()->back()->with('error', 'Invalid employee, template, or company data.');
         }
-        $companyLogoBase64 = '';
+
+        $logoSrc = '';
         if ($company && !empty($company['logo_img'])) {
             $companyLogoPath = FCPATH . 'upload/' . $company['logo_img'];
-            
             if (file_exists($companyLogoPath)) {
-                $type = pathinfo($companyLogoPath, PATHINFO_EXTENSION);
-                $data = file_get_contents($companyLogoPath);
-                $companyLogoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                $mime = mime_content_type($companyLogoPath) ?: 'image/png';
+                $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($companyLogoPath));
             }
         }
-        $designation = $designationModel->find($employee['designation_id']);
-        $department = $departmentModel->find($employee['department_id']);
+
+        $headerImgSrc = '';
+        if (!empty($template['template_header']) && file_exists(FCPATH . 'upload/templates/' . $template['template_header'])) {
+            $hdrPath = FCPATH . 'upload/templates/' . $template['template_header'];
+            $mime = mime_content_type($hdrPath) ?: 'image/png';
+            $headerImgSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($hdrPath));
+        }
+
+        $footerImgSrc = '';
+        if (!empty($template['template_footer']) && file_exists(FCPATH . 'upload/templates/' . $template['template_footer'])) {
+            $ftrPath = FCPATH . 'upload/templates/' . $template['template_footer'];
+            $mime = mime_content_type($ftrPath) ?: 'image/png';
+            $footerImgSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($ftrPath));
+        }
+
+        $designation = !empty($employee['designation_id']) ? $designationModel->find($employee['designation_id']) : null;
+        $department = !empty($employee['department_id']) ? $departmentModel->find($employee['department_id']) : null;
         $designationName = $designation['designation_name'] ?? 'N/A';
         $departmentName = $department['department_name'] ?? 'N/A';
-        $creator = $userModel->find($template['created_by']);
-        $placeholders = [
-            '{{employee_name}}'   => $employee['firstname'] . ' ' . $employee['lastname'], // 👈 updated
-            '{{designation}}'     => $designationName,
-            '{{department}}'      => $departmentName,
-            '{{address_1}}' => $employee['address_1'],
-            '{{joining_date}}'    => date('d M Y', strtotime($employee['joining_date'])),
-            '{{current_date}}'    => date('F d, Y'),
-            '{{department}}'      => $employee['department'] ?? '',
-            '{{created_by}}' => $creator['firstname'],
-            '{{role}}' => $creator['role'],
-            '{{company_name}}'    => $company['company_name'],
-            '{{leaving_date}}' => date('d M Y', strtotime($todate['to_date'])),
+        $creator = !empty($template['created_by']) ? $userModel->find($template['created_by']) : null;
 
-            '{{company_address}}' => $company['company_address'],
-            '{{company_email}}'   => $company['company_email'],
-            '{{company_phone}}'   => $company['company_phone'],
-            '{{companyLogoBase64}}' => $companyLogoBase64,
-            'company_name'    => $company['company_name'],
+        $fromDateRaw = !empty($fromDate) ? $fromDate : (!empty($employee['joining_date']) ? $employee['joining_date'] : date('Y-m-d'));
+        $toDateRaw = !empty($toDate) ? $toDate : (!empty($todate['to_date']) ? $todate['to_date'] : date('Y-m-d'));
+
+        $fromDateFormatted = date('jS F Y', strtotime($fromDateRaw));
+        $toDateFormatted = date('jS M Y', strtotime($toDateRaw));
+
+        $gender = strtolower($employee['gender'] ?? 'male');
+        $salutation = ($gender === 'female') ? 'Ms.' : 'Mr.';
+        $his_her = ($gender === 'female') ? 'her' : 'his';
+        $he_she = ($gender === 'female') ? 'She' : 'He';
+        $him_her = ($gender === 'female') ? 'her' : 'him';
+        $employeeFullName = trim(($employee['firstname'] ?? '') . ' ' . ($employee['lastname'] ?? ''));
+
+        $placeholders = [
+            'employee_name'       => $employeeFullName,
+            'candidate_name'      => $employeeFullName,
+            'salutation'          => $salutation,
+            'title_employee_name' => $salutation . ' ' . $employeeFullName,
+            'designation'         => $designationName,
+            'job_title'           => $designationName,
+            'position'            => $designationName,
+            'department'          => $departmentName,
+            'department_name'     => $departmentName,
+            'address_1'           => $employee['address_1'] ?? '',
+            'address'             => $employee['address_1'] ?? '',
+            'employee_address'    => $employee['address_1'] ?? '',
+            'from_date'           => $fromDateFormatted,
+            'start_date'          => $fromDateFormatted,
+            'joining_date'        => $fromDateFormatted,
+            'to_date'             => $toDateFormatted,
+            'end_date'            => $toDateFormatted,
+            'leaving_date'        => $toDateFormatted,
+            'his_her'             => $his_her,
+            'his_her_cap'         => ucfirst($his_her),
+            'he_she'              => $he_she,
+            'he_she_lower'        => strtolower($he_she),
+            'him_her'             => $him_her,
+            'email'               => $employee['email'] ?? '',
+            'employee_email'      => $employee['email'] ?? '',
+            'phone_number'        => $employee['phone_number'] ?? '',
+            'employee_phone'      => $employee['phone_number'] ?? '',
+            'current_date'        => date('F d, Y'),
+            'today_date'          => date('F d, Y'),
+            'company_name'        => $company['company_name'] ?? 'Fablead Developers Technolab',
+            'company_address'     => !empty($company['company_address']) ? $company['company_address'] : 'Fablead Developers Technolab, Surat , Gujarat , India',
+            'company_email'       => $company['company_email'] ?? '',
+            'company_phone'       => $company['company_phone'] ?? '',
+            'created_by'          => $creator['firstname'] ?? 'Raj Singh',
+            'signer_name'         => 'Raj Singh',
+            'signer_designation'  => 'Co-Founder / CTO / CEO',
+            'creator_designation' => 'Co-Founder / CTO / CEO',
         ];
 
-        $parsedContent = strtr($template['content'], $placeholders);
+        $parsedContent = $this->parseTemplate($template['content'], $placeholders);
 
         $html = view('exprience_templetes/experience_letter_preview', [
-            'content' => $parsedContent,
-            'companyLogoBase64' => $companyLogoBase64,
-            'company_name'    => $company['company_name'],
-            'company_address' => $company['company_address'],
-            'company_email' => $company['company_email'],
-            'company_phone' => $company['company_phone'],
+            'title'           => $template['title'] ?? 'Experience Letter',
+            'content'         => $parsedContent,
+            'logo_src'        => $logoSrc,
+            'header_img_src'  => $headerImgSrc,
+            'footer_img_src'  => $footerImgSrc,
+            'company_name'    => $company['company_name'] ?? 'Fablead Developers Technolab',
+            'company_address' => 'Fablead Developers Technolab, Surat , Gujarat , India',
         ]);
 
-        $dompdf = new \Dompdf\Dompdf();
-        $dompdf->loadHtml($html);
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'Times-Roman');
+
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
-        $employeeName = str_replace(' ', '_', $employee['firstname'] . '_' . $employee['lastname']);
-        $currentDateTime = date('Ymd_His'); // e.g., 20250415_142305
-        $filename = "experience_letter_{$employeeName}_{$currentDateTime}.pdf";
+
+        $safeName = str_replace(' ', '_', $employeeFullName);
+        $currentDateTime = date('Ymd_His');
+        $filename = "experience_letter_{$safeName}_{$currentDateTime}.pdf";
+
         return $this->response
             ->setContentType('application/pdf')
             ->setBody($dompdf->output())
             ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    public function previewSamplePdf($templateId)
+    {
+        $model = new \App\Models\ExprienceLetterModel();
+        $template = $model->find($templateId);
+        if (!$template) {
+            return $this->response->setStatusCode(404)->setBody('Template not found');
+        }
+
+        $companyModel = new \App\Models\CompanyLogoModel();
+        $company = $companyModel->first() ?? [];
+
+        $logoSrc = '';
+        if (!empty($company['logo_img'])) {
+            $companyLogoPath = FCPATH . 'upload/' . $company['logo_img'];
+            if (file_exists($companyLogoPath)) {
+                $mime = mime_content_type($companyLogoPath) ?: 'image/png';
+                $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($companyLogoPath));
+            }
+        }
+
+        $headerImgSrc = '';
+        if (!empty($template['template_header']) && file_exists(FCPATH . 'upload/templates/' . $template['template_header'])) {
+            $hdrPath = FCPATH . 'upload/templates/' . $template['template_header'];
+            $mime = mime_content_type($hdrPath) ?: 'image/png';
+            $headerImgSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($hdrPath));
+        }
+
+        $footerImgSrc = '';
+        if (!empty($template['template_footer']) && file_exists(FCPATH . 'upload/templates/' . $template['template_footer'])) {
+            $ftrPath = FCPATH . 'upload/templates/' . $template['template_footer'];
+            $mime = mime_content_type($ftrPath) ?: 'image/png';
+            $footerImgSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($ftrPath));
+        }
+
+        // Demo sample data matching reference PDF Experience-letter-aryan_7188.pdf
+        $placeholders = [
+            'employee_name'       => 'Aryan Patel',
+            'candidate_name'      => 'Aryan Patel',
+            'salutation'          => 'Mr.',
+            'title_employee_name' => 'Mr. Aryan Patel',
+            'designation'         => 'Junior Web Developer',
+            'job_title'           => 'Junior Web Developer',
+            'position'            => 'Junior Web Developer',
+            'department'          => 'Web Development',
+            'department_name'     => 'Web Development',
+            'address_1'           => 'Surat, Gujarat, India',
+            'address'             => 'Surat, Gujarat, India',
+            'employee_address'    => 'Surat, Gujarat, India',
+            'from_date'           => '3rd June 2024',
+            'start_date'          => '3rd June 2024',
+            'joining_date'        => '3rd June 2024',
+            'to_date'             => '10th Dec 2025',
+            'end_date'            => '10th Dec 2025',
+            'leaving_date'        => '10th Dec 2025',
+            'his_her'             => 'his',
+            'his_her_cap'         => 'His',
+            'he_she'              => 'He',
+            'he_she_lower'        => 'he',
+            'him_her'             => 'him',
+            'email'               => 'aryan.patel@example.com',
+            'employee_email'      => 'aryan.patel@example.com',
+            'phone_number'        => '9876543210',
+            'employee_phone'      => '9876543210',
+            'current_date'        => date('F d, Y'),
+            'today_date'          => date('F d, Y'),
+            'company_name'        => $company['company_name'] ?? 'Fablead Developers Technolab',
+            'company_address'     => !empty($company['company_address']) ? $company['company_address'] : 'Fablead Developers Technolab, Surat , Gujarat , India',
+            'company_email'       => $company['company_email'] ?? 'info@fableadtechnolabs.com',
+            'company_phone'       => $company['company_phone'] ?? '9909910855',
+            'created_by'          => 'Raj Singh',
+            'signer_name'         => 'Raj Singh',
+            'signer_designation'  => 'Co-Founder / CTO / CEO',
+            'creator_designation' => 'Co-Founder / CTO / CEO',
+        ];
+
+        $parsedContent = $this->parseTemplate($template['content'], $placeholders);
+
+        $html = view('exprience_templetes/experience_letter_preview', [
+            'title'           => $template['title'] ?? 'Experience Letter',
+            'content'         => $parsedContent,
+            'logo_src'        => $logoSrc,
+            'header_img_src'  => $headerImgSrc,
+            'footer_img_src'  => $footerImgSrc,
+            'company_name'    => $company['company_name'] ?? 'Fablead Developers Technolab',
+            'company_address' => 'Fablead Developers Technolab, Surat , Gujarat , India',
+        ]);
+
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'Times-Roman');
+
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $this->response
+            ->setContentType('application/pdf')
+            ->setBody($dompdf->output())
+            ->setHeader('Content-Disposition', 'inline; filename="Experience_Letter_Preview.pdf"');
     }
 
     public function getJoiningDate($id)
@@ -439,21 +642,23 @@ class ExprienceLetterController extends ResourceController
         return $this->respond(['status' => 'error', 'message' => 'Failed to delete exprience record'], 500);
     }
     public function getTemplateById($id)
-{
-    $model = new \App\Models\ExprienceLetterModel();
-    $template = $model->find($id);
+    {
+        $model = new \App\Models\ExprienceLetterModel();
+        $template = $model->find($id);
 
-    if (!$template) {
-        return $this->response->setJSON(['status' => false, 'message' => 'Template not found'])->setStatusCode(404);
+        if (!$template) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Template not found'])->setStatusCode(404);
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data' => [
+                'id' => $template['id'],
+                'title' => $template['title'],
+                'content' => $template['content'],
+                'template_header' => !empty($template['template_header']) ? base_url('upload/templates/' . $template['template_header']) : null,
+                'template_footer' => !empty($template['template_footer']) ? base_url('upload/templates/' . $template['template_footer']) : null,
+            ]
+        ]);
     }
-
-    return $this->response->setJSON([
-        'status' => true,
-        'data' => [
-            'title' => $template['title'],
-            'content' => $template['content'],
-            'template_img' => base_url('upload/templates/' . $template['template_img']),
-        ]
-    ]);
-}
 }
