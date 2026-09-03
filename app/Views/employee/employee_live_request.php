@@ -150,16 +150,16 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="card-title">Employee Leave Requests</h4>
-                    <div class="d-flex gap-2">
-                        <select class="form-select" id="departmentFilter" style="width: 180px;">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+                    <h4 class="card-title mb-0">Employee Leave Requests</h4>
+                    <div class="d-flex flex-wrap gap-2 align-items-center w-100 w-md-auto">
+                        <select class="form-select flex-grow-1 flex-md-grow-0" id="departmentFilter" style="min-width: 140px; max-width: 180px;">
                             <option value="">All Departments</option>
                         </select>
-                        <select class="form-select" id="employeeFilter" style="width: 200px;">
+                        <select class="form-select flex-grow-1 flex-md-grow-0" id="employeeFilter" style="min-width: 140px; max-width: 180px;">
                             <option value="">All Employees</option>
                         </select>
-                        <a href="<?= base_url('/addleave') ?>" class="btn btn-add-emp">
+                        <a href="<?= base_url('/addleave') ?>" class="btn btn-add-emp text-nowrap">
                             + Add Leave
                         </a>
                     </div>
@@ -171,13 +171,14 @@
                             <tr>
                                 <th style="display:none;">ID</th>
                                 <th>NAME</th>
-                                <th>START DATE</th>
-                                <th>END DATE</th>
-                                <th>DAYS</th>
-                                <th>REASON</th>
-                                <th>REQUEST DATE</th>
-                                <th>STATUS</th>
-                                <th>ACTION</th>
+                                <th class="desktop-only-col">START DATE</th>
+                                <th class="desktop-only-col">END DATE</th>
+                                <th class="desktop-only-col">DAYS</th>
+                                <th class="desktop-only-col">REASON</th>
+                                <th class="desktop-only-col">REQUEST DATE</th>
+                                <th class="desktop-only-col">STATUS</th>
+                                <th class="desktop-only-col">ACTION</th>
+                                <th class="mobile-expand-col text-center" style="width: 50px;">DETAILS</th>
                             </tr>
                         </thead>
                         <tbody id="employee-table-body">
@@ -191,227 +192,275 @@
 </div>
 
 <script>
-    $(document).ready(function () {
-        const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
-        function capitalizeFirstLetter(string) {
-            return string ? string.charAt(0).toUpperCase() + string.slice(1).toLowerCase() : 'N/A';
-        }
+    function capitalizeFirstLetter(string) {
+        return string ? string.charAt(0).toUpperCase() + string.slice(1).toLowerCase() : 'N/A';
+    }
 
-        function fetchLeaves() {
-            const employeeId = $('#employeeFilter').val();
-            const departmentId = $('#departmentFilter').val();
+    function fetchLeaves() {
+        const employeeId = $('#employeeFilter').val();
+        const departmentId = $('#departmentFilter').val();
 
-            $.ajax({
-                url: '<?= base_url('/api/get-leaves') ?>',
-                type: 'GET',
-                data: { employee_id: employeeId },
-                headers: { 'Authorization': `Bearer ${token}` },
-                success: function (response) {
-                    if (response.status === 'success' && response.data) {
-                        let tableRows = '';
-                        response.data.forEach((leave) => {
-                            const empName = `${capitalizeFirstLetter(leave.firstname)} ${capitalizeFirstLetter(leave.lastname)}`;
-                            const profileImg = leave.profile_image ? `<?= base_url('upload/') ?>${leave.profile_image}` : '<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>';
-                            const statusClass = `status-${leave.status.toLowerCase()}`;
+        $.ajax({
+            url: '<?= base_url('/api/get-leaves') ?>',
+            type: 'GET',
+            data: { employee_id: employeeId },
+            headers: { 'Authorization': `Bearer ${token}` },
+            success: function (response) {
+                if (response.status === 'success' && response.data) {
+                    let tableRows = '';
+                    response.data.forEach((leave) => {
+                        const empName = `${capitalizeFirstLetter(leave.firstname)} ${capitalizeFirstLetter(leave.lastname)}`;
+                        const profileImg = leave.profile_image ? `<?= base_url('upload/') ?>${leave.profile_image}` : '<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>';
+                        const statusClass = `status-${(leave.status || '').toLowerCase()}`;
 
-                            tableRows += `
-                                <tr data-id="${leave.id}">
-                                    <td style="display:none;">${leave.id}</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <img src="${profileImg}" class="profile-img" alt="Profile" onerror="this.src='<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>'">
-                                            <span>${empName}</span>
+                        tableRows += `
+                            <tr data-id="${leave.id}">
+                                <td style="display:none;">${leave.id}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="${profileImg}" class="profile-img" alt="Profile" onerror="this.src='<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>'">
+                                        <div>
+                                            <span class="fw-semibold text-dark d-block">${empName}</span>
+                                            <small class="text-muted d-block d-md-none">${leave.start_date} &bull; <span class="status-badge ${statusClass}" style="padding: 2px 8px; font-size: 10px; display: inline-block;">${leave.status}</span></small>
                                         </div>
-                                    </td>
-                                    <td>${leave.start_date}</td>
-                                    <td>${leave.end_date}</td>
-                                    <td>
-                                        ${leave.leave_duration === 'half_day' ? '0.5' : leave.no_of_day}
-                                        ${leave.leave_duration === 'half_day' ? `<br><small class="text-muted">(${capitalizeFirstLetter(leave.half_day_type.replace('_', ' '))})</small>` : ''}
-                                    </td>
-                                    <td><div class="reason-wrap">${leave.reason || 'N/A'}</div></td>
-                                    <td>${leave.created_at ? leave.created_at.split(' ')[0] : 'N/A'}</td>
-                                    <td><div class="status-wrapper"><span class="status-badge ${statusClass}">${leave.status}</span></div></td>
-                                    <td>
-                                        <div class="action-icons-wrapper">
-                                            ${leave.status.toLowerCase() === 'pending' ? `
-                                                <a href="#" class="confirm-btn text-success approve-leave" data-id="${leave.id}" title="Approve">
-                                                    <i class="mdi mdi-check-circle"></i>
-                                                </a>
-                                                <a href="#" class="reject-btn text-danger reject-leave" data-id="${leave.id}" title="Reject">
-                                                    <i class="mdi mdi-close-circle"></i>
-                                                </a>
+                                    </div>
+                                    <div class="expanded-details" id="leave-details-${leave.id}">
+                                        <div class="detail-row">
+                                            <span class="detail-label">Start Date:</span>
+                                            <span class="detail-value">${leave.start_date}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">End Date:</span>
+                                            <span class="detail-value">${leave.end_date}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Duration:</span>
+                                            <span class="detail-value">
+                                                ${leave.leave_duration === 'half_day' ? '0.5 Day' : leave.no_of_day + ' Days'}
+                                                ${leave.leave_duration === 'half_day' ? ` (${capitalizeFirstLetter((leave.half_day_type || '').replace('_', ' '))})` : ''}
+                                            </span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Reason:</span>
+                                            <span class="detail-value">${leave.reason || 'N/A'}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Request Date:</span>
+                                            <span class="detail-value">${leave.created_at ? leave.created_at.split(' ')[0] : 'N/A'}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">Status:</span>
+                                            <span class="detail-value"><span class="status-badge ${statusClass}">${leave.status}</span></span>
+                                        </div>
+                                        <div class="detail-actions">
+                                            ${(leave.status || '').toLowerCase() === 'pending' ? `
+                                                <button type="button" class="btn btn-sm btn-success text-white" onclick="approveLeaveRequest(${leave.id})">
+                                                    <i class="mdi mdi-check-circle"></i> Approve
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-warning text-white" onclick="rejectLeaveRequest(${leave.id})">
+                                                    <i class="mdi mdi-close-circle"></i> Reject
+                                                </button>
                                             ` : ''}
-                                            <a href="#" class="delete-btn text-danger delete-leave" data-id="${leave.id}" title="Delete">
-                                                <i class="mdi mdi-delete"></i>
-                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteLeaveRequest(${leave.id})">
+                                                <i class="mdi mdi-delete"></i> Delete
+                                            </button>
                                         </div>
-                                    </td>
-                                </tr>
-                            `;
-                        });
+                                    </div>
+                                </td>
+                                <td class="desktop-only-col">${leave.start_date}</td>
+                                <td class="desktop-only-col">${leave.end_date}</td>
+                                <td class="desktop-only-col">
+                                    ${leave.leave_duration === 'half_day' ? '0.5' : leave.no_of_day}
+                                    ${leave.leave_duration === 'half_day' ? `<br><small class="text-muted">(${capitalizeFirstLetter((leave.half_day_type || '').replace('_', ' '))})</small>` : ''}
+                                </td>
+                                <td class="desktop-only-col"><div class="reason-wrap">${leave.reason || 'N/A'}</div></td>
+                                <td class="desktop-only-col">${leave.created_at ? leave.created_at.split(' ')[0] : 'N/A'}</td>
+                                <td class="desktop-only-col"><div class="status-wrapper"><span class="status-badge ${statusClass}">${leave.status}</span></div></td>
+                                <td class="desktop-only-col">
+                                    <div class="action-icons-wrapper">
+                                        ${(leave.status || '').toLowerCase() === 'pending' ? `
+                                            <a href="javascript:void(0);" class="confirm-btn text-success" onclick="approveLeaveRequest(${leave.id})" title="Approve">
+                                                <i class="mdi mdi-check-circle"></i>
+                                            </a>
+                                            <a href="javascript:void(0);" class="reject-btn text-warning" onclick="rejectLeaveRequest(${leave.id})" title="Reject">
+                                                <i class="mdi mdi-close-circle"></i>
+                                            </a>
+                                        ` : ''}
+                                        <a href="javascript:void(0);" class="delete-btn text-danger" onclick="deleteLeaveRequest(${leave.id})" title="Delete">
+                                            <i class="mdi mdi-delete"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                                <td class="mobile-expand-col text-center">
+                                    <button type="button" class="expand-toggle" data-target="leave-details-${leave.id}" aria-label="Expand details"></button>
+                                </td>
+                            </tr>
+                        `;
+                    });
 
-                        const $table = $('#employee-table');
-                        if ($.fn.DataTable.isDataTable($table)) {
-                            $table.DataTable().clear().destroy();
+                    const $table = $('#employee-table');
+                    if ($.fn.DataTable.isDataTable($table)) {
+                        $table.DataTable().clear().destroy();
+                    }
+
+                    $('#employee-table-body').html(tableRows);
+
+                    const dt = $table.DataTable({
+                        order: [[0, 'desc']],
+                        language: {
+                            search: "",
+                            searchPlaceholder: "Search"
+                        },
+                        columnDefs: [
+                            { targets: 0, visible: false },
+                            { targets: [8, 9], orderable: false, searchable: false },
+                            { targets: '_all', className: 'align-middle' },
+                            { targets: 7, className: 'align-middle text-center' },  // STATUS
+                            { targets: 8, className: 'align-middle text-center' },  // ACTION
+                            { targets: 9, className: 'align-middle text-center' }   // DETAILS
+                        ]
+                    });
+
+                    dt.on('draw', function() {
+                        if (typeof applyMobileTableVisibility === 'function') {
+                            applyMobileTableVisibility();
                         }
+                    });
 
-                        $('#employee-table-body').html(tableRows);
-
-                        $table.DataTable({
-                            order: [[0, 'desc']],
-                            language: {
-                                search: "",
-                                searchPlaceholder: "Search"
-                            },
-                            columnDefs: [
-                                { targets: 0, visible: false },
-                                { targets: 7, orderable: false },
-                                // ✅ Add these alignment fixes:
-                                { targets: '_all', className: 'align-middle' },
-                                { targets: 6, className: 'align-middle text-center' },  // STATUS
-                                { targets: 7, className: 'align-middle text-center' }   // ACTION
-                            ]
-                        });
-                    }
-                },
-                error: function () {
-                    Swal.fire('Error', 'Failed to fetch leave records', 'error');
-                }
-            });
-        }
-
-        // Populate Filters
-        function populateFilters() {
-            // Departments
-            $.ajax({
-                url: '<?= base_url('/api/getdepartments') ?>',
-                type: 'GET',
-                headers: { 'Authorization': `Bearer ${token}` },
-                success: function (res) {
-                    if (res.status && res.departments) {
-                        res.departments.forEach(d => $('#departmentFilter').append(`<option value="${d.id}">${d.department_name}</option>`));
+                    if (typeof applyMobileTableVisibility === 'function') {
+                        applyMobileTableVisibility();
                     }
                 }
-            });
+            },
+            error: function () {
+                Swal.fire('Error', 'Failed to fetch leave records', 'error');
+            }
+        });
+    }
 
-            // Employees
-            $.ajax({
-                url: '<?= base_url('/api/employees') ?>',
-                type: 'GET',
-                headers: { 'Authorization': `Bearer ${token}` },
-                success: function (res) {
-                    if (res.status && res.employees) {
-                        res.employees.forEach(e => {
-                            const name = `${e.user_info.firstname} ${e.user_info.lastname}`;
-                            $('#employeeFilter').append(`<option value="${e.user.id}">${name}</option>`);
-                        });
-                    }
+    // Populate Filters
+    function populateFilters() {
+        // Departments
+        $.ajax({
+            url: '<?= base_url('/api/getdepartments') ?>',
+            type: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+            success: function (res) {
+                if (res.status && res.departments) {
+                    res.departments.forEach(d => $('#departmentFilter').append(`<option value="${d.id}">${d.department_name}</option>`));
                 }
-            });
-        }
+            }
+        });
 
+        // Employees
+        $.ajax({
+            url: '<?= base_url('/api/employees') ?>',
+            type: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+            success: function (res) {
+                if (res.status && res.employees) {
+                    res.employees.forEach(e => {
+                        const name = `${e.user_info.firstname} ${e.user_info.lastname}`;
+                        $('#employeeFilter').append(`<option value="${e.user.id}">${name}</option>`);
+                    });
+                }
+            }
+        });
+    }
+
+    window.approveLeaveRequest = function(id) {
+        Swal.fire({
+            title: 'Process Leave Request?',
+            text: "Would you like to approve this leave request?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            confirmButtonText: 'Approve',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `<?= base_url('/api/leave/update') ?>/${id}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ status: 'approved' }),
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    success: function (res) {
+                        if (res.status === 'success') {
+                            Swal.fire('Approved!', 'Leave request has been approved.', 'success');
+                            fetchLeaves();
+                        } else {
+                            Swal.fire('Error', res.message, 'error');
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    window.rejectLeaveRequest = function(id) {
+        Swal.fire({
+            title: 'Reject Leave?',
+            text: "Do you want to reject this leave request?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            confirmButtonText: 'Yes, reject!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `<?= base_url('/api/leave/update') ?>/${id}`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ status: 'rejected' }),
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    success: function (res) {
+                        if (res.status === 'success') {
+                            Swal.fire('Rejected!', 'Leave request has been rejected.', 'success');
+                            fetchLeaves();
+                        } else {
+                            Swal.fire('Error', res.message, 'error');
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    window.deleteLeaveRequest = function(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This leave record will be permanently deleted!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `<?= base_url('/api/leave') ?>/${id}`,
+                    type: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    success: function (res) {
+                        if (res.status === 'success') {
+                            Swal.fire('Deleted!', 'Leave record has been deleted.', 'success');
+                            fetchLeaves();
+                        } else {
+                            Swal.fire('Error', res.message, 'error');
+                        }
+                    }
+                });
+            }
+        });
+    };
+
+    $(document).ready(function () {
         populateFilters();
         fetchLeaves();
 
         $('#departmentFilter, #employeeFilter').on('change', function () {
             fetchLeaves();
-        });
-$(document).on('click', '.approve-leave', function (e) {
-    e.preventDefault();
-    const id = $(this).data('id');
-    Swal.fire({
-        title: 'Process Leave Request?',
-        text: "Would you like to approve or reject this leave request?",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#28a745',
-        confirmButtonText: 'Approve',
-    }).then((result) => {
-        let newStatus = '';
-        if (result.isConfirmed) {
-            newStatus = 'approved';
-        }
-        if (newStatus) {
-            $.ajax({
-                url: `<?= base_url('/api/leave/update') ?>/${id}`,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ status: newStatus }),
-                headers: { 'Authorization': `Bearer ${token}` },
-                success: function (res) {
-                    if (res.status === 'success') {
-                        Swal.fire(newStatus.charAt(0).toUpperCase() + newStatus.slice(1) + '!', `Leave request has been ${newStatus}.`, 'success');
-                        fetchLeaves();
-                    } else {
-                        Swal.fire('Error', res.message, 'error');
-                    }
-                }
-            });
-        }
-    });
-});
-        // Reject Leave
-        $(document).on('click', '.reject-leave', function (e) {
-            e.preventDefault();
-            const id = $(this).data('id');
-            Swal.fire({
-                title: 'Reject Leave?',
-                text: "Do you want to reject this leave request?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ffc107',
-                confirmButtonText: 'Yes, reject!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `<?= base_url('/api/leave/update') ?>/${id}`,
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ status: 'rejected' }),
-                        headers: { 'Authorization': `Bearer ${token}` },
-                        success: function (res) {
-                            if (res.status === 'success') {
-                                Swal.fire('Rejected!', 'Leave request has been rejected.', 'success');
-                                fetchLeaves();
-                            } else {
-                                Swal.fire('Error', res.message, 'error');
-                            }
-                        }
-                    });
-                }
-            });
-        });
-
-        // Delete Leave
-        $(document).on('click', '.delete-leave', function (e) {
-            e.preventDefault();
-            const id = $(this).data('id');
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "This leave record will be permanently deleted!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `<?= base_url('/api/leave') ?>/${id}`,
-                        type: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` },
-                        success: function (res) {
-                            if (res.status === 'success') {
-                                Swal.fire('Deleted!', 'Leave record has been deleted.', 'success');
-                                fetchLeaves();
-                            } else {
-                                Swal.fire('Error', res.message, 'error');
-                            }
-                        }
-                    });
-                }
-            });
         });
     });
 </script>

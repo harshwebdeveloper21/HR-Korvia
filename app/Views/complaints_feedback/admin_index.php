@@ -193,12 +193,15 @@
                         let d = new Date(row.created_at);
                         let dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+                        window.adminComplaintRows = window.adminComplaintRows || {};
+                        window.adminComplaintRows[row.id] = row;
+
                         return `
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
                             <div style="flex: 1;">
                                 <span class="fw-bold d-block text-dark">${row.name || 'Anonymous'}</span>
                                 <span class="text-muted small d-block">${row.email || ''}</span>
-                                <div class="expanded-details" id="complaint-details-${row.id}" onclick="event.stopPropagation();">
+                                <div class="expanded-details" id="complaint-details-${row.id}">
                                     <div class="detail-row">
                                         <span class="detail-label">Type:</span>
                                         <span class="detail-value">${typeBadge}</span>
@@ -216,18 +219,11 @@
                                         <span class="detail-value">${dateStr}</span>
                                     </div>
                                     <div class="detail-actions">
-                                        <a href="#" class="btn btn-sm btn-info text-white view-details-btn" 
-                                           data-id="${row.id}"
-                                           data-subject="${row.subject}" 
-                                           data-message="${row.message}"
-                                           data-remark="${row.admin_remark || 'Not provided yet.'}"
-                                           data-status="${row.status}"
-                                           data-file="${row.file || ''}"
-                                           data-res-file="${row.resolution_file || ''}">
-                                           <i class="mdi mdi-eye"></i> View
-                                        </a>
+                                        <button type="button" class="btn btn-sm btn-info text-white" onclick="viewComplaintDetails(${row.id})">
+                                            <i class="mdi mdi-eye"></i> View
+                                        </button>
                                         <a href="<?= base_url('complaints/update') ?>/${row.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                        <a href="#" class="btn btn-sm btn-danger delete-btn" data-id="${row.id}"><i class="mdi mdi-delete"></i> Delete</a>
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteComplaint(${row.id})"><i class="mdi mdi-delete"></i> Delete</button>
                                     </div>
                                 </div>
                             </div>
@@ -275,19 +271,11 @@
                     render: function (data) {
                         return `
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <a href="#" class="view-details-btn text-primary fs-5" 
-                               data-id="${data.id}"
-                               data-subject="${data.subject}" 
-                               data-message="${data.message}"
-                               data-remark="${data.admin_remark || 'Not provided yet.'}"
-                               data-status="${data.status}"
-                               data-file="${data.file || ''}"
-                               data-res-file="${data.resolution_file || ''}"
-                               title="View Details">
-                               <i class="mdi mdi-eye"></i>
+                            <a href="javascript:void(0);" class="text-primary fs-5" onclick="viewComplaintDetails(${data.id})" title="View Details">
+                                <i class="mdi mdi-eye"></i>
                             </a>
                             <a href="<?= base_url('complaints/update') ?>/${data.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                            <a href="#" class="text-danger fs-5 delete-btn" data-id="${data.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
+                            <a href="javascript:void(0);" class="text-danger fs-5" onclick="deleteComplaint(${data.id})" title="Delete"><i class="mdi mdi-delete"></i></a>
                         </div>
                     `;
                     }
@@ -317,6 +305,12 @@
             }
         });
 
+        table.on('draw', function() {
+            if (typeof applyMobileTableVisibility === 'function') {
+                applyMobileTableVisibility();
+            }
+        });
+
         $('#filterType, #filterStatus').on('change', function () { table.ajax.reload(); });
 
         $('#complaintTabs .nav-link').on('click', function () {
@@ -332,23 +326,23 @@
             table.ajax.reload();
         });
 
-        // Delegation for View Details button
-        $('#complaintsAdminTable').on('click', '.view-details-btn', function (e) {
-            e.preventDefault();
-            let btn = $(this);
-            $('#modalId').text(btn.data('id'));
-            $('#modalSubject').text(btn.data('subject'));
-            $('#modalMessage').text(btn.data('message'));
-            $('#modalRemark').text(btn.data('remark'));
+        window.viewComplaintDetails = function(id) {
+            let row = window.adminComplaintRows ? window.adminComplaintRows[id] : null;
+            if (!row) return;
 
-            let status = btn.data('status');
+            $('#modalId').text(row.id);
+            $('#modalSubject').text(row.subject);
+            $('#modalMessage').text(row.message);
+            $('#modalRemark').text(row.admin_remark || 'Not provided yet.');
+
+            let status = row.status;
             let statusColor = '#E66136';
             if (status === 'In Progress') statusColor = '#4B49AC';
             if (status === 'Resolved') statusColor = '#34B1AA';
 
             $('#modalStatus').text(status).css('color', statusColor);
 
-            let file = btn.data('file');
+            let file = row.file;
             if (file) {
                 $('#modalFile').attr('href', '<?= base_url('uploads/complaints') ?>/' + file);
                 $('#attachmentArea').show();
@@ -356,7 +350,7 @@
                 $('#attachmentArea').hide();
             }
 
-            let resFile = btn.data('res-file');
+            let resFile = row.resolution_file;
             if (resFile) {
                 $('#modalResolutionFile').attr('href', '<?= base_url('uploads/complaints') ?>/' + resFile);
                 $('#resolutionAttachmentArea').show();
@@ -364,11 +358,11 @@
                 $('#resolutionAttachmentArea').hide();
             }
             $('#userViewModal').modal('show');
-        });
+        };
 
-        $('#complaintsAdminTable').on('click', '.delete-btn', function (e) {
-            e.preventDefault();
-            let id = $(this).data('id');
+        window.deleteComplaint = function(id) {
+            if (!id) return;
+            const token = localStorage.getItem('token');
             Swal.fire({
                 title: 'Are you sure?',
                 text: 'This action cannot be undone!',
@@ -386,6 +380,8 @@
                     $.ajax({
                         url: '<?= base_url('api/complaints/delete') ?>/' + id,
                         type: 'POST',
+                        data: { _method: 'DELETE' },
+                        headers: { 'Authorization': `Bearer ${token}` },
                         success: function (response) {
                             if (response.status === 'success') {
                                 Swal.fire({
@@ -396,12 +392,18 @@
                                     buttonsStyling: false,
                                     customClass: { confirmButton: 'btn hr-btnbg' }
                                 }).then(() => { table.ajax.reload(); });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to delete.', 'error');
                             }
+                        },
+                        error: function (xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Permission denied or session expired.';
+                            Swal.fire('Error!', msg, 'error');
                         }
                     });
                 }
             });
-        });
+        };
 
         // 📥 Export to Excel functionality
         $('#btnExportComplaints').on('click', function () {

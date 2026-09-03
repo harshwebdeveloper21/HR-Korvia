@@ -365,18 +365,29 @@ class AnnouncementController extends ResourceController
      */
     public function delete($id = null)
     {
-        if (!$this->authService->check()) {
+        $user = $this->authService->user();
+        $role = session()->get('role');
+        $userRole = ($user && !empty($user->role)) ? $user->role : $role;
+
+        if (!$this->authService->check() && empty($role)) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
         }
 
-        $user = $this->authService->user();
-        if (!in_array($user->role, ['admin', 'hr'])) {
+        if (!in_array($userRole, ['admin', 'hr'])) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Permission denied']);
+        }
+
+        if (empty($id)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid announcement ID']);
         }
 
         $this->announcementModel->update($id, ['is_deleted' => 1]);
 
-        return $this->response->setJSON(['status' => 'success', 'message' => 'Announcement deleted successfully']);
+        return $this->response->setJSON([
+            'status'   => 'success',
+            'message'  => 'Announcement deleted successfully',
+            'csrfHash' => csrf_hash()
+        ]);
     }
 
     /**

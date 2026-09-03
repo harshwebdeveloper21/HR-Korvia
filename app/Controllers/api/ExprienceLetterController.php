@@ -114,8 +114,15 @@ class ExprienceLetterController extends ResourceController
     }
     public function display()
     {
+        $userModel = new \App\Models\UserModel();
+        $employee = $userModel->whereIn('role', ['hr', 'employee'])->findAll();
+        $exprienceModel = new \App\Models\ExprienceLetterModel();
+        $templates = $exprienceModel->findAll();
 
-        return view('exprience_templetes/view_letter');
+        return view('exprience_templetes/view_letter', [
+            'employee'  => $employee,
+            'templates' => $templates,
+        ]);
     }
     public function listTemplates()
     {
@@ -571,12 +578,16 @@ class ExprienceLetterController extends ResourceController
     public function getJoiningDate($id)
     {
         $userModel = new \App\Models\UserInfoModel();
-        $employee = $userModel->find($id);
+        $employee = $userModel->where('user_id', $id)->first();
+        if (!$employee) {
+            $employee = $userModel->find($id);
+        }
 
-        if ($employee) {
-            return $this->response->setJSON(['joining_date' => $employee['joining_date']]);
+        $res = $this->response ?? service('response');
+        if ($employee && !empty($employee['joining_date'])) {
+            return $res->setJSON(['joining_date' => $employee['joining_date']]);
         } else {
-            return $this->response->setJSON(['joining_date' => null]);
+            return $res->setJSON(['joining_date' => null]);
         }
     }
 
@@ -591,14 +602,71 @@ class ExprienceLetterController extends ResourceController
         if (!in_array($user->role, ['admin', 'hr'])) {
             return $this->failForbidden('Forbidden: You do not have access to this resource');
         }
-        $generatedLetterModel = new \App\Models\ExprienceModel(); // 👈 load new model
-        $jobs = $generatedLetterModel->select('exprience.id,user_info.firstname,exprience.from_date,exprience_letter_templetes.title,exprience.to_date')
+        $generatedLetterModel = new \App\Models\ExprienceModel();
+        $jobs = $generatedLetterModel->select('exprience.id, exprience.employee_id, exprience.template_id, user_info.firstname, user_info.lastname, exprience.from_date, exprience_letter_templetes.title, exprience.to_date')
             ->join('user_info', 'user_info.user_id = exprience.employee_id')
             ->join('exprience_letter_templetes', 'exprience_letter_templetes.id = exprience.template_id')
             ->orderBy('exprience.created_at', 'DESC')
             ->findAll();
 
         return $this->respond(['status' => 'success', 'data' => $jobs]);
+    }
+
+    public function getGeneratedLetter($id)
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        }
+
+        $res = $this->response ?? service('response');
+        $generatedModel = new \App\Models\ExprienceModel();
+        $letter = $generatedModel->find($id);
+
+        if (!$letter) {
+            return $res->setJSON(['status' => 'error', 'message' => 'Generated letter not found'])->setStatusCode(404);
+        }
+
+        return $res->setJSON(['status' => 'success', 'data' => $letter]);
+    }
+
+    public function updateGeneratedLetter($id)
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return $this->failUnauthorized('Unauthorized: Token missing or invalid');
+        }
+
+        $res = $this->response ?? service('response');
+        $generatedModel = new \App\Models\ExprienceModel();
+        $letter = $generatedModel->find($id);
+
+        if (!$letter) {
+            return $res->setJSON(['status' => 'error', 'message' => 'Generated letter not found'])->setStatusCode(404);
+        }
+
+        $req = $this->request ?? service('request');
+        $employeeId = $req->getPost('employee_id');
+        $templateId = $req->getPost('template_id');
+        $fromDate = $req->getPost('from_date');
+        $toDate = $req->getPost('to_date');
+
+        if (empty($employeeId) || empty($templateId) || empty($fromDate) || empty($toDate)) {
+            return $res->setJSON(['status' => 'error', 'message' => 'All fields are required.'])->setStatusCode(422);
+        }
+
+        if (strtotime($fromDate) > strtotime($toDate)) {
+            return $res->setJSON(['status' => 'error', 'message' => 'From Date cannot be later than To Date.'])->setStatusCode(422);
+        }
+
+        $generatedModel->update($id, [
+            'employee_id' => $employeeId,
+            'template_id' => $templateId,
+            'from_date'   => $fromDate,
+            'to_date'     => $toDate,
+        ]);
+
+        return $res->setJSON(['status' => 'success', 'message' => 'Generated experience letter updated successfully.']);
     }
     public function downloadExperienceLetter($generatedLetterId)
     {

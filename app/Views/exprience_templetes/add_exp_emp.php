@@ -14,7 +14,7 @@
     <div class="col-12 grid-margin">
         <div class="card">
             <div class="card-body">
-                <h4 class="card-title">Add Employee</h4>
+                <h4 class="card-title">Generate Experience Letter</h4>
                 <form action="" method="" target="" id="experienceLetterForm">
                     <?= csrf_field() ?>
                     <div class="row">
@@ -52,7 +52,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="mdi mdi-calendar-month-outline fs-5"></i></span>
                                         </div>
-                                        <input type="date" class="form-control" name="from_date" id="from_date" readonly />
+                                        <input type="date" class="form-control" name="from_date" id="from_date" />
                                     </div>
 
                                     <div class="invalid-feedback d-block" id="from_date-error"></div>
@@ -216,6 +216,15 @@
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Experience Letter generated and downloaded successfully!',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            window.location.href = '<?= site_url("generate-letter") ?>';
+                        });
                     });
                 }
 
@@ -232,33 +241,45 @@
     $(document).ready(function() {
         $('#employee').on('change', function() {
             var employeeId = $(this).val();
-
             if (employeeId) {
+                $(this).removeClass('is-invalid');
+                $('#employee-error').text('');
+
                 $.ajax({
-                    url: "<?= site_url(
-                        "api/employee/joining-date",
-                    ) ?>/" + employeeId,
+                    url: "<?= site_url("api/employee/joining-date") ?>/" + employeeId,
                     type: "GET",
                     dataType: "json",
                     success: function(response) {
-                        if (response.joining_date) {
+                        if (response && response.joining_date) {
                             $('#from_date').val(response.joining_date);
-                        } else {
-                            $('#from_date').val('');
+                            $('#from_date').removeClass('is-invalid');
+                            $('#from_date-error').text('');
                         }
-                    },
-                    error: function() {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Failed to fetch joining date.',
-                            confirmButtonColor: '#d33'
-                        });
-                        $('#from_date').val('');
                     }
                 });
             } else {
                 $('#from_date').val('');
+            }
+        });
+
+        $('#from_date').on('input change', function() {
+            if ($(this).val()) {
+                $(this).removeClass('is-invalid');
+                $('#from_date-error').text('');
+            }
+        });
+
+        $('#to_date').on('input change', function() {
+            if ($(this).val()) {
+                $(this).removeClass('is-invalid');
+                $('#to_date-error').text('');
+            }
+        });
+
+        $('#templete').on('change', function() {
+            if ($(this).val()) {
+                $(this).removeClass('is-invalid');
+                $('#templete-error').text('');
             }
         });
           $('#templete').on('change', function () {

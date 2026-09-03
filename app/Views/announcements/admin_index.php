@@ -79,7 +79,7 @@
                                                     <div class="detail-actions">
                                                         <a href="javascript:void(0)" class="btn btn-sm btn-info text-white" onclick="showAnnouncement(<?= esc(json_encode($announcement)) ?>)"><i class="mdi mdi-eye"></i> View</a>
                                                         <a href="/announcements/edit/<?= $announcement['id'] ?>" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
-                                                        <a href="javascript:void(0);" class="btn btn-sm btn-danger delete-btn" data-id="<?= $announcement['id'] ?>"><i class="mdi mdi-delete"></i> Delete</a>
+                                                        <button type="button" class="btn btn-sm btn-danger delete-btn" onclick="deleteAnnouncement(<?= $announcement['id'] ?>);"><i class="mdi mdi-delete"></i> Delete</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -107,7 +107,7 @@
                                             <a href="/announcements/edit/<?= $announcement['id'] ?>" class="text-warning me-1" title="Edit">
                                                 <i class="mdi mdi-pencil fs-5"></i>
                                             </a>
-                                            <a href="javascript:void(0);" class="text-danger delete-btn" data-id="<?= $announcement['id'] ?>" title="Delete">
+                                            <a href="javascript:void(0);" class="text-danger delete-btn" onclick="deleteAnnouncement(<?= $announcement['id'] ?>);" title="Delete">
                                                 <i class="mdi mdi-delete fs-5"></i>
                                             </a>
                                         </div>
@@ -128,7 +128,7 @@
 
 <script>
 $(document).ready(function() {
-    $('#announcementsTable').DataTable({
+    var table = $('#announcementsTable').DataTable({
         order: [[3, 'desc']],
         columnDefs: [
             {
@@ -143,10 +143,18 @@ $(document).ready(function() {
         }
     });
 
-    $(document).on('click', '.delete-btn', function() {
+    table.on('draw', function() {
+        if (typeof applyMobileTableVisibility === 'function') {
+            applyMobileTableVisibility();
+        }
+    });
+
+    $(document).on('click', '.delete-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         var id = $(this).data('id');
-        var csrfName = $('meta[name="csrf-token"]').attr('data-name');
-        var csrfHash = $('meta[name="csrf-token"]').attr('content');
+        var csrfName = $('meta[name="csrf-token"]').attr('data-name') || '<?= csrf_token() ?>';
+        var csrfHash = $('meta[name="csrf-token"]').attr('content') || '<?= csrf_hash() ?>';
         
         Swal.fire({
             title: 'Delete Announcement?',
@@ -163,12 +171,13 @@ $(document).ready(function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: '/announcements/delete/' + id,
+                    url: '<?= base_url("announcements/delete") ?>/' + id,
                     type: 'POST',
                     data: {
                         _method: 'DELETE',
                         [csrfName]: csrfHash
                     },
+                    dataType: 'json',
                     success: function(response) {
                         if (response.status === 'success') {
                             Swal.fire({
@@ -188,7 +197,11 @@ $(document).ready(function() {
                         }
                     },
                     error: function(xhr) {
-                        Swal.fire('Error!', 'Permission denied or session expired. Please refresh the page.', 'error');
+                        let msg = 'Permission denied or session expired. Please refresh the page.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        Swal.fire('Error!', msg, 'error');
                     }
                 });
             }
@@ -267,5 +280,88 @@ function showAnnouncement(announcement) {
         showCloseButton: false
     });
 }
+
+window.deleteAnnouncement = function(id) {
+    if (!id) return;
+    var csrfName = $('meta[name="csrf-token"]').attr('data-name') || '<?= csrf_token() ?>';
+    var csrfHash = $('meta[name="csrf-token"]').attr('content') || '<?= csrf_hash() ?>';
+
+    Swal.fire({
+        title: 'Delete Announcement?',
+        text: "This action cannot be reverted.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-secondary ms-2'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '<?= base_url("api/announcements/delete") ?>/' + id,
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    [csrfName]: csrfHash
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: response.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        if (response.csrfHash) {
+                            $('meta[name="csrf-token"]').attr('content', response.csrfHash);
+                        }
+                        Swal.fire('Error!', response.message || 'Failed to delete announcement.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    $.ajax({
+                        url: '<?= base_url("announcements/delete") ?>/' + id,
+                        type: 'POST',
+                        data: {
+                            _method: 'DELETE',
+                            [csrfName]: csrfHash
+                        },
+                        dataType: 'json',
+                        success: function(res) {
+                            if (res.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Deleted!',
+                                    text: res.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', res.message || 'Failed to delete announcement.', 'error');
+                            }
+                        },
+                        error: function(err) {
+                            let msg = 'Permission denied or session expired. Please refresh the page.';
+                            if (err.responseJSON && err.responseJSON.message) {
+                                msg = err.responseJSON.message;
+                            }
+                            Swal.fire('Error!', msg, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    });
+};
 </script>
 <?= $this->endSection(); ?>
