@@ -609,6 +609,22 @@ class AdminController extends ResourceController
         if (!isset($db)) {
             $db = \Config\Database::connect();
         }
+
+        // 1. Fetch active employees (excluding admins, deleted, inactive, or resigned past last working day)
+        $activeEmpSql = "SELECT users.id, users.username, user_info.profile_image
+                         FROM users
+                         LEFT JOIN user_info ON user_info.user_id = users.id
+                         WHERE users.role != 'admin'
+                           AND users.is_deleted = 0
+                           AND (
+                               user_info.status IS NULL
+                               OR (LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
+                           )
+                           AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= '{$todayDate}')
+                         ORDER BY users.username ASC";
+        $activeEmployees = $db->query($activeEmpSql)->getResultArray();
+
+        // 2. Fetch approved leaves for today
         $leaveSql = "SELECT leaves.*, users.username, user_info.profile_image
                      FROM leaves
                      JOIN users ON users.id = leaves.user_id
@@ -616,9 +632,12 @@ class AdminController extends ResourceController
                      WHERE leaves.start_date <= '{$todayDate}'
                        AND leaves.end_date >= '{$todayDate}'
                        AND leaves.status = 'approved'
+                       AND users.role != 'admin'
+                       AND users.is_deleted = 0
                        AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
-                       AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= '{$todayDate}')";
-        $totalLeavesToday = $db->query($leaveSql)->getResultArray();
+                       AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= '{$todayDate}')
+                     ORDER BY users.username ASC";
+        $approvedLeavesToday = $db->query($leaveSql)->getResultArray();
 
         $todayAttendanceRaw = $this->attendanceModel
             ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')
@@ -678,16 +697,49 @@ class AdminController extends ResourceController
             return strcmp($a['check_in_time'], $b['check_in_time']);
         });
 
-        // ── Attendance-priority fix ──────────────────────────────────────────
-        // Collect user_ids of employees who have actually checked in today.
-        // Any employee with a valid check-in must NOT appear in the
-        // "Today's Absent or Leave" list, regardless of their leave record.
+        // ── Build Today's Absent Or Leave list ───────────────────────────────
+        // Any employee with a valid check-in must NOT appear in Absent / Leave
         $checkedInUserIds = array_column($todayAttendance, 'user_id');
-        if (!empty($checkedInUserIds)) {
-            $totalLeavesToday = array_values(array_filter(
-                $totalLeavesToday,
-                fn($leave) => !in_array($leave['user_id'], $checkedInUserIds)
-            ));
+
+        $totalLeavesToday = [];
+        $leaveUserIds = [];
+
+        // 1. Employees on approved leave (excluding anyone who checked in today)
+        foreach ($approvedLeavesToday as $leave) {
+            if (in_array($leave['user_id'], $checkedInUserIds)) {
+                continue;
+            }
+            $leaveUserIds[$leave['user_id']] = true;
+            $totalLeavesToday[] = [
+                'id'            => $leave['id'],
+                'user_id'       => $leave['user_id'],
+                'username'      => $leave['username'],
+                'profile_image' => $leave['profile_image'],
+                'start_date'    => $leave['start_date'],
+                'end_date'      => $leave['end_date'],
+                'reason'        => $leave['reason'] ?? '',
+                'type'          => 'leave',
+                'status_text'   => 'On Leave',
+            ];
+        }
+
+        // 2. Active employees who neither checked in nor have an approved leave today (Absent)
+        foreach ($activeEmployees as $emp) {
+            $empId = $emp['id'];
+            if (in_array($empId, $checkedInUserIds) || isset($leaveUserIds[$empId])) {
+                continue;
+            }
+            $totalLeavesToday[] = [
+                'id'            => null,
+                'user_id'       => $empId,
+                'username'      => $emp['username'],
+                'profile_image' => $emp['profile_image'],
+                'start_date'    => $todayDate,
+                'end_date'      => $todayDate,
+                'reason'        => 'Absent',
+                'type'          => 'absent',
+                'status_text'   => 'Absent',
+            ];
         }
         // ────────────────────────────────────────────────────────────────────
 
@@ -756,82 +808,6 @@ class AdminController extends ResourceController
                 ->where('status', 'approved')
                 ->where('YEAR(start_date)', date('Y')) // start_date is inside current year
                 ->countAllResults();
-            $todayDate = date('Y-m-d');
-            $leaveSqlEmp = "SELECT leaves.*, users.username, user_info.profile_image
-                            FROM leaves
-                            JOIN users ON users.id = leaves.user_id
-                            JOIN user_info ON user_info.user_id = users.id
-                            WHERE leaves.start_date <= '{$todayDate}'
-                              AND leaves.end_date >= '{$todayDate}'
-                              AND leaves.status = 'approved'
-                              AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
-                              AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= '{$todayDate}')";
-            if (!isset($db)) {
-                $db = \Config\Database::connect();
-            }
-            $totalLeavesToday = $db->query($leaveSqlEmp)->getResultArray();
-            $todayAttendanceRaw = $this->attendanceModel
-                ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')
-                ->join('users', 'users.id = attendance.user_id', 'inner')
-                ->join('user_info', 'user_info.user_id = users.id', 'left')
-                ->where('attendance.date', $todayDate)
-                ->where('users.is_deleted', 0)
-                ->orderBy('attendance.id', 'DESC')
-                ->findAll();
-
-            // ── Group all records per user, accumulate completed sessions ──
-            $todayAttendance = [];
-            $byUser = [];
-            foreach ($todayAttendanceRaw as $att) {
-                $byUser[$att['user_id']][] = $att;
-            }
-            foreach ($byUser as $uid => $records) {
-                usort($records, function ($a, $b) {
-                    return strcmp($a['check_in_time'], $b['check_in_time']);
-                });
-
-                $completedSeconds = 0;
-                $activeRecord = null;
-
-                foreach ($records as $rec) {
-                    if ($rec['check_out_time']) {
-                        $parts = explode(':', $rec['work_hours'] ?? '00:00:00');
-                        if (count($parts) === 3) {
-                            $completedSeconds += ((int)$parts[0] * 3600) + ((int)$parts[1] * 60) + (int)$parts[2];
-                        }
-                    } else {
-                        $activeRecord = $rec;
-                    }
-                }
-
-                $firstRecord = $records[0];
-                $displayRecord = $activeRecord ?? $firstRecord;
-
-                $todayAttendance[] = [
-                    'id'               => $displayRecord['id'],
-                    'user_id'          => $displayRecord['user_id'],
-                    'check_in_time'    => $firstRecord['check_in_time'],
-                    'check_out_time'   => $displayRecord['check_out_time'],
-                    'completed_seconds'=> $completedSeconds,
-                    'username'         => $displayRecord['username'],
-                    'profile_image'    => $displayRecord['profile_image'],
-                    'working_location' => $displayRecord['working_location'],
-                ];
-            }
-
-            usort($todayAttendance, function ($a, $b) {
-                return strcmp($a['check_in_time'], $b['check_in_time']);
-            });
-
-            // ── Attendance-priority fix (employee branch) ─────────────────────
-            $checkedInUserIds = array_column($todayAttendance, 'user_id');
-            if (!empty($checkedInUserIds)) {
-                $totalLeavesToday = array_values(array_filter(
-                    $totalLeavesToday,
-                    fn($leave) => !in_array($leave['user_id'], $checkedInUserIds)
-                ));
-            }
-            // ─────────────────────────────────────────────────────────────────
 
             $attendanceCountThisWeek = $this->attendanceModel
                 ->where('user_id', $employeeId)

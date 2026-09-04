@@ -778,16 +778,27 @@ class EmployeeController extends ResourceController
 
         $builder->where('users.is_deleted', 0);
 
-        // Get view type — 'active' (default) or 'inactive'
-        $viewType = $this->request->getGet('view') ?? 'active';
-        if ($viewType === 'inactive') {
-            // Show employees whose status is Inactive, Resigned, Fired, or Removed
+        // Get view type — 'active', 'inactive', 'resigned', 'fired', 'all'
+        $viewType = strtolower($this->request->getGet('view') ?? 'active');
+
+        if ($viewType === 'resigned') {
+            $builder->where("LOWER(user_info.status)", 'resigned');
+        } elseif ($viewType === 'fired' || $viewType === 'removed') {
+            $builder->where("LOWER(user_info.status) IN ('fired', 'removed')");
+        } elseif ($viewType === 'inactive') {
+            $builder->groupStart()
+                    ->where("LOWER(user_info.status)", 'inactive')
+                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'resigned\', \'fired\', \'removed\')))')
+                    ->groupEnd();
+        } elseif ($viewType === 'all_inactive') {
             $builder->groupStart()
                     ->where("LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')")
                     ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'inactive\', \'resigned\', \'fired\', \'removed\')))')
                     ->groupEnd();
+        } elseif ($viewType === 'all') {
+            // No status filter: return all active and inactive employees
         } else {
-            // Show only active employees — status is Active (or NULL) AND last_working_day hasn't passed
+            // Default 'active'
             $builder->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned', 'fired', 'removed') OR user_info.status IS NULL)");
             $builder->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
         }
@@ -1874,12 +1885,25 @@ class EmployeeController extends ResourceController
 
         $builder->where('users.is_deleted', 0);
 
-        if ($viewType === 'inactive') {
+        $viewType = strtolower($viewType);
+        if ($viewType === 'resigned') {
+            $builder->where("LOWER(user_info.status)", 'resigned');
+        } elseif ($viewType === 'fired' || $viewType === 'removed') {
+            $builder->where("LOWER(user_info.status) IN ('fired', 'removed')");
+        } elseif ($viewType === 'inactive') {
+            $builder->groupStart()
+                    ->where("LOWER(user_info.status)", 'inactive')
+                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'resigned\', \'fired\', \'removed\')))')
+                    ->groupEnd();
+        } elseif ($viewType === 'all_inactive') {
             $builder->groupStart()
                     ->where("LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')")
                     ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'inactive\', \'resigned\', \'fired\', \'removed\')))')
                     ->groupEnd();
+        } elseif ($viewType === 'all') {
+            // No status filter
         } else {
+            // Default 'active'
             $builder->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned', 'fired', 'removed') OR user_info.status IS NULL)");
             $builder->where("(user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())");
         }
