@@ -180,48 +180,172 @@
     opacity: 0.5 !important;
     z-index: 9998 !important;
 }
+/* ─── Manage Employees Header Controls (Uniform Height, Width & Border-Radius) ─── */
+.emp-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.emp-header-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.emp-header-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.emp-filters-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+/* Ensure all filter dropdowns have identical height (33px), width (140px), and border-radius (4px) */
+.emp-filters-row .form-select {
+    height: 33px !important;
+    min-height: 33px !important;
+    width: 140px !important;
+    min-width: 140px !important;
+    font-size: 13px !important;
+    border-radius: 4px !important;
+    border: 1px solid #ced4da !important;
+    padding: 0.2rem 1.65rem 0.2rem 0.65rem !important;
+    color: #333 !important;
+    background-color: #fff !important;
+    cursor: pointer;
+    box-shadow: none !important;
+    line-height: 1.4 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.emp-filters-row .form-select:focus {
+    border-color: #E66136 !important;
+    outline: 0;
+    box-shadow: 0 0 0 0.15rem rgba(230, 97, 54, 0.2) !important;
+}
+
+.emp-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+/* Ensure all action buttons have matching height (33px), border-radius (4px), and styling */
+.emp-btn-group .btn {
+    height: 33px !important;
+    min-height: 33px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 0 12px !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+}
+
+@media (max-width: 991px) {
+    .emp-header-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    .emp-header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .emp-filters-row {
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+    }
+    .emp-filters-row .form-select {
+        flex: 1 1 130px !important;
+        width: auto !important;
+        min-width: 120px !important;
+    }
+}
+
+@media (max-width: 575px) {
+    .emp-filters-row {
+        width: 100%;
+        gap: 6px;
+    }
+    .emp-filters-row .form-select#departmentFilter {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+    }
+    .emp-filters-row .form-select#monthFilter,
+    .emp-filters-row .form-select#yearFilter {
+        flex: 1 1 calc(50% - 3px) !important;
+        width: calc(50% - 3px) !important;
+        min-width: unset !important;
+    }
+    .emp-btn-group {
+        width: 100%;
+        gap: 6px;
+    }
+    .emp-btn-group .btn {
+        flex: 1 1 50% !important;
+        width: 50% !important;
+    }
+}
 </style>
 <div class="row">
     <div class="col-lg-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
 
-                <div class="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center gap-3 mb-3">
-                    <h4 class="card-title mb-0">Manage Employees</h4>
-                    <div class="d-flex flex-wrap gap-2 align-items-center w-100 w-xl-auto emp-header-controls">
-                        <div class="d-flex flex-wrap gap-2 flex-grow-1 flex-xl-grow-0 emp-filters-wrap">
-                            <select class="form-select flex-grow-1 flex-md-grow-0" id="departmentFilter" style="min-width: 160px; max-width: 100%;">
+                <div class="emp-header-bar mb-3">
+                    <h4 class="card-title mb-0 emp-header-title">Manage Employees</h4>
+                    <div class="emp-header-actions">
+                        <div class="emp-filters-row">
+                            <select class="form-select" id="departmentFilter">
                                 <option value="">All Departments</option>
                             </select>
-                            <div class="d-flex gap-2 flex-grow-1 flex-md-grow-0" style="min-width: 220px;">
-                                <select class="form-select flex-fill" id="monthFilter">
-                                    <option value="">All Months</option>
-                                    <option value="01">Jan</option>
-                                    <option value="02">Feb</option>
-                                    <option value="03">Mar</option>
-                                    <option value="04">Apr</option>
-                                    <option value="05">May</option>
-                                    <option value="06">Jun</option>
-                                    <option value="07">Jul</option>
-                                    <option value="08">Aug</option>
-                                    <option value="09">Sep</option>
-                                    <option value="10">Oct</option>
-                                    <option value="11">Nov</option>
-                                    <option value="12">Dec</option>
-                                </select>
-                                <select class="form-select flex-fill" id="yearFilter">
-                                    <option value="">All Years</option>
-                                    <?php for ($y = date('Y'); $y >= 2020; $y--): ?>
-                                        <option value="<?= $y ?>"><?= $y ?></option>
-                                    <?php endfor; ?>
-                                </select>
-                            </div>
+                            <select class="form-select" id="monthFilter">
+                                <option value="">All Months</option>
+                                <option value="01">Jan</option>
+                                <option value="02">Feb</option>
+                                <option value="03">Mar</option>
+                                <option value="04">Apr</option>
+                                <option value="05">May</option>
+                                <option value="06">Jun</option>
+                                <option value="07">Jul</option>
+                                <option value="08">Aug</option>
+                                <option value="09">Sep</option>
+                                <option value="10">Oct</option>
+                                <option value="11">Nov</option>
+                                <option value="12">Dec</option>
+                            </select>
+                            <select class="form-select" id="yearFilter">
+                                <option value="">All Years</option>
+                                <?php for ($y = date('Y'); $y >= 2020; $y--): ?>
+                                    <option value="<?= $y ?>"><?= $y ?></option>
+                                <?php endfor; ?>
+                            </select>
                         </div>
-                        <div class="d-flex gap-2 flex-grow-1 flex-xl-grow-0 emp-actions-wrap">
-                            <button type="button" id="btnExportEmployees" class="btn hr-btnbg flex-fill flex-xl-grow-0 text-nowrap">
+                        <div class="emp-btn-group">
+                            <button type="button" id="btnExportEmployees" class="btn hr-btnbg attendenceall text-nowrap">
                                 <i class="mdi mdi-file-excel iconfontsize"></i> Export
                             </button>
-                            <a href="/employee" class="btn hr-btnbg flex-fill flex-xl-grow-0 text-nowrap">
+                            <a href="/employee" class="btn hr-btnbg attendenceall text-nowrap">
                                 <i class="mdi mdi-plus iconfontsize"></i> Add Employee
                             </a>
                         </div>
