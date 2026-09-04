@@ -40,11 +40,9 @@ class OnboardingController extends ResourceController
         $departments = $departmentModel->findAll();
 
         $candidateModel = new CandidateModel();
-        // Fetch only candidates whose interview status is 'completed'
+        // Fetch candidates for onboarding
         $candidates = $candidateModel
-            ->select('candidate.*') // Select all candidate fields
-            ->join('interviews', 'interviews.candidate_id = candidate.id')
-            ->where('interviews.status', 'completed')
+            ->select('candidate.*')
             ->findAll();
         $jobModel = new JobModel();
         $jobs = $jobModel->findAll();

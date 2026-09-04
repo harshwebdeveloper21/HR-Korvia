@@ -1433,8 +1433,9 @@ class PayrollController extends ResourceController
                 // Get latest company info (logo, name, address)
                 $company = $companyModel->orderBy("id", "DESC")->first();
                 $companyLogoBase64 = "";
-                $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
-                if (empty($company["logo_img"]) || !is_file($companyLogoPath)) {
+                $logoFile = !empty($company["pdf_logo"]) ? $company["pdf_logo"] : ($company["logo_img"] ?? "");
+                $companyLogoPath = FCPATH . "upload/" . $logoFile;
+                if (empty($logoFile) || !is_file($companyLogoPath)) {
                     $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
                 }
                 if (is_file($companyLogoPath)) {
@@ -1671,8 +1672,9 @@ class PayrollController extends ResourceController
         // Get latest company info (logo, name, address)
         $company = $companyModel->orderBy("id", "DESC")->first();
         $companyLogoBase64 = "";
-        $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
-        if (empty($company["logo_img"]) || !is_file($companyLogoPath)) {
+        $logoFile = !empty($company["pdf_logo"]) ? $company["pdf_logo"] : ($company["logo_img"] ?? "");
+        $companyLogoPath = FCPATH . "upload/" . $logoFile;
+        if (empty($logoFile) || !is_file($companyLogoPath)) {
             $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
         }
         if (is_file($companyLogoPath)) {
@@ -3054,8 +3056,9 @@ class PayrollController extends ResourceController
                 $company = $companyModel->orderBy("id", "DESC")->first();
 
                 $companyLogoBase64 = "";
-                $companyLogoPath = FCPATH . "upload/" . ($company["logo_img"] ?? "");
-                if (empty($company["logo_img"]) || !is_file($companyLogoPath)) {
+                $logoFile = !empty($company["pdf_logo"]) ? $company["pdf_logo"] : ($company["logo_img"] ?? "");
+                $companyLogoPath = FCPATH . "upload/" . $logoFile;
+                if (empty($logoFile) || !is_file($companyLogoPath)) {
                     $companyLogoPath = FCPATH . "public/assets/images/fab_logo.jpg";
                 }
                 if (is_file($companyLogoPath)) {

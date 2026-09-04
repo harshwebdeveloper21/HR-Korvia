@@ -494,7 +494,7 @@ class OfferLetterTemplateController extends ResourceController
             'logo_src'            => $logoSrc,
             'header_img_src'      => $headerImgSrc,
             'footer_img_src'      => $footerImgSrc,
-            'template_title'      => $template['title'] ?? 'JOINING LETTER',
+            'template_title'      => 'JOINING LETTER',
             'template_header'     => $templateHeader,
             'company_name'        => $company['company_name'] ?? 'Fablead Developers Technolab',
             'company_address'     => !empty($company['company_address']) ? $company['company_address'] : 'Fablead Developers Technolab, Surat , Gujarat , India',
@@ -571,7 +571,7 @@ class OfferLetterTemplateController extends ResourceController
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        $safeTitle = preg_replace('/[^A-Za-z0-9_\-]/', '_', $template['title'] ?? 'Offer_Letter');
+        $safeTitle = 'Joining_Letter';
         $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $candidateName);
         $filename = "{$safeTitle}_{$safeName}.pdf";
 

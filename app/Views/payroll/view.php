@@ -779,33 +779,12 @@
         const yearlySlipModal = new bootstrap.Modal(document.getElementById('yearlySlipModal'));
 
         function updateAvailableMonths() {
-            const year = $('#yearlyYear').val();
             const startMonthSelect = $('#startMonth');
             const endMonthSelect = $('#endMonth');
 
-            if (year === '2026') {
-                const allowedMonths = ['01', '02', '03'];
-
-                [startMonthSelect, endMonthSelect].forEach(select => {
-                    select.find('option').each(function () {
-                        const val = $(this).val();
-                        if (allowedMonths.includes(val)) {
-                            $(this).prop('disabled', false);
-                        } else {
-                            $(this).prop('disabled', true);
-                        }
-                    });
-
-                    // Reset if current value is now disabled
-                    if (!allowedMonths.includes(select.val())) {
-                        select.val(select.attr('id') === 'endMonth' ? '03' : '01');
-                    }
-                });
-            } else {
-                [startMonthSelect, endMonthSelect].forEach(select => {
-                    select.find('option').prop('disabled', false);
-                });
-            }
+            [startMonthSelect, endMonthSelect].forEach(select => {
+                select.find('option').prop('disabled', false);
+            });
         }
 
         $('#yearlyYear').on('change', updateAvailableMonths);
@@ -914,7 +893,7 @@
         })
         .then(r => r.json())
         .then(companyData => {
-            const logoUrl = companyData.logo_img || '';
+            const logoUrl = companyData.pdf_logo || companyData.logo_img || '';
             if (!logoUrl) {
                 _buildSalarySheetPDF(payrolls, companyData, null);
                 return;

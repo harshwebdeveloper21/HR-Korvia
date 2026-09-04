@@ -98,7 +98,8 @@ class EmployeeOftheMonthPerformance extends ResourceController
 
         // ✅ Fix for mime_content_type error
         $logoImgTag = '<!-- Logo not found -->';
-        $logoPath = FCPATH . 'upload/' . $company['logo_img'];
+        $logoFile = !empty($company['pdf_logo']) ? $company['pdf_logo'] : ($company['logo_img'] ?? '');
+        $logoPath = FCPATH . 'upload/' . $logoFile;
         if (file_exists($logoPath)) {
             $logoMimeType = mime_content_type($logoPath);
             $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];

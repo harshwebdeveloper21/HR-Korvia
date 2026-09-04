@@ -486,13 +486,24 @@
                                             <!-- New Fields End -->
                                         </div>
                                         <div class="row">
-                                            <div class="col-lg-12">
+                                            <div class="col-lg-6 col-md-6">
                                                 <div class="form-group">
                                                     <label for="logo_img">Upload Logo</label>
                                                     <input type="file" class="form-control" name="logo_img" id="logo_img" accept="image/*">
+                                                    <small class="text-muted d-block mt-1">Main company logo (Website, Navbar, etc.)</small>
                                                 </div>
                                                 <div class="mt-2">
                                                     <img id="company_logo" src="<?= base_url(env('ImagePath') . 'upload/fab_logo.jpg') ?>" alt="Company Logo" class="img-fluid view-logo" width="150">
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6 col-md-6 sm-profile-margin">
+                                                <div class="form-group">
+                                                    <label for="pdf_logo">Upload PDF Logo</label>
+                                                    <input type="file" class="form-control" name="pdf_logo" id="pdf_logo" accept="image/*">
+                                                    <small class="text-muted d-block mt-1">Logo used in Salary Slips & generated PDFs</small>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <img id="company_pdf_logo" src="<?= base_url(env('ImagePath') . 'upload/fab_logo.jpg') ?>" alt="Company PDF Logo" class="img-fluid view-logo" width="150">
                                                 </div>
                                             </div>
                                         </div>
@@ -1367,6 +1378,15 @@
                             $('#company_logo').attr('src', IMAGE_BASE_URL + '/upload/fab_logo.jpg'); // Fallback image
                         }
 
+                        // Update company PDF logo
+                        if (data.pdf_logo) {
+                            $('#company_pdf_logo').attr('src', baseUrl + '/upload/' + data.pdf_logo);
+                        } else if (data.logo_img) {
+                            $('#company_pdf_logo').attr('src', baseUrl + '/upload/' + data.logo_img);
+                        } else {
+                            $('#company_pdf_logo').attr('src', IMAGE_BASE_URL + '/upload/fab_logo.jpg');
+                        }
+
                         // Update company favicon
                         if (data.favicon_icon) {
                             $('#company_favicon').attr('src', baseUrl + '/upload/' + data.favicon_icon);
@@ -1476,6 +1496,12 @@
                     $('.sidebar-logo, .navbar-logo, .login-logo, .offer-letter-logo, .profile-logo, .title-logo , .view-logo, .forgot-logo, .reset-logo, .welcome-mail-logo')
                         .attr('src', response.logo_img);
 
+                    if (response.pdf_logo) {
+                        $('#company_pdf_logo').attr('src', response.pdf_logo);
+                    } else {
+                        $('#company_pdf_logo').attr('src', response.logo_img);
+                    }
+
                     // Populate company details form fields if they exist
                     if ($('#company_name').length) {
                         $('#company_name').val(response.company_name);
@@ -1557,6 +1583,29 @@
                 });
             }
         });
+    });
+
+    // Preview PDF Logo instantly on file select
+    $('#pdf_logo').on('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid File',
+                text: 'Only JPG, PNG, and WEBP image files are allowed.',
+            });
+            $(this).val('');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            $('#company_pdf_logo').attr('src', e.target.result);
+        };
+        reader.readAsDataURL(file);
     });
 
 
@@ -1785,6 +1834,10 @@
 
                             if (errorMessages.profile_image) {
                                 $("#logo_img").after(`<div class="text-danger error-message">${errorMessages.profile_image}</div>`);
+                            }
+
+                            if (errorMessages.pdf_logo) {
+                                $("#pdf_logo").after(`<div class="text-danger error-message">${errorMessages.pdf_logo}</div>`);
                             }
 
                             if (errorMessages.company_address) {
