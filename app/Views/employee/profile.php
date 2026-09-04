@@ -619,9 +619,14 @@
                                 <h6 class="section-title mb-1">Salary & Increment Management</h6>
                                 <p class="text-muted small mb-0">Track and manage salary increments for this employee</p>
                             </div>
-                            <button type="button" class="btn btn-sm d-inline-flex align-items-center" style="background: linear-gradient(135deg, #E66136 0%, #f05929 100%); color: #fff; border-radius: 8px; font-weight: 600; padding: 7px 14px; box-shadow: 0 4px 10px rgba(230, 97, 54, 0.25);" id="btnOpenAddIncrementModal">
-                                <i class="mdi mdi-cash-plus me-1"></i> Add Increment
-                            </button>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm d-inline-flex align-items-center btn-outline-secondary" style="border-radius: 8px; font-weight: 600; padding: 7px 14px;" id="btnOpenAddHistoryModal">
+                                    <i class="mdi mdi-history me-1"></i> Add History Only
+                                </button>
+                                <button type="button" class="btn btn-sm d-inline-flex align-items-center" style="background: linear-gradient(135deg, #E66136 0%, #f05929 100%); color: #fff; border-radius: 8px; font-weight: 600; padding: 7px 14px; box-shadow: 0 4px 10px rgba(230, 97, 54, 0.25);" id="btnOpenAddIncrementModal">
+                                    <i class="mdi mdi-cash-plus me-1"></i> Add Increment
+                                </button>
+                            </div>
                         </div>
 
                         <!-- KPI Summary Cards -->
@@ -682,7 +687,7 @@
                 <div class="modal fade" id="profileAddIncrementModal" tabindex="-1" aria-labelledby="profileAddIncrementModalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content border-0 shadow">
-                            <div class="modal-header text-white" style="background: linear-gradient(135deg, #E66136 0%, #f05929 100%);">
+                            <div class="modal-header text-white" id="profileAddIncModalHeader" style="background: linear-gradient(135deg, #E66136 0%, #f05929 100%);">
                                 <h5 class="modal-title fs-6 fw-bold" id="profileAddIncrementModalLabel"><i class="mdi mdi-cash-plus me-1"></i> Add Salary Increment</h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
@@ -691,14 +696,31 @@
                                     <span class="small text-muted">Employee:</span>
                                     <strong class="text-dark" id="modal_inc_emp_name">Employee</strong>
                                 </div>
+
+                                <!-- History Only Mode Toggle -->
+                                <div class="mb-3 p-2 rounded border d-flex align-items-center justify-content-between" style="background-color: #f8f9fa;">
+                                    <div>
+                                        <label for="modal_inc_history_only" class="fw-semibold text-dark small d-block mb-0" style="cursor: pointer;">Record as History Only</label>
+                                        <span class="text-muted" style="font-size: 11px;">Add past record without modifying current active salary</span>
+                                    </div>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="modal_inc_history_only" role="switch" style="cursor: pointer; width: 38px; height: 20px;">
+                                    </div>
+                                </div>
+
+                                <div id="modal_inc_history_alert" class="alert alert-info py-2 px-3 small mb-3" style="display: none; font-size: 12px;">
+                                    <i class="mdi mdi-information-outline me-1"></i> <strong>History Mode:</strong> This record will only be added to increment history. Current employee salary (<span id="modal_inc_history_current_sal" class="fw-bold"></span>) will <strong>NOT</strong> be changed.
+                                </div>
+
                                 <div class="mb-3">
-                                    <label class="form-label small fw-semibold">Current Salary (&#8377;)</label>
-                                    <input type="text" class="form-control bg-light fw-bold text-dark" id="modal_inc_current_salary" readonly>
+                                    <label class="form-label small fw-semibold" id="modal_inc_salary_label">Current Salary (&#8377;)</label>
+                                    <input type="number" step="0.01" class="form-control fw-bold text-dark" id="modal_inc_current_salary" readonly style="background:#e9ecef;">
+                                    <div class="form-text small text-muted" id="modal_inc_salary_help" style="display: none;">Enter the starting/base salary before this historical increment.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold">Increment Amount (&#8377;) <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control" id="modal_inc_amount" placeholder="e.g. 5000" min="1" step="1">
-                                    <div class="form-text small text-muted">Enter the amount to add to current salary.</div>
+                                    <div class="form-text small text-muted" id="modal_inc_amount_help">Enter the amount to add to current salary.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold">New Salary Preview (&#8377;)</label>
@@ -712,7 +734,7 @@
                             <div class="modal-footer bg-light py-2">
                                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                                 <button type="button" class="btn btn-sm text-white" id="btnSaveProfileIncrement" style="background-color: #E66136;">
-                                    <i class="mdi mdi-check me-1"></i> Save Increment
+                                    <i class="mdi mdi-check me-1"></i> <span id="btnSaveProfileIncrementText">Save Increment</span>
                                 </button>
                             </div>
                         </div>
@@ -1350,11 +1372,14 @@
                         const latestAmt = parseFloat(latest.increment_amount || 0);
                         $('#prof-latest-increment').html('+ &#8377; ' + latestAmt.toLocaleString('en-IN'));
 
-                        if (latest.new_salary) {
+                        // Always prioritize the official current_salary from user_info
+                        if (res.current_salary !== undefined && res.current_salary !== null) {
+                            currentEmployeeSalary = parseFloat(res.current_salary);
+                        } else if (latest.new_salary) {
                             currentEmployeeSalary = parseFloat(latest.new_salary);
-                            $('#prof-current-salary').html('&#8377; ' + currentEmployeeSalary.toLocaleString('en-IN'));
-                            $('#user_info-salary').text('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
                         }
+                        $('#prof-current-salary').html('&#8377; ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                        $('#user_info-salary').text('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
 
                         let rows = '';
                         res.history.forEach(function (r, idx) {
@@ -1378,6 +1403,10 @@
                         $('#incrementHistoryTableWrapper').show();
                         incrementHistoryLoaded = true;
                     } else {
+                        if (res.current_salary !== undefined && res.current_salary !== null) {
+                            currentEmployeeSalary = parseFloat(res.current_salary);
+                            $('#prof-current-salary').html('&#8377; ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                        }
                         $('#prof-total-increments').text('0');
                         $('#prof-latest-increment').text('None');
                         $('#incrementHistoryEmpty').show();
@@ -1396,42 +1425,111 @@
             loadIncrementHistory();
         });
 
-        // Open Add Increment Modal
+        // Salary preview calculation
+        function updateProfileSalaryPreview() {
+            const isHistoryOnly = $('#modal_inc_history_only').is(':checked');
+            const baseSalary = isHistoryOnly
+                ? (parseFloat($('#modal_inc_current_salary').val()) || 0)
+                : currentEmployeeSalary;
+            const incAmt = parseFloat($('#modal_inc_amount').val()) || 0;
+            const newSal = baseSalary + incAmt;
+            $('#modal_inc_new_salary_preview').val('₹ ' + newSal.toLocaleString('en-IN'));
+        }
+
+        function setProfileIncrementModalMode(isHistoryOnly) {
+            $('#modal_inc_history_only').prop('checked', isHistoryOnly);
+            if (isHistoryOnly) {
+                $('#profileAddIncrementModalLabel').html('<i class="mdi mdi-history me-1"></i> Add Increment History Record');
+                $('#profileAddIncModalHeader').css('background', 'linear-gradient(135deg, #4b5563 0%, #374151 100%)');
+                $('#modal_inc_history_alert').show();
+                $('#modal_inc_history_current_sal').text('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                $('#modal_inc_salary_label').html('Previous / Base Salary (&#8377;) <span class="text-danger">*</span>');
+                $('#modal_inc_current_salary').val(currentEmployeeSalary).prop('readonly', false).css('background-color', '#fff');
+                $('#modal_inc_salary_help').show();
+                $('#modal_inc_amount_help').text('Enter the increment amount for this historical record.');
+                $('#btnSaveProfileIncrementText').text('Save History Record');
+                $('#btnSaveProfileIncrement').css('background-color', '#374151');
+            } else {
+                $('#profileAddIncrementModalLabel').html('<i class="mdi mdi-cash-plus me-1"></i> Add Salary Increment');
+                $('#profileAddIncModalHeader').css('background', 'linear-gradient(135deg, #E66136 0%, #f05929 100%)');
+                $('#modal_inc_history_alert').hide();
+                $('#modal_inc_salary_label').text('Current Salary (₹)');
+                $('#modal_inc_current_salary').val(currentEmployeeSalary).prop('readonly', true).css('background-color', '#e9ecef');
+                $('#modal_inc_salary_help').hide();
+                $('#modal_inc_amount_help').text('Enter the amount to add to current salary.');
+                $('#btnSaveProfileIncrementText').text('Save Increment');
+                $('#btnSaveProfileIncrement').css('background-color', '#E66136');
+            }
+            updateProfileSalaryPreview();
+        }
+
+        $('#modal_inc_amount, #modal_inc_current_salary').on('input', function() {
+            updateProfileSalaryPreview();
+        });
+
+        $('#modal_inc_history_only').on('change', function() {
+            const isChecked = $(this).is(':checked');
+            if (!isChecked && ['inactive', 'resigned', 'fired', 'removed'].includes(currentEmployeeStatus.toLowerCase())) {
+                Swal.fire('Not Allowed', 'Cannot add active salary increment for an inactive or resigned employee.', 'warning');
+                $(this).prop('checked', true);
+                return;
+            }
+            setProfileIncrementModalMode(isChecked);
+        });
+
+        // Open Add Increment Modal (Standard)
         $('#btnOpenAddIncrementModal').on('click', function(e) {
             e.preventDefault();
 
             if (['inactive', 'resigned', 'fired', 'removed'].includes(currentEmployeeStatus.toLowerCase())) {
-                Swal.fire('Not Allowed', 'Cannot add salary increment for an inactive or resigned employee.', 'warning');
+                Swal.fire('Not Allowed', 'Cannot add active salary increment for an inactive or resigned employee. Please use "Add History Only" to record past increments.', 'warning');
                 return;
             }
 
             $('#modal_inc_emp_name').text(currentEmployeeName || 'Employee');
-            $('#modal_inc_current_salary').val('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+            $('#modal_inc_current_salary').val(currentEmployeeSalary);
             $('#modal_inc_amount').val('');
-            $('#modal_inc_new_salary_preview').val('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
             $('#modal_inc_date').val(new Date().toISOString().split('T')[0]);
+            setProfileIncrementModalMode(false);
 
             const modal = new bootstrap.Modal(document.getElementById('profileAddIncrementModal'));
             modal.show();
         });
 
-        // Live calculation of new salary preview
-        $('#modal_inc_amount').on('input', function() {
-            const incAmt = parseFloat($(this).val()) || 0;
-            const newSal = currentEmployeeSalary + incAmt;
-            $('#modal_inc_new_salary_preview').val('₹ ' + newSal.toLocaleString('en-IN'));
+        // Open Add History Only Modal
+        $('#btnOpenAddHistoryModal').on('click', function(e) {
+            e.preventDefault();
+
+            $('#modal_inc_emp_name').text(currentEmployeeName || 'Employee');
+            $('#modal_inc_current_salary').val(currentEmployeeSalary);
+            $('#modal_inc_amount').val('');
+            $('#modal_inc_date').val(new Date().toISOString().split('T')[0]);
+            setProfileIncrementModalMode(true);
+
+            const modal = new bootstrap.Modal(document.getElementById('profileAddIncrementModal'));
+            modal.show();
         });
 
-        // Save Increment
+        // Save Increment or History
         $('#btnSaveProfileIncrement').on('click', function() {
             const $btn = $(this);
+            const isHistoryOnly = $('#modal_inc_history_only').is(':checked');
             const incAmount = parseFloat($('#modal_inc_amount').val());
             const incDate = $('#modal_inc_date').val();
             const token = localStorage.getItem('token');
             const targetUserId = currentEmployeeUserId || $('#users-id').text() || '<?= $id; ?>';
+            const rawSalary = $('#modal_inc_current_salary').val() || '0';
+            const prevSal = isHistoryOnly
+                ? parseFloat(rawSalary.toString().replace(/,/g, ''))
+                : currentEmployeeSalary;
 
             if (!incAmount || incAmount <= 0) {
                 Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please enter a valid increment amount greater than 0.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+                return;
+            }
+
+            if (isHistoryOnly && (isNaN(prevSal) || prevSal < 0)) {
+                Swal.fire({ icon: 'warning', title: 'Invalid Salary', text: 'Please enter a valid base salary for this historical record.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
                 return;
             }
 
@@ -1449,15 +1547,17 @@
                 data: {
                     user_id: targetUserId,
                     increment_amount: incAmount,
-                    increment_date: incDate
+                    increment_date: incDate,
+                    is_history_only: isHistoryOnly ? 1 : 0,
+                    previous_salary: prevSal
                 },
                 success: function(res) {
-                    $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Save Increment');
+                    $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> <span id="btnSaveProfileIncrementText">' + (isHistoryOnly ? 'Save History Record' : 'Save Increment') + '</span>');
                     if (res.status === 'success') {
                         bootstrap.Modal.getInstance(document.getElementById('profileAddIncrementModal')).hide();
                         Swal.fire({
                             icon: 'success',
-                            title: 'Increment Added!',
+                            title: isHistoryOnly ? 'History Saved!' : 'Increment Added!',
                             text: res.message || 'Salary increment has been recorded successfully.',
                             toast: true,
                             position: 'top-end',
@@ -1470,7 +1570,7 @@
                     }
                 },
                 error: function(xhr) {
-                    $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> Save Increment');
+                    $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> <span id="btnSaveProfileIncrementText">' + (isHistoryOnly ? 'Save History Record' : 'Save Increment') + '</span>');
                     Swal.fire('Error', xhr.responseJSON?.message || 'Server error occurred while saving increment.', 'error');
                 }
             });

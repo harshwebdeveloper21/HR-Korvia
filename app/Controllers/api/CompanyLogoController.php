@@ -34,9 +34,9 @@ class CompanyLogoController extends ResourceController
             ? base_url('upload/' . $company['favicon_icon'])
             : $defaultFavicon;
 
-        $pdfLogoUrl = ($company && !empty($company['pdf_logo']) && file_exists(FCPATH . 'upload/' . $company['pdf_logo']))
+        $pdfLogoUrl = ($company && !empty($company['pdf_logo']))
             ? base_url('upload/' . $company['pdf_logo'])
-            : $logoUrl;
+            : '';
 
         return $this->respond([
             'status'          => 'success',
