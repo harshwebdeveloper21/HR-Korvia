@@ -32,7 +32,7 @@ if (!function_exists('getCompanyPdfLogo')) {
         $companyModel = new CompanyLogoModel();
         $company = $companyModel->first(); // Fetch the first record
 
-        if (!empty($company['pdf_logo']) && file_exists(FCPATH . 'upload/' . $company['pdf_logo'])) {
+        if (!empty($company['pdf_logo'])) {
             return base_url('upload/' . $company['pdf_logo']);
         }
         return getCompanyLogo();

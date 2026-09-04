@@ -175,6 +175,7 @@ class ProfileController extends ResourceController
         $profileData = array_merge($userData, $userInfo, [
             'company_name' => $company ? $company['company_name'] : 'N/A',
             'logo_img' => $company ? $company['logo_img'] : 'upload/fab_logo.jpg',
+            'pdf_logo' => ($company && !empty($company['pdf_logo'])) ? $company['pdf_logo'] : '',
             'favicon_icon' => ($company && !empty($company['favicon_icon'])) ? $company['favicon_icon'] : '',
             'company_address' => $company ? $company['company_address'] : 'N/A', // Added
             'company_phone' => $company ? $company['company_phone'] : 'N/A', // Added

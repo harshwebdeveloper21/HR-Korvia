@@ -503,7 +503,7 @@
                                                     <small class="text-muted d-block mt-1">Logo used in Salary Slips & generated PDFs</small>
                                                 </div>
                                                 <div class="mt-2">
-                                                    <img id="company_pdf_logo" src="<?= base_url(env('ImagePath') . 'upload/fab_logo.jpg') ?>" alt="Company PDF Logo" class="img-fluid view-logo" width="150">
+                                                    <img id="company_pdf_logo" src="<?= function_exists('getCompanyPdfLogo') ? getCompanyPdfLogo() : base_url(env('ImagePath') . 'upload/fab_logo.jpg') ?>" alt="Company PDF Logo" class="img-fluid view-pdf-logo" width="150">
                                                 </div>
                                             </div>
                                         </div>
@@ -1380,9 +1380,15 @@
 
                         // Update company PDF logo
                         if (data.pdf_logo) {
-                            $('#company_pdf_logo').attr('src', baseUrl + '/upload/' + data.pdf_logo);
+                            const pdfLogoSrc = data.pdf_logo.startsWith('http')
+                                ? data.pdf_logo
+                                : (data.pdf_logo.startsWith('upload/') ? baseUrl + '/' + data.pdf_logo : baseUrl + '/upload/' + data.pdf_logo);
+                            $('#company_pdf_logo').attr('src', pdfLogoSrc);
                         } else if (data.logo_img) {
-                            $('#company_pdf_logo').attr('src', baseUrl + '/upload/' + data.logo_img);
+                            const logoSrc = data.logo_img.startsWith('http')
+                                ? data.logo_img
+                                : (data.logo_img.startsWith('upload/') ? baseUrl + '/' + data.logo_img : baseUrl + '/upload/' + data.logo_img);
+                            $('#company_pdf_logo').attr('src', logoSrc);
                         } else {
                             $('#company_pdf_logo').attr('src', IMAGE_BASE_URL + '/upload/fab_logo.jpg');
                         }
