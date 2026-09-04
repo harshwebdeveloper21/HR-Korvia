@@ -25,3 +25,16 @@ if (!function_exists('getCompanyFavicon')) {
             : base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png');
     }
 }
+
+if (!function_exists('getCompanyPdfLogo')) {
+    function getCompanyPdfLogo()
+    {
+        $companyModel = new CompanyLogoModel();
+        $company = $companyModel->first(); // Fetch the first record
+
+        if (!empty($company['pdf_logo']) && file_exists(FCPATH . 'upload/' . $company['pdf_logo'])) {
+            return base_url('upload/' . $company['pdf_logo']);
+        }
+        return getCompanyLogo();
+    }
+}

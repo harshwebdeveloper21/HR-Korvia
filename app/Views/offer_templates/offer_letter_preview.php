@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?= esc($template_title ?? 'JOINING LETTER') ?></title>
+    <title>JOINING LETTER</title>
     <style>
         @page {
             margin-top: 120px;
@@ -230,7 +230,7 @@
             <div class="content" style="<?= $idx > 0 ? 'padding-top: 5px;' : '' ?>">
                 <?php if ($idx === 0): ?>
                     <div class="template-title-wrapper">
-                        <h3><u><?= esc($template_title ?? 'JOINING LETTER') ?></u></h3>
+                        <h3><u>JOINING LETTER</u></h3>
                     </div>
                 <?php endif; ?>
                 <div class="body-content">
@@ -242,7 +242,7 @@
         <!-- Main Content (Page 1) -->
         <div class="content">
             <div class="template-title-wrapper">
-                <h3><u><?= esc($template_title ?? 'JOINING LETTER') ?></u></h3>
+                <h3><u>JOINING LETTER</u></h3>
             </div>
 
             <div class="body-content">

@@ -105,6 +105,7 @@ class ProfileController extends ResourceController
             'country_name' => !empty($country['country_name']) ? $country['country_name'] : 'N/A',
             'company_name' => !empty($company['company_name']) ? $company['company_name'] : 'N/A',
             'logo_img' => !empty($company['logo_img']) ? $company['logo_img'] : 'upload/fab_logo.jpg', // Default fallback
+            'pdf_logo' => !empty($company['pdf_logo']) ? $company['pdf_logo'] : '',
             'favicon_icon' => !empty($company['favicon_icon']) ? $company['favicon_icon'] : '',
             'profile_image' => !empty($userInfo['profile_image']) ? $userInfo['profile_image'] : 'default-profile.jpg',
             'company_address' => !empty($company['company_address']) ? $company['company_address'] : 'N/A', // Added
@@ -480,6 +481,21 @@ class ProfileController extends ResourceController
             }
         }
 
+        // Handle company PDF logo validation
+        $companyPdfLogo = $this->request->getFile('pdf_logo');
+        if ($companyPdfLogo && $companyPdfLogo->isValid()) {
+            if ($user->role === 'admin') {
+                $rules['pdf_logo'] = [
+                    'rules' => 'uploaded[pdf_logo]|is_image[pdf_logo]|mime_in[pdf_logo,image/jpg,image/jpeg,image/webp,image/png]',
+                    'errors' => [
+                        'uploaded' => 'Company PDF logo is required.',
+                        'is_image' => 'Invalid image format.',
+                        'mime_in' => 'Only JPG, JPEG, PNG, and WEBP formats are allowed.'
+                    ]
+                ];
+            }
+        }
+
         // Validate the input
         if (!$this->validate($rules)) {
             return $this->failValidationErrors([
@@ -527,12 +543,26 @@ class ProfileController extends ResourceController
             $companyFaviconName = $newCompanyFaviconName;
         }
 
+        // Handle company PDF logo upload if present
+        $companyPdfLogoName = $company['pdf_logo'] ?? null; // Keep existing PDF logo by default
+        if ($companyPdfLogo && $companyPdfLogo->isValid() && !$companyPdfLogo->hasMoved()) {
+            $newCompanyPdfLogoName = $companyPdfLogo->getRandomName();
+            $companyPdfLogo->move(FCPATH . 'upload/', $newCompanyPdfLogoName);
+
+            if (!empty($company['pdf_logo']) && file_exists(FCPATH . 'upload/' . $company['pdf_logo'])) {
+                unlink(FCPATH . 'upload/' . $company['pdf_logo']);
+            }
+
+            $companyPdfLogoName = $newCompanyPdfLogoName;
+        }
+
         // Update `company_logo` table
         // Only update company details if user is admin
         if ($user->role === 'admin') {
             $this->companyLogoModel->update($company['id'], [
                 'company_name' => $data['company_name'],
                 'logo_img' => $companyLogoName,
+                'pdf_logo' => $companyPdfLogoName,
                 'favicon_icon' => $companyFaviconName,
                 'company_address' => $data['company_address'],
                 'company_phone' => $data['company_phone'],
