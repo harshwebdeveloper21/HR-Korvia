@@ -21,122 +21,58 @@
             flex-direction: column;
         }
 
-        .filter-sm-res h4 {
-            flex: 1 1 100%;
-            margin-bottom: 10px;
-        }
-
-        .filter-sm-res>div {
-            flex: 1 1 100%;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .filter-sm-res select {
-            width: 100% !important;
-            min-width: unset !important;
-        }
-
-
-        .filter-sm-res a {
-            width: 100%;
-        }
-
         .btnpdingam {
             margin: 0px !important;
         }
 
         .filterbtnpadd {
             padding: 2px !important;
-
         }
 
-        .filtermenu {
+        .dataTables_wrapper .row:first-child {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
             margin-bottom: 12px !important;
-            /* margin-left: 7px !important; */
         }
-
-        #departmentonbordingFilter {
-            max-width: 150px;
-            font-size: 14px;
-            padding: 4px 8px;
+        .dataTables_wrapper .row:first-child > div {
+            width: auto !important;
+            max-width: 100% !important;
+            flex: 0 0 auto !important;
+            padding: 0 !important;
         }
-
-        .fontsmfiltertitle {
-            font-size: 11px !important;
+        .dataTables_length label {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            font-size: 13px !important;
+            margin-bottom: 0 !important;
         }
-
-        .filterbtn {
-            margin-top: -0.5rem !important;
+        .dataTables_length select {
+            width: auto !important;
+            font-size: 13px !important;
+            padding: 4px 8px !important;
         }
-
-        .fontsmfiltertitle {
-            font-size: 12px !important;
-        }
-
-        .dataTables_length {
-            margin-left: .1rem !important;
-            margin-bottom: .5rem !important;
-            font-size: 12px !important;
-            float: left !important;
-        }
-
         .dataTables_filter {
-            font-size: 12px !important;
-            float: left !important;
-            /* margin-left: -3rem !important;  */
+            float: right !important;
+            text-align: right !important;
         }
-
-        .col-sm-12.col-md-6 {
-            flex: 0 0 25%;
-            max-width: 18%;
+        .dataTables_filter label {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            font-size: 13px !important;
+            margin-bottom: 0 !important;
         }
-
-        #employee-table_length label {
-            margin-top: 1px;
-            display: flex;
-            align-items: center;
-        }
-
-        .dataTables_filter label:before {
-            content: "" !important;
-            display: none;
-            /* Hide "Search:" label text */
-        }
-
-        /* Hide the text inside the label */
-        #employee-table_length::first-text,
-        #employee-table_length label::before {
-            display: none !important;
-        }
-
-        /* Or a simpler and reliable trick */
-        #employee-table_length label {
-            font-size: 0;
-            /* hide text */
-        }
-
-        #employee-table_length label input {
-            font-size: 10px;
-            /* reset font size for input */
-        }
-
-        #employee-table_filter label {
-            font-size: 0;
-        }
-
-        #employee-table_filter input {
-            font-size: 14px;
-            /* Keep input font size normal */
-        }
-
-        #employee-table_length label select {
-            font-size: 14px;
-            /* restore font size for the dropdown */
+        .dataTables_filter input {
+            width: 160px !important;
+            max-width: 100% !important;
+            font-size: 13px !important;
+            padding: 4px 8px !important;
         }
     }
-
-    @media (min-width: 768px) and (max-width: 1366px) {}
 
     @media (min-width: 767px) {
         div.dataTables_wrapper div.dataTables_filter label input {
@@ -166,6 +102,67 @@
     }
 }
 
+/* ─── Modern Status Tabs ─── */
+.emp-status-tabs-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+}
+.emp-status-tabs-container::-webkit-scrollbar {
+    display: none;
+}
+.emp-status-tabs {
+    display: inline-flex;
+    gap: 8px;
+    padding: 6px;
+    background: #f1f5f9;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    min-width: 100%;
+}
+@media (min-width: 768px) {
+    .emp-status-tabs {
+        min-width: auto;
+    }
+}
+.emp-status-tab-btn {
+    border: none;
+    outline: none;
+    background: #ffffff;
+    color: #475569;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.emp-status-tab-btn:hover {
+    color: #0f172a;
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+.emp-status-tab-btn.active {
+    background: #E66136 !important;
+    color: #ffffff !important;
+    border-color: #d45228 !important;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(230, 97, 54, 0.38) !important;
+}
+.emp-status-tab-btn.active i {
+    color: #ffffff !important;
+}
+.emp-status-tab-btn:not(.active) i {
+    color: #94a3b8;
+}
+
 /* ─── Modal override: force visibility on ALL screen sizes for ALL modals ─── */
 .modal {
     display: none;
@@ -189,61 +186,80 @@
         <div class="card">
             <div class="card-body">
 
-                <div class="align-items-center d-md-flex justify-content-between mb-3">
-
-                    <h4 class="card-title">Manage Employees</h4>
-                    <div class="d-md-flex gap-2 align-items-center emp-filter-container">
-                        <select class="form-select" id="departmentFilter" style="min-width: 180px; width: auto;">
-                            <option value="">All Departments</option>
-                        </select>
-                        <select class="form-select" id="monthFilter" style="min-width: 135px; width: auto;">
-                            <option value="">All Months</option>
-                            <option value="01">Jan</option>
-                            <option value="02">Feb</option>
-                            <option value="03">Mar</option>
-                            <option value="04">Apr</option>
-                            <option value="05">May</option>
-                            <option value="06">Jun</option>
-                            <option value="07">Jul</option>
-                            <option value="08">Aug</option>
-                            <option value="09">Sep</option>
-                            <option value="10">Oct</option>
-                            <option value="11">Nov</option>
-                            <option value="12">Dec</option>
-                        </select>
-                        <select class="form-select" id="yearFilter" style="min-width: 120px; width: auto;">
-                            <option value="">All Years</option>
-                            <?php for ($y = date('Y'); $y >= 2020; $y--): ?>
-                                <option value="<?= $y ?>"><?= $y ?></option>
-                            <?php endfor; ?>
-                        </select>
-                        <button type="button" id="btnExportEmployees" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-file-excel iconfontsize"></i> Export
-                        </button>
-                        <a href="/employee" class="btn hr-btnbg attendenceall text-nowrap">
-                            <i class="mdi mdi-plus iconfontsize"></i> Add Employee
-                        </a>
+                <div class="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center gap-3 mb-3">
+                    <h4 class="card-title mb-0">Manage Employees</h4>
+                    <div class="d-flex flex-wrap gap-2 align-items-center w-100 w-xl-auto emp-header-controls">
+                        <div class="d-flex flex-wrap gap-2 flex-grow-1 flex-xl-grow-0 emp-filters-wrap">
+                            <select class="form-select flex-grow-1 flex-md-grow-0" id="departmentFilter" style="min-width: 160px; max-width: 100%;">
+                                <option value="">All Departments</option>
+                            </select>
+                            <div class="d-flex gap-2 flex-grow-1 flex-md-grow-0" style="min-width: 220px;">
+                                <select class="form-select flex-fill" id="monthFilter">
+                                    <option value="">All Months</option>
+                                    <option value="01">Jan</option>
+                                    <option value="02">Feb</option>
+                                    <option value="03">Mar</option>
+                                    <option value="04">Apr</option>
+                                    <option value="05">May</option>
+                                    <option value="06">Jun</option>
+                                    <option value="07">Jul</option>
+                                    <option value="08">Aug</option>
+                                    <option value="09">Sep</option>
+                                    <option value="10">Oct</option>
+                                    <option value="11">Nov</option>
+                                    <option value="12">Dec</option>
+                                </select>
+                                <select class="form-select flex-fill" id="yearFilter">
+                                    <option value="">All Years</option>
+                                    <?php for ($y = date('Y'); $y >= 2020; $y--): ?>
+                                        <option value="<?= $y ?>"><?= $y ?></option>
+                                    <?php endfor; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-grow-1 flex-xl-grow-0 emp-actions-wrap">
+                            <button type="button" id="btnExportEmployees" class="btn hr-btnbg flex-fill flex-xl-grow-0 text-nowrap">
+                                <i class="mdi mdi-file-excel iconfontsize"></i> Export
+                            </button>
+                            <a href="/employee" class="btn hr-btnbg flex-fill flex-xl-grow-0 text-nowrap">
+                                <i class="mdi mdi-plus iconfontsize"></i> Add Employee
+                            </a>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Employee Tabs -->
-                <ul class="nav nav-tabs mb-3" id="employeeTabs" role="tablist" style="border-bottom: 2px solid #E66136;">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="active-tab" data-view="active" type="button" role="tab"
-                            style="color:#E66136; border-bottom: 3px solid #E66136; font-weight:600;">Active Employees</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="inactive-tab" data-view="inactive" type="button" role="tab"
-                            style="color:#6c757d; font-weight:600;">Inactive / Resigned</button>
-                    </li>
-                </ul>
+                <!-- Modern Employee Status Tabs -->
+                <div class="emp-status-tabs-container mb-3">
+                    <div class="emp-status-tabs" id="employeeTabs" role="tablist">
+                        <button class="emp-status-tab-btn active" id="tab-active" data-view="active" type="button" role="tab">
+                            <i class="mdi mdi-account-check"></i>
+                            <span>Active Employees</span>
+                        </button>
+                        <button class="emp-status-tab-btn" id="tab-inactive" data-view="inactive" type="button" role="tab">
+                            <i class="mdi mdi-account-off"></i>
+                            <span>Inactive</span>
+                        </button>
+                        <button class="emp-status-tab-btn" id="tab-resigned" data-view="resigned" type="button" role="tab">
+                            <i class="mdi mdi-account-arrow-right"></i>
+                            <span>Resigned</span>
+                        </button>
+                        <button class="emp-status-tab-btn" id="tab-fired" data-view="fired" type="button" role="tab">
+                            <i class="mdi mdi-account-remove"></i>
+                            <span>Fired / Removed</span>
+                        </button>
+                        <button class="emp-status-tab-btn" id="tab-all" data-view="all" type="button" role="tab">
+                            <i class="mdi mdi-account-group"></i>
+                            <span>All Employees</span>
+                        </button>
+                    </div>
+                </div>
 
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="employee-table">
                         <thead class="table-light">
                             <tr>
                                 <th style="display:none;">ID</th>
-                                <th style="width: 80px;">Emp ID</th>
+                                <th class="desktop-only-col" style="width: 80px;">Emp ID</th>
                                 <th>Name</th>
                                 <th class="desktop-only-col">Email</th>
                                 <th class="desktop-only-col">Department</th>
@@ -566,19 +582,33 @@
                                 tableRows += `
                                     <tr data-id="${employee.user.id}">
                                         <td style="display:none;">${employee.user.id}</td>
-                                        <td class="fw-bold text-nowrap"><span class="badge bg-secondary p-1 px-2" style="font-size: 11px;">${empIdCode}</span></td>
+                                        <td class="desktop-only-col fw-bold text-nowrap"><span class="badge bg-secondary p-1 px-2" style="font-size: 11px;">${empIdCode}</span></td>
                                         <td class="py-2">
                                             <div class="d-flex align-items-center">
                                                 <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none me-2">
-                                                    <img src="${employee.user_info.profile_image_url}" alt="Profile" width="32" height="32" class="rounded-circle"
+                                                    <img src="${employee.user_info.profile_image_url}" alt="Profile" width="34" height="34" class="rounded-circle"
                                                         onerror="this.onerror=null; this.src='<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>';">
                                                 </a>
-                                                <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none text-dark fw-semibold text-truncate d-inline-block" style="max-width: 140px;" title="${empName}">
-                                                    ${empName}
-                                                </a>                                                
+                                                <div class="text-truncate">
+                                                    <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none text-dark fw-semibold text-truncate d-block" title="${empName}">
+                                                        ${empName}
+                                                    </a>
+                                                    <div class="d-md-none small text-muted">
+                                                        <span class="badge bg-secondary py-0 px-1 me-1" style="font-size: 10px;">${empIdCode}</span>
+                                                        <span style="font-size: 11px;">${empDept}</span>
+                                                    </div>
+                                                </div>                                                
                                             </div>
                                             <div style="flex: 1;" class="align-self-center">                                                
-                                                <div class="expanded-details" id="emp-details-${employee.user.id}" onclick="event.stopPropagation();">
+                                                <div class="expanded-details" id="emp-details-${employee.user.id}">
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Employee ID:</span>
+                                                        <span class="detail-value fw-bold">${empIdCode}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Status:</span>
+                                                        <span class="detail-value">${statusBadge}</span>
+                                                    </div>
                                                     <div class="detail-row">
                                                         <span class="detail-label">Email:</span>
                                                         <span class="detail-value">${empEmail}</span>
@@ -607,7 +637,7 @@
                                                         <a href="#" data-id="${employee.user.id}" data-pass="${employee.user.password}" class="btn btn-sm btn-secondary open-password-modal" title="Password"><i class="fa fa-key"></i> Password</a>
                                                         <a href="/employee/profile/${employee.user_info.id}" class="btn btn-sm btn-primary" title="View"><i class="mdi mdi-eye text-white"></i> View</a>
                                                         <a href="/employee/${employee.user.id}" class="btn btn-sm btn-warning" title="Edit"><i class="mdi mdi-pencil"></i> Edit</a>
-                                                        <a href="#" class="btn btn-sm btn-danger delete-employee" data-id="${employee.user.id}" title="Delete"><i class="mdi mdi-delete"></i> Delete</a>
+                                                        <a href="javascript:void(0)" onclick="deleteEmployee(${employee.user.id}, '${empName.replace(/'/g, "\\'")}')" class="btn btn-sm btn-danger delete-employee" data-id="${employee.user.id}" data-name="${empName}" title="Delete"><i class="mdi mdi-delete"></i> Delete</a>
                                                     </div>
                                                 </div>
                                             </div>
@@ -664,7 +694,7 @@
                                                         </li>
                                                         <li><hr class="dropdown-divider my-1"></li>
                                                         <li>
-                                                            <a href="#" class="dropdown-item py-2 text-danger delete-employee" data-id="${employee.user.id}">
+                                                            <a href="javascript:void(0)" onclick="deleteEmployee(${employee.user.id}, '${empName.replace(/'/g, "\\'")}')" class="dropdown-item py-2 text-danger delete-employee" data-id="${employee.user.id}" data-name="${empName}">
                                                                 <i class="mdi mdi-delete me-2 fs-6"></i> Delete Employee
                                                             </a>
                                                         </li>
@@ -690,7 +720,7 @@
                         $('#employee-table-body').html(tableRows);
 
                         setTimeout(() => {
-                            $table.DataTable({
+                            const dt = $table.DataTable({
                                 order: [
                                     [2, 'asc']
                                 ],
@@ -704,6 +734,13 @@
                                     searchPlaceholder: "Search"
                                 }
                             });
+
+                            dt.on('draw', function () {
+                                if (typeof applyMobileTableVisibility === 'function') {
+                                    applyMobileTableVisibility();
+                                }
+                            });
+
                             if (typeof applyMobileTableVisibility === 'function') {
                                 applyMobileTableVisibility();
                             }
@@ -751,7 +788,7 @@
             const selectedDeptId = $('#departmentFilter').val();
             const selectedMonth  = $('#monthFilter').val();
             const selectedYear   = $('#yearFilter').val();
-            const activeView     = $('#employeeTabs .nav-link.active').data('view');
+            const activeView     = $('#employeeTabs .emp-status-tab-btn.active').data('view') || 'active';
             fetchEmployees(selectedDeptId, activeView, selectedMonth, selectedYear);
         }
 
@@ -760,14 +797,9 @@
         });
 
         // ✅ Tab switch event
-        $('#employeeTabs .nav-link').on('click', function () {
-            $('#employeeTabs .nav-link')
-                .removeClass('active')
-                .css({'color': '#6c757d', 'border-bottom': 'none', 'font-weight': '600'});
-            $(this)
-                .addClass('active')
-                .css({'color': '#E66136', 'border-bottom': '3px solid #E66136'});
-
+        $(document).on('click', '#employeeTabs .emp-status-tab-btn', function () {
+            $('#employeeTabs .emp-status-tab-btn').removeClass('active');
+            $(this).addClass('active');
             triggerFilter();
         });
 
@@ -781,7 +813,7 @@
             const departmentId = $('#departmentFilter').val() || '';
             const month = $('#monthFilter').val() || '';
             const year = $('#yearFilter').val() || '';
-            const viewType = $('#employeeTabs .nav-link.active').data('view') || 'active';
+            const viewType = $('#employeeTabs .emp-status-tab-btn.active').data('view') || 'active';
             const token = localStorage.getItem('token');
 
             $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
@@ -988,12 +1020,13 @@
         });
 
 
-        $(document).on('click', '.delete-employee', function (e) {
-            e.preventDefault();
-            const employeeId = $(this).data('id');
-            const employeeName = $(this).closest('tr').find('td:nth-child(2) span').text().trim()
-                || $(this).closest('tr').find('.detail-value').first().text().trim()
-                || 'this employee';
+        // ══════════════════════════════════════════════════════
+        // Permanent Delete Employee
+        // ══════════════════════════════════════════════════════
+        window.deleteEmployee = function (employeeId, employeeName) {
+            if (!employeeName) {
+                employeeName = $(`tr[data-id="${employeeId}"]`).find('a.text-dark').first().text().trim() || 'Employee #' + employeeId;
+            }
 
             // ⚠️ Detailed warning listing ALL data that will be permanently erased
             Swal.fire({
@@ -1001,8 +1034,7 @@
                 html: `
                     <div style="text-align:left; font-size:14px; line-height:1.7;">
                         <p>You are about to <strong>permanently delete</strong> the employee record for:</p>
-                        <p style="font-size:16px; font-weight:700; color:#E66136; margin:6px 0 12px;">👤 ${employeeName || 'Employee #' + employeeId}</p>
-                
+                        <p style="font-size:16px; font-weight:700; color:#E66136; margin:6px 0 12px;">👤 ${employeeName}</p>
                     </div>
                 `,
                 icon: 'warning',
@@ -1019,10 +1051,10 @@
                 if (result.isConfirmed) {
                     $.ajax({
                         url: `/api/employee/${employeeId}`,
-                        type: 'DELETE',
+                        type: 'POST',
+                        data: { _method: 'DELETE' },
                         headers: {
                             'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
                         },
                         success: function (response) {
                             if (response.status === 'success') {
@@ -1060,6 +1092,13 @@
                     });
                 }
             });
+        };
+
+        $(document).on('click', '.delete-employee', function (e) {
+            e.preventDefault();
+            const employeeId = $(this).data('id');
+            const employeeName = $(this).data('name') || $(this).closest('tr').find('a.text-dark').first().text().trim();
+            window.deleteEmployee(employeeId, employeeName);
         });
 
     });

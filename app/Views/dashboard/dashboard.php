@@ -145,8 +145,8 @@
         .thismonth {
             justify-content: unset !important;
             display: block !important;
-            margin-top: 0.5rem !important;
-            margin-bottom: 0.75rem !important;
+            margin-top: 0.25rem !important;
+            margin-bottom: 0.5rem !important;
         }
 
         .home-tab .dropdown .btn {
@@ -155,12 +155,12 @@
 
         .filter-icon-inside {
             position: absolute;
-            left: 40% !important;
-            top: 51%;
-            transform: translate(-50%, -60%);
+            left: 18px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
             pointer-events: none;
             /* Prevent icon from blocking button clicks */
-            font-size: 10px !important;
+            font-size: 16px !important;
             color: #E66136;
             /* Muted color */
         }
@@ -178,47 +178,69 @@
         }
 
         .rate-percentage {
-            font-size: 16px !important;
+            font-size: 22px !important;
+            font-weight: 700 !important;
+            color: #1e293b !important;
+            line-height: 1 !important;
+            margin-bottom: 0 !important;
         }
 
         .icon i {
-            font-size: 20px !important;
+            font-size: 18px !important;
+            line-height: 1 !important;
         }
 
         .smbox {
-            display: block !important;
-            justify-content: unset !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            height: 100% !important;
+            min-height: auto !important;
+            padding: 12px 14px !important;
+        }
+
+        .smbox > .d-flex {
+            display: flex !important;
             flex-direction: row !important;
-            height: 0% !important;
-            padding-top: 16px !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
         }
 
         .smheghit {
-            height: 86% !important;
+            height: 100% !important;
+            min-height: 90px !important;
         }
 
         .cart-res {
             margin-bottom: 8px !important;
-            font-size: 12px !important;
+            font-size: 13px !important;
             font-weight: 600 !important;
-
+            color: #475569 !important;
+            line-height: 1.2 !important;
         }
 
         .grid-margin {
-            margin-bottom: 0px !important;
+            margin-bottom: 12px !important;
         }
 
         .iconsize {
-            width: 35px !important;
-            height: 35px !important;
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            max-width: 38px !important;
+            min-height: 38px !important;
+            max-height: 38px !important;
+            border-radius: 50% !important;
+            flex-shrink: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
-        .smmargin {
-            margin-top: 0px !important;
-        }
-
+        .smmargin,
         .smtopmring {
-            margin-top: 2px !important;
+            margin-top: 0px !important;
         }
 
         .margindes {
@@ -972,7 +994,7 @@
 
                                         <div class="<?= $columnClass ?> grid-margin smtopmring">
 
-                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/view-calendar'">
+                                            <div class="card shadow-sm border-0 rounded-4 h-100 bg-white smheghit" style="cursor: pointer;" onclick="window.location.href='/leaveview'">
                                                 <div class="card-body d-flex flex-column justify-content-between h-100 smbox">
                                                     <!-- First row: Title only -->
                                                     <p class="card-title card-title-dash fw-medium mb-3 text-start cart-res" style="font-size: 16px;">All Leaves</p>
@@ -2060,17 +2082,28 @@
                         var fullName = leave.username;
                         var profileImage = leave.profile_image ? `upload/${leave.profile_image}` : `${baseImagePath}upload/default-profile.jpg`;
 
+                        var isAbsent = (leave.type === 'absent');
+                        var badgeOrIcon = isAbsent
+                            ? `<div class="d-flex align-items-center" style="gap:6px;"><span class="badge" style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:600;padding:3px 7px;border-radius:4px;">Absent</span><i class="mdi mdi-calendar-remove fs-4 text-danger"></i></div>`
+                            : `<div class="d-flex align-items-center" style="gap:6px;"><span class="badge" style="background:#fff7ed;color:#ea580c;font-size:11px;font-weight:600;padding:3px 7px;border-radius:4px;">Leave</span><i class="mdi mdi-calendar-check fs-4" style="color:#E66136"></i></div>`;
+
+                        var subtitle = isAbsent
+                            ? `<small class="text-danger mb-0 fw-semibold">Absent Today</small>`
+                            : `<small class="text-muted mb-0">${leave.start_date} to ${leave.end_date}</small>`;
+
+                        var targetLink = isAbsent ? `/leaveview` : `/leaveview`;
+
                         leaveHTML += `
-                           <a href="/leaveview" class="text-decoration-none text-dark"> 
+                           <a href="${targetLink}" class="text-decoration-none text-dark"> 
                             <div class="wrapper d-flex align-items-center justify-content-between py-2 border-bottom">
-                                <div class="d-flex">
-                                    <img class="img-sm rounded" src="${profileImage}" alt="profile">
+                                <div class="d-flex align-items-center">
+                                    <img class="img-sm rounded" src="${profileImage}" alt="profile" style="width:40px;height:40px;object-fit:cover;">
                                     <div class="wrapper ms-3">
                                         <p class="mb-1 fw-bold capitalize-text">${fullName}</p>
-                                        <small class="text-muted mb-0">${leave.start_date} to ${leave.end_date}</small>
+                                        ${subtitle}
                                     </div>
                                 </div>
-                                <i class="mdi mdi-calendar-check fs-4" style="color:#E66136"></i>
+                                ${badgeOrIcon}
                             </div>
                             </a>
                         `;
@@ -2078,7 +2111,7 @@
                 } else {
                     leaveHTML = `
                         <div class="d-flex align-items-center justify-content-center text-center p-4" style="min-height: 172px;">
-                            <h5 class="text-muted txtclr">No employees on leave today</h5>
+                            <h5 class="text-muted txtclr">No employees absent or on leave today</h5>
                         </div>
                     `;
                 }
@@ -2537,7 +2570,15 @@
 
 
     function selectFilter(label, type) {
-        document.getElementById('filterDropdownBtn').innerText = label;
+        var btn = document.getElementById('filterDropdownBtn');
+        if (btn) {
+            var span = btn.querySelector('span');
+            if (span) {
+                span.innerText = label;
+            } else {
+                btn.innerText = label;
+            }
+        }
         // Toggle the view
         showSection(type);
     }
