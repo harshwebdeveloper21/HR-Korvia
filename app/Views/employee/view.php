@@ -465,11 +465,11 @@
                             <option value="Fired">Fired / Removed</option>
                         </select>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3" id="status_reason_group">
                         <label for="status_reason" class="form-label fw-bold">Reason / Comment <small class="text-muted">(Required for Resigned/Fired/Inactive)</small></label>
                         <textarea class="form-control" id="status_reason" name="status_reason" rows="3" placeholder="Enter details or reason for resignation / removal..."></textarea>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3" id="status_lastday_group">
                         <label for="status_last_working_day" class="form-label fw-bold">Last Working Day</label>
                         <input type="date" class="form-control" id="status_last_working_day" name="last_working_day" value="<?= date('Y-m-d') ?>">
                     </div>
@@ -1071,6 +1071,26 @@
         // ══════════════════════════════════════════════════════
         // Status Change Modal Handler
         // ══════════════════════════════════════════════════════
+        function toggleStatusModalFields(status) {
+            const isAct = String(status || '').toLowerCase() === 'active';
+            if (isAct) {
+                $('#status_reason_group').slideUp(150);
+                $('#status_lastday_group').slideUp(150);
+                $('#status_reason').val('');
+                $('#status_last_working_day').val('');
+            } else {
+                $('#status_reason_group').slideDown(150);
+                $('#status_lastday_group').slideDown(150);
+                if (!$('#status_last_working_day').val()) {
+                    $('#status_last_working_day').val(new Date().toISOString().split('T')[0]);
+                }
+            }
+        }
+
+        $(document).on('change', '#status_select', function () {
+            toggleStatusModalFields($(this).val());
+        });
+
         $(document).on('click', '.open-status-modal', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1078,7 +1098,7 @@
             const name   = $(this).data('name');
             const status = $(this).data('status') || 'Active';
             const reason = $(this).data('reason') || '';
-            const lwd    = $(this).data('lastday') || new Date().toISOString().split('T')[0];
+            const lwd    = $(this).data('lastday') || '';
 
             $('#status_user_id').val(userId);
             $('#status_employee_name').text(name);
@@ -1086,6 +1106,7 @@
             $('#status_reason').val(reason);
             $('#status_last_working_day').val(lwd);
 
+            toggleStatusModalFields(status);
             showBsModal('employeeStatusModal');
         });
 
