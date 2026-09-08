@@ -889,19 +889,111 @@
         border-left: 3px solid #ff6b35;
     }
     .attendance-status.week-off-present { color: #e65100; font-weight: 800; }
+
+    /* Attendance header & action button styling - fixes alignment, center-text & hover */
+    .attendance-header-btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        height: 36px !important;
+        padding: 0 16px !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        border-radius: 4px !important;
+        line-height: 1 !important;
+        white-space: nowrap !important;
+        cursor: pointer !important;
+        text-decoration: none !important;
+        box-sizing: border-box !important;
+        vertical-align: middle !important;
+        transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    .attendance-header-btn.btn-secondary {
+        background-color: #6c757d !important;
+        border: 1px solid #6c757d !important;
+        color: #ffffff !important;
+    }
+    .attendance-header-btn.btn-secondary:hover,
+    .attendance-header-btn.btn-secondary:focus {
+        background-color: #5a6268 !important;
+        border-color: #545b62 !important;
+        color: #ffffff !important;
+    }
+    .attendance-header-btn.hr-btnbg {
+        background-color: #E66136 !important;
+        border: 1px solid #E66136 !important;
+        color: #ffffff !important;
+    }
+    .attendance-header-btn.hr-btnbg:hover,
+    .attendance-header-btn.hr-btnbg:focus {
+        background-color: #d24e23 !important;
+        border-color: #d24e23 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(230, 97, 54, 0.35) !important;
+    }
+
+    /* Modal button hover consistency */
+    .modal-footer .btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        height: 36px !important;
+        padding: 0 16px !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        line-height: 1 !important;
+    }
+    .modal-footer .btn.hr-btnbg:hover,
+    .modal-footer .btn.hr-btnbg:focus {
+        background-color: #d24e23 !important;
+        border-color: #d24e23 !important;
+        color: #ffffff !important;
+    }
+
+    /* Multi Attendance Employee Item Styles */
+    .multi-emp-row {
+        cursor: pointer;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        background-color: #ffffff;
+    }
+    .multi-emp-row:hover {
+        background-color: #f8f9fa !important;
+        border-color: #dee2e6 !important;
+    }
+    .multi-emp-row.selected {
+        background-color: #fff7f4 !important;
+        border-color: #ffd2c2 !important;
+    }
+    .multi-emp-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid #dee2e6;
+        flex-shrink: 0;
+    }
 </style>
 
 <div class="row">
     <div class="col-md-12">
         <div class="card">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <h4 class="card-title mb-0">Attendance Calendar</h4>
-                    <div>
-                        <a href="/view" class="btn btn-secondary me-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="/view" class="btn btn-secondary attendance-header-btn">
                             List View
                         </a>
-                        <a href="/attendence" class="btn hr-btnbg">
+                        <?php if (isset($role) && in_array($role, ['hr', 'admin'])): ?>
+                        <button type="button" class="btn hr-btnbg attendance-header-btn" onclick="openMultiAttendanceModal()">
+                            <i class="fa fa-users me-1"></i> Multi Attendance
+                        </button>
+                        <?php endif; ?>
+                        <a href="/attendence" class="btn hr-btnbg attendance-header-btn">
                             Manage Attendance
                         </a>
                     </div>
@@ -1169,6 +1261,93 @@
             <div class="modal-footer justify-content-end gap-2">
                 <button class="btn hr-btnbg" data-bs-dismiss="modal">Back</button>
                 <button class="btn hr-btnbg" onclick="saveBulkAttendance()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Multi Attendance Manage Modal -->
+<div class="modal fade" id="multiAttendanceModal" tabindex="-1" aria-labelledby="multiAttendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-sm">
+            <div class="modal-header" style="background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+                <h5 class="modal-title fw-bold" id="multiAttendanceModalLabel" style="color: #2c3e50;">
+                    <i class="fa fa-users text-primary me-2"></i>Multi Attendance Manage
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Date & Status Selection -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="multi_attendance_date" class="form-label fw-bold">Date <span class="text-danger">*</span></label>
+                        <input type="date" id="multi_attendance_date" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="multi_attendance_status" class="form-label fw-bold">Attendance Status <span class="text-danger">*</span></label>
+                        <select id="multi_attendance_status" class="form-select" onchange="toggleMultiAttendanceTimes()">
+                            <option value="present" selected>Present</option>
+                            <option value="half-day">Half Day</option>
+                            <option value="absent">Absent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Time Inputs (Check In & Check Out) -->
+                <div class="row g-3 mb-3" id="multi_time_fields_container">
+                    <div class="col-md-6">
+                        <label for="multi_check_in_time" class="form-label fw-bold">Check In Time</label>
+                        <input type="time" id="multi_check_in_time" class="form-control" value="09:00">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="multi_check_out_time" class="form-label fw-bold">Check Out Time</label>
+                        <input type="time" id="multi_check_out_time" class="form-control" value="18:00">
+                    </div>
+                </div>
+
+                <!-- Employee Selection Section -->
+                <div class="border-top pt-3 mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <h6 class="fw-bold mb-0" style="color: #333;">Select Employees</h6>
+                            <span id="multi_selected_count_badge" class="badge bg-primary" style="font-size: 11px;">0 Selected</span>
+                        </div>
+                        <div style="width: 240px; max-width: 100%;">
+                            <input type="text" id="multi_employee_search" class="form-control form-control-sm" placeholder="🔍 Search employee..." oninput="filterMultiEmployees()">
+                        </div>
+                    </div>
+
+                    <!-- Select All Bar -->
+                    <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded border mb-2">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="multi_select_all" onchange="toggleSelectAllMultiEmployees(this.checked)" style="cursor: pointer;">
+                            <label class="form-check-label fw-semibold" for="multi_select_all" style="cursor: pointer; user-select: none;">
+                                Select All (<span id="multi_total_emp_count">0</span> employees)
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-muted" onclick="clearAllMultiEmployees()">Clear Selection</button>
+                    </div>
+
+                    <!-- Scrollable Employee List -->
+                    <div id="multi_employee_list_container" style="max-height: 270px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; padding: 6px; background-color: #fbfcfd;">
+                        <div class="text-center py-4 text-muted" id="multi_employee_loading">
+                            <i class="fa fa-spinner fa-spin me-1"></i> Loading employees...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-3 py-2 px-3 small mb-0 d-flex align-items-center">
+                    <i class="fa fa-info-circle me-2 flex-shrink-0" style="font-size: 16px;"></i>
+                    <span>This action will update attendance records for all selected employees on the specified date.</span>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="background: #f8f9fa; border-top: 1px solid #e9ecef;">
+                <button type="button" class="btn btn-secondary attendance-header-btn" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn hr-btnbg attendance-header-btn" id="btnSaveMultiAttendance" onclick="saveMultiAttendance()">
+                    <i class="fa fa-check me-1"></i> Save Changes
+                </button>
             </div>
         </div>
     </div>
@@ -2174,6 +2353,288 @@
                     }
                 });
         }
+
+        // Multi Attendance Functions
+        const defaultProfileImg = "<?= base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>";
+
+        window.toggleMultiAttendanceTimes = function () {
+            const status = document.getElementById('multi_attendance_status').value;
+            const container = document.getElementById('multi_time_fields_container');
+            if (status === 'absent') {
+                container.style.display = 'none';
+            } else {
+                container.style.display = 'flex';
+            }
+        };
+
+        window.openMultiAttendanceModal = function () {
+            // Set default date from calendar selection or today
+            const dateInput = document.getElementById('multi_attendance_date');
+            if (selectedDate) {
+                dateInput.value = selectedDate;
+            } else {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+
+            // Set default status & times
+            const statusSelect = document.getElementById('multi_attendance_status');
+            statusSelect.value = 'present';
+            toggleMultiAttendanceTimes();
+
+            const checkInInput = document.getElementById('multi_check_in_time');
+            const checkOutInput = document.getElementById('multi_check_out_time');
+            if (companyInfo && companyInfo.start_time) {
+                checkInInput.value = companyInfo.start_time.substring(0, 5);
+            } else {
+                checkInInput.value = '09:00';
+            }
+            if (companyInfo && companyInfo.end_time) {
+                checkOutInput.value = companyInfo.end_time.substring(0, 5);
+            } else {
+                checkOutInput.value = '18:00';
+            }
+
+            // Reset search input
+            document.getElementById('multi_employee_search').value = '';
+
+            // Render employees list
+            renderMultiAttendanceEmployeeList();
+
+            // Show modal
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('multiAttendanceModal')).show();
+        };
+
+        window.renderMultiAttendanceEmployeeList = function () {
+            const container = document.getElementById('multi_employee_list_container');
+            if (!container) return;
+
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-muted">No employees found.</div>';
+                document.getElementById('multi_total_emp_count').textContent = '0';
+                updateMultiAttendanceCounts();
+                return;
+            }
+
+            // Sort alphabetically by employee name
+            const sortedUsers = [...users].sort((a, b) =>
+                (a.employee_name || '').localeCompare(b.employee_name || '')
+            );
+
+            document.getElementById('multi_total_emp_count').textContent = sortedUsers.length;
+
+            let html = '';
+            sortedUsers.forEach(user => {
+                const profileImg = user.profile_image ? `/upload/${user.profile_image}` : defaultProfileImg;
+                const empName = user.employee_name || 'Employee';
+                const designation = user.designation || '';
+                const empStatus = (user.status || 'Active').toLowerCase();
+                const statusBadge = empStatus !== 'active'
+                    ? `<span class="badge bg-warning text-dark ms-1" style="font-size: 10px;">${user.status}</span>`
+                    : '';
+
+                html += `
+                    <div class="multi-emp-row d-flex align-items-center p-2 mb-1"
+                         data-user-id="${user.user_id}"
+                         data-user-name="${empName.toLowerCase()}"
+                         data-designation="${designation.toLowerCase()}"
+                         onclick="toggleMultiEmpRow(this, event)">
+                        <input type="checkbox" class="form-check-input multi-emp-checkbox mt-0 me-2"
+                               value="${user.user_id}"
+                               onclick="event.stopPropagation(); updateMultiAttendanceCounts();">
+                        <img src="${profileImg}" alt="${empName}" class="multi-emp-avatar me-2"
+                             onerror="this.src='${defaultProfileImg}'">
+                        <div class="flex-grow-1 text-truncate">
+                            <div class="fw-semibold text-truncate" style="font-size: 13px; color: #2c3e50;">
+                                ${empName} ${statusBadge}
+                            </div>
+                            <small class="text-muted text-truncate d-block" style="font-size: 11px;">
+                                ${designation || 'Staff'}
+                            </small>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            updateMultiAttendanceCounts();
+        };
+
+        window.toggleMultiEmpRow = function (rowEl, event) {
+            const checkbox = rowEl.querySelector('.multi-emp-checkbox');
+            if (!checkbox) return;
+            checkbox.checked = !checkbox.checked;
+            updateMultiAttendanceCounts();
+        };
+
+        window.filterMultiEmployees = function () {
+            const query = (document.getElementById('multi_employee_search').value || '').trim().toLowerCase();
+            const rows = document.querySelectorAll('#multi_employee_list_container .multi-emp-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const name = row.dataset.userName || '';
+                const desig = row.dataset.designation || '';
+                if (!query || name.includes(query) || desig.includes(query)) {
+                    row.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('multi_total_emp_count').textContent = visibleCount;
+            updateMultiAttendanceCounts();
+        };
+
+        window.toggleSelectAllMultiEmployees = function (isChecked) {
+            const rows = document.querySelectorAll('#multi_employee_list_container .multi-emp-row');
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    const cb = row.querySelector('.multi-emp-checkbox');
+                    if (cb) cb.checked = isChecked;
+                }
+            });
+            updateMultiAttendanceCounts();
+        };
+
+        window.clearAllMultiEmployees = function () {
+            const checkboxes = document.querySelectorAll('#multi_employee_list_container .multi-emp-checkbox');
+            checkboxes.forEach(cb => { cb.checked = false; });
+            updateMultiAttendanceCounts();
+        };
+
+        window.updateMultiAttendanceCounts = function () {
+            const rows = document.querySelectorAll('#multi_employee_list_container .multi-emp-row');
+            let visibleCount = 0;
+            let checkedVisibleCount = 0;
+            let totalCheckedCount = 0;
+
+            rows.forEach(row => {
+                const cb = row.querySelector('.multi-emp-checkbox');
+                const isChecked = cb && cb.checked;
+                if (isChecked) {
+                    totalCheckedCount++;
+                    row.classList.add('selected');
+                } else {
+                    row.classList.remove('selected');
+                }
+
+                if (row.style.display !== 'none') {
+                    visibleCount++;
+                    if (isChecked) checkedVisibleCount++;
+                }
+            });
+
+            // Update badge
+            const badge = document.getElementById('multi_selected_count_badge');
+            if (badge) {
+                badge.textContent = `${totalCheckedCount} Selected`;
+                badge.className = totalCheckedCount > 0 ? 'badge bg-primary' : 'badge bg-secondary';
+            }
+
+            // Update Select All checkbox state
+            const selectAllCb = document.getElementById('multi_select_all');
+            if (selectAllCb) {
+                if (visibleCount > 0 && checkedVisibleCount === visibleCount) {
+                    selectAllCb.checked = true;
+                    selectAllCb.indeterminate = false;
+                } else if (checkedVisibleCount > 0) {
+                    selectAllCb.checked = false;
+                    selectAllCb.indeterminate = true;
+                } else {
+                    selectAllCb.checked = false;
+                    selectAllCb.indeterminate = false;
+                }
+            }
+        };
+
+        window.saveMultiAttendance = async function () {
+            const date = document.getElementById('multi_attendance_date').value;
+            const status = document.getElementById('multi_attendance_status').value;
+            const checkIn = document.getElementById('multi_check_in_time').value;
+            const checkOut = document.getElementById('multi_check_out_time').value;
+
+            if (!date) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Date Required',
+                    text: 'Please select a valid date.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            const checkedBoxes = document.querySelectorAll('#multi_employee_list_container .multi-emp-checkbox:checked');
+            const userIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value)).filter(id => id > 0);
+
+            if (userIds.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Employee Selected',
+                    text: 'Please select at least one employee using the checkboxes.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            const saveBtn = document.getElementById('btnSaveMultiAttendance');
+            const originalHtml = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Saving...';
+
+            try {
+                const response = await fetch('/api/attendance/multi-manage', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        user_ids: userIds,
+                        date: date,
+                        status: status,
+                        check_in_time: status !== 'absent' ? checkIn : null,
+                        check_out_time: status !== 'absent' ? checkOut : null
+                    })
+                });
+
+                const res = await response.json();
+
+                if (res.status === 'success') {
+                    // Close modal
+                    const modalEl = document.getElementById('multiAttendanceModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+
+                    // Reload calendar data to reflect new attendance
+                    loadAttendance(currentMonth, currentYear);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: res.message || 'Attendance updated successfully.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: res.message || 'Error updating attendance.',
+                        confirmButtonColor: '#d33'
+                    });
+                }
+            } catch (err) {
+                console.error('Error saving multi attendance:', err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An unexpected error occurred while saving attendance.',
+                    confirmButtonColor: '#d33'
+                });
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalHtml;
+            }
+        };
     });
 </script>
 

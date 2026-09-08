@@ -2352,10 +2352,120 @@ class AttendanceController extends ResourceController
         ]);
     }
 
+    /**
+     * Multi Attendance Manage: bulk update attendance status, check-in, check-out for selected employees on a specific date.
+     */
+    public function multiAttendanceManage()
+    {
+        $user = $this->authService->check();
+        if (!$user || !in_array($user->role, ['hr', 'admin'])) {
+            return $this->failUnauthorized('Access denied');
+        }
 
+        $payload = $this->request->getJSON(true);
+        $userIds = $payload['user_ids'] ?? [];
+        $date = !empty($payload['date']) ? trim($payload['date']) : date('Y-m-d');
+        $status = strtolower(trim($payload['status'] ?? 'present'));
+        $checkIn = !empty($payload['check_in_time']) ? trim($payload['check_in_time']) : null;
+        $checkOut = !empty($payload['check_out_time']) ? trim($payload['check_out_time']) : null;
 
+        if (empty($userIds) || !is_array($userIds)) {
+            return $this->fail('Please select at least one employee.');
+        }
 
+        if (empty($date)) {
+            return $this->fail('Please select a valid date.');
+        }
 
-    
+        // Format times to HH:MM:SS if needed
+        if ($checkIn && strlen($checkIn) === 5) {
+            $checkIn .= ':00';
+        }
+        if ($checkOut && strlen($checkOut) === 5) {
+            $checkOut .= ':00';
+        }
+
+        // Company rules for calculations
+        $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+        $mealBreak = $companyRule['lunch_break'] ?? '00:30:00';
+        $startTime = $companyRule['start_time'] ?? '09:00:00';
+        $gracePeriod = (int) ($companyRule['grace_period'] ?? 0);
+
+        $workHours = '00:00:00';
+        $overtime = '00:00:00';
+        $isLate = 0;
+        $lateMinutes = 0;
+
+        if ($status === 'absent') {
+            $checkIn = null;
+            $checkOut = null;
+            $workHours = '00:00:00';
+            $overtime = '00:00:00';
+        } else {
+            if (!empty($checkIn) && !empty($checkOut)) {
+                $calc = $this->calculateWorkHours($date, $mealBreak, $checkIn, $checkOut);
+                $workHours = $calc['work_hours'];
+                $overtime = $calc['overtime'];
+            }
+            if (!empty($checkIn)) {
+                $checkInSec = $this->timeToSeconds($checkIn);
+                $startSec = $this->timeToSeconds($startTime);
+                $graceSec = $gracePeriod * 60;
+                if ($checkInSec > ($startSec + $graceSec)) {
+                    $isLate = 1;
+                    $lateMinutes = (int) ceil(($checkInSec - ($startSec + $graceSec)) / 60);
+                }
+            }
+        }
+
+        $successCount = 0;
+        foreach ($userIds as $userId) {
+            $userId = (int) $userId;
+            if ($userId <= 0) {
+                continue;
+            }
+
+            $attendanceData = [
+                'user_id' => $userId,
+                'date' => $date,
+                'check_in_time' => $checkIn,
+                'check_out_time' => $checkOut,
+                'meal_break' => $mealBreak,
+                'work_hours' => $workHours,
+                'overtime' => $overtime,
+                'status' => $status,
+                'is_late' => $isLate,
+                'late_minutes' => $lateMinutes,
+            ];
+
+            $existing = $this->attendanceModel
+                ->where('user_id', $userId)
+                ->where('date', $date)
+                ->first();
+
+            if ($existing) {
+                $this->attendanceModel->update($existing['id'], $attendanceData);
+            } else {
+                $this->attendanceModel->insert($attendanceData);
+            }
+
+            // Remove conflicting leave records if marked present or half-day
+            if (in_array($status, ['present', 'half-day'])) {
+                $this->leaveModel
+                    ->where('user_id', $userId)
+                    ->where('start_date <=', $date)
+                    ->where('end_date >=', $date)
+                    ->delete();
+            }
+
+            $successCount++;
+        }
+
+        return $this->respond([
+            'status' => 'success',
+            'message' => "Attendance updated for {$successCount} employee(s) successfully.",
+        ]);
+    }
 }
+
 

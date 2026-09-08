@@ -924,7 +924,7 @@
         const fileName    = 'Salary_Sheet_' + monthLabel.replace(' ', '_') + '.pdf';
 
         const tableBody = [];
-        let totalLeave = 0, totalPaidLeave = 0, totalRemPaidLeave = 0, totalDeductionLeave = 0, totalDeduction = 0, totalSalary = 0, totalTax = 0, totalNetPay = 0;
+        let totalLeave = 0, totalPaidLeave = 0, totalRemPaidLeave = 0, totalSickLeave = 0, totalRemSickLeave = 0, totalDeductionLeave = 0, totalDeduction = 0, totalSalary = 0, totalTax = 0, totalNetPay = 0;
 
         payrolls.forEach(p => {
             const name       = (p.username || '').trim();
@@ -948,6 +948,14 @@
                 remPaidLeaves = Math.max((parseFloat(p.total_paid_leaves) || 0) - paidLeaves, 0);
             }
 
+            // Remaining sick leaves calculation
+            let remSickLeaves = 0;
+            if (p.remaining_sick_leaves !== null && p.remaining_sick_leaves !== undefined && p.remaining_sick_leaves !== '') {
+                remSickLeaves = parseFloat(p.remaining_sick_leaves) || 0;
+            } else if (p.casual_leave !== null && p.casual_leave !== undefined && p.casual_leave !== '') {
+                remSickLeaves = parseFloat(p.casual_leave) || 0;
+            }
+
             // Deduction leave = Total leave taken minus paid & sick leaves
             const deductionLeaves = Math.max(totalTakenLeaves - paidLeaves - sickLeaves, 0);
 
@@ -967,6 +975,8 @@
             totalLeave          += totalTakenLeaves;
             totalPaidLeave      += paidLeaves;
             totalRemPaidLeave   += remPaidLeaves;
+            totalSickLeave      += sickLeaves;
+            totalRemSickLeave   += remSickLeaves;
             totalDeductionLeave += deductionLeaves;
             totalDeduction      += deduction;
             totalSalary         += salary;
@@ -974,13 +984,15 @@
             totalNetPay         += netPay;
 
             // Column order:
-            // 0: NAME | 1: SALARY | 2: LEAVE (Days) | 3: PAID LEAVE (Days) | 4: REM. PAID LEAVE | 5: DEDUCTION LEAVE | 6: PER DAY | 7: DEDUCTION | 8: TAX | 9: NET PAY
+            // 0: NAME | 1: SALARY | 2: LEAVE (Days) | 3: PAID LEAVE (Days) | 4: REM. PAID LEAVE | 5: SICK LEAVE (Days) | 6: REM. SICK LEAVE | 7: DEDUCTION LEAVE | 8: PER DAY | 9: DEDUCTION | 10: TAX | 11: NET PAY
             tableBody.push([
                 name,
                 'Rs. ' + salary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 totalTakenLeaves % 1 === 0 ? totalTakenLeaves.toString() : totalTakenLeaves.toFixed(1),
                 paidLeaves % 1 === 0 ? paidLeaves.toString() : paidLeaves.toFixed(1),
                 remPaidLeaves % 1 === 0 ? remPaidLeaves.toString() : remPaidLeaves.toFixed(1),
+                sickLeaves % 1 === 0 ? sickLeaves.toString() : sickLeaves.toFixed(1),
+                remSickLeaves % 1 === 0 ? remSickLeaves.toString() : remSickLeaves.toFixed(1),
                 deductionLeaves % 1 === 0 ? deductionLeaves.toString() : deductionLeaves.toFixed(1),
                 'Rs. ' + perDay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                 'Rs. ' + deduction.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -995,6 +1007,8 @@
             totalLeave % 1 === 0 ? totalLeave.toString() : totalLeave.toFixed(1),
             totalPaidLeave % 1 === 0 ? totalPaidLeave.toString() : totalPaidLeave.toFixed(1),
             totalRemPaidLeave % 1 === 0 ? totalRemPaidLeave.toString() : totalRemPaidLeave.toFixed(1),
+            totalSickLeave % 1 === 0 ? totalSickLeave.toString() : totalSickLeave.toFixed(1),
+            totalRemSickLeave % 1 === 0 ? totalRemSickLeave.toString() : totalRemSickLeave.toFixed(1),
             totalDeductionLeave % 1 === 0 ? totalDeductionLeave.toString() : totalDeductionLeave.toFixed(1),
             '',
             'Rs. ' + totalDeduction.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
@@ -1080,6 +1094,8 @@
                 'LEAVE\n(Days)',
                 'PAID LEAVE\n(Days)',
                 'REM. PAID\nLEAVE',
+                'SICK LEAVE\n(Days)',
+                'REM. SICK\nLEAVE',
                 'DEDUCTION\nLEAVE (Days)',
                 'PER DAY\nSALARY (Rs)',
                 'DEDUCTION\n(Rs)',
@@ -1091,26 +1107,28 @@
                 fillColor: orange,
                 textColor: white,
                 fontStyle: 'bold',
-                fontSize: 6.8,
+                fontSize: 6.5,
                 halign: 'center',
                 valign: 'middle',
-                cellPadding: 3
+                cellPadding: 2.5
             },
             columnStyles: {
-                0: { halign: 'left',   cellWidth: 'auto' },
-                1: { halign: 'right',  cellWidth: 68 },
-                2: { halign: 'center', cellWidth: 46 },
-                3: { halign: 'center', cellWidth: 50 },
-                4: { halign: 'center', cellWidth: 52 },
-                5: { halign: 'center', cellWidth: 58 },
-                6: { halign: 'right',  cellWidth: 62 },
-                7: { halign: 'right',  cellWidth: 66 },
-                8: { halign: 'center', cellWidth: 46 },
-                9: { halign: 'right',  cellWidth: 68 }
+                0:  { halign: 'left',   cellWidth: 'auto' },
+                1:  { halign: 'right',  cellWidth: 64 },
+                2:  { halign: 'center', cellWidth: 42 },
+                3:  { halign: 'center', cellWidth: 46 },
+                4:  { halign: 'center', cellWidth: 48 },
+                5:  { halign: 'center', cellWidth: 46 },
+                6:  { halign: 'center', cellWidth: 48 },
+                7:  { halign: 'center', cellWidth: 54 },
+                8:  { halign: 'right',  cellWidth: 58 },
+                9:  { halign: 'right',  cellWidth: 62 },
+                10: { halign: 'center', cellWidth: 44 },
+                11: { halign: 'right',  cellWidth: 64 }
             },
             styles: {
-                fontSize: 7.2,
-                cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+                fontSize: 6.8,
+                cellPadding: { top: 3.5, bottom: 3.5, left: 2.5, right: 2.5 },
                 overflow: 'linebreak',
                 lineColor: [220, 220, 220],
                 lineWidth: 0.3
@@ -1122,7 +1140,7 @@
                     data.cell.styles.fillColor = darkBg;
                     data.cell.styles.textColor = white;
                     data.cell.styles.fontStyle = 'bold';
-                    data.cell.styles.fontSize  = 7.5;
+                    data.cell.styles.fontSize  = 7.2;
                     return;
                 }
                 // Paid Leave (col 3) highlight
@@ -1134,27 +1152,36 @@
                     data.cell.styles.textColor = [0, 130, 60];
                     data.cell.styles.fontStyle = 'bold';
                 }
-                // Deduction Leave (col 5) red highlight
+                // Sick Leave (col 5) highlight
                 if (data.section === 'body' && data.column.index === 5) {
                     data.cell.styles.textColor = [200, 0, 0];
+                }
+                // Rem. Sick Leave (col 6) green highlight
+                if (data.section === 'body' && data.column.index === 6) {
+                    data.cell.styles.textColor = [0, 130, 60];
                     data.cell.styles.fontStyle = 'bold';
                 }
-                // Deduction Amount (col 7)
+                // Deduction Leave (col 7) red highlight
                 if (data.section === 'body' && data.column.index === 7) {
                     data.cell.styles.textColor = [200, 0, 0];
                     data.cell.styles.fontStyle = 'bold';
                 }
-                // Tax (col 8)
-                if (data.section === 'body' && data.column.index === 8) {
+                // Deduction Amount (col 9)
+                if (data.section === 'body' && data.column.index === 9) {
+                    data.cell.styles.textColor = [200, 0, 0];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+                // Tax (col 10)
+                if (data.section === 'body' && data.column.index === 10) {
                     data.cell.styles.textColor = data.cell.raw !== 'No Tax' ? [200, 0, 0] : [100, 100, 100];
                 }
-                // Net Pay (col 9)
-                if (data.section === 'body' && data.column.index === 9) {
+                // Net Pay (col 11)
+                if (data.section === 'body' && data.column.index === 11) {
                     data.cell.styles.textColor = [0, 150, 70];
                     data.cell.styles.fontStyle = 'bold';
                 }
             },
-            foot: [['Generated by Fablead HR Portal - ' + monthLabel, '', '', '', '', '', '', '', '', '']],
+            foot: [['Generated by Fablead HR Portal - ' + monthLabel, '', '', '', '', '', '', '', '', '', '', '']],
             footStyles: { fillColor: [240, 240, 240], textColor: [100, 100, 100], fontSize: 6, halign: 'left', fontStyle: 'italic' },
         });
 
