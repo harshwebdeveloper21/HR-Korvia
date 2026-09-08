@@ -1031,8 +1031,7 @@
                     const data = res.data;
                     // Tax from backend calculation
                     const calculatedTax = parseFloat(data.tax_deduction);
-                    // If calculated tax is 0 and it's not a manual overwrite, use 200 as default
-                    const finalTax = (calculatedTax > 0) ? calculatedTax : 200;
+                    const finalTax = isNaN(calculatedTax) ? 0 : calculatedTax;
                     $('#tax_deduction').val(finalTax);
 
                     $('#working_days_display').val(data.working_days || 0);

@@ -263,4 +263,31 @@ trait CompanyRuleTrait
 
         return (float) $total;
     }
+
+    /**
+     * Calculate tax amount for a given salary based on company rules.
+     * Respects enable_tax flag, taxable salary threshold (salary >= salary_above_tax),
+     * and tax_type (fixed or percentage).
+     */
+    public function calculateTaxForSalary(float $salary, ?array $rules): float
+    {
+        if (empty($rules) || (int) ($rules['enable_tax'] ?? 0) !== 1) {
+            return 0.0;
+        }
+
+        $threshold = (float) ($rules['salary_above_tax'] ?? 0);
+        if ($salary < $threshold) {
+            return 0.0;
+        }
+
+        $taxType = strtolower(trim($rules['tax_type'] ?? 'fixed'));
+        $taxVal = (float) ($rules['tax'] ?? 0);
+
+        if ($taxType === 'percentage') {
+            return round(($salary * $taxVal) / 100, 2);
+        }
+
+        return round($taxVal, 2);
+    }
 }
+
