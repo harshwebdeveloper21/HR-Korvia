@@ -786,15 +786,9 @@ class EmployeeController extends ResourceController
         } elseif ($viewType === 'fired' || $viewType === 'removed') {
             $builder->where("LOWER(user_info.status) IN ('fired', 'removed')");
         } elseif ($viewType === 'inactive') {
-            $builder->groupStart()
-                    ->where("LOWER(user_info.status)", 'inactive')
-                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'resigned\', \'fired\', \'removed\')))')
-                    ->groupEnd();
+            $builder->where("LOWER(user_info.status)", 'inactive');
         } elseif ($viewType === 'all_inactive') {
-            $builder->groupStart()
-                    ->where("LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')")
-                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'inactive\', \'resigned\', \'fired\', \'removed\')))')
-                    ->groupEnd();
+            $builder->where("LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')");
         } elseif ($viewType === 'all') {
             // No status filter: return all active and inactive employees
         } else {
@@ -812,6 +806,10 @@ class EmployeeController extends ResourceController
 
         foreach ($results as $row) {
             $empIdDisplay = !empty($row['employee_id']) ? $row['employee_id'] : ('EMP-' . sprintf('%03d', $row['id']));
+            $rawStatus = trim($row['status'] ?? '');
+            $statusNormalized = (!empty($rawStatus) && strtolower($rawStatus) !== 'null') ? ucfirst(strtolower($rawStatus)) : 'Active';
+            $lastWorkingDay = (strtolower($statusNormalized) === 'active') ? null : $row['last_working_day'];
+
             $employees[] = [
                 'user' => [
                     'id' => $row['id'],
@@ -830,9 +828,9 @@ class EmployeeController extends ResourceController
                     'department_id' => $row['department_id'],
                     'department_name' => $row['department_name'],
                     'salary' => (float) ($row['salary'] ?? 0),
-                    'status' => $row['status'] ?? 'Active',
+                    'status' => $statusNormalized,
                     'status_reason' => $row['status_reason'] ?? '',
-                    'last_working_day' => $row['last_working_day'],
+                    'last_working_day' => $lastWorkingDay,
                     'last_increment_date' => $row['last_increment_date'] ?? 'N/A',
                     'last_increment_amount' => (float) ($row['last_increment_amount'] ?? 0),
                     'profile_image_url' => !empty($row['profile_image']) ? base_url('upload/' . $row['profile_image']) : base_url('public/upload/default-profile.jpg'),
@@ -1751,9 +1749,9 @@ class EmployeeController extends ResourceController
         }
 
         $userId = $this->request->getPost('user_id');
-        $status = $this->request->getPost('status');
-        $reason = $this->request->getPost('status_reason');
-        $lastWorkingDay = $this->request->getPost('last_working_day');
+        $status = trim($this->request->getPost('status') ?? '');
+        $reason = trim($this->request->getPost('status_reason') ?? '');
+        $lastWorkingDay = trim($this->request->getPost('last_working_day') ?? '');
 
         if (empty($userId) || empty($status)) {
             return $this->respond(['status' => 'error', 'message' => 'User ID and status are required.'], 400);
@@ -1764,22 +1762,30 @@ class EmployeeController extends ResourceController
             return $this->respond(['status' => 'error', 'message' => 'Employee record not found.'], 404);
         }
 
+        $statusNormalized = ucfirst(strtolower($status));
         $updateData = [
-            'status' => $status,
-            'status_reason' => $reason ?: null,
+            'status' => $statusNormalized,
         ];
 
-        if (!empty($lastWorkingDay)) {
-            $updateData['last_working_day'] = $lastWorkingDay;
-        } elseif (in_array(strtolower($status), ['resigned', 'fired', 'removed', 'inactive']) && empty($userInfo['last_working_day'])) {
-            $updateData['last_working_day'] = date('Y-m-d');
+        if (strtolower($status) === 'active') {
+            // When employee is set to Active, clear last_working_day and status_reason
+            $updateData['last_working_day'] = null;
+            $updateData['status_reason'] = null;
+        } else {
+            // Inactive, Resigned, Fired, Removed
+            $updateData['status_reason'] = !empty($reason) ? $reason : null;
+            if (!empty($lastWorkingDay)) {
+                $updateData['last_working_day'] = $lastWorkingDay;
+            } elseif (empty($userInfo['last_working_day'])) {
+                $updateData['last_working_day'] = date('Y-m-d');
+            }
         }
 
         $this->userInfoModel->where('user_id', $userId)->set($updateData)->update();
 
         return $this->respond([
             'status' => 'success',
-            'message' => 'Employee status updated to ' . ucfirst($status) . ' successfully!'
+            'message' => 'Employee status updated to ' . $statusNormalized . ' successfully!'
         ]);
     }
 
@@ -1933,15 +1939,9 @@ class EmployeeController extends ResourceController
         } elseif ($viewType === 'fired' || $viewType === 'removed') {
             $builder->where("LOWER(user_info.status) IN ('fired', 'removed')");
         } elseif ($viewType === 'inactive') {
-            $builder->groupStart()
-                    ->where("LOWER(user_info.status)", 'inactive')
-                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'resigned\', \'fired\', \'removed\')))')
-                    ->groupEnd();
+            $builder->where("LOWER(user_info.status)", 'inactive');
         } elseif ($viewType === 'all_inactive') {
-            $builder->groupStart()
-                    ->where("LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')")
-                    ->orWhere('(user_info.last_working_day IS NOT NULL AND user_info.last_working_day < CURDATE() AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN (\'inactive\', \'resigned\', \'fired\', \'removed\')))')
-                    ->groupEnd();
+            $builder->where("LOWER(user_info.status) IN ('inactive', 'resigned', 'fired', 'removed')");
         } elseif ($viewType === 'all') {
             // No status filter
         } else {
