@@ -109,7 +109,7 @@
                             </a>
                         <?php endif; ?>
                         <a href="/offer-templates-view" class="btn hr-btnbg interviewsmbtn" style="white-space:nowrap;">
-                            <i class="mdi mdi-arrow-left cart-sm-titles"></i> All Templates
+                            <i class="mdi mdi-arrow-left cart-sm-titles"></i> Offer Letter Templates
                         </a>
                     </div>
                 </div>

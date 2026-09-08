@@ -347,14 +347,23 @@ formData.append(csrfName, csrfHash); // ✅ Add CSRF to FormData
         const params = new URLSearchParams(window.location.search);
         let Id = params.get('id');
 
-        // If not found, try extracting from the URL path
+        // If not found, try extracting numeric ID from the URL path
         if (!Id) {
-            const pathParts = window.location.pathname.split('/');
-            Id = pathParts[pathParts.length - 1];
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            const lastPart = pathParts[pathParts.length - 1];
+            if (lastPart && !isNaN(lastPart)) {
+                Id = lastPart;
+            }
         }
 
-        if (Id) {
+        if (Id && !isNaN(Id)) {
             fetchUserData(Id);
+        }
+
+        // Auto-select template if passed via URL parameter (e.g. /onboarding?template_id=1)
+        const templateIdParam = params.get('template_id');
+        if (templateIdParam) {
+            $('#offer_later_id').val(templateIdParam).trigger('change');
         }
 
         function fetchUserData(Id) {

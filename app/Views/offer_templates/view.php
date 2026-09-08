@@ -101,8 +101,11 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">All Templates</h4>
-                    <div class="d-flex gap-2">
+                    <h4 class="card-title">Offer Letter Templates</h4>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/onboarding" class="btn hr-btnbg attendenceall text-nowrap" title="Generate Offer Letter">
+                            <i class="mdi mdi-file-document-edit-outline iconfontsize"></i> Generate Template
+                        </a>
                         <button type="button" id="btnExportOfferTemplates" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
@@ -116,7 +119,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Template Title</th>
-                                <th class="desktop-only-col action-column" style="width: 100px;">Action</th>
+                                <th class="desktop-only-col action-column" style="width: 125px;">Action</th>
                                 <th class="mobile-expand-col" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
@@ -153,6 +156,7 @@
                                             ${template.template_header ? `<div class="small text-muted text-truncate" style="max-width: 350px;">${template.template_header}</div>` : ''}
                                             <div class="expanded-details" id="template-details-${template.id}">
                                                 <div class="detail-actions">
+                                                    <a href="/onboarding?template_id=${template.id}" class="btn btn-sm btn-success text-white"><i class="mdi mdi-file-document-edit-outline"></i> Generate</a>
                                                     <a href="/template/view/${template.id}" class="btn btn-sm btn-info text-white"><i class="mdi mdi-eye"></i> View</a>
                                                     <a href="/offer-templates/preview-pdf/${template.id}" target="_blank" class="btn btn-sm btn-secondary text-white"><i class="mdi mdi-file-pdf-box"></i> PDF</a>
                                                     <a href="/template/${template.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
@@ -164,6 +168,7 @@
                                 </td>
                                 <td class="desktop-only-col">
                                     <div style="display: flex; align-items: center; gap: 8px;">
+                                        <a href="/onboarding?template_id=${template.id}" class="text-success fs-5" title="Generate Offer Letter"><i class="mdi mdi-file-document-edit-outline"></i></a>
                                         <a href="/template/view/${template.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
                                         <a href="/offer-templates/preview-pdf/${template.id}" target="_blank" class="text-danger fs-5" title="Preview / Download PDF"><i class="mdi mdi-file-pdf-box"></i></a>
                                         <a href="/template/${template.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>

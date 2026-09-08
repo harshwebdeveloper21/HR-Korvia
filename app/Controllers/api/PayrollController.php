@@ -980,13 +980,7 @@ class PayrollController extends ResourceController
         }
 
         // Tax
-        $taxDeduction = 0;
-        if (
-            ($rules["enable_tax"] ?? 0) == 1 &&
-            $baseSalary > ($rules["salary_above_tax"] ?? 0)
-        ) {
-            $taxDeduction = $rules["tax"] ?? 0;
-        }
+        $taxDeduction = $this->calculateTaxForSalary((float) $baseSalary, $rules);
 
         // Overtime pay calculation
         $overtimePay = 0;
@@ -2024,10 +2018,13 @@ class PayrollController extends ResourceController
             $emp["per_day"] = round($emp["salary"] / $workingDays, 2);
             $emp["per_hour"] = round($emp["salary"] / ($workingDays * $workingHoursPerDay), 2);
 
-            $emp["tax_amount"] =
-                $emp["salary"] > $rules["salary_above_tax"] ? $rules["tax"] : 0;
+            $ruleTaxAmount = $this->calculateTaxForSalary((float) $emp["salary"], $rules);
+            $emp["tax_amount"] = $ruleTaxAmount;
+            $emp["tax_deduction"] = $ruleTaxAmount;
             $emp["tax"] =
-                $emp["tax_amount"] > 0 ? "₹" . $emp["tax_amount"] : "No Tax";
+                $ruleTaxAmount > 0
+                    ? "₹" . (fmod($ruleTaxAmount, 1) !== 0.0 ? number_format($ruleTaxAmount, 2) : number_format($ruleTaxAmount, 0))
+                    : "No Tax";
 
             // ── Extra Day (Sat/Sun attendance on week-off days) ──────────────────
             // Saturday week-off: partial work (<working_hours_per_day) = 0.5 extra;
@@ -2144,7 +2141,14 @@ class PayrollController extends ResourceController
                     $emp["salary_deduction"] = round($storedDed, 2);
                 }
 
-                $emp["tax_deduction"] = round((float) ($payroll["tax_deduction"] ?? 0), 2);
+                // Tax is governed by Company Rules based on current salary
+                $emp["tax_deduction"] = $ruleTaxAmount;
+                $emp["tax_amount"] = $ruleTaxAmount;
+                $emp["tax"] =
+                    $ruleTaxAmount > 0
+                        ? "₹" . (fmod($ruleTaxAmount, 1) !== 0.0 ? number_format($ruleTaxAmount, 2) : number_format($ruleTaxAmount, 0))
+                        : "No Tax";
+
                 $emp["overtime_pay"] = round((float) ($payroll["overtime_pay"] ?? 0), 2);
                 $emp["total_overtime_hours"] = (float) ($payroll["total_overtime_hours"] ?? 0);
                 $emp["late_deduction"] = 0;
@@ -2152,6 +2156,28 @@ class PayrollController extends ResourceController
                 // base_deduction is used by JS for re-computation.
                 $emp["base_deduction"] = round($emp["salary_deduction"] + $paidLeaveCredit, 2);
 
+                $savedSalary = (float) ($payroll["salary_amount"] ?? $emp["salary"]);
+                $savedSalaryDed = (float) ($payroll["salary_deduction"] ?? 0);
+                $savedTax = round((float) ($payroll["tax_deduction"] ?? 0), 2);
+                $savedOvertime = (float) ($payroll["overtime_pay"] ?? 0);
+                $savedNetSalary = round((float) ($payroll["net_salary"] ?? 0), 2);
+
+                // Baseline net salary of the saved record at the time it was saved
+                $savedBaseNetSalary = round(
+                    $savedSalary
+                    - $savedSalaryDed
+                    - $savedTax
+                    + $savedOvertime,
+                    2
+                );
+
+                // Any genuine extra day pay saved in net salary would exceed savedBaseNetSalary
+                $savedExtraDayPay = 0.0;
+                if ($savedNetSalary > $savedBaseNetSalary && ($emp['extra_days'] ?? 0) > 0) {
+                    $savedExtraDayPay = round($savedNetSalary - $savedBaseNetSalary, 2);
+                }
+
+                // Current base net salary using current salary, current salary_deduction, rule tax, and overtime
                 $baseNetSalary = round(
                     $emp["salary"]
                     - $emp["salary_deduction"]
@@ -2160,21 +2186,14 @@ class PayrollController extends ResourceController
                     2
                 );
 
-                $savedNetSalary = round((float) ($payroll["net_salary"] ?? 0), 2);
-
-                if ($savedNetSalary > $baseNetSalary) {
-                    $emp["extra_day_pay"] = round($savedNetSalary - $baseNetSalary, 2);
-                    $emp["net_salary"] = $savedNetSalary;
+                if ($savedExtraDayPay > 0) {
+                    $emp["extra_day_pay"] = $savedExtraDayPay;
+                    $emp["net_salary"] = round($baseNetSalary + $savedExtraDayPay, 2);
                 } else {
                     $emp["net_salary"] = $baseNetSalary;
                     // Keep extra_day_pay as the default calculation (what they could add),
                     // but don't add it to net_salary until they click save in the modal.
                 }
-
-                $emp["tax_amount"] = $emp["tax_deduction"];
-                $emp["tax"] = $emp["tax_amount"] > 0
-                    ? "₹" . number_format($emp["tax_amount"], 2)
-                    : "No Tax";
             } else {
                 $totalLeaves = $this->countMonthlyLeaves(
                     $emp["user_id"],
@@ -2364,11 +2383,8 @@ class PayrollController extends ResourceController
                     $existing
                 );
 
-                // Determine tax deduction: preserve existing tax_deduction if record already
-                // exists (may have been customised via Add Payroll), otherwise calculate it.
-                $taxDeduction = $existing
-                    ? $existing["tax_deduction"]
-                    : ($salaries[$index] > $rules["salary_above_tax"] ? $rules["tax"] : 0);
+                // Determine tax deduction based on company rules
+                $taxDeduction = $this->calculateTaxForSalary((float) $salaries[$index], $rules);
 
                 $data = [
                     "user_id" => $empId,
@@ -2942,10 +2958,7 @@ class PayrollController extends ResourceController
         $employeeLeaveModel = new EmployeeLeaveModel();
         $companyRulesModel = new \App\Models\CompanyRulesModel();
         $rules = $companyRulesModel->first();
-        $salaryAboveTax = $rules["salary_above_tax"] ?? PHP_INT_MAX;
-        $tax = $rules["tax"] ?? 0;
-        $taxDeduction =
-            $salary > $salaryAboveTax ? $tax : 0;
+        $taxDeduction = $this->calculateTaxForSalary((float) $salary, $rules);
 
         $totalHalfDays = (float) ($this->request->getPost("half_day") ?? 0);
         $usedPaidLeaves = (float) ($this->request->getPost("paid_leave") ?? 0);

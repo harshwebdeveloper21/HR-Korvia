@@ -202,7 +202,7 @@ class CompanyRulesController extends BaseController
         }
 
         // Tax calculation
-        if ($rules['enable_tax'] && $calculations['gross_salary'] > $rules['salary_above_tax']) {
+        if ($rules['enable_tax'] && $calculations['gross_salary'] >= $rules['salary_above_tax']) {
             $taxAmount = 0;
             if ($rules['tax_type'] === 'fixed') {
                 $taxAmount = $rules['tax'];

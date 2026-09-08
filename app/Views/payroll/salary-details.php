@@ -492,8 +492,8 @@
     const halfDays = parseFloat(halfInput.value) || 0;
     const usedPaidLeaves = parseFloat(paidLeaveInput.value) || 0;
     const usedSickLeaves = parseFloat(sickLeaveInput.value) || 0;
-    const salary = parseFloat(leaveInput.dataset.salary);
-    const tax = parseFloat(leaveInput.dataset.tax);
+    const salary = parseFloat(leaveInput.dataset.salary) || 0;
+    const tax = parseFloat(leaveInput.dataset.tax) || 0;
     const daysInMonth = parseInt(leaveInput.dataset.days);
     const perDay = parseFloat(row.dataset.perDay) || (salary / daysInMonth);
 
