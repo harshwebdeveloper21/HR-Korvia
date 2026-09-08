@@ -1057,6 +1057,22 @@ class AttendanceController extends ResourceController
 
             $isInactive = in_array($userStatus, ['inactive', 'resigned', 'fired', 'removed']);
 
+            // If employee is inactive/resigned without last_working_day, derive from latest punch in month
+            if ($isInactive && empty($lastWorkingDay) && !empty($userAttendance)) {
+                $punchDates = [];
+                foreach ($userAttendance as $row) {
+                    $st = strtolower($row['status'] ?? '');
+                    $hasPunch = !empty($row['check_in_time']) && $row['check_in_time'] !== '00:00:00';
+                    if (!in_array($st, ['absent', 'leave']) || $hasPunch) {
+                        $punchDates[] = substr($row['date'], 0, 10);
+                    }
+                }
+                if (!empty($punchDates)) {
+                    rsort($punchDates);
+                    $lastWorkingDay = $punchDates[0];
+                }
+            }
+
             // 1. If employee joined after the selected month and has no activity in this month -> skip
             if ($joiningDate && $joiningDate > $endOfMonthDate && !$hasActivityInMonth) {
                 continue;
@@ -1248,6 +1264,20 @@ class AttendanceController extends ResourceController
             for ($day = 1; $day <= $totalDays; $day++) {
                 $date = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($day, 2, '0', STR_PAD_LEFT);
 
+                // If inactive and date is after last working day, mark as absent (never week-off or holiday)
+                if ($isInactive && $lastWorkingDay && $date > $lastWorkingDay) {
+                    $formattedAttendance[] = [
+                        'date' => $date,
+                        'check_in_time' => null,
+                        'check_out_time' => null,
+                        'status' => 'absent',
+                        'is_late' => null,
+                        'late_minutes' => null,
+                        'overtime' => null,
+                    ];
+                    continue;
+                }
+
                 // Holiday
                 if (isset($holidayMap[$date])) {
                     $formattedAttendance[] = [
@@ -1407,7 +1437,7 @@ class AttendanceController extends ResourceController
                 'employee_name' => $user['username'],
                 'profile_image' => $userInfoMap[$userId]['profile_image'] ?? null,
                 'status' => $userInfoMap[$userId]['status'] ?? 'Active',
-                'last_working_day' => $userInfoMap[$userId]['last_working_day'] ?? null,
+                'last_working_day' => $lastWorkingDay,
                 'joining_date' => $userInfoMap[$userId]['joining_date'] ?? null,
                 'attendance' => $formattedAttendance,
             ];

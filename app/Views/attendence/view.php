@@ -797,11 +797,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const currDateObj = new Date(dateStr);
                 currDateObj.setHours(0,0,0,0);
                 
-                if (empStatus !== 'active' && user.last_working_day) {
-                    const lwd = new Date(user.last_working_day);
-                    lwd.setHours(0,0,0,0);
-                    if (currDateObj > lwd) {
-                        isOutsideEmployment = true;
+                if (empStatus !== 'active') {
+                    let lwdStr = user.last_working_day;
+                    if (!lwdStr) {
+                        const punches = (user.attendance || []).filter(a => {
+                            const st = (a.status || '').toLowerCase();
+                            return ['present', 'half-day'].includes(st) || (a.check_in_time && a.check_in_time !== '00:00:00');
+                        });
+                        if (punches.length > 0) {
+                            punches.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+                            lwdStr = punches[0].date.substring(0, 10);
+                        }
+                    }
+                    if (lwdStr) {
+                        const lwd = new Date(lwdStr);
+                        lwd.setHours(0,0,0,0);
+                        if (currDateObj > lwd) {
+                            isOutsideEmployment = true;
+                        }
                     }
                 }
                 

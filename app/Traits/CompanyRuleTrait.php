@@ -208,6 +208,55 @@ trait CompanyRuleTrait
             if ($this->isWorkingDay(new DateTime($dateStr), $rules) && !isset($holidaySet[$dateStr])) {
                 if (!isset($presentOrHalfDayDates[$dateStr]) && !isset($countedDates[$dateStr])) {
                     $total += 1;
+                    $countedDates[$dateStr] = true;
+                }
+            }
+        }
+
+        // ── Inactive / Resigned Employee Handling ────────────────────────────
+        // If employee is inactive/resigned, any days in the month after their
+        // last active day (last working day or latest attendance punch in this month)
+        // are treated as absent/leave so they are correctly deducted in payroll.
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $userInfo = $userInfoModel->where('user_id', $userId)->first();
+        $userStatus = strtolower(trim($userInfo['status'] ?? 'active'));
+        $isInactive = in_array($userStatus, ['inactive', 'resigned', 'fired', 'removed']);
+
+        if ($isInactive) {
+            $lastWorkingDay = !empty($userInfo['last_working_day']) ? trim($userInfo['last_working_day']) : null;
+            $startOfMonthStr = $startOfMonth->format('Y-m-d');
+            $endOfMonthStr = $endOfMonth->format('Y-m-d');
+
+            // Find the latest attendance punch date in this month (if any)
+            $latestPunch = $attendanceModel
+                ->where('user_id', $userId)
+                ->where('date >=', $startOfMonthStr)
+                ->where('date <=', $endOfMonthStr)
+                ->where("(status NOT IN ('absent', 'leave') OR (check_in_time IS NOT NULL AND check_in_time != '' AND check_in_time != '00:00:00'))")
+                ->orderBy('date', 'DESC')
+                ->first();
+            $latestPunchDate = !empty($latestPunch['date']) ? substr($latestPunch['date'], 0, 10) : null;
+
+            // Determine the last day the employee was active in this month
+            $inactiveAfterDate = null;
+            if (!empty($lastWorkingDay) && $lastWorkingDay >= $startOfMonthStr && $lastWorkingDay <= $endOfMonthStr) {
+                $inactiveAfterDate = $lastWorkingDay;
+                if (!empty($latestPunchDate) && $latestPunchDate > $inactiveAfterDate) {
+                    $inactiveAfterDate = $latestPunchDate;
+                }
+            } elseif (!empty($latestPunchDate)) {
+                $inactiveAfterDate = $latestPunchDate;
+            }
+
+            if ($inactiveAfterDate && $inactiveAfterDate < $endOfMonthStr) {
+                $currInactive = (new DateTime($inactiveAfterDate))->modify('+1 day');
+                while ($currInactive <= $endOfMonth) {
+                    $dStr = $currInactive->format('Y-m-d');
+                    if (!isset($presentOrHalfDayDates[$dStr]) && !isset($countedDates[$dStr])) {
+                        $total += 1;
+                        $countedDates[$dStr] = true;
+                    }
+                    $currInactive->modify('+1 day');
                 }
             }
         }

@@ -209,7 +209,14 @@
                               style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                           <?php } ?>
                           <div style="display: flex; flex-direction: column;">
-                            <span class="capitalize-text fw-bold"><?= esc($emp["firstname"]) ?></span>
+                            <div class="d-flex align-items-center gap-1">
+                              <span class="capitalize-text fw-bold"><?= esc($emp["firstname"]) ?></span>
+                              <?php 
+                              $empStatus = strtolower(trim($emp['status'] ?? 'active'));
+                              if (in_array($empStatus, ['inactive', 'resigned', 'fired', 'removed'])) { ?>
+                                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px; padding: 1px 4px;">Inactive</span>
+                              <?php } ?>
+                            </div>
                             <small class="text-muted" style="font-size: 13px;">₹<?= number_format($emp["salary"], 0) ?></small>
                           </div>
                         </div>
@@ -223,6 +230,9 @@
                             value="<?= $emp["leaves"] ?>" min="0" data-index="<?= $index ?>"
                             data-salary="<?= $emp["salary"] ?>" data-tax="<?= $emp["tax_amount"] ?? 0 ?>"
                             data-days="<?= $emp["days_in_month"] ?>" data-month="<?= date("Y-m", strtotime($month)) ?>"
+                            <?php if (in_array(strtolower(trim($emp['status'] ?? 'active')), ['inactive', 'resigned', 'fired', 'removed'])) { ?>
+                              title="Includes unworked days after employment ended"
+                            <?php } ?>
                             style="width:58px;">
                           <!-- <span class="text-muted">/</span> -->
                           <input type="number" name="half_day[]" class="form-control form-control-sm half_day-input"
