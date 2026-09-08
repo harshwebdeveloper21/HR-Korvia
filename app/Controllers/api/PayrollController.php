@@ -2116,6 +2116,21 @@ class PayrollController extends ResourceController
                 $emp["used_paid_leaves"] = (float) ($payroll["used_paid_leaves"] ?? 0);
                 $emp["used_sick_leaves"] = (float) ($payroll["used_sick_leaves"] ?? 0);
 
+                // If an inactive/resigned employee has 0 saved leaves, recalculate from attendance
+                $empStatus = strtolower(trim($emp['status'] ?? 'active'));
+                if ($emp["leaves"] == 0 && in_array($empStatus, ['inactive', 'resigned', 'fired', 'removed'])) {
+                    $recalcLeaves = $this->countMonthlyLeaves(
+                        $emp["user_id"],
+                        sprintf("%04d-%02d", $year, $monthNum),
+                        $rules,
+                        $leaveModel,
+                        $holidayDates,
+                    );
+                    if ($recalcLeaves > 0) {
+                        $emp["leaves"] = $recalcLeaves;
+                    }
+                }
+
                 // For the management page, we ensure deductions match the counts shown to fix 
                 // inconsistencies (e.g., leaves=1 but deduction=0).
                 $suggestedBaseDed = ($emp["leaves"] * $emp["per_day"]) + ($emp["half_days"] * ($emp["per_day"] / 2));
@@ -2636,6 +2651,41 @@ class PayrollController extends ResourceController
                 "label" => date("d M", strtotime($start)) . " - " . date("d M Y", strtotime($end)),
                 "reason" => $lv["reason"] ?? "",
             ];
+        }
+
+        // Include inactive period in leave breakdown for inactive/resigned employees
+        $empUserInfo = (new UserInfoModel())->where("user_id", $userId)->first();
+        $empUserStatus = strtolower(trim($empUserInfo["status"] ?? "active"));
+        if (in_array($empUserStatus, ["inactive", "resigned", "fired", "removed"])) {
+            $lastWorkingDay = !empty($empUserInfo["last_working_day"]) ? trim($empUserInfo["last_working_day"]) : null;
+            $latestPunch = $attendanceModel
+                ->where("user_id", $userId)
+                ->where("date >=", $startOfMonth)
+                ->where("date <=", $endOfMonth)
+                ->where("(status NOT IN ('absent', 'leave') OR (check_in_time IS NOT NULL AND check_in_time != '' AND check_in_time != '00:00:00'))")
+                ->orderBy("date", "DESC")
+                ->first();
+            $latestPunchDate = !empty($latestPunch["date"]) ? substr($latestPunch["date"], 0, 10) : null;
+
+            $inactiveAfterDate = null;
+            if (!empty($lastWorkingDay) && $lastWorkingDay >= $startOfMonth && $lastWorkingDay <= $endOfMonth) {
+                $inactiveAfterDate = $lastWorkingDay;
+                if (!empty($latestPunchDate) && $latestPunchDate > $inactiveAfterDate) {
+                    $inactiveAfterDate = $latestPunchDate;
+                }
+            } elseif (!empty($latestPunchDate)) {
+                $inactiveAfterDate = $latestPunchDate;
+            }
+
+            if ($inactiveAfterDate && $inactiveAfterDate < $endOfMonth) {
+                $inactiveStart = date("Y-m-d", strtotime($inactiveAfterDate . " +1 day"));
+                $leaveList[] = [
+                    "start_date" => $inactiveStart,
+                    "end_date" => $endOfMonth,
+                    "label" => date("d M", strtotime($inactiveStart)) . " - " . date("d M Y", strtotime($endOfMonth)),
+                    "reason" => "Inactive after " . date("d M Y", strtotime($inactiveAfterDate)),
+                ];
+            }
         }
 
         $totalLeavesInput = $this->request->getPost("total_leaves") ?: $this->request->getGet("total_leaves");

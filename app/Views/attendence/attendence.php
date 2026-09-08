@@ -411,8 +411,19 @@
 
                 // Calculate employment boundaries for this user
                 let lwd = null;
-                if (isInactive && user.last_working_day) {
-                    lwd = user.last_working_day;
+                if (isInactive) {
+                    if (user.last_working_day) {
+                        lwd = user.last_working_day;
+                    } else {
+                        const punches = attendance.filter(a => {
+                            const st = (a.status || '').toLowerCase();
+                            return ['present', 'half-day'].includes(st) || (a.check_in_time && a.check_in_time !== '00:00:00');
+                        });
+                        if (punches.length > 0) {
+                            punches.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+                            lwd = punches[0].date.substring(0, 10);
+                        }
+                    }
                 }
                 let jd = user.joining_date || null;
 
@@ -553,7 +564,11 @@
                             <img src="${profileImage}" alt="Profile"
                                  style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
                             <div class="text-truncate" style="min-width: 0;">
-                                <span class="fw-semibold text-dark font-13 text-truncate d-block" title="${user.employee_name}">${user.employee_name}</span>                                
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="fw-semibold text-dark font-13 text-truncate d-block" title="${user.employee_name}">${user.employee_name}</span>
+                                    ${isInactive ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px; padding: 2px 5px;">Inactive</span>` : ''}
+                                </div>
+                                ${isInactive && lwd ? `<small class="text-muted font-11 d-block">Left: ${lwd}</small>` : ''}
                             </div>
                         </div>
                         <div class="expanded-details" id="employee-details-${user.user_id}" onclick="event.stopPropagation();">
@@ -722,8 +737,19 @@
             }
 
             let lwd = null;
-            if (user && user.status && user.status.toLowerCase() !== 'active' && user.last_working_day) {
-                lwd = user.last_working_day;
+            if (user && user.status && user.status.toLowerCase() !== 'active') {
+                if (user.last_working_day) {
+                    lwd = user.last_working_day;
+                } else {
+                    const punches = attendance.filter(a => {
+                        const st = (a.status || '').toLowerCase();
+                        return ['present', 'half-day'].includes(st) || (a.check_in_time && a.check_in_time !== '00:00:00');
+                    });
+                    if (punches.length > 0) {
+                        punches.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+                        lwd = punches[0].date.substring(0, 10);
+                    }
+                }
             }
             let jd = (user && user.joining_date) ? user.joining_date : null;
 
