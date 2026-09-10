@@ -210,7 +210,8 @@
                           <?php } ?>
                           <div style="display: flex; flex-direction: column;">
                             <div class="d-flex align-items-center gap-1">
-                              <span class="capitalize-text fw-bold"><?= esc($emp["firstname"]) ?></span>
+                              <?php $empFullName = trim(($emp["firstname"] ?? '') . ' ' . ($emp["lastname"] ?? '')) ?: ($emp["firstname"] ?? ''); ?>
+                              <span class="capitalize-text fw-bold"><?= esc($empFullName) ?></span>
                               <?php 
                               $empStatus = strtolower(trim($emp['status'] ?? 'active'));
                               if (in_array($empStatus, ['inactive', 'resigned', 'fired', 'removed'])) { ?>
@@ -285,7 +286,7 @@
                         <?php if (($emp['extra_days'] ?? 0) > 0): ?>
                           <button type="button" class="btn btn-sm btn-link p-0 ms-1 btn-extra-day-info"
                             title="View extra day attendance" data-user-id="<?= $emp["user_id"] ?>"
-                            data-month="<?= esc($month) ?>" data-name="<?= esc($emp["firstname"] ?? '') ?>">
+                            data-month="<?= esc($month) ?>" data-name="<?= esc($empFullName) ?>">
                             <i class="mdi mdi-information-outline text-primary" style="font-size:1.1rem;"></i>
                           </button>
                         <?php endif; ?>
@@ -301,7 +302,7 @@
                       <span>₹<?= number_format($emp["salary_deduction"], 2) ?></span>
                       <button type="button" class="btn btn-sm btn-link p-0 ms-1 btn-deduction-info"
                         title="Why is this amount deducted?" data-user-id="<?= $emp["user_id"] ?>"
-                        data-month="<?= esc($month) ?>" data-name="<?= esc($emp["firstname"] ?? '') ?>">
+                        data-month="<?= esc($month) ?>" data-name="<?= esc($empFullName) ?>">
                         <i class="mdi mdi-information-outline text-primary" style="font-size:1.1rem;"></i>
                       </button>
                     </td>

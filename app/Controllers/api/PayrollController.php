@@ -326,7 +326,7 @@ class PayrollController extends ResourceController
 
         $this->payrollModel
             ->select(
-                "payroll.id, payroll.user_id as employee_id, payroll.salary_amount, payroll.month_year, payroll.net_salary, payroll.payment_date, payroll.created_at, payroll.total_leaves, payroll.total_half_day, payroll.used_paid_leaves, payroll.used_sick_leaves, payroll.tax_deduction, payroll.salary_deduction, payroll.remaining_paid_leaves, payroll.remaining_sick_leaves, payroll.overtime_pay, payroll.total_overtime_hours, user_info.profile_image, users.username",
+                "payroll.id, payroll.user_id as employee_id, payroll.salary_amount, payroll.month_year, payroll.net_salary, payroll.payment_date, payroll.created_at, payroll.total_leaves, payroll.total_half_day, payroll.used_paid_leaves, payroll.used_sick_leaves, payroll.tax_deduction, payroll.salary_deduction, payroll.remaining_paid_leaves, payroll.remaining_sick_leaves, payroll.overtime_pay, payroll.total_overtime_hours, user_info.profile_image, users.username, employee_leaves.casual_leave",
             )
             ->join("users", "users.id = payroll.user_id")
             ->join("user_info", "user_info.user_id = payroll.user_id")

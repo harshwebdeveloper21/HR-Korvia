@@ -379,7 +379,9 @@
 
                             const employeeId = payroll.employee_id || payroll.user_id;
                             const monthYear = payroll.month_year || '';
-                            const empName = (payroll.username || '').replace(/"/g, '&quot;');
+                            const empFullName = [payroll.firstname, payroll.lastname].filter(Boolean).join(' ').trim();
+                            const empDisplayName = empFullName || payroll.username || 'Employee';
+                            const empName = empDisplayName.replace(/"/g, '&quot;');
                             const infoIcon = `<a href="javascript:void(0)" role="button" class="text-info fs-5 payroll-deduction-info" title="Why was this amount deducted?" data-user-id="${employeeId}" data-month-year="${monthYear}" data-name="${empName}"><i class="mdi mdi-information-outline"></i></a>`;
                             if (userRole !== 'employee') {
                                 actionButtons = `
@@ -969,7 +971,8 @@
         let totalLeave = 0, totalPaidLeave = 0, totalRemPaidLeave = 0, totalSickLeave = 0, totalRemSickLeave = 0, totalDeductionLeave = 0, totalDeduction = 0, totalSalary = 0, totalTax = 0, totalNetPay = 0;
 
         payrolls.forEach(p => {
-            const name       = (p.username || '').trim();
+            const fullName   = [p.firstname, p.lastname].filter(Boolean).join(' ').trim();
+            const name       = (fullName || p.username || '').trim();
             const salary     = Math.round(parseFloat(p.salary_amount) || 0);
             const fullLeaves = parseFloat(p.total_leaves)      || 0;
             const halfLeaves = parseFloat(p.total_half_day)    || 0;
@@ -1066,10 +1069,10 @@
         const pageW       = doc.internal.pageSize.getWidth();
         const totalRowIdx = tableBody.length - 1;
 
-        // ── Header Box & Banner Dimensions (Uniform Left & Right Margins: 28pt) ──────
-        const marginX  = 28;
+        // ── Header Box & Banner Dimensions (Uniform Left & Right Margins: 24pt) ──────
+        const marginX  = 24;
         const contentW = pageW - (marginX * 2);
-        const headerH  = companyAddress ? 64 : 50;
+        const headerH  = companyAddress ? 54 : 44;
 
         // Border box around header
         doc.setDrawColor(210, 210, 210);
@@ -1082,8 +1085,8 @@
         if (logoBase64) {
             try {
                 const imgProps = doc.getImageProperties(logoBase64);
-                const maxW = 125;
-                const maxH = 42;
+                const maxW = 120;
+                const maxH = 38;
                 const ratio = Math.min(maxW / imgProps.width, maxH / imgProps.height);
                 imgW = Math.round(imgProps.width * ratio);
                 imgH = Math.round(imgProps.height * ratio);
@@ -1105,31 +1108,32 @@
         doc.setTextColor(...black);
         doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
-        doc.text(companyName, textX, 33);
+        doc.text(companyName, textX, 31);
 
         // Company Address – normal, grey
         if (companyAddress) {
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(80, 80, 80);
-            doc.text(companyAddress, textX, 48);
+            doc.text(companyAddress, textX, 45);
         }
 
         // Month / Sheet title row – dark bar below header (matching exact marginX)
-        const titleBarY = headerH + 10 + 12;
+        const titleBarY = headerH + 10 + 9;
         doc.setFillColor(...darkBg);
-        doc.rect(marginX, titleBarY - 14, contentW, 20, 'F');
+        doc.rect(marginX, titleBarY - 12, contentW, 18, 'F');
         doc.setTextColor(...white);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        doc.text('Monthly Salary Sheet - ' + monthLabel, pageW / 2, titleBarY, { align: 'center' });
+        doc.text('Monthly Salary Sheet - ' + monthLabel, pageW / 2, titleBarY + 1, { align: 'center' });
 
-        const tableStartY = titleBarY + 12;
+        const tableStartY = titleBarY + 10;
 
-        // AutoTable aligned exactly to marginX (28pt left and right)
+        // AutoTable aligned exactly to marginX (24pt left and right)
         doc.autoTable({
             startY: tableStartY,
             margin: { left: marginX, right: marginX },
+            rowPageBreak: 'avoid',
             head: [[
                 'NAME',
                 'SALARY\n(Rs)',
@@ -1149,28 +1153,28 @@
                 fillColor: orange,
                 textColor: white,
                 fontStyle: 'bold',
-                fontSize: 6.5,
+                fontSize: 7.2,
                 halign: 'center',
                 valign: 'middle',
-                cellPadding: 2.5
+                cellPadding: { top: 3.5, bottom: 3.5, left: 1.5, right: 1.5 }
             },
             columnStyles: {
                 0:  { halign: 'left',   cellWidth: 'auto' },
-                1:  { halign: 'right',  cellWidth: 64 },
+                1:  { halign: 'right',  cellWidth: 66 },
                 2:  { halign: 'center', cellWidth: 42 },
-                3:  { halign: 'center', cellWidth: 46 },
-                4:  { halign: 'center', cellWidth: 48 },
-                5:  { halign: 'center', cellWidth: 46 },
-                6:  { halign: 'center', cellWidth: 48 },
-                7:  { halign: 'center', cellWidth: 54 },
-                8:  { halign: 'right',  cellWidth: 58 },
-                9:  { halign: 'right',  cellWidth: 62 },
-                10: { halign: 'center', cellWidth: 44 },
-                11: { halign: 'right',  cellWidth: 64 }
+                3:  { halign: 'center', cellWidth: 52 },
+                4:  { halign: 'center', cellWidth: 52 },
+                5:  { halign: 'center', cellWidth: 52 },
+                6:  { halign: 'center', cellWidth: 52 },
+                7:  { halign: 'center', cellWidth: 58 },
+                8:  { halign: 'right',  cellWidth: 64 },
+                9:  { halign: 'right',  cellWidth: 68 },
+                10: { halign: 'center', cellWidth: 56 },
+                11: { halign: 'right',  cellWidth: 70 }
             },
             styles: {
-                fontSize: 6.8,
-                cellPadding: { top: 3.5, bottom: 3.5, left: 2.5, right: 2.5 },
+                fontSize: 7.5,
+                cellPadding: { top: 2.6, bottom: 2.6, left: 2, right: 2 },
                 overflow: 'linebreak',
                 lineColor: [220, 220, 220],
                 lineWidth: 0.3
@@ -1182,7 +1186,7 @@
                     data.cell.styles.fillColor = darkBg;
                     data.cell.styles.textColor = white;
                     data.cell.styles.fontStyle = 'bold';
-                    data.cell.styles.fontSize  = 7.2;
+                    data.cell.styles.fontSize  = 7.8;
                     return;
                 }
                 // Paid Leave (col 3) highlight
