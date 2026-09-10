@@ -70,28 +70,23 @@
         color: #222222;
     }
     /* Custom bullet styles — span injection approach */
-    .letterhead-body ul.custom-bullet-list,
-    .letterhead-body ul[data-bullet-char] {
+    .letterhead-body ul.custom-bullet-list {
         list-style: none !important;
         padding-left: 0 !important;
         margin: 8px 0 14px 0 !important;
     }
-    .letterhead-body ul.custom-bullet-list li,
-    .letterhead-body ul[data-bullet-char] li {
+    .letterhead-body ul.custom-bullet-list li {
         list-style: none !important;
         margin-bottom: 8px !important;
+        line-height: 1.28 !important;
     }
-    .letterhead-body span.custom-bullet-char {
+    .custom-bullet-char {
         display: inline-block !important;
         width: 25px !important;
-        font-size: 1em !important;
         line-height: normal !important;
         vertical-align: middle !important;
         font-family: 'DejaVu Sans', Arial, sans-serif !important;
         color: #000000 !important;
-    }
-    .letterhead-body ul[data-bullet-char="➢"] span.custom-bullet-char {
-        font-size: 1.3em !important;
     }
 </style>
 <div class="row">
