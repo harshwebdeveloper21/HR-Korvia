@@ -67,8 +67,7 @@ class CandidateController extends ResourceController
         $validationRules = [
             'candidate_name' => 'required',
             'email' => 'required|valid_email|is_unique[candidate.email]',
-            'job_id' => 'required',
-            'phone_number' => 'required|numeric|exact_length[10]',
+            'phone_number' => 'required',
         ];
         $resumeFile = $this->request->getFile('resume');
         if ($resumeFile && $resumeFile->isValid() && !$resumeFile->hasMoved()) {
@@ -83,14 +82,9 @@ class CandidateController extends ResourceController
                 'valid_email' => 'Please enter a valid email address.',
                 'is_unique'   => 'This email has already been used to apply.'
             ],
-            'job_id' => [
-                'required' => 'Job is required.',
-            ],
 
             'phone_number' => [
                 'required' => 'Phone number is required.',
-                'numeric'  => 'Phone number must contain only numbers.',
-                'exact_length' => 'Phone number must be exactly 10 digits.',  // Custom message for exact_length
             ],
             'resume' => [
                 'max_size' => 'Resume file size must not exceed 2MB.',
@@ -113,6 +107,9 @@ class CandidateController extends ResourceController
         // Get the form data
         $data = $this->request->getPost();
         $data['job_date'] = date('Y-m-d');
+        if (empty($data['job_id'])) {
+            $data['job_id'] = 0; // Use 0 instead of null to avoid 'cannot be null' db errors
+        }
         // Handle optional file upload
         $resume = $this->request->getFile('resume');
         if ($resume && $resume->isValid() && !$resume->hasMoved()) {
@@ -135,7 +132,19 @@ class CandidateController extends ResourceController
         // Generate the next employee_id for the candidate
         $userInfoModel = new \App\Models\UserInfoModel();
         $lastEmployee = $userInfoModel->orderBy('employee_id', 'DESC')->first();
-        $newEmployeeId = $lastEmployee ? $lastEmployee['employee_id'] + 1 : 1000; // Default to 1000 if no employees exist
+        $newEmployeeId = 1000; // Default if no employees exist
+        if ($lastEmployee && !empty($lastEmployee['employee_id'])) {
+            $lastIdStr = (string)$lastEmployee['employee_id'];
+            if (is_numeric($lastIdStr)) {
+                $newEmployeeId = $lastIdStr + 1;
+            } elseif (preg_match('/(\d+)$/', $lastIdStr, $matches)) {
+                $num = (int)$matches[1] + 1;
+                $prefix = substr($lastIdStr, 0, -strlen($matches[1]));
+                $newEmployeeId = $prefix . sprintf('%0' . strlen($matches[1]) . 'd', $num);
+            } else {
+                $newEmployeeId = $lastIdStr . '-1';
+            }
+        }
 
         $userData = [
             'username' => $data['candidate_name'],
@@ -231,8 +240,8 @@ class CandidateController extends ResourceController
             return $this->failForbidden('Forbidden: You do not have access to this resource');
         }
 
-        $candidates = $this->candidateModel->select('candidate.id, jobs.job_title,candidate.email,candidate.notes , candidate.candidate_name , candidate.resume, candidate.status')
-            ->join('jobs', 'candidate.job_id = jobs.id')
+        $candidates = $this->candidateModel->select('candidate.id, candidate.job_id, candidate.candidate_name, candidate.email, candidate.phone_number, candidate.resume, candidate.job_date, candidate.status, jobs.job_title')
+            ->join('jobs', 'candidate.job_id = jobs.id', 'left')
             ->orderBy('candidate.created_at', 'DESC')
             ->findAll();
         return $this->respond(['status' => 'success', 'data' => $candidates]);
@@ -290,17 +299,13 @@ class CandidateController extends ResourceController
         $validationRules = [
             'candidate_name' => 'required',
             'email' => 'required|valid_email',
-            'job_id' => 'required',
-            'phone_number' => 'required|numeric|exact_length[10]',
+            'phone_number' => 'required',
         ];
         $validationMessages = [
             'candidate_name' => ['required' => 'Candidate name is required.'],
             'email' => ['required' => 'Email is required.', 'valid_email' => 'Please enter a valid email address.'],
-            'job_id' => ['required' => 'Job is required.'],
             'phone_number' => [
                 'required' => 'Phone number is required.',
-                'numeric'  => 'Phone number must contain only numbers.',
-                'exact_length' => 'Phone number must be exactly 10 digits.',  // Custom message for exact_length
             ],
         ];
 
