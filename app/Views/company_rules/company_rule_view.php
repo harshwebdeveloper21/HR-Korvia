@@ -1,100 +1,146 @@
 <?= $this->extend("layout") ?>
 <?= $this->section("content") ?>
 <style>
+    /* Prevent any horizontal overflow on the card and table wrapper */
+    .table-responsive {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #rules-Table {
+        width: 100% !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+        margin-bottom: 0 !important;
+    }
+
+    #rules-Table th,
+    #rules-Table td {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        vertical-align: middle !important;
+    }
+
+    #rules-Table thead th {
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        padding: 10px 6px !important;
+        line-height: 1.3 !important;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        vertical-align: middle !important;
+    }
+
+    /* Prevent DataTables sort arrows from crowding narrow header cells */
+    #rules-Table thead th.sorting,
+    #rules-Table thead th.sorting_asc,
+    #rules-Table thead th.sorting_desc {
+        padding-right: 18px !important;
+    }
+
+    #rules-Table tbody td {
+        font-size: 13px !important;
+        padding: 10px 6px !important;
+        line-height: 1.35 !important;
+        color: #2b3344;
+    }
+
+    /* Modern compact badges for Saturday Off Pattern */
+    .badge-sat-rule {
+        display: inline-block;
+        background-color: #f1f5f9;
+        color: #1e293b;
+        border: 1px solid #cbd5e1;
+        font-size: 11.5px;
+        font-weight: 500;
+        padding: 2px 7px;
+        border-radius: 4px;
+        margin: 2px 3px 2px 0;
+        white-space: nowrap;
+    }
+
+    /* Prevent negative margin row overflow from DataTables controls */
+    #rules-Table_wrapper .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Mobile Responsive Optimizations (<768px) */
     @media (max-width: 767px) {
-        .attendenceall {
-            font-size: 9px !important;
-            padding: 5.3px !important;
+        #rules-Table {
+            table-layout: auto !important;
         }
 
-        .iconfontsize {
-            font-size: 11px !important;
+        #rules-Table th:first-child,
+        #rules-Table td:first-child {
+            width: calc(100% - 55px) !important;
+            max-width: calc(100% - 55px) !important;
         }
 
-        .cart-sm-title {
-            font-size: 12px !important;
-            margin-bottom: 5px !important;
+        #rules-Table th.mobile-expand-col,
+        #rules-Table td.mobile-expand-col {
+            width: 55px !important;
+            max-width: 55px !important;
+            text-align: center !important;
+            vertical-align: middle !important;
         }
 
-        .dataTables_length {
-            margin-left: .1rem !important;
-            margin-bottom: .5rem !important;
-            font-size: 12px !important;
-            float: left !important;
+        #rules-Table .expanded-details {
+            display: none;
+            position: static !important;
+            width: 100% !important;
+            left: auto !important;
+            margin-top: 10px !important;
+            padding: 10px 12px !important;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #E66136;
+            box-sizing: border-box !important;
         }
 
-        .dataTables_filter {
-            font-size: 12px !important;
-            float: left !important;
-            /* margin-left: -5rem !important;  */
+        #rules-Table .expanded-details.show {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            left: auto !important;
         }
 
-        .col-sm-12.col-md-6 {
-            flex: 0 0 25%;
-            max-width: 26%;
+        /* Clean DataTables length & search on mobile */
+        #rules-Table_wrapper .dataTables_length,
+        #rules-Table_wrapper .dataTables_filter {
+            float: none !important;
+            width: 100% !important;
+            margin-bottom: 8px !important;
+            display: flex !important;
+            align-items: center !important;
+            font-size: 13px !important;
         }
 
-        .dataTables_filter label:before {
-            content: "" !important;
+        #rules-Table_wrapper .dataTables_filter label {
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            margin-bottom: 0 !important;
         }
 
-        #leaveTypes-Table_length label {
-            display: flex;
-            align-items: center;
+        #rules-Table_wrapper .dataTables_filter input {
+            flex: 1 1 auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 8px !important;
+            height: 32px !important;
+            font-size: 13px !important;
         }
 
-        /* Hide the text inside the label */
-        #leaveTypes-Table_length::first-text,
-        #leaveTypes-Table_length label::before {
-            display: none !important;
+        #rules-Table_wrapper .dataTables_paginate {
+            float: none !important;
+            text-align: center !important;
+            margin-top: 10px !important;
         }
-
-        /* Or a simpler and reliable trick */
-        #leaveTypes-Table_length label {
-            font-size: 0;
-            /* hide text */
-        }
-
-        #leaveTypes-Table_length label input {
-            font-size: 10px;
-            /* reset font size for input */
-        }
-
-        #leaveTypes-Table_length label {
-            font-size: 0px;
-            /* hide all text inside the label */
-        }
-
-        #leaveTypes-Table_filter label {
-            font-size: 0;
-        }
-
-        #leaveTypes-Table_filter input {
-            font-size: 14px;
-            /* Keep input font size normal */
-        }
-
-        #leaveTypes-Table_length label select {
-            font-size: 14px;
-            /* restore font size for the dropdown */
-        }
-
-        div.dataTables_wrapper div.dataTables_filter input {
-            margin-left: 0.5em;
-            display: inline-block;
-            width: 212px !important;
-            height: 29px !important
-        }
-
-        .custom-select {
-            height: 26px !important;
-            width: 57px !important;
-        }
-
-
-        /* .form-control {
-            height: 0px !important;
-        }  */
     }
 </style>
 <div class="row">
@@ -102,23 +148,20 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">Manage Rules</h4>
-                    <!-- <a href="/creates-rules" class="btn hr-btnbg attendenceall">
-                        <i class="mdi mdi-plus iconfontsize"></i> Add Rule
-                    </a> -->
+                    <h4 class="card-title mb-0">Manage Rules</h4>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="rules-Table">
                         <thead>
                             <tr>
-                                <th>Working Hours</th>
-                                <th class="desktop-only-col">Saturday Off Pattern</th>
-                                <th class="desktop-only-col">Yearly Holidays</th>
-                                <th class="desktop-only-col">Tax</th>
-                                <th class="desktop-only-col">Taxable Salary Amount</th>
-                                <th class="desktop-only-col">Lunch Break</th>
-                                <th class="desktop-only-col">Action</th>
-                                <th class="mobile-expand-col" style="width: 50px;">Details</th>
+                                <th style="width: 14%;">Working Hours</th>
+                                <th class="desktop-only-col" style="width: 25%;">Saturday Off Pattern</th>
+                                <th class="desktop-only-col text-center" style="width: 12%;">Yearly Holidays</th>
+                                <th class="desktop-only-col text-center" style="width: 10%;">Tax</th>
+                                <th class="desktop-only-col text-center" style="width: 15%;">Taxable Salary Amount</th>
+                                <th class="desktop-only-col text-center" style="width: 13%;">Lunch Break</th>
+                                <th class="desktop-only-col text-center" style="width: 11%;">Action</th>
+                                <th class="mobile-expand-col text-center" style="width: 50px;">Details</th>
                             </tr>
                         </thead>
                         <tbody id="rules-Table-Body"></tbody>
@@ -156,14 +199,32 @@
                         '5': '5th Saturday',
                     };
 
+                    const satShortMap = {
+                        '1': '1st Sat',
+                        '2': '2nd Sat',
+                        '3': '3rd Sat',
+                        '4': '4th Sat',
+                        '5': '5th Sat',
+                    };
+
                     rules.forEach((rule, index) => {
-                        // Convert "1,2" to "1st Saturday and 2nd Saturday"
+                        // Badges for desktop table
+                        const satBadges = rule.saturday_off_pattern
+                            ? rule.saturday_off_pattern
+                                .split(',')
+                                .map(num => num.trim())
+                                .filter(num => satShortMap[num])
+                                .map(num => `<span class="badge-sat-rule">${satShortMap[num]}</span>`)
+                                .join(' ') || '<span class="text-muted">None</span>'
+                            : '<span class="text-muted">None</span>';
+
+                        // Clean text for mobile detail panel
                         const saturdayOffList = rule.saturday_off_pattern
                             ? rule.saturday_off_pattern
                                 .split(',')
-                                .map(num => ordinalMap[num.trim()])
+                                .map(num => ordinalMap[num.trim()] || num.trim())
                                 .filter(Boolean)
-                                .join(' and ')
+                                .join(', ') || 'None'
                             : 'None';
 
                         tableRows += `
@@ -174,7 +235,7 @@
                                 <div class="expanded-details" id="rule-details-${rule.id}">
                                     <div class="detail-row">
                                         <span class="detail-label">Saturday Off:</span>
-                                        <span class="detail-value">${saturdayOffList || 'None'}</span>
+                                        <span class="detail-value">${saturdayOffList}</span>
                                     </div>
                                     <div class="detail-row">
                                         <span class="detail-label">Yearly Holidays:</span>
@@ -182,7 +243,7 @@
                                     </div>
                                     <div class="detail-row">
                                         <span class="detail-label">Tax:</span>
-                                        <span class="detail-value">${rule.tax ?? 0}%</span>
+                                        <span class="detail-value">${rule.tax ?? 0}</span>
                                     </div>
                                     <div class="detail-row">
                                         <span class="detail-label">Taxable Salary:</span>
@@ -190,7 +251,7 @@
                                     </div>
                                     <div class="detail-row">
                                         <span class="detail-label">Lunch Break:</span>
-                                        <span class="detail-value">${rule.lunch_break}</span>
+                                        <span class="detail-value">${rule.lunch_break ?? '-'}</span>
                                     </div>
                                     <div class="detail-actions">
                                         <a href="/creates-rules" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit Rules</a>
@@ -198,12 +259,13 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="desktop-only-col">${saturdayOffList || 'None'}</td>
-                        <td class="desktop-only-col">${rule.yearly_holidays ?? 0}</td>
-                        <td class="desktop-only-col">${rule.tax ?? 0}</td>
-                        <td class="desktop-only-col">${rule.salary_above_tax ?? 0}</td>
-                        <td class="desktop-only-col">${rule.lunch_break}</td>
-                        <td class="desktop-only-col"><a href="/creates-rules" class="text-warning fs-5" title="Edit">
+                        <td class="desktop-only-col">${satBadges}</td>
+                        <td class="desktop-only-col text-center">${rule.yearly_holidays ?? 0}</td>
+                        <td class="desktop-only-col text-center">${rule.tax ?? 0}</td>
+                        <td class="desktop-only-col text-center">${rule.salary_above_tax ?? 0}</td>
+                        <td class="desktop-only-col text-center">${rule.lunch_break ?? '-'}</td>
+                        <td class="desktop-only-col text-center">
+                            <a href="/creates-rules" class="text-warning fs-5" title="Edit Rules">
                                 <i class="mdi mdi-pencil"></i>
                             </a>
                         </td>
@@ -221,9 +283,11 @@
                     }
 
                     const dt = $('#rules-Table').DataTable({
+                        autoWidth: false,
+                        responsive: false,
                         columnDefs: [
                             {
-                                targets: 7,
+                                targets: [6, 7],
                                 orderable: false,
                                 searchable: false
                             }
