@@ -69,9 +69,11 @@ class CandidateController extends ResourceController
             'email' => 'required|valid_email|is_unique[candidate.email]',
             'job_id' => 'required',
             'phone_number' => 'required|numeric|exact_length[10]',
-            'resume' => 'uploaded[resume]|max_size[resume,2048]|ext_in[resume,pdf,doc,docx]',
-            // 'notes' => 'required',
         ];
+        $resumeFile = $this->request->getFile('resume');
+        if ($resumeFile && $resumeFile->isValid() && !$resumeFile->hasMoved()) {
+            $validationRules['resume'] = 'max_size[resume,2048]|ext_in[resume,pdf,doc,docx]';
+        }
         $validationMessages = [
             'candidate_name' => [
                 'required' => 'Candidate name is required.',
@@ -91,7 +93,6 @@ class CandidateController extends ResourceController
                 'exact_length' => 'Phone number must be exactly 10 digits.',  // Custom message for exact_length
             ],
             'resume' => [
-                'uploaded' => 'Resume file is required.',
                 'max_size' => 'Resume file size must not exceed 2MB.',
                 'ext_in'   => 'Resume must be in PDF, DOC, or DOCX format.',
             ],
@@ -168,7 +169,8 @@ class CandidateController extends ResourceController
             return $this->respond(['status' => 'error', 'message' => 'Failed to insert user info'], ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
         }
         // Insert the candidate into the database
-        if ($this->candidateModel->insert($data)) {
+        $candidateId = $this->candidateModel->insert($data);
+        if ($candidateId) {
             // ✅ Notify Admins, HRs, and the candidate
             $notificationModel = new \App\Models\NotificationModel();
             $userModel = new \App\Models\UserModel();
@@ -199,7 +201,18 @@ class CandidateController extends ResourceController
                 ]);
             }
 
-            return $this->respond(['status' => 'success', 'message' => 'Candidate created successfully'], ResponseInterface::HTTP_CREATED);
+            $candidateData = [
+                'id' => $candidateId,
+                'candidate_name' => $data['candidate_name'],
+                'job_id' => $data['job_id'] ?? null,
+                'email' => $data['email'] ?? null,
+                'phone_number' => $data['phone_number'] ?? null,
+            ];
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'Candidate created successfully',
+                'data' => $candidateData
+            ], ResponseInterface::HTTP_CREATED);
         }
 
         return $this->respond(['status' => 'error', 'message' => 'Failed to create candidate'], ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
