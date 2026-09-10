@@ -1,3 +1,25 @@
+<?php
+$monthYearFormatted = $payroll['month_year'] ?? '';
+if (!empty($payroll['month_year'])) {
+    $rawDate = trim($payroll['month_year']);
+    if (preg_match('/^(\d{4})-(\d{1,2})$/', $rawDate, $matches)) {
+        $dt = DateTime::createFromFormat('!Y-m', $matches[1] . '-' . str_pad($matches[2], 2, '0', STR_PAD_LEFT));
+        if ($dt) {
+            $monthYearFormatted = $dt->format('F-Y');
+        }
+    } elseif (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $rawDate)) {
+        $dt = DateTime::createFromFormat('!Y-m-d', $rawDate);
+        if ($dt) {
+            $monthYearFormatted = $dt->format('F-Y');
+        }
+    } else {
+        $timestamp = strtotime($rawDate);
+        if ($timestamp !== false) {
+            $monthYearFormatted = date('F-Y', $timestamp);
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -5,8 +27,15 @@
     <title>Salary Slip</title>
 
     <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body, table, th, td, div, p, span, h1, h2, h3 {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
         body {
-            font-family: DejaVu Sans, sans-serif;
             background: #fff;
             padding: 20px;
             font-size: 12px;
@@ -103,7 +132,7 @@
     <!-- MAIN TABLE -->
     <table class="main-table">
         <tr class="title-row">
-            <td colspan="4">Pay slip for <?= esc($payroll['month_year']) ?></td>
+            <td colspan="4">Pay slip for <?= esc($monthYearFormatted) ?></td>
         </tr>
         <tr>
             <td class="bold" width="22%">Emp. Name</td>
@@ -119,7 +148,7 @@
         </tr>
         <tr>
             <td class="bold">Salary Month</td>
-            <td><?= esc($payroll['month_year']) ?></td>
+            <td><?= esc($monthYearFormatted) ?></td>
             <td></td>
             <td></td>
         </tr>
