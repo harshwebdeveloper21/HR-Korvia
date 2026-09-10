@@ -360,20 +360,27 @@
                         "net_salary"
                       ] ?>">
                       <input type="hidden" class="single-month" value="<?= $month ?>">
-                      <div style="display:flex; gap:4px; align-items:center;">
+                      <div style="display:flex; gap:3px; align-items:center;">
                         <button type="button" class="btn btn-sm btn-open-remark" data-id="<?= $emp["user_id"] ?>"
                           title="Add Salary Adjustment & Remark"
-                          style="background-color:#6c757d;color:white">
+                          style="background-color:#6c757d;color:white;font-size:11px;padding:3px 7px;">
                           <i class="mdi mdi-comment-text-outline"></i>
                         </button>
+                        <?php if (!empty($emp["is_saved"]) && !empty($emp["payroll_id"])): ?>
+                          <a href="/payroll/<?= $emp['payroll_id'] ?>" title="Edit Payroll"
+                            class="btn btn-sm"
+                            style="background-color:#ffc107;color:white;font-size:11px;padding:3px 7px;">
+                            <i class="mdi mdi-pencil"></i>
+                          </a>
+                        <?php endif; ?>
                         <?php if (!empty($emp["is_saved"])): ?>
                           <button type="button" class="btn btn-sm btn-save-single" data-id="<?= $emp["user_id"] ?>"
-                            style="background-color:#28a745;color:white">
+                            style="background-color:#28a745;color:white;font-size:11px;padding:3px 7px;">
                             <i class="mdi mdi-content-save"></i> Update
                           </button>
                         <?php else: ?>
                           <button type="button" class="btn btn-sm btn-save-single" data-id="<?= $emp["user_id"] ?>"
-                            style="background-color:#E66136;color:white">
+                            style="background-color:#E66136;color:white;font-size:11px;padding:3px 7px;">
                             <i class="mdi mdi-content-save"></i> Save
                           </button>
                         <?php endif; ?>

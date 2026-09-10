@@ -382,8 +382,8 @@
                                     <span class="input-group-text"><i class="mdi mdi-check-circle fs-5"></i></span>
                                 </div>
                                 <select class="form-select" name="payment_status" id="payment_status">
-                                    <option value="" disabled selected>Select Payment Status</option>
-                                    <option value="Paid">Paid</option>
+                                    <option value="" disabled>Select Payment Status</option>
+                                    <option value="Paid" selected>Paid</option>
                                     <option value="Pending">Pending</option>
                                 </select>
                             </div>
@@ -678,7 +678,7 @@
                         $('#bonuses').val(payroll.bonuses || 0);
                         $('#net_salary').val(payroll.net_salary || 0);
                         $('#payment_date').val(payroll.payment_date || '');
-                        $('#payment_status').val(payroll.payment_status || '');
+                        $('#payment_status').val(payroll.payment_status || 'Paid');
 
                         // Populate hidden fields if they exist
                         if (payroll.leave_type) {
