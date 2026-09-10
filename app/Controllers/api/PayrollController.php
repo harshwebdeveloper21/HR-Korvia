@@ -170,7 +170,7 @@ class PayrollController extends ResourceController
                 ],
             ],
             "payment_date" => [
-                "rules" => "required|valid_date",
+                "rules" => "permit_empty|valid_date",
                 "errors" => [
                     "required" => "Payment Date field is required.",
                     "valid_date" =>
@@ -178,7 +178,7 @@ class PayrollController extends ResourceController
                 ],
             ],
             "payment_status" => [
-                "rules" => "required|string",
+                "rules" => "permit_empty|string",
                 "errors" => [
                     "required" => "Payment Status field is required.",
                     "string" => "Payment Status must be a valid string.",
@@ -326,7 +326,7 @@ class PayrollController extends ResourceController
 
         $this->payrollModel
             ->select(
-                "payroll.id, payroll.user_id as employee_id, payroll.salary_amount, payroll.month_year, payroll.net_salary, payroll.payment_date, payroll.created_at, payroll.total_leaves, payroll.total_half_day, payroll.total_paid_leaves, payroll.used_paid_leaves, payroll.remaining_paid_leaves, payroll.used_sick_leaves, payroll.remaining_sick_leaves, payroll.tax_deduction, payroll.salary_deduction, user_info.profile_image, users.username, employee_leaves.casual_leave",
+                "payroll.id, payroll.user_id as employee_id, payroll.salary_amount, payroll.month_year, payroll.net_salary, payroll.payment_date, payroll.created_at, payroll.total_leaves, payroll.total_half_day, payroll.used_paid_leaves, payroll.used_sick_leaves, payroll.tax_deduction, payroll.salary_deduction, payroll.remaining_paid_leaves, payroll.remaining_sick_leaves, payroll.overtime_pay, payroll.total_overtime_hours, user_info.profile_image, users.username",
             )
             ->join("users", "users.id = payroll.user_id")
             ->join("user_info", "user_info.user_id = payroll.user_id")
@@ -341,7 +341,7 @@ class PayrollController extends ResourceController
         if ($user->role === "admin") {
             // Admin can see all records (no filter)
             $records = $this->payrollModel
-                ->orderBy("created_at", "DESC")
+                ->orderBy("users.username", "ASC")
                 ->findAll();
         } elseif ($user->role === "hr") {
             // HR can see employee records and their own records
@@ -350,13 +350,13 @@ class PayrollController extends ResourceController
                     ->where("users.role", "employee")
                     ->orWhere("payroll.user_id", $user->sub)
                 ->groupEnd()
-                ->orderBy("created_at", "DESC")
+                ->orderBy("users.username", "ASC")
                 ->findAll();
         } elseif ($user->role === "employee") {
             // Employee can only see their own records
             $records = $this->payrollModel
                 ->where("payroll.user_id", $user->sub)
-                ->orderBy("created_at", "DESC")
+                ->orderBy("users.username", "ASC")
                 ->findAll();
         } else {
             return $this->failForbidden("Forbidden: Unauthorized role");
@@ -438,7 +438,7 @@ class PayrollController extends ResourceController
                 ],
             ],
             "payment_date" => [
-                "rules" => "required|valid_date",
+                "rules" => "permit_empty|valid_date",
                 "errors" => [
                     "required" => "Payment Date is required.",
                     "valid_date" =>
@@ -446,7 +446,7 @@ class PayrollController extends ResourceController
                 ],
             ],
             "payment_status" => [
-                "rules" => "required|string",
+                "rules" => "permit_empty|string",
                 "errors" => [
                     "required" => "Payment Status is required.",
                     "string" => "Payment Status must be a valid string.",
@@ -1959,10 +1959,11 @@ class PayrollController extends ResourceController
         $totalWorkHours = $workingHours + $halfDayWorkHours;
 
         $employees = $userInfoModel
-            ->select('user_info.*')
+            ->select('user_info.*, users.username')
             ->join('users', 'users.id = user_info.user_id')
             ->where('users.is_deleted', 0)
             ->whereIn('user_info.role', ['employee', 'hr'])
+            ->orderBy('users.username', 'ASC')
             ->findAll();
 
         // Filter out Inactive/Resigned employees who have zero attendance in the selected month
@@ -2006,6 +2007,7 @@ class PayrollController extends ResourceController
                 ->where("month_year", $month)
                 ->first();
             $emp["is_saved"] = $payroll ? true : false;
+            $emp["payroll_id"] = $payroll ? ($payroll["id"] ?? null) : null;
             $emp["days_in_month"] = $workingDays;
             $emp["hours_in_month"] = $totalWorkHours;
 

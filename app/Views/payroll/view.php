@@ -264,10 +264,13 @@
                             <tr>
                                 <th><input type="checkbox" id="checkAll" class="form-check-input"></th>
                                 <th>Employee Name</th>
-                                <th class="desktop-only-col">Base Salary</th>
-                                <th class="desktop-only-col">Month & Year</th>
+                                <th class="desktop-only-col text-center">Leaves<br>Half-Day</th>
+                                <th class="desktop-only-col text-center">Used Leave<br><small class="text-muted" style="font-size: 10px;">(Paid / Sick)</small></th>
+                                <th class="desktop-only-col text-center">Rem. Leave<br><small class="text-muted" style="font-size: 10px;">(Paid / Sick)</small></th>
+                                <th class="desktop-only-col">Per-Day<br>Salary</th>
+                                <th class="desktop-only-col">Tax</th>
+                                <th class="desktop-only-col">Salary<br>Deduction</th>
                                 <th class="desktop-only-col">Net Salary</th>
-                                <th class="desktop-only-col">Payment Date</th>
                                 <th style="display: none;">Created At</th>
                                 <th class="desktop-only-col">Action</th>
                                 <th class="mobile-expand-col" style="width: 50px;">Details</th>
@@ -416,13 +419,16 @@
                                                data-employee-id="${payroll.employee_id || payroll.id}">
                                     </td>
                                     <td class="py-1">
-                                        <div style="align-items: flex-start; gap: 10px;">
+                                        <div style="align-items: flex-start; gap: 10px; display: flex;">
                                             <a href="/payroll/profile/${payroll.id}" class="text-decoration-none">
                                                 <img src="${imageUrl}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                                             </a>
-                                            <a href="/payroll/profile/${payroll.id}" class="text-decoration-none text-dark">
-                                                <span class="capitalize-text">${payroll.username}</span>
-                                            </a>                                            
+                                            <div style="display: flex; flex-direction: column;">
+                                                <a href="/payroll/profile/${payroll.id}" class="text-decoration-none text-dark">
+                                                    <span class="capitalize-text fw-bold">${payroll.username}</span>
+                                                </a>
+                                                <small class="text-muted" style="font-size: 13px;">₹${parseFloat(payroll.salary_amount || 0).toLocaleString()}</small>
+                                            </div>
                                         </div>
                                         <div style="flex: 1;" class="align-self-center">
                                                 
@@ -432,25 +438,61 @@
                                                         <span class="detail-value">${payroll.salary_amount}</span>
                                                     </div>
                                                     <div class="detail-row">
-                                                        <span class="detail-label">Month & Year:</span>
-                                                        <span class="detail-value">${payroll.month_year}</span>
+                                                        <span class="detail-label">Leaves<br>Half-Day:</span>
+                                                        <span class="detail-value">${payroll.total_leaves || 0} / ${payroll.total_half_day || 0}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Used Leave:</span>
+                                                        <span class="detail-value">${payroll.used_paid_leaves || 0} / ${payroll.used_sick_leaves || 0}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Rem. Leave:</span>
+                                                        <span class="detail-value">${payroll.remaining_paid_leaves || 0} / ${payroll.remaining_sick_leaves || 0}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Tax:</span>
+                                                        <span class="detail-value">${payroll.tax_deduction || 0}</span>
+                                                    </div>
+                                                    <div class="detail-row">
+                                                        <span class="detail-label">Salary Deduction:</span>
+                                                        <span class="detail-value">${payroll.salary_deduction || 0}</span>
                                                     </div>
                                                     <div class="detail-row">
                                                         <span class="detail-label">Net Salary:</span>
                                                         <span class="detail-value">${payroll.net_salary}</span>
                                                     </div>
-                                                    <div class="detail-row">
-                                                        <span class="detail-label">Payment Date:</span>
-                                                        <span class="detail-value">${payroll.payment_date}</span>
-                                                    </div>
                                                     ${mobileActionsHtml}
                                                 </div>
                                             </div>
                                     </td>
-                                    <td class="desktop-only-col capitalize-text">${payroll.salary_amount}</td>
-                                    <td class="desktop-only-col capitalize-text">${payroll.month_year}</td>
-                                    <td class="desktop-only-col capitalize-text">${payroll.net_salary}</td>
-                                    <td class="desktop-only-col capitalize-text">${payroll.payment_date}</td>
+                                    <td class="desktop-only-col text-center">
+                                        <div style="display:flex; flex-direction: column; align-items: center;">
+                                            <div>
+                                                <span>${payroll.total_leaves || 0}</span> <span class="text-muted">/</span> <span>${payroll.total_half_day || 0}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="desktop-only-col text-center">
+                                        <div style="display:flex; flex-direction: column; align-items: center;">
+                                            <div>
+                                                <span>${payroll.used_paid_leaves || 0}</span> <span class="text-muted">/</span> <span>${payroll.used_sick_leaves || 0}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="desktop-only-col text-center">
+                                        <div style="display:flex; flex-direction: column; align-items: center;">
+                                            <div>
+                                                <span>${payroll.remaining_paid_leaves || 0}</span> <span class="text-muted">/</span> <span>${payroll.remaining_sick_leaves || 0}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="desktop-only-col">
+                                        ₹${(parseFloat(payroll.salary_amount || 0) / 30).toFixed(2)}<br>
+                                        <small class="text-muted">₹${((parseFloat(payroll.salary_amount || 0) / 30) / 8).toFixed(2)}/hr</small>
+                                    </td>
+                                    <td class="desktop-only-col text-center">${payroll.tax_deduction || '0'}</td>
+                                    <td class="desktop-only-col text-center text-danger">₹${parseFloat(payroll.salary_deduction || 0).toFixed(2)}</td>
+                                    <td class="desktop-only-col fw-bold">₹${parseFloat(payroll.net_salary || 0).toFixed(2)}</td>
                                     <td class="capitalize-text" style="display: none;">${payroll.created_at}</td>
                                     <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px;">
                                         ${actionButtons}
@@ -466,7 +508,7 @@
                         // $('#payroll-table').DataTable(); // Initialize DataTable for the updated rows
                         $('#payroll-table').DataTable({
                             order: [
-                                [6, 'desc']
+                                [1, 'asc']
                             ],
                             columnDefs: [{
                                 targets: 0, // checkbox column
@@ -474,11 +516,11 @@
                                 searchable: false
                             },
                             {
-                                targets: 6,
+                                targets: 9,
                                 visible: false
                             },
                             {
-                                targets: 8, // mobile expand column
+                                targets: 11, // mobile expand column
                                 orderable: false,
                                 searchable: false
                             }
