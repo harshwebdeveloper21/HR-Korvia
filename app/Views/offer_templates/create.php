@@ -181,7 +181,7 @@
                                     list.$.style.setProperty('list-style', 'none', 'important');
                                     list.$.style.setProperty('padding-left', '0', 'important');
                                     list.$.style.setProperty('margin-left', '0', 'important');
-                                    list.setAttribute('data-bullet-char', value);
+                                    
                                     var ulClass = (list.getAttribute('class') || '').replace(/\bcustom-bullet-list\b/g, '').trim();
                                     list.setAttribute('class', ulClass ? ulClass + ' custom-bullet-list' : 'custom-bullet-list');
 
@@ -282,10 +282,9 @@
                 'https://cdn.ckeditor.com/4.22.1/standard/contents.css',
                 'data:text/css,' + encodeURIComponent([
                     'body { font-family: "Times New Roman", Times, serif; font-size: 15px; line-height: 1.45; color: #000; }',
-                    'ul.custom-bullet-list, ul[data-bullet-char] { list-style: none !important; padding-left: 0 !important; margin-left: 0 !important; }',
-                    'ul.custom-bullet-list li, ul[data-bullet-char] li { list-style: none !important; margin-bottom: 6px !important; }',
-                    'span.custom-bullet-char { display: inline-block !important; width: 25px !important; font-size: 1em !important; line-height: normal !important; vertical-align: middle !important; font-family: "DejaVu Sans", Arial, sans-serif !important; color: #000 !important; }',
-                    'ul[data-bullet-char="➢"] span.custom-bullet-char { font-size: 1.3em !important; }'
+                    'ul.custom-bullet-list { list-style: none !important; padding-left: 0 !important; margin-left: 0 !important; }',
+                    'ul.custom-bullet-list li { list-style: none !important; margin-bottom: 6px !important; }',
+                    'span.custom-bullet-char { display: inline-block !important; width: 25px !important; line-height: normal !important; vertical-align: middle !important; font-family: "DejaVu Sans", Arial, sans-serif !important; color: #000 !important; }'
                 ].join(' '))
             ],
             on: {
