@@ -116,10 +116,116 @@
 <script>
     if (!CKEDITOR.stylesSet.get('custom_offer_styles')) {
         CKEDITOR.stylesSet.add('custom_offer_styles', [
-            { name: 'Arrow Bullet List (➤)', element: 'ul', attributes: { 'class': 'arrow-list' } },
-            { name: 'Arrow Item (➤)', element: 'li', attributes: { 'class': 'arrow-item' } },
             { name: 'Document Title', element: 'h3', styles: { 'text-decoration': 'underline', 'text-transform': 'uppercase' } }
         ]);
+    }
+
+    if (!CKEDITOR.plugins.get('bulletDropdown')) {
+        CKEDITOR.plugins.add('bulletDropdown', {
+            requires: 'richcombo',
+            init: function(editor) {
+                editor.ui.addRichCombo('BulletDropdown', {
+                    label: 'Bullets ▼',
+                    title: 'Select Bullet Style',
+                    toolbar: 'insert',
+                    panel: {
+                        css: [ CKEDITOR.skin.getPath('editor') ].concat( editor.config.contentsCss ),
+                        multiSelect: false
+                    },
+                    init: function() {
+                        this.startGroup('Standard Bullets');
+                        this.add('disc',   '● Filled Circle',   'Disc (●)');
+                        this.add('circle', '○ Empty Circle',    'Circle (○)');
+                        this.add('square', '■ Filled Square',   'Square (■)');
+                        this.startGroup('Custom Icons');
+                        this.add('◆', '◆ Diamond',          'Diamond (◆)');
+                        this.add('➢', '➢ 3D Arrow',         '3D Arrow (➢)');
+                        this.add('➤', '➤ Right Arrow',      'Right Arrow (➤)');
+                        this.add('✓', '✓ Checkmark',        'Checkmark (✓)');
+                        this.add('★', '★ Star',             'Star (★)');
+                        this.add('▪', '▪ Small Square',     'Small Square (▪)');
+                    },
+                    onClick: function(value) {
+                        var isStandard = (value === 'disc' || value === 'circle' || value === 'square');
+
+                        // CKEditor 4: the dropdown panel steals focus from the editor.
+                        // Restore focus first, then wait a tick before reading selection.
+                        editor.focus();
+
+                        var applyBullet = function() {
+                            editor.fire('saveSnapshot');
+
+                            var selection = editor.getSelection();
+                            var startEl = selection ? selection.getStartElement() : null;
+
+                            if (!startEl) return;
+
+                            var list = startEl.getAscendant('ul', true) ||
+                                       startEl.getAscendant('ol', true);
+
+                            var doInject = function(list) {
+                                if (!list) return;
+
+                                if (isStandard) {
+                                    list.setStyle('list-style-type', value);
+                                    list.removeAttribute('data-bullet-char');
+                                    var items = list.find('li');
+                                    for (var i = 0; i < items.count(); i++) {
+                                        var spans = items.getItem(i).find('span.custom-bullet-char');
+                                        for (var s = 0; s < spans.count(); s++) {
+                                            spans.getItem(s).remove();
+                                        }
+                                    }
+                                } else {
+                                    // Force list-style: none with !important via native DOM
+                                    list.$.style.setProperty('list-style', 'none', 'important');
+                                    list.$.style.setProperty('padding-left', '0', 'important');
+                                    list.$.style.setProperty('margin-left', '0', 'important');
+                                    list.setAttribute('data-bullet-char', value);
+                                    var ulClass = (list.getAttribute('class') || '').replace(/\bcustom-bullet-list\b/g, '').trim();
+                                    list.setAttribute('class', ulClass ? ulClass + ' custom-bullet-list' : 'custom-bullet-list');
+
+                                    var items = list.find('li');
+                                    for (var i = 0; i < items.count(); i++) {
+                                        var li = items.getItem(i);
+                                        var old = li.find('span.custom-bullet-char');
+                                        for (var s = 0; s < old.count(); s++) {
+                                            old.getItem(s).remove();
+                                        }
+                                        li.$.style.setProperty('list-style', 'none', 'important');
+                                        li.$.style.setProperty('margin-bottom', '6px', 'important');
+                                        var span = editor.document.createElement('span');
+                                        span.setAttribute('class', 'custom-bullet-char');
+                                        var fSize = (value === '➢') ? '1.4em' : '1.2em';
+                                        span.setAttribute('style',
+                                            'display:inline-block; width:25px; ' +
+                                            'font-size:' + fSize + '; line-height:normal; vertical-align:middle; ' +
+                                            'font-family:"DejaVu Sans",Arial,sans-serif; color:#000;');
+                                        span.setHtml(value + '\u00A0');
+                                        li.$.insertBefore(span.$, li.$.firstChild);
+                                    }
+                                }
+                                editor.fire('saveSnapshot');
+                            };
+
+                            if (!list || list.getName() === 'ol') {
+                                editor.execCommand('bulletedlist');
+                                setTimeout(function() {
+                                    var sel2 = editor.getSelection();
+                                    var el2 = sel2 ? sel2.getStartElement() : null;
+                                    var newList = el2 ? (el2.getAscendant('ul', true) || null) : null;
+                                    doInject(newList);
+                                }, 50);
+                            } else {
+                                doInject(list);
+                            }
+                        };
+
+                        setTimeout(applyBullet, 10);
+                    }
+                });
+            }
+        });
     }
 
     const toolbarConfig = [
@@ -128,7 +234,7 @@
         { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'CopyFormatting', 'RemoveFormat'] },
         { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'] },
         { name: 'links', items: ['Link', 'Unlink'] },
-        { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'SpecialChar', 'PageBreak'] },
+        { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'SpecialChar', 'BulletDropdown', 'PageBreak'] },
         '/',
         { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] },
         { name: 'colors', items: ['TextColor', 'BGColor'] },
@@ -168,38 +274,22 @@
             height: 380,
             removePlugins: 'elementspath',
             removeButtons: '',
+            extraPlugins: 'bulletDropdown',
             resize_enabled: false,
             stylesSet: 'custom_offer_styles',
             toolbar: toolbarConfig,
+            contentsCss: [
+                'https://cdn.ckeditor.com/4.22.1/standard/contents.css',
+                'data:text/css,' + encodeURIComponent([
+                    'body { font-family: "Times New Roman", Times, serif; font-size: 15px; line-height: 1.45; color: #000; }',
+                    'ul.custom-bullet-list, ul[data-bullet-char] { list-style: none !important; padding-left: 0 !important; margin-left: 0 !important; }',
+                    'ul.custom-bullet-list li, ul[data-bullet-char] li { list-style: none !important; margin-bottom: 6px !important; }',
+                    'span.custom-bullet-char { display: inline-block !important; width: 25px !important; font-size: 1em !important; line-height: normal !important; vertical-align: middle !important; font-family: "DejaVu Sans", Arial, sans-serif !important; color: #000 !important; }',
+                    'ul[data-bullet-char="➢"] span.custom-bullet-char { font-size: 1.3em !important; }'
+                ].join(' '))
+            ],
             on: {
                 instanceReady: function (evt) {
-                    // Inject live styling into CKEditor editable iframe so bullets render as arrows
-                    const customCss = `
-                        body { font-family: "Times New Roman", Times, serif; font-size: 15px; line-height: 1.45; color: #000; }
-                        ul.arrow-list, ul {
-                            list-style: none !important;
-                            padding-left: 0 !important;
-                            margin: 6px 0 10px 0 !important;
-                        }
-                        ul.arrow-list li, ul li {
-                            position: relative !important;
-                            margin-bottom: 6px !important;
-                            padding-left: 20px !important;
-                            text-indent: -20px !important;
-                        }
-                        ul.arrow-list li::before, ul li::before {
-                            content: "➤ " !important;
-                            color: #000 !important;
-                            font-size: 13px !important;
-                            margin-right: 4px !important;
-                            font-family: "DejaVu Sans", Arial, sans-serif !important;
-                        }
-                    `;
-                    const styleEl = evt.editor.document.createElement('style');
-                    styleEl.setAttribute('type', 'text/css');
-                    styleEl.setText(customCss);
-                    evt.editor.document.getHead().append(styleEl);
-
                     if (initialContent) {
                         evt.editor.setData(initialContent);
                     }

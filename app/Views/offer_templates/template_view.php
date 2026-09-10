@@ -69,23 +69,29 @@
         line-height: 1.65;
         color: #222222;
     }
-    .letterhead-body ul, ul.arrow-list {
+    /* Custom bullet styles — span injection approach */
+    .letterhead-body ul.custom-bullet-list,
+    .letterhead-body ul[data-bullet-char] {
         list-style: none !important;
         padding-left: 0 !important;
         margin: 8px 0 14px 0 !important;
     }
-    .letterhead-body ul li, ul.arrow-list li {
+    .letterhead-body ul.custom-bullet-list li,
+    .letterhead-body ul[data-bullet-char] li {
+        list-style: none !important;
         margin-bottom: 8px !important;
-        text-indent: -20px !important;
-        padding-left: 20px !important;
-        position: relative !important;
     }
-    .letterhead-body ul li:before, ul.arrow-list li:before {
-        content: "➤ ";
-        font-family: 'DejaVu Sans', sans-serif !important;
-        font-size: 13px !important;
-        margin-right: 4px !important;
+    .letterhead-body span.custom-bullet-char {
+        display: inline-block !important;
+        width: 25px !important;
+        font-size: 1em !important;
+        line-height: normal !important;
+        vertical-align: middle !important;
+        font-family: 'DejaVu Sans', Arial, sans-serif !important;
         color: #000000 !important;
+    }
+    .letterhead-body ul[data-bullet-char="➢"] span.custom-bullet-char {
+        font-size: 1.3em !important;
     }
 </style>
 <div class="row">
