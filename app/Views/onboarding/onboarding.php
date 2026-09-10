@@ -194,8 +194,12 @@
                                             <span class="input-group-text"><i class="mdi mdi-briefcase fs-5"></i></span>
                                         </div>
                                         <input type="text" class="form-control" name="job_title" id="job_title"
-                                            placeholder="Enter Interview Title" readonly />
+                                            placeholder="Enter Job Title" />
+                                        <input type="hidden" name="new_job_title" id="new_job_title" value="" />
                                     </div>
+                                    <small id="job_title_hint" class="text-muted d-none mt-1" style="font-size:11px;">
+                                        <i class="mdi mdi-pencil-outline"></i> Job not found — type a name and it will be saved automatically.
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -334,7 +338,7 @@
 
 <!-- Quick Add Candidate Modal -->
 <div class="modal fade" id="quickAddCandidateModal" tabindex="-1" aria-labelledby="quickAddCandidateModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title font-weight-bold d-flex align-items-center mb-0" id="quickAddCandidateModalLabel">
@@ -372,17 +376,17 @@
                             <label class="form-label" for="quick_phone_number">Phone Number <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-phone"></i></span>
-                                <input type="tel" class="form-control" name="phone_number" id="quick_phone_number" placeholder="10-digit mobile number" maxlength="10" required />
+                                <input type="tel" class="form-control" name="phone_number" id="quick_phone_number" placeholder="Enter phone number" maxlength="20" required />
                             </div>
                         </div>
 
                         <!-- Job Position -->
                         <div class="col-md-6">
-                            <label class="form-label" for="quick_job_id">Job / Position <span class="text-danger">*</span></label>
+                            <label class="form-label" for="quick_job_id">Job / Position</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-briefcase"></i></span>
-                                <select class="form-select" name="job_id" id="quick_job_id" required>
-                                    <option value="" disabled selected>Select Job Position</option>
+                                <select class="form-select" name="job_id" id="quick_job_id">
+                                    <option value="" disabled selected>Select Job Position (Optional)</option>
                                     <?php foreach ($jobs as $job): ?>
                                         <option value="<?= $job['id'] ?>"><?= esc($job['job_title']) ?></option>
                                     <?php endforeach; ?>
@@ -421,20 +425,44 @@
 <script>
     function fetchJobId() {
         let candidateId = document.getElementById("candidate").value;
-        $('#job_title').prop('disabled', true);
+        const jobTitleInput = document.getElementById("job_title");
+        const newJobTitleInput = document.getElementById("new_job_title");
+        const jobHint = document.getElementById("job_title_hint");
+
+        jobTitleInput.readOnly = true;
+        jobTitleInput.classList.remove('border-warning');
+        jobHint.classList.add('d-none');
+        newJobTitleInput.value = '';
+
         if (candidateId) {
             fetch(`<?= base_url("api/get-candidate-job/") ?>${candidateId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        document.getElementById("job_title").value = data.job_title;
+                        jobTitleInput.value = data.job_title;
+                        jobTitleInput.readOnly = true;
+                        newJobTitleInput.value = '';
+                        jobHint.classList.add('d-none');
                     } else {
-                        document.getElementById("job_title").value = "Not Found";
+                        // Job not found — allow user to type a new job title
+                        jobTitleInput.value = '';
+                        jobTitleInput.readOnly = false;
+                        jobTitleInput.placeholder = 'Type a job title to create...';
+                        jobTitleInput.classList.add('border-warning');
+                        jobHint.classList.remove('d-none');
+
+                        // Sync typed value into hidden new_job_title field
+                        jobTitleInput.oninput = function() {
+                            newJobTitleInput.value = this.value.trim();
+                        };
                     }
                 })
                 .catch(error => console.error('Error:', error));
         } else {
-            document.getElementById("job_title").value = "";
+            jobTitleInput.value = '';
+            jobTitleInput.readOnly = true;
+            newJobTitleInput.value = '';
+            jobHint.classList.add('d-none');
         }
     }
 
@@ -470,11 +498,11 @@
             const icon = $('#quickCandidateIcon');
 
             const phone = $('#quick_phone_number').val().trim();
-            if (!/^\d{10}$/.test(phone)) {
+            if (phone === '') {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Invalid Phone Number',
-                    text: 'Please enter a valid 10-digit phone number.',
+                    title: 'Phone Number Required',
+                    text: 'Please enter a phone number.',
                     buttonsStyling: false,
                     customClass: { confirmButton: 'hr-btnbg' }
                 });

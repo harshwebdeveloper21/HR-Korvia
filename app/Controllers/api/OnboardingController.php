@@ -145,8 +145,33 @@ class OnboardingController extends ResourceController
             ], 400);
         }
 
-        $data['job_id'] = $candidate['job_id'];
+        $data['job_id'] = $candidate['job_id'] ?? 0;
         $data['created_by'] = $user->sub;
+
+        // If candidate has no job but user typed a new job title, create the job first
+        $newJobTitle = trim($this->request->getPost('new_job_title') ?? '');
+        if ((!$data['job_id'] || $data['job_id'] == 0) && $newJobTitle !== '') {
+            $jobModel = new \App\Models\JobModel();
+            $departmentId = (int)($data['department_id'] ?? 0);
+            $newJobId = $jobModel->insert([
+                'job_title'     => $newJobTitle,
+                'department_id' => $departmentId ?: null,
+                'status'        => 'open',
+                'age'           => 'Any',
+                'gender'        => 'other',
+                'job_type'      => 'full',
+                'experience'    => 0,
+                'salary_range'  => '0',
+                'post_date'     => date('Y-m-d'),
+                'close_date'    => date('Y-m-d', strtotime('+1 year')),
+                'created_by'    => $user->sub,
+            ]);
+            if ($newJobId) {
+                $data['job_id'] = $newJobId;
+                // Also update candidate's job_id
+                $candidateModel->update($candidate['id'], ['job_id' => $newJobId]);
+            }
+        }
 
         // Insert the onboarding entry into the database
         if ($onboardingModel->insert($data)) {
@@ -257,9 +282,9 @@ class OnboardingController extends ResourceController
             onboarding.offer_later_id,
             department.department_name
         ')
-        ->join('candidate', 'onboarding.candidate_id = candidate.id')
-        ->join('jobs', 'onboarding.job_id = jobs.id')
-        ->join('department', 'onboarding.department_id = department.id')
+        ->join('candidate', 'onboarding.candidate_id = candidate.id', 'left')
+        ->join('jobs', 'onboarding.job_id = jobs.id', 'left')
+        ->join('department', 'onboarding.department_id = department.id', 'left')
         ->orderBy('onboarding.created_at', 'DESC');
 
     // Apply department filter if provided
@@ -293,9 +318,9 @@ class OnboardingController extends ResourceController
         jobs.job_title,
         department.department_name
     ')
-            ->join('candidate', 'onboarding.candidate_id = candidate.id')
-            ->join('jobs', 'onboarding.job_id = jobs.id')
-            ->join('department', 'onboarding.department_id = department.id');
+            ->join('candidate', 'onboarding.candidate_id = candidate.id', 'left')
+            ->join('jobs', 'onboarding.job_id = jobs.id', 'left')
+            ->join('department', 'onboarding.department_id = department.id', 'left');
 
         // If an ID is provided, filter by ID; otherwise, get all jobs
         if ($id !== null) {
