@@ -981,9 +981,10 @@
 <script>
     document.getElementById('user_id').addEventListener('change', function() {
         const userId = this.value;
+        const monthYear = document.getElementById('month_year').value || '';
 
         if (userId) {
-            fetch(`<?= base_url('api/get-salary') ?>?user_id=${userId}`)
+            fetch(`<?= base_url('api/get-salary') ?>?user_id=${userId}&month_year=${monthYear}`)
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('salary_amount').value = data.salary;
@@ -1006,11 +1007,19 @@
         });
 
 
-        $('#user_id, #month_year').on('change', function() {
+        $('#user_id, #month_year').on('change', function(e) {
             const userId = $('#user_id').val();
             const monthYear = $('#month_year').val(); // format YYYY-MM
 
             if (userId && monthYear) {
+                if (e.target.id === 'month_year' && !isEditMode) {
+                    fetch(`<?= base_url('api/get-salary') ?>?user_id=${userId}&month_year=${monthYear}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('salary_amount').value = data.salary;
+                        });
+                }
+
                 const [year, month] = monthYear.split('-');
 
                 $.ajax({

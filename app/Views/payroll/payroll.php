@@ -849,12 +849,13 @@
 
         document.getElementById('user_id').addEventListener('change', function () {
             const userId = this.value;
+            const monthYear = document.getElementById('month_year').value || '';
 
             if (!userId) return;
 
             $('#loader').show();
 
-            fetch(`<?= base_url("api/get-salary") ?>?user_id=${userId}`)
+            fetch(`<?= base_url("api/get-salary") ?>?user_id=${userId}&month_year=${monthYear}`)
                 .then(response => response.json())
                 .then(data => {
                     // In edit mode, don't overwrite saved salary_amount
@@ -915,7 +916,7 @@
                 });
         });
 
-        $('#user_id, #month_year').on('change', function () {
+        $('#user_id, #month_year').on('change', function (e) {
             // Skip if we're in the middle of loading edit data
             if (isLoadingEditData) return;
 
@@ -923,6 +924,15 @@
             const monthYear = $('#month_year').val();
 
             if (!userId || !monthYear) return;
+
+            // If month_year changed, update the salary amount as per the selected month's active increment
+            if (e.target.id === 'month_year' && !isEditMode) {
+                fetch(`<?= base_url("api/get-salary") ?>?user_id=${userId}&month_year=${monthYear}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        $('#salary_amount').val(data.salary ?? '');
+                    });
+            }
 
             const [year, month] = monthYear.split('-');
             const payrollType = $('#payroll_type').val();

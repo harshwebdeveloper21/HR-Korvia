@@ -10,6 +10,11 @@
         }
     }
 
+    /* Fix SweetAlert z-index behind Modal */
+    .swal2-container {
+        z-index: 99999 !important;
+    }
+
     /* Candidate Select2 + Quick Add Button Group */
     .candidate-input-group {
         display: flex !important;
@@ -358,7 +363,7 @@
                             <label class="form-label" for="quick_candidate_name">Candidate Name <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-account"></i></span>
-                                <input type="text" class="form-control" name="candidate_name" id="quick_candidate_name" placeholder="Enter Full Name" required />
+                                <input type="text" class="form-control" name="candidate_name" id="quick_candidate_name" placeholder="Enter Full Name" />
                             </div>
                         </div>
 
@@ -367,7 +372,7 @@
                             <label class="form-label" for="quick_email">Email Address <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-email"></i></span>
-                                <input type="email" class="form-control" name="email" id="quick_email" placeholder="name@example.com" required />
+                                <input type="email" class="form-control" name="email" id="quick_email" placeholder="name@example.com" />
                             </div>
                         </div>
 
@@ -376,7 +381,7 @@
                             <label class="form-label" for="quick_phone_number">Phone Number <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="mdi mdi-phone"></i></span>
-                                <input type="tel" class="form-control" name="phone_number" id="quick_phone_number" placeholder="Enter phone number" maxlength="20" required />
+                                <input type="tel" class="form-control" name="phone_number" id="quick_phone_number" placeholder="Enter phone number" maxlength="20" />
                             </div>
                         </div>
 
@@ -497,7 +502,32 @@
             const spinner = $('#quickCandidateSpinner');
             const icon = $('#quickCandidateIcon');
 
+            const candidateName = $('#quick_candidate_name').val().trim();
+            const email = $('#quick_email').val().trim();
             const phone = $('#quick_phone_number').val().trim();
+
+            if (candidateName === '') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Name Required',
+                    text: 'Please enter the candidate\'s full name.',
+                    buttonsStyling: false,
+                    customClass: { confirmButton: 'hr-btnbg' }
+                });
+                return;
+            }
+
+            if (email === '') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Email Required',
+                    text: 'Please enter the candidate\'s email address.',
+                    buttonsStyling: false,
+                    customClass: { confirmButton: 'hr-btnbg' }
+                });
+                return;
+            }
+
             if (phone === '') {
                 Swal.fire({
                     icon: 'warning',
