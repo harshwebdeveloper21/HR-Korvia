@@ -87,6 +87,8 @@ class PayrollController extends ResourceController
     public function getSalary()
     {
         $userId = $this->request->getGet("user_id");
+        $monthYear = $this->request->getGet("month_year"); // format: YYYY-MM
+
         $userModel = new UserInfoModel();
         $accountModel = new AccountDetailModel();
         $companyRulesModel = new CompanyRulesModel();
@@ -95,17 +97,53 @@ class PayrollController extends ResourceController
         $account = $accountModel->where("user_id", $userId)->first();
         $company_rules = $companyRulesModel->first();
 
+        // Determine which salary was active for the given month
+        $effectiveSalary = (float)($user["salary"] ?? 0);
+
+        if (!empty($monthYear)) {
+            // Parse the payroll month: use the last day of the month as the cutoff
+            $payrollMonthEnd = date('Y-m-t', strtotime($monthYear . '-01'));
+
+            // Fetch increment history ordered by effective_from_date DESC
+            $db = \Config\Database::connect();
+            $incrementHistory = $db->table('salary_increment_history')
+                ->where('employee_id', $userId)
+                ->orderBy('effective_from_date', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            if (!empty($incrementHistory)) {
+                // Find the most recent increment whose effective_from_date <= last day of payroll month
+                $salaryForMonth = null;
+                foreach ($incrementHistory as $record) {
+                    if ($record['effective_from_date'] <= $payrollMonthEnd) {
+                        $salaryForMonth = (float)$record['new_salary'];
+                        break;
+                    }
+                }
+
+                if ($salaryForMonth !== null) {
+                    // An increment was active during this payroll month
+                    $effectiveSalary = $salaryForMonth;
+                } else {
+                    // All increments are after this payroll month — use the oldest previous_salary
+                    $oldest = end($incrementHistory);
+                    $effectiveSalary = (float)($oldest['previous_salary'] ?? $effectiveSalary);
+                }
+            }
+        }
+
         return $this->response->setJSON([
-            "salary" => $user["salary"] ?? 0,
-            "tax" => $company_rules["tax"] ?? 0,
+            "salary"           => $effectiveSalary,
+            "tax"              => $company_rules["tax"] ?? 0,
             "salary_above_tax" => $company_rules["salary_above_tax"] ?? 0,
-            "acc_number" => $account["acc_number"] ?? "",
-            "bank_name" => $account["bank_name"] ?? "",
-            "ifsc_code" => $account["ifsc_code"] ?? "",
-            "acc_in_name" => $account["acc_in_name"] ?? "",
-            "branch_name" => $account["branch_name"] ?? "",
-            "branch_code" => $account["branch_code"] ?? "",
-            "company_rules" => $company_rules,
+            "acc_number"       => $account["acc_number"] ?? "",
+            "bank_name"        => $account["bank_name"] ?? "",
+            "ifsc_code"        => $account["ifsc_code"] ?? "",
+            "acc_in_name"      => $account["acc_in_name"] ?? "",
+            "branch_name"      => $account["branch_name"] ?? "",
+            "branch_code"      => $account["branch_code"] ?? "",
+            "company_rules"    => $company_rules,
         ]);
     }
 
@@ -2010,6 +2048,33 @@ class PayrollController extends ResourceController
             $emp["payroll_id"] = $payroll ? ($payroll["id"] ?? null) : null;
             $emp["days_in_month"] = $workingDays;
             $emp["hours_in_month"] = $totalWorkHours;
+
+            // Determine the active salary for this month based on increment history
+            $payrollMonthEnd = $endOfMonth; // calculated earlier as Y-m-t
+            $db = \Config\Database::connect();
+            $incrementHistory = $db->table('salary_increment_history')
+                ->where('employee_id', $emp["user_id"])
+                ->orderBy('effective_from_date', 'DESC')
+                ->get()
+                ->getResultArray();
+
+            $effectiveSalary = (float)($emp["salary"] ?? 0);
+            if (!empty($incrementHistory)) {
+                $salaryForMonth = null;
+                foreach ($incrementHistory as $record) {
+                    if ($record['effective_from_date'] <= $payrollMonthEnd) {
+                        $salaryForMonth = (float)$record['new_salary'];
+                        break;
+                    }
+                }
+                if ($salaryForMonth !== null) {
+                    $effectiveSalary = $salaryForMonth;
+                } else {
+                    $oldest = end($incrementHistory);
+                    $effectiveSalary = (float)($oldest['previous_salary'] ?? $effectiveSalary);
+                }
+            }
+            $emp["salary"] = $effectiveSalary;
 
             // If a payroll record already exists for this month, use its saved salary_amount
             // (the value entered when payroll was created, e.g. ₹100,000) instead of the

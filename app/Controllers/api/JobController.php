@@ -413,20 +413,27 @@ class JobController extends ResourceController
             return $this->failForbidden('Forbidden: Only Admin can delete job records');
         }
 
-        // Check if there are candidates applied for this job
-        $candidateModel = new \App\Models\CandidateModel();
-        $candidates = $candidateModel->where('job_id', $id)->countAllResults();
-
-        if ($candidates > 0) {
-            return $this->respond([
-                'status' => 'error',
-                'message' => 'Cannot delete this job because candidates have applied for it.'
-            ], 400);
+        // Verify the job exists
+        $job = $this->jobModel->find($id);
+        if (!$job) {
+            return $this->respond(['status' => 'error', 'message' => 'Job not found'], 404);
         }
 
-        // Proceed with job deletion if no candidates are linked
+        // Safely unlink candidates — set their job_id to 0 (do NOT delete them)
+        $candidateModel = new \App\Models\CandidateModel();
+        $candidateModel->where('job_id', $id)->set(['job_id' => 0])->update();
+
+        // Safely unlink interviews — set their job_id to 0 (do NOT delete them)
+        $interviewModel = new \App\Models\InterviewModel();
+        $interviewModel->where('job_id', $id)->set(['job_id' => 0])->update();
+
+        // Safely unlink onboarding records — set their job_id to 0 (do NOT delete them)
+        $onboardingModel = new \App\Models\OnboardingModel();
+        $onboardingModel->where('job_id', $id)->set(['job_id' => 0])->update();
+
+        // Now safely delete the job
         if ($this->jobModel->delete($id)) {
-            return $this->respond(['status' => 'success', 'message' => 'Job deleted successfully']);
+            return $this->respond(['status' => 'success', 'message' => 'Job deleted successfully. Related candidates and records have been unlinked.']);
         }
 
         return $this->respond(['status' => 'error', 'message' => 'Failed to delete job record'], 500);
