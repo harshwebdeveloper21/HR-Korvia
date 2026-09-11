@@ -21,6 +21,21 @@
             padding: 0;
         }
 
+        <?php
+        // Load Segoe UI Symbol (Windows system font) for full Dingbats coverage.
+        // ➢ (U+27A2) and other Dingbats are NOT in DejaVu Sans but ARE in Segoe UI Symbol.
+        // Dompdf has isRemoteEnabled=true so it can load local file:// font sources.
+        $segoeSymFont = 'C:\\Windows\\Fonts\\seguisym.ttf';
+        if (PHP_OS_FAMILY === 'Windows' && file_exists($segoeSymFont)):
+        ?>
+        @font-face {
+            font-family: 'Segoe UI Symbol';
+            src: url('file:///C:/Windows/Fonts/seguisym.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        <?php endif; ?>
+
         /* Fixed Header on every page with increased height */
         header {
             position: fixed;
@@ -145,10 +160,10 @@
 
         .body-content span.custom-bullet-char {
             display: inline-block !important;
-            width: 25px !important;
+            margin-right: 4px !important;
             line-height: normal !important;
             vertical-align: middle !important;
-            font-family: 'DejaVu Sans', sans-serif !important;
+            font-family: 'Segoe UI Symbol', 'DejaVu Sans', sans-serif !important;
             color: #000000 !important;
         }
 

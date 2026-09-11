@@ -82,10 +82,10 @@
     }
     .custom-bullet-char {
         display: inline-block !important;
-        width: 25px !important;
+        margin-right: 4px !important;
         line-height: normal !important;
         vertical-align: middle !important;
-        font-family: 'DejaVu Sans', Arial, sans-serif !important;
+        font-family: 'Segoe UI Symbol', 'DejaVu Sans', Arial, sans-serif !important;
         color: #000000 !important;
     }
 </style>
