@@ -370,13 +370,33 @@ class OfferLetterTemplateController extends ResourceController
     {
         // Clean up whitespace for PDF output
         $templateContent = str_replace(["\r", "\t"], '', $templateContent);
-        // Convert ALL non-breaking spaces (single or multiple) to regular spaces.
-        // The CKEditor bullet plugin appends \u00A0 after every bullet char
-        // (span.setHtml(value + '\u00A0')); Dompdf renders it as a missing-glyph
-        // red box when the active font doesn't cover U+00A0 — so normalise early.
-        $templateContent = preg_replace('/(\&nbsp;|\xC2\xA0)+/u', ' ', $templateContent);
+
+        // Replace &nbsp; HTML entities with regular spaces
+        $templateContent = str_replace('&nbsp;', ' ', $templateContent);
+
+        // Replace raw UTF-8 non-breaking spaces (U+00A0 = bytes 0xC2 0xA0) with a
+        // regular space. The CKEditor bullet plugin appends \u00A0 after every bullet
+        // char (span.setHtml(value + '\u00A0')). Using str_replace with a PHP
+        // double-quoted string is reliable here — no regex unicode-mode ambiguity.
+        $templateContent = str_replace("\xc2\xa0", ' ', $templateContent);
+
+        // Collapse multiple consecutive spaces
         $templateContent = preg_replace('/[ \t]{2,}/', ' ', $templateContent);
+
         $templateContent = str_replace(['–', '—', '−', '&ndash;', '&mdash;'], '-', $templateContent);
+
+        // Bullet characters (➢, ➤, ◆, ✓, ★, ▪) are preserved as-is.
+        // offer_letter_preview.php loads Segoe UI Symbol via @font-face (which covers
+        // the full Dingbats block including ➢ U+27A2) so they render correctly in Dompdf.
+
+        // Migrate legacy saved content: old bullet spans had `width:25px` baked into
+        // their inline style (creating a wide gap). Strip it so the CSS class rule
+        // (margin-right:4px !important) takes effect in both the live view and PDF.
+        $templateContent = preg_replace(
+            '/(<span[^>]+class="[^"]*custom-bullet-char[^"]*"[^>]+style=")([^"]*?)\bwidth\s*:\s*\d+px\s*;?\s*([^"]*")/i',
+            '$1$2$3',
+            $templateContent
+        );
 
         // Remove <code> and <tt> tags wrapping placeholders (e.g. <code>{{job_title}}</code>)
         $templateContent = preg_replace('/<code>\s*(\{\{\s*[a-zA-Z0-9_-]+\s*\}\})\s*<\/code>/i', '$1', $templateContent);
@@ -395,14 +415,6 @@ class OfferLetterTemplateController extends ResourceController
 
         // Clean any remaining code tags around replaced values
         $templateContent = preg_replace('/<code>(.*?)<\/code>/i', '$1', $templateContent);
-
-        // NOTE: Do NOT post-process bullet characters here.
-        // The template editor already saves each bullet as:
-        //   <span class="custom-bullet-char" style="font-family:'DejaVu Sans',...">➢ </span>
-        // inside a <ul class="custom-bullet-list"><li>…</li></ul>.
-        // The offer_letter_preview.php PDF template already has correct CSS for
-        // .custom-bullet-char (DejaVu Sans font, inline-block, 25px wide) which
-        // covers all bullet styles (➢, ➤, ◆, ✓, ★, etc.) — no extra replacement needed.
 
         return $templateContent;
     }
