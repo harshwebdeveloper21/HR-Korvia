@@ -223,10 +223,9 @@
 
                                             var span = editor.document.createElement('span');
                                             span.setAttribute('class', 'custom-bullet-char');
-                                            var fSize = (value === '➢') ? '1em' : '1.2em';
                                             span.setAttribute('style',
-                                                'display:inline-block; margin-right:4px; ' +
-                                                'font-size:' + fSize + '; line-height:normal; vertical-align:middle; ' +
+                                                'display:inline-block; margin-right:6px; ' +
+                                                'font-size:1.4em; line-height:1; vertical-align:top; ' +
                                                 'font-family:"Segoe UI Symbol","DejaVu Sans",Arial,sans-serif; color:#000;');
                                             span.setHtml(value);
                                             li.$.insertBefore(span.$, li.$.firstChild);
@@ -306,6 +305,9 @@
                 removeButtons: '',
                 extraPlugins: 'bulletDropdown',
                 resize_enabled: false,
+                allowedContent: true,
+                entities: false,
+                basicEntities: false,
                 stylesSet: 'custom_offer_styles',
                 toolbar: toolbarConfig,
                 // contentsCss ensures our bullet rules survive setData() reloads
@@ -315,7 +317,7 @@
                         'body { font-family: "Times New Roman", Times, serif; font-size: 15px; line-height: 1.45; color: #000; }',
                         'ul.custom-bullet-list { list-style: none !important; padding-left: 0 !important; margin-left: 0 !important; }',
                         'ul.custom-bullet-list li { list-style: none !important; margin-bottom: 6px !important; }',
-                        'span.custom-bullet-char { display: inline-block !important; margin-right: 4px !important; line-height: normal !important; vertical-align: middle !important; font-family: "Segoe UI Symbol", "DejaVu Sans", Arial, sans-serif !important; color: #000 !important; }'
+                        'span.custom-bullet-char { display: inline-block !important; margin-right: 6px !important; font-size: 1.4em !important; line-height: 1 !important; vertical-align: top !important; font-family: "Segoe UI Symbol", "DejaVu Sans", Arial, sans-serif !important; color: #000 !important; }'
                     ].join(' '))
                 ],
                 on: {

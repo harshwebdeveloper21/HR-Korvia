@@ -416,6 +416,32 @@ class OfferLetterTemplateController extends ResourceController
         // Clean any remaining code tags around replaced values
         $templateContent = preg_replace('/<code>(.*?)<\/code>/i', '$1', $templateContent);
 
+        // Fix Issue 1: Remove any strikethrough tags (<s>, <strike>, <del>) and text-decoration: line-through styles
+        $templateContent = preg_replace('/<\/?(s|strike|del)\b[^>]*>/i', '', $templateContent);
+        $templateContent = preg_replace('/text-decoration\s*:\s*line-through;?/i', '', $templateContent);
+
+        // PDF-only fix: Strip the inline style attribute from .custom-bullet-char spans.
+        // CKEditor saves the bullet span with an inline style like:
+        //   style="display:inline-block; vertical-align:top; font-size:1.4em; ..."
+        // This inline style overrides the CSS class rule vertical-align:middle (even with !important
+        // in some Dompdf rendering paths). Removing the inline style lets the CSS class take full
+        // control, including display:table-cell and vertical-align:middle for correct centering.
+        $templateContent = preg_replace(
+            '/(<span\b[^>]+\bcustom-bullet-char\b[^>]*?)\s+style="[^"]*"([^>]*>)/i',
+            '$1$2',
+            $templateContent
+        );
+
+        // Wrap text content after each bullet char span in a .custom-bullet-text span.
+        // This is REQUIRED for the table-cell CSS layout to work in Dompdf:
+        // Without this wrapper, the text has no table-cell container and renders
+        // BELOW the bullet instead of BESIDE it.
+        $templateContent = preg_replace(
+            '/(<span\b[^>]+\bcustom-bullet-char\b[^>]*>[^<]*<\/span>)(.*?)(<\/li>)/is',
+            '$1<span class="custom-bullet-text">$2</span>$3',
+            $templateContent
+        );
+
         return $templateContent;
     }
 

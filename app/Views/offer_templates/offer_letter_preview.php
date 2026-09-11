@@ -145,26 +145,43 @@
             color: #000000;
         }
 
-        /* Custom Bullet Styles - span injection approach */
+        /* Custom Bullet Styles — table-cell layout (Dompdf 3.x, confirmed) */
+        /* PDF engine: dompdf/dompdf ^3.1 — flexbox NOT supported, use table-cell */
         .body-content ul.custom-bullet-list {
             list-style: none !important;
             padding-left: 0 !important;
             margin: 6px 0 10px 0 !important;
+            width: 100% !important;
         }
 
         .body-content ul.custom-bullet-list li {
+            display: table !important;
+            width: 100% !important;
             list-style: none !important;
             margin-bottom: 8px !important;
             line-height: 1.28 !important;
         }
 
+        /* Column 1: bullet icon — width:1% forces minimum width, nowrap prevents expansion */
         .body-content span.custom-bullet-char {
-            display: inline-block !important;
-            margin-right: 4px !important;
-            line-height: normal !important;
-            vertical-align: middle !important;
+            display: table-cell !important;
+            width: 1% !important;
+            white-space: nowrap !important;
+            padding-right: 8px !important;
+            vertical-align: top !important;
+            line-height: 1 !important;
             font-family: 'Segoe UI Symbol', 'DejaVu Sans', sans-serif !important;
             color: #000000 !important;
+            font-size: 14pt !important;
+        }
+
+        /* Column 2: text takes all remaining width, flows from top */
+        .body-content span.custom-bullet-text {
+            display: table-cell !important;
+            vertical-align: top !important;
+            line-height: 1.28 !important;
+            font-size: 12pt !important;
+            padding-top: 2pt !important;
         }
 
         /* Numbered list for submitted documents */
