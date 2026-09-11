@@ -451,12 +451,36 @@ class OfferLetterTemplateController extends ResourceController
         $creator = !empty($template['created_by']) ? $userModel->find($template['created_by']) : null;
         $userInfo = $candidate ? $userInfoModel->where('user_id', $candidate['id'])->first() : null;
 
-        // Extract documents submitted
+        // Extract documents submitted — always render as a numbered ordered list
         $rawDocu = !empty($onboarding['docu_submitted']) ? $onboarding['docu_submitted'] : '';
+
         if (!empty($rawDocu)) {
-            $docuSubmitted = (strpos($rawDocu, '<') === false) ? nl2br(htmlspecialchars($rawDocu)) : $rawDocu;
+            // Strip HTML tags to get plain text, then split into lines
+            $plainDocu = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</li>'], "\n", $rawDocu));
+            $plainDocu = html_entity_decode($plainDocu, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $lines = array_filter(array_map('trim', explode("\n", $plainDocu)));
+
+            $listItems = '';
+            foreach ($lines as $line) {
+                // Strip any leading numbering like "1." "1)" "1 -" etc.
+                $line = preg_replace('/^\d+[\.\)\-\s]+\s*/', '', trim($line));
+                if ($line !== '') {
+                    $listItems .= '<li>' . htmlspecialchars($line, ENT_QUOTES, 'UTF-8') . '</li>';
+                }
+            }
+
+            if (!empty($listItems)) {
+                $docuSubmitted = '<ol style="margin:4px 0 4px 18px; padding-left:4px;">' . $listItems . '</ol>';
+            } else {
+                $docuSubmitted = nl2br(htmlspecialchars($rawDocu));
+            }
         } else {
-            $docuSubmitted = '1. Class 10th Marksheet (Original)<br>2. ID Proof (Aadhaar Card xerox)<br>3. Address Proof (Electricity Bill Xerox)';
+            // Default fallback documents as a numbered list
+            $docuSubmitted = '<ol style="margin:4px 0 4px 18px; padding-left:4px;">'
+                . '<li>Class 10<sup>th</sup> Marksheet (Original)</li>'
+                . '<li>ID Proof (Aadhaar Card xerox)</li>'
+                . '<li>Address Proof (Electricity Bill Xerox)</li>'
+                . '</ol>';
         }
 
         // Extract dates with fallback

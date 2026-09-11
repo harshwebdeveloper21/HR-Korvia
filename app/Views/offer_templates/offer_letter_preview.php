@@ -167,6 +167,19 @@
             color: #000000 !important;
         }
 
+        /* Numbered list for submitted documents */
+        .body-content ol {
+            margin: 4px 0 4px 18px !important;
+            padding-left: 4px !important;
+            list-style-type: decimal !important;
+        }
+
+        .body-content ol li {
+            margin-bottom: 6px !important;
+            line-height: 1.28 !important;
+            list-style-type: decimal !important;
+        }
+
         /* Ensure injected variables & code blocks inherit exact body font */
         code, tt, pre, samp, kbd {
             font-family: inherit !important;
