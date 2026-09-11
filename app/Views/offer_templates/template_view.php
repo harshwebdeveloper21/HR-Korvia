@@ -76,26 +76,21 @@
         margin: 8px 0 14px 0 !important;
     }
     .letterhead-body ul.custom-bullet-list li {
-        display: flex !important;
-        align-items: flex-start !important;
         list-style: none !important;
         margin-bottom: 8px !important;
+        position: relative !important;
+        padding-left: 28px !important;
     }
-    /* Bullet icon: flex-shrink:0 keeps it fixed width; align-items:center on li centers it */
+    /* Bullet icon: positioned absolutely to the left of the list item */
     .custom-bullet-char {
-        flex-shrink: 0 !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 2px !important;
         width: 24px !important;
-        min-width: 24px !important;
-        padding-right: 8px !important;
         font-family: 'Segoe UI Symbol', 'DejaVu Sans', Arial, sans-serif !important;
         color: #000000 !important;
         font-size: 14pt !important;
         line-height: 1 !important;
-    }
-    /* Text column: grows to fill remaining width */
-    .custom-bullet-text {
-        flex: 1 !important;
-        line-height: 1.28 !important;
     }
 </style>
 <div class="row">
