@@ -355,13 +355,26 @@ class OfferLetterTemplateController extends ResourceController
             $template['content']
         );
 
+        // Strip any remaining data-bullet-char attributes from existing DB data for the view
+        if (!empty($template['content_pages'])) {
+            $template['content_pages'] = preg_replace('/ data-bullet-char="[^"]*"/', '', $template['content_pages']);
+            $template['content_pages'] = preg_replace('/ data-bullet-char=\\\\"[^\\\\"]*\\\\\"/', '', $template['content_pages']);
+        }
+        if (!empty($template['content'])) {
+            $template['content'] = preg_replace('/ data-bullet-char="[^"]*"/', '', $template['content']);
+        }
+        
         return view('offer_templates/template_view', ['templates' => $template]);
     }
     function parseTemplate($templateContent, $data)
     {
-        // Clean multiple consecutive non-breaking spaces and tabs, preserving <br> and paragraph structure
+        // Clean up whitespace for PDF output
         $templateContent = str_replace(["\r", "\t"], '', $templateContent);
-        $templateContent = preg_replace('/(&nbsp;|\xC2\xA0){2,}/u', ' ', $templateContent);
+        // Convert ALL non-breaking spaces (single or multiple) to regular spaces.
+        // The CKEditor bullet plugin appends \u00A0 after every bullet char
+        // (span.setHtml(value + '\u00A0')); Dompdf renders it as a missing-glyph
+        // red box when the active font doesn't cover U+00A0 — so normalise early.
+        $templateContent = preg_replace('/(\&nbsp;|\xC2\xA0)+/u', ' ', $templateContent);
         $templateContent = preg_replace('/[ \t]{2,}/', ' ', $templateContent);
         $templateContent = str_replace(['–', '—', '−', '&ndash;', '&mdash;'], '-', $templateContent);
 
@@ -383,8 +396,13 @@ class OfferLetterTemplateController extends ResourceController
         // Clean any remaining code tags around replaced values
         $templateContent = preg_replace('/<code>(.*?)<\/code>/i', '$1', $templateContent);
 
-        // Wrap bullet arrows in DejaVu Sans span so they render as crisp unicode glyphs
-        $templateContent = str_replace(['➤', '➢'], '<span class="bullet-icon">➤</span>', $templateContent);
+        // NOTE: Do NOT post-process bullet characters here.
+        // The template editor already saves each bullet as:
+        //   <span class="custom-bullet-char" style="font-family:'DejaVu Sans',...">➢ </span>
+        // inside a <ul class="custom-bullet-list"><li>…</li></ul>.
+        // The offer_letter_preview.php PDF template already has correct CSS for
+        // .custom-bullet-char (DejaVu Sans font, inline-block, 25px wide) which
+        // covers all bullet styles (➢, ➤, ◆, ✓, ★, etc.) — no extra replacement needed.
 
         return $templateContent;
     }
@@ -474,7 +492,7 @@ class OfferLetterTemplateController extends ResourceController
         }
 
         // Header text: prefer template_header if text, else default to standard company location
-        $templateHeader = (!empty($template['template_header']) && !file_exists(FCPATH . 'upload/' . $template['template_header']))
+        $templateHeader = (!empty($template['template_header']) && !preg_match('/\.(png|jpe?g|gif|webp)$/i', trim($template['template_header'])))
             ? trim($template['template_header'])
             : 'Fablead Developers Technolab, Surat , Gujarat , India';
 
@@ -551,7 +569,11 @@ class OfferLetterTemplateController extends ResourceController
 
         $parsedPages = [];
         foreach ($pages as $p) {
-            $parsedPages[] = $this->parseTemplate($p, $data);
+            // Strip any remaining data-bullet-char attributes from existing DB data
+            $cleanedHtml = preg_replace('/ data-bullet-char="[^"]*"/', '', $p);
+            $cleanedHtml = preg_replace('/ data-bullet-char=\\\\"[^\\\\"]*\\\\\"/', '', $cleanedHtml);
+            
+            $parsedPages[] = $this->parseTemplate($cleanedHtml, $data);
         }
 
         $finalHtml = view('offer_templates/offer_letter_preview', array_merge($data, [
