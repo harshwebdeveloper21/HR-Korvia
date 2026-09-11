@@ -223,7 +223,7 @@
 
                                             var span = editor.document.createElement('span');
                                             span.setAttribute('class', 'custom-bullet-char');
-                                            var fSize = (value === '➢') ? '1.4em' : '1.2em';
+                                            var fSize = (value === '➢') ? '1em' : '1.2em';
                                             span.setAttribute('style',
                                                 'display:inline-block; width:25px; ' +
                                                 'font-size:' + fSize + '; line-height:normal; vertical-align:middle; ' +
