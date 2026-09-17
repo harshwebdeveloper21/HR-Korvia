@@ -702,14 +702,7 @@
                     if (xhr.responseJSON && xhr.responseJSON.errors) {
                         let errors = xhr.responseJSON.errors;
 
-                        $.each(errors, function(key, value) {
-                            let inputField = $(`[name="${key}"]`);
-                            if (inputField.length) {
-                                inputField.addClass('is-invalid');
-                                inputField.next('.invalid-feedback').remove();
-                                inputField.after(`<div class="invalid-feedback">${value}</div>`);
-                            }
-                        });
+                        if (typeof displayValidationErrors === 'function') displayValidationErrors(errors);
                     } else if (xhr.responseJSON && xhr.responseJSON.message) {
                         Swal.fire({
                             icon: 'error',

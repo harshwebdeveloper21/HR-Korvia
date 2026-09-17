@@ -781,22 +781,7 @@
                     $('#subtaskForm .invalid-feedback').remove(); // Remove old feedback
 
                     // 2. Display errors below respective fields
-                    $.each(errors, function(fieldName, message) {
-                        // If field is an array like subtask_title[], remove [] for name selector
-                        const cleanedName = fieldName.replace(/\[\]/g, '');
-
-                        // Select all matching fields
-                        const $fields = $(`[name="${fieldName}"], [name="${cleanedName}[]"]`);
-
-                        $fields.each(function() {
-                            const $input = $(this);
-                            $input.addClass('is-invalid');
-
-                            // Only add if not already present
-                            if ($input.next('.invalid-feedback').length === 0) {
-                                $input.after(`<div class="invalid-feedback">${message}</div>`);
-                            }
-                        });
+                    if (typeof displayValidationErrors === 'function') displayValidationErrors(errors);
                     });
 
                     // 3. Scroll to first error field

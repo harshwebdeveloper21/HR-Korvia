@@ -407,4 +407,18 @@ $(document).on('click', '.export-page-btn', function (e) {
     var filename = $(this).data('filename') || 'Export_Data';
     window.exportTableToExcel(tableSel, filename);
 });
+
+// Global Validation Error Handler
+window.displayValidationErrors = function(errors, formSelector) {
+    let form = formSelector ? $(formSelector) : $(document);
+    $.each(errors, function(key, value) {
+        let inputField = form.find(`[name="${key}"], [name="${key}[]"]`);
+        if (inputField.length) {
+            inputField.addClass('is-invalid');
+            let target = inputField.closest('.input-group').length ? inputField.closest('.input-group') : inputField;
+            target.next('.invalid-feedback').remove();
+            target.after(`<div class="invalid-feedback d-block">${value}</div>`);
+        }
+    });
+};
 </script>

@@ -236,15 +236,7 @@
 
                     let message = xhr.responseJSON.message;
 
-                    $.each(message, function(key, value) {
-                        let inputField = $(`[name="${key}"]`);
-                        if (inputField.length) {
-                            inputField.addClass('is-invalid');
-                            if (!inputField.next('.invalid-feedback').length) {
-                                inputField.after(`<div class="invalid-feedback">${value}</div>`);
-                            }
-                        }
-                    });
+                    if (typeof displayValidationErrors === 'function') displayValidationErrors(message);
 
                     // Swal.fire({
                     //     icon: 'error',

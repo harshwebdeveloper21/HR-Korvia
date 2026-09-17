@@ -208,15 +208,7 @@
                     }
 
                     if (response?.errors) {
-                        $.each(response.errors, function(key, value) {
-                            let inputField = $(`[name="${key}"]`);
-                            if (inputField.length) {
-                                inputField.addClass('is-invalid');
-                                if (!inputField.next('.invalid-feedback').length) {
-                                    inputField.after(`<div class="invalid-feedback">${value}</div>`);
-                                }
-                            }
-                        });
+                        if (typeof displayValidationErrors === 'function') displayValidationErrors(response.errors);
                     } else {
                         Swal.fire({
                             icon: 'error',
