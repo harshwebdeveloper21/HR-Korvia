@@ -652,18 +652,7 @@
                     if (xhr.responseJSON && xhr.responseJSON.errors) {
                         let errors = xhr.responseJSON.errors;
                         let firstError = "";
-                        $.each(errors, function (key, value) {
-                            if(!firstError) firstError = value;
-                            let inputField = $(`[name="${key}"]`);
-                            if (inputField.length > 0) {
-                                inputField.addClass("is-invalid");
-                                if (!inputField.next(".invalid-feedback").length) {
-                                    inputField.after(`<div class="invalid-feedback">${value}</div>`);
-                                }
-                            } else {
-                                Swal.fire('Validation Error', value, 'error');
-                            }
-                        });
+                        if (typeof displayValidationErrors === 'function') displayValidationErrors(errors);
                         
                         if (firstError) {
                             Swal.fire('Validation Error', firstError, 'error');

@@ -311,29 +311,7 @@
                     $('#loader').hide();
                     let message = xhr.responseJSON.message;
 
-                    $.each(message, function(key, value) {
-                        let inputField = $(`[name="${key}"]`);
-                        if (inputField.length) {
-                            inputField.addClass('is-invalid');
-                            if (!inputField.next('.invalid-feedback').length) {
-                                inputField.after(`<div class="invalid-feedback">${value}</div>`);
-                            }
-                        } else {
-                            if (key === 'document') {
-                                // Check if the document input has a sibling invalid-feedback div
-                                let documentInput = $('#document');
-                                if (!documentInput.siblings('.invalid-feedback').length) {
-                                    documentInput.after(`<div class="invalid-feedback">${value}</div>`);
-                                } else {
-                                    documentInput.siblings('.invalid-feedback').text(value).show();
-                                }
-                                documentInput.addClass('is-invalid');
-                            } else if (key === 'task_status') {
-                                $('#task_status').addClass('is-invalid');
-                                $('#task_status').siblings('.invalid-feedback').text(value).show();
-                            }
-                        }
-                    });
+                    if (typeof displayValidationErrors === 'function') displayValidationErrors(message);
                  }
             });
         });

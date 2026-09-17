@@ -244,12 +244,7 @@
                     var response = JSON.parse(xhr.responseText);
 
                     if (response.errors) {
-                        $.each(response.errors, function(field, message) {
-                            var fieldName = '#' + field;
-                            $(fieldName).addClass('is-invalid');
-                            var errorHtml = '<div class="invalid-feedback">' + message + '</div>';
-                            $(fieldName).after(errorHtml);
-                        });
+                        if (typeof displayValidationErrors === 'function') displayValidationErrors(response.errors);
 
                         Swal.fire({
                             icon: 'error',

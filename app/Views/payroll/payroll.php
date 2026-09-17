@@ -617,13 +617,7 @@
                     let message = xhr.responseJSON?.message || 'An error occurred';
 
                     if (typeof message === 'object') {
-                        $.each(message, function (key, value) {
-                            let inputField = $(`[name="${key}"]`);
-                            if (inputField.length) {
-                                inputField.addClass('is-invalid');
-                                inputField.after(`<div class="invalid-feedback">${value}</div>`);
-                            }
-                        });
+                        if (typeof displayValidationErrors === 'function') displayValidationErrors(message);
                     } else {
                         Swal.fire({
                             icon: 'error',

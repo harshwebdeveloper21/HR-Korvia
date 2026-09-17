@@ -588,7 +588,7 @@ class AdminController extends ResourceController
             $activeEmpSQL = "SELECT COUNT(users.id) as cnt
                              FROM users
                              LEFT JOIN user_info ON user_info.user_id = users.id
-                             WHERE users.role != 'admin'
+                             WHERE users.role IN ('employee', 'hr')
                                AND users.is_deleted = 0
                                AND (
                                    user_info.status IS NULL
@@ -614,7 +614,7 @@ class AdminController extends ResourceController
         $activeEmpSql = "SELECT users.id, users.username, user_info.profile_image
                          FROM users
                          LEFT JOIN user_info ON user_info.user_id = users.id
-                         WHERE users.role != 'admin'
+                         WHERE users.role IN ('employee', 'hr')
                            AND users.is_deleted = 0
                            AND (
                                user_info.status IS NULL
@@ -632,7 +632,7 @@ class AdminController extends ResourceController
                      WHERE leaves.start_date <= '{$todayDate}'
                        AND leaves.end_date >= '{$todayDate}'
                        AND leaves.status = 'approved'
-                       AND users.role != 'admin'
+                       AND users.role IN ('employee', 'hr')
                        AND users.is_deleted = 0
                        AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
                        AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= '{$todayDate}')
