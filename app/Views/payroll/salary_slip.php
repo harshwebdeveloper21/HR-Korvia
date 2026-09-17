@@ -35,9 +35,13 @@ if (!empty($payroll['month_year'])) {
             font-family: Arial, Helvetica, sans-serif;
         }
 
+        @page {
+            margin: 25px 30px;
+        }
+
         body {
             background: #fff;
-            padding: 20px;
+            padding: 0px;
             font-size: 12px;
         }
 
