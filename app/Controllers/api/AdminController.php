@@ -208,9 +208,10 @@ class AdminController extends ResourceController
 
         // Fetch Recruitment & Hiring (Top 5 Jobs)
         $jobModel = new \App\Models\JobModel();
-        $jobsData = $jobModel->groupStart()
+        $jobsData = $jobModel->where('status', 'open')
+            ->groupStart()
                 ->where('close_date >=', date('Y-m-d'))
-                ->orWhere('close_date IS NULL')
+                ->orWhere('close_date', null)
                 ->orWhere('close_date', '')
                 ->orWhere('close_date', '0000-00-00')
             ->groupEnd()
@@ -223,6 +224,7 @@ class AdminController extends ResourceController
         $complaintsData = $complaintModel->select('complaints.*, users.username, user_info.profile_image')
             ->join('users', 'users.id = complaints.user_id', 'left')
             ->join('user_info', 'user_info.user_id = complaints.user_id', 'left')
+            ->where('complaints.status !=', 'resolved')
             ->orderBy('complaints.created_at', 'DESC')
             ->limit(5)
             ->findAll();
@@ -995,7 +997,8 @@ class AdminController extends ResourceController
         $complaintModel = new \App\Models\ComplaintModel();
         $query = $complaintModel->select('complaints.*, users.username, user_info.profile_image')
             ->join('users', 'users.id = complaints.user_id')
-            ->join('user_info', 'user_info.user_id = users.id', 'left');
+            ->join('user_info', 'user_info.user_id = users.id', 'left')
+            ->where('complaints.status !=', 'resolved');
 
         if ($role !== 'admin' && $role !== 'hr') {
             $query->where('complaints.user_id', $userId);
