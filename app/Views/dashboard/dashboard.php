@@ -1328,7 +1328,7 @@
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start align-items-sm-center">
                                             <h4 class="card-title card-title-dash sm-bar-chart-size mb-0">Tasks and Projects</h4>
-                                            <a href="/alltask" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
+                                            <a href="/taskview" class="btn btn-sm rounded border-0 mb-0" style="background:#E66136;color:white;white-space:nowrap;">View All</a>
                                         </div>
                                         <div id="tasksAndProjects" class="mt-3" style="max-height: 250px; overflow-y: auto;">
                                             <?php if (!empty($tasksData)) : ?>

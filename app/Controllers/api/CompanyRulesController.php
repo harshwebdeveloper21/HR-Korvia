@@ -49,8 +49,17 @@ class CompanyRulesController extends BaseController
     public function rules_get()
     {
         $rules = $this->rulesModel->first();
+        
+        $locationSettingsModel = new \App\Models\LocationSettingsModel();
+        $locationSettings = $locationSettingsModel->first();
 
         if ($rules) {
+            // Append location settings for the UI
+            if ($locationSettings) {
+                $rules['office_latitude'] = $locationSettings['latitude'];
+                $rules['office_longitude'] = $locationSettings['longitude'];
+                $rules['office_radius'] = $locationSettings['radius'];
+            }
             return $this->response->setJSON([
                 'status' => 'success',
                 'data'   => $rules
@@ -102,8 +111,11 @@ class CompanyRulesController extends BaseController
             'saturday_off_pattern' => $data['saturday_off_pattern'] ?? null,
             'saturday_pay_type' => $data['saturday_pay_type'] ?? 'regular',
 
-            // 'saturday_half_day_enabled' => ($data['saturday_half_day_enabled'] === false) ? 0 : 1,
             'saturday_half_day_pattern' => $data['saturday_half_day_pattern'] ?? null,
+
+            // Saturday Working Hours Override
+            'saturday_working_hours'     => (float) ($data['saturday_working_hours'] ?? 4),
+            'saturday_full_day_override' => ($data['saturday_full_day_override'] === false) ? 0 : 1,
 
             // Leave Management
             // 'yearly_holidays' => $data['yearly_holidays'] ?? 0,
@@ -138,8 +150,17 @@ class CompanyRulesController extends BaseController
 
             // Biometric & Attendance
             // 'enable_biometric' => isset($data['enable_biometric']) ? 1 : 0,
-            // 'enable_geofencing' => isset($data['enable_geofencing']) ? 1 : 0,
+            'enable_geofencing' => ($data['enable_geofencing'] === true) ? 1 : 0,
             // 'auto_checkout' => isset($data['auto_checkout']) ? 1 : 0,
+        ];
+
+        $locationSettingsModel = new \App\Models\LocationSettingsModel();
+        
+        // Prepare location data
+        $locationData = [
+            'latitude'  => isset($data['office_latitude']) ? (float)$data['office_latitude'] : 0,
+            'longitude' => isset($data['office_longitude']) ? (float)$data['office_longitude'] : 0,
+            'radius'    => isset($data['office_radius']) ? (float)$data['office_radius'] : 0,
         ];
 
         try {
@@ -151,6 +172,14 @@ class CompanyRulesController extends BaseController
                 // Insert new record
                 $this->rulesModel->insert($insertData);
                 $message = 'Company rules created successfully.';
+            }
+
+            // Also save location settings (single record assumption)
+            $existingLocation = $locationSettingsModel->first();
+            if ($existingLocation) {
+                $locationSettingsModel->update($existingLocation['id'], $locationData);
+            } else {
+                $locationSettingsModel->insert($locationData);
             }
 
             return $this->response->setJSON([

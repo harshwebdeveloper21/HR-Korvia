@@ -337,7 +337,8 @@
                         </div>
                     </div>
 
-                    <!-- <div class="row">
+                    <!-- saturday_half_day_enabled (commented out)
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group row">
                                 <label class="col-sm-6 col-form-label">Saturday Half Day Enable</label>
@@ -349,6 +350,64 @@
                             </div>
                         </div>                        
                     </div> -->
+
+                    <!-- SATURDAY WORKING HOURS -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">
+                                    Saturday Working Hours
+                                    <i class="mdi mdi-information-outline text-muted ms-1"
+                                       title="Duty hours required for a Full Day mark on a working Saturday (e.g. 4 hours)."
+                                       data-bs-toggle="tooltip"></i>
+                                </label>
+                                <div class="col-sm-8">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="mdi mdi-clock-outline fs-5"></i></span>
+                                        </div>
+                                        <input type="number" class="form-control" name="saturday_working_hours"
+                                            id="saturday_working_hours" min="1" max="8" step="0.5"
+                                            value="4" placeholder="e.g. 4" />
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">hrs</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-6 col-form-label">
+                                    Consider Saturday Hours as Full Day
+                                    <i class="mdi mdi-information-outline text-muted ms-1"
+                                       title="When ON, employees who work the above hours on a working Saturday are marked Present (Full Day) instead of Half Day."
+                                       data-bs-toggle="tooltip"></i>
+                                </label>
+                                <div class="col-sm-6">
+                                    <div class="form-check form-switch mt-1">
+                                        <input class="form-check-input" type="checkbox"
+                                            id="saturday_full_day_override"
+                                            name="saturday_full_day_override" checked>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info py-2 px-3" style="font-size:0.85rem;">
+                                <i class="mdi mdi-information me-1"></i>
+                                <strong>Saturday Rule:</strong> When <em>Consider Saturday Hours as Full Day</em> is enabled,
+                                employees on a <strong>working Saturday</strong> (as per Saturday Off Pattern) who complete
+                                the above hours are marked <strong>Present (Full Day)</strong>.
+                                Weekdays continue to require the standard 8-hour shift.
+                            </div>
+                        </div>
+                    </div>
+
+
 
                     <!-- TAX & DEDUCTIONS -->
                     <div class="section-header">
@@ -453,6 +512,64 @@
                         </div>
                     </div>
 
+                    <!-- LOCATION-BASED CHECK-IN SETTINGS -->
+                    <div class="section-header mt-4">
+                        <i class="mdi mdi-map-marker-radius"></i> Location-Based Check-In Settings
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">
+                                    Enable Geofencing
+                                    <i class="mdi mdi-information-outline text-muted ms-1"
+                                       title="When ON, employees must be within the specified radius of the office to check in/out (Except remote workers)."
+                                       data-bs-toggle="tooltip"></i>
+                                </label>
+                                <div class="col-sm-8">
+                                    <div class="form-check form-switch mt-1">
+                                        <input class="form-check-input" type="checkbox" id="enable_geofencing" name="enable_geofencing">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-1" id="btnGetLocation">
+                                <i class="mdi mdi-crosshairs-gps me-1"></i> Fetch My Location
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col-md-4">
+                            <div class="form-group row">
+                                <label class="col-sm-12 col-form-label">Office Latitude</label>
+                                <div class="col-sm-12">
+                                    <input type="number" class="form-control" name="office_latitude" id="office_latitude" step="0.00000001" placeholder="e.g. 21.19287000" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group row">
+                                <label class="col-sm-12 col-form-label">Office Longitude</label>
+                                <div class="col-sm-12">
+                                    <input type="number" class="form-control" name="office_longitude" id="office_longitude" step="0.00000001" placeholder="e.g. 72.79859000" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group row">
+                                <label class="col-sm-12 col-form-label">
+                                    Allowed Radius (in meters)
+                                </label>
+                                <div class="col-sm-12">
+                                    <input type="number" class="form-control" name="office_radius" id="office_radius" step="1" min="0" placeholder="e.g. 1500" />
+                                    <small class="text-muted d-block mt-1">0 means exact location match required.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group text-end sm-margin">
                         <a href="/view-rules" class="btn hr-btnbg">Back</a>
                         <button type="submit" class="btn hr-btnbg" id="submitBtn">Save</button>
@@ -545,13 +662,23 @@
                 saturday_half_day_enabled: $('#saturday_half_day_enabled').is(':checked'),
                 saturday_half_day_pattern: $('#saturday_half_day_pattern').val(),
 
+                // Saturday Working Hours Override
+                saturday_working_hours: parseFloat($('#saturday_working_hours').val()) || 4,
+                saturday_full_day_override: $('#saturday_full_day_override').is(':checked'),
+
                 include_holidays_in_working_days: $('#include_holidays_in_working_days').is(':checked'),
                 sandwich_leave: $('#sandwich_leave').is(':checked'),
                 // Tax
                 enable_tax: $('#enable_tax').is(':checked'),
                 tax_type: $('#tax_type').val(),
                 tax: $('#tax').val(),
-                salary_above_tax: $('#salary_above_tax').val()
+                salary_above_tax: $('#salary_above_tax').val(),
+                
+                // Location Settings
+                enable_geofencing: $('#enable_geofencing').is(':checked'),
+                office_latitude: $('#office_latitude').val(),
+                office_longitude: $('#office_longitude').val(),
+                office_radius: $('#office_radius').val()
             };
 
             const token = localStorage.getItem('token');
@@ -616,6 +743,38 @@
             .catch(error => {
                 console.error('Error:', error);
             });
+        // Get My Location functionality
+        $('#btnGetLocation').on('click', function() {
+            const btn = $(this);
+            const originalHtml = btn.html();
+            
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+            
+            btn.html('<i class="mdi mdi-loading mdi-spin me-1"></i> Fetching...');
+            btn.prop('disabled', true);
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    $('#office_latitude').val(position.coords.latitude.toFixed(8));
+                    $('#office_longitude').val(position.coords.longitude.toFixed(8));
+                    btn.html('<i class="mdi mdi-check me-1"></i> Located!');
+                    setTimeout(() => {
+                        btn.html(originalHtml);
+                        btn.prop('disabled', false);
+                    }, 2000);
+                },
+                function(error) {
+                    alert("Error fetching location: " + error.message);
+                    btn.html(originalHtml);
+                    btn.prop('disabled', false);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        });
+
     });
 </script>
 

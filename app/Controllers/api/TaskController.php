@@ -227,19 +227,19 @@ class TaskController extends ResourceController
         }
         $this->taskModel->select('task.*,task.created_at,user_info.profile_image ,users.username,task.task_title, task.assigned_date, task.due_date')
             ->join('users', 'users.id = task.user_id')
-              ->join('user_info', 'user_info.user_id = task.user_id');
+              ->join('user_info', 'user_info.user_id = task.user_id', 'left');
 
 
         // Role-based filtering
         if ($user->role === 'admin') {
             // Admin can see all records (no filter)
-            $records = $this->taskModel->orderBy('created_at', 'DESC')->findAll();
+            $records = $this->taskModel->orderBy('task.created_at', 'DESC')->findAll();
         } elseif ($user->role === 'hr') {
             // HR can only see employee records (exclude admin & HR)
-            $records = $this->taskModel->where('users.role', 'employee')->orderBy('created_at', 'DESC')->findAll();
+            $records = $this->taskModel->where('users.role', 'employee')->orderBy('task.created_at', 'DESC')->findAll();
         } elseif ($user->role === 'employee') {
             // Employee can only see their own records
-            $records = $this->taskModel->where('task.user_id', $user->sub)->orderBy('created_at', 'DESC')->findAll();
+            $records = $this->taskModel->where('task.user_id', $user->sub)->orderBy('task.created_at', 'DESC')->findAll();
         } else {
             return $this->failForbidden('Forbidden: Unauthorized role');
         }

@@ -79,16 +79,29 @@ class AttendanceController extends ResourceController
         $graceSec     = ((int)($rule['grace_minutes'] ?? 0)) * 60;
         $effectiveSec = $netSec + $graceSec;
 
-        // 4. Status thresholds
+        // 4. Status thresholds — Saturday override or standard
         $payrollType = $rule['payroll_type'] ?? 'monthly';
         if ($payrollType === 'hourly') {
             $status = $netSec > 0 ? 'present' : 'absent';
         } else {
-            if ($effectiveSec >= 6 * 3600) {       // ≥ 6 h → Present
+            // Detect if this is a Working Saturday with the 4-hour full-day override
+            $isSatWorking = $this->isSaturdayWorking($date, $rule);
+            $overrideEnabled = (int) ($rule['saturday_full_day_override'] ?? 1) === 1;
+
+            if ($isSatWorking && $overrideEnabled) {
+                $satHours       = (float) ($rule['saturday_working_hours'] ?? 4);
+                $fullDaySec     = $satHours * 3600;
+                $halfDaySec     = ($satHours / 2) * 3600;
+            } else {
+                $fullDaySec = 6 * 3600;  // ≥ 6 h → Present
+                $halfDaySec = 4 * 3600;  // 4–6 h → Half-Day
+            }
+
+            if ($effectiveSec >= $fullDaySec) {
                 $status = 'present';
-            } elseif ($effectiveSec >= 4 * 3600) { // 4–6 h → Half-Day
+            } elseif ($effectiveSec >= $halfDaySec) {
                 $status = 'half-day';
-            } else {                                // < 4 h → Absent
+            } else {
                 $status = 'absent';
             }
         }
@@ -292,6 +305,48 @@ class AttendanceController extends ResourceController
         $checkinLng     = isset($bodyJson['longitude']) ? (float)$bodyJson['longitude'] : null;
         $locationStatus = isset($bodyJson['location_status']) ? $bodyJson['location_status'] : null;
 
+        // ── Geofencing Enforcement ───────────────────────────────────────────
+        if (!$isRemote) {
+            $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+            $enableGeofencing = isset($companyRule['enable_geofencing']) && $companyRule['enable_geofencing'] == 1;
+
+            if ($enableGeofencing) {
+                $locationSettingsModel = new \App\Models\LocationSettingsModel();
+                $officeLocation = $locationSettingsModel->first();
+
+                if ($officeLocation && $officeLocation['latitude'] && $officeLocation['longitude']) {
+                    if ($checkinLat === null || $checkinLng === null) {
+                        return $this->respond([
+                            'status' => 'error',
+                            'message' => 'Location access is required to check in.'
+                        ], 400);
+                    }
+
+                    $distance = $this->calculateDistance(
+                        $checkinLat, 
+                        $checkinLng, 
+                        (float)$officeLocation['latitude'], 
+                        (float)$officeLocation['longitude']
+                    );
+
+                    $allowedRadius = (float)($officeLocation['radius'] ?? 0);
+
+                    // Add a 10 meter tolerance if exact match is required to account for basic GPS drift
+                    if ($allowedRadius == 0 && $distance > 10) {
+                         return $this->respond([
+                            'status' => 'error',
+                            'message' => 'You are outside the exact office location. Please check in from the office.'
+                        ], 400);
+                    } else if ($allowedRadius > 0 && $distance > $allowedRadius) {
+                        return $this->respond([
+                            'status' => 'error',
+                            'message' => "You are outside the allowed office location range. Please check in from within {$allowedRadius} meters of the office."
+                        ], 400);
+                    }
+                }
+            }
+        }
+
         // ── Reverse-geocode GPS coordinates via Nominatim ────────────────────
         $locationName = null;
         if ($checkinLat !== null && $checkinLng !== null) {
@@ -474,18 +529,29 @@ class AttendanceController extends ResourceController
         }
 
         /* ---------------------------------------------------
-        7. ATTENDANCE STATUS (6 HOUR RULE)
+        7. ATTENDANCE STATUS — Saturday-Aware Thresholds
         --------------------------------------------------- */
         $status = 'absent';
 
         $effectiveSeconds = $workHoursInSeconds + $graceSeconds;
 
-        $fullDayThreshold  = 6 * 3600; // 6 hours = present
-        $halfDayThreshold  = 4 * 3600; // 4 hours = half-day
-
         if ($payrollType === 'hourly') {
             $status = $workHoursInSeconds > 0 ? 'present' : 'absent';
         } else {
+            // Check if this is a working Saturday with the 4-hour full-day override
+            $isSatWorking    = $this->isSaturdayWorking($date, $companyRule);
+            $overrideEnabled = (int) ($companyRule['saturday_full_day_override'] ?? 1) === 1;
+
+            if ($isSatWorking && $overrideEnabled) {
+                // Use saturday_working_hours as the full-day benchmark
+                $satHours         = (float) ($companyRule['saturday_working_hours'] ?? 4);
+                $fullDayThreshold = $satHours * 3600;
+                $halfDayThreshold = ($satHours / 2) * 3600;
+            } else {
+                $fullDayThreshold = 6 * 3600; // standard: 6 h = present
+                $halfDayThreshold = 4 * 3600; // standard: 4 h = half-day
+            }
+
             if ($effectiveSeconds >= $fullDayThreshold) {
                 $status = 'present';
             } elseif ($effectiveSeconds >= $halfDayThreshold) {
@@ -566,6 +632,72 @@ class AttendanceController extends ResourceController
         return false;
     }
 
+    /**
+     * Determine if a given date is a WORKING Saturday (not an off Saturday).
+     *
+     * A Saturday is "working" when ALL of the following are true:
+     *  1. The date is a Saturday (ISO day 6).
+     *  2. saturday_off_enabled == 1 (the company has the Saturday-off feature on).
+     *  3. This specific Saturday is NOT in the off-pattern.
+     *
+     * Off-pattern logic mirrors CompanyRuleTrait::isWorkingDay():
+     *   - 'all'            → every Saturday is off  → never working
+     *   - 'alternate-even' → 2nd, 4th Saturday off  → 1st, 3rd, 5th are working
+     *   - 'alternate-odd'  → 1st, 3rd, 5th Saturday off → 2nd, 4th are working
+     *   - 'custom'         → pattern lists the off Saturdays (e.g. "1,3,5")
+     *
+     * @param  string $date        Y-m-d
+     * @param  array  $companyRule Company rules row
+     * @return bool                True when this Saturday is a working day
+     */
+    private function isSaturdayWorking(string $date, ?array $companyRule): bool
+    {
+        if (empty($companyRule)) {
+            return false;
+        }
+
+        // Must be a Saturday (ISO 6)
+        if ((int) date('N', strtotime($date)) !== 6) {
+            return false;
+        }
+
+        // Feature must be enabled
+        if ((int) ($companyRule['saturday_off_enabled'] ?? 0) !== 1) {
+            // Saturday-off feature is disabled → treat Saturday as a normal working day;
+            // the override still applies in this case.
+            return true;
+        }
+
+        $offType    = $companyRule['saturday_off_type'] ?? 'all';
+        $dayOfMonth = (int) date('j', strtotime($date));
+        $weekNumber = (int) ceil($dayOfMonth / 7); // 1st, 2nd, 3rd … Saturday of month
+
+        // Every Saturday is off
+        if ($offType === 'all') {
+            return false;
+        }
+
+        // Alternate off patterns
+        if (in_array($offType, ['alternate-even', 'alternate-odd'], true)) {
+            $isOffSaturday =
+                ($offType === 'alternate-even' && $weekNumber % 2 === 0) ||
+                ($offType === 'alternate-odd'  && $weekNumber % 2 !== 0);
+            // Working = NOT an off Saturday
+            return !$isOffSaturday;
+        }
+
+        // Custom off pattern (e.g. "1,3,5")
+        if ($offType === 'custom') {
+            $offPattern = array_filter(
+                array_map('intval', explode(',', $companyRule['saturday_off_pattern'] ?? ''))
+            );
+            return !in_array($weekNumber, $offPattern, true);
+        }
+
+        // Default: treat as working
+        return true;
+    }
+
 
     public function checkOut()
     {
@@ -632,6 +764,52 @@ class AttendanceController extends ResourceController
         $coLat  = isset($coBody['latitude'])  ? (float)$coBody['latitude']  : null;
         $coLng  = isset($coBody['longitude']) ? (float)$coBody['longitude'] : null;
         $coLocationStatus = isset($coBody['location_status']) ? $coBody['location_status'] : null;
+
+        $userInfoModel = new \App\Models\UserInfoModel();
+        $employeeInfo = $userInfoModel->where('user_id', $user->sub)->first();
+        $isRemote = !empty($employeeInfo['working_location']) &&
+            strtolower(trim($employeeInfo['working_location'])) === 'remote';
+
+        // ── Geofencing Enforcement ───────────────────────────────────────────
+        if (!$isRemote) {
+            $enableGeofencing = isset($companyRule['enable_geofencing']) && $companyRule['enable_geofencing'] == 1;
+
+            if ($enableGeofencing) {
+                $locationSettingsModel = new \App\Models\LocationSettingsModel();
+                $officeLocation = $locationSettingsModel->first();
+
+                if ($officeLocation && $officeLocation['latitude'] && $officeLocation['longitude']) {
+                    if ($coLat === null || $coLng === null) {
+                        return $this->respond([
+                            'status' => 'error',
+                            'message' => 'Location access is required to check out.'
+                        ], 400);
+                    }
+
+                    $distance = $this->calculateDistance(
+                        $coLat, 
+                        $coLng, 
+                        (float)$officeLocation['latitude'], 
+                        (float)$officeLocation['longitude']
+                    );
+
+                    $allowedRadius = (float)($officeLocation['radius'] ?? 0);
+
+                    // Add a 10 meter tolerance if exact match is required to account for basic GPS drift
+                    if ($allowedRadius == 0 && $distance > 10) {
+                         return $this->respond([
+                            'status' => 'error',
+                            'message' => 'You are outside the exact office location. Please check out from the office.'
+                        ], 400);
+                    } else if ($allowedRadius > 0 && $distance > $allowedRadius) {
+                        return $this->respond([
+                            'status' => 'error',
+                            'message' => "You are outside the allowed office location range. Please check out from within {$allowedRadius} meters of the office."
+                        ], 400);
+                    }
+                }
+            }
+        }
 
         // ── Reverse-geocode checkout GPS coordinates via Nominatim ───────────
         $coLocationName = null;
