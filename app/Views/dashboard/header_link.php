@@ -12,8 +12,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Fablead HRMS">
-<meta name="application-name" content="Fablead HRMS">
+<meta name="apple-mobile-web-app-title" content="<?= getCompanyName() ?>">
+<meta name="application-name" content="<?= getCompanyName() ?>">
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/feather/feather.css'); ?>">
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/mdi/css/materialdesignicons.min.css'); ?>">
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/ti-icons/css/themify-icons.css'); ?>">

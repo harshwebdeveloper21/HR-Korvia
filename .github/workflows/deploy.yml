@@ -40,9 +40,9 @@ jobs:
       - name: Deploy to cPanel via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          server: 82.29.163.188
+          username: u378554361.korviahrftp
+          password: Z@44!m=DdX?e
           server-dir: /public_html/
           local-dir: ./build_output/
           protocol: ftp       # 🔥 switch to ftp first (stable)

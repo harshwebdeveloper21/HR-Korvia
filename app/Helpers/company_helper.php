@@ -38,3 +38,15 @@ if (!function_exists('getCompanyPdfLogo')) {
         return getCompanyLogo();
     }
 }
+
+if (!function_exists('getCompanyName')) {
+    function getCompanyName()
+    {
+        $companyModel = new CompanyLogoModel();
+        $company = $companyModel->first(); // Fetch the first record
+
+        return !empty($company['company_name']) 
+            ? $company['company_name'] 
+            : 'Fablead Developers Technolab';
+    }
+}

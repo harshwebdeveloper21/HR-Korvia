@@ -181,7 +181,7 @@
 
 <!-- Modal -->
 <div class="modal fade" id="subtaskModal" tabindex="-1" aria-labelledby="subtaskModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg d-flex justify-content-center align-items-center"> <!-- Centered Modal -->
+    <div class="modal-dialog modal-md d-flex justify-content-center align-items-center"> <!-- Centered Modal -->
         <div class="modal-content rounded-3">
             <div class="modal-header text-center"> <!-- Centered Header Text -->
                 <h5 class="modal-title" id="subtaskModalLabel">Add Subtasks</h5>
@@ -339,12 +339,15 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function() {
-        const token = localStorage.getItem('token'); // JWT token
+        const token = localStorage.getItem('token');
 
-        // Get user role from the JWT payload
         function getUserRole() {
-            let payload = JSON.parse(atob(token.split('.')[1])); // Decode JWT
-            return payload.role; // Extract user role
+            try {
+                let payload = JSON.parse(atob(token.split('.')[1]));
+                return payload.role;
+            } catch(e) {
+                return '';
+            }
         }
 
         function fetchTasks(statusFilter = '') {
@@ -359,85 +362,81 @@
                     if (response.status === 'success' && response.data) {
                         const tasks = response.data;
                         let tableRows = '';
-                        let userRole = getUserRole(); // Get role from JWT
+                        let userRole = getUserRole();
 
-                        // Filter tasks by status if a filter is applied
                         const filteredTasks = statusFilter ?
                             tasks.filter(task => task.task_status === statusFilter) :
                             tasks;
 
                         filteredTasks.forEach((task) => {
                             let actionButtons = '';
-
                             if (userRole !== 'employee') {
                                 actionButtons = `
-                            <a href="#" 
-                            class="fs-5 subtask-btn"
-                            style="color: #E66136;" 
-                            data-id="${task.id}" 
-                            data-username="${task.username}" 
-                            data-task_title="${task.task_title}" 
-                            data-user_id="${task.user_id}" 
-                            title="Add Subtask" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#subtaskModal">
-                            <i class="mdi mdi-plus-box"></i>
-                            </a>
-                            <a href="/task/profile/${task.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye" ></i></a>
-                            <a href="/task/${task.id}" class="text-warning fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
-                            <a href="#" class="text-danger fs-5 delete-task" data-id="${task.id}" title="Delete"><i class="mdi mdi-delete"></i></a>
-                        `;
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="#" class="btn btn-sm btn-outline-secondary subtask-btn shadow-sm rounded-circle d-flex align-items-center justify-content-center"
+                                            data-id="${task.id}" data-username="${task.username}"
+                                            data-task_title="${task.task_title}" data-user_id="${task.user_id}"
+                                            title="Add Subtask" data-bs-toggle="modal" data-bs-target="#subtaskModal" style="width:34px; height:34px; color:#E66136; border-color:#E66136;">
+                                            <i class="mdi mdi-plus-box" style="font-size:18px;"></i>
+                                        </a>
+                                        <a href="/task/profile/${task.id}" class="btn btn-sm btn-outline-primary shadow-sm rounded-circle d-flex align-items-center justify-content-center" title="View" style="width:34px; height:34px;">
+                                            <i class="mdi mdi-eye" style="font-size:18px;"></i>
+                                        </a>
+                                        <a href="/task/${task.id}" class="btn btn-sm btn-outline-warning shadow-sm rounded-circle d-flex align-items-center justify-content-center" title="Edit" style="width:34px; height:34px;">
+                                            <i class="mdi mdi-pencil" style="font-size:18px;"></i>
+                                        </a>
+                                        <a href="#" class="btn btn-sm btn-outline-danger shadow-sm rounded-circle d-flex align-items-center justify-content-center delete-task" data-id="${task.id}" title="Delete" style="width:34px; height:34px;">
+                                            <i class="mdi mdi-delete" style="font-size:18px;"></i>
+                                        </a>
+                                    </div>
+                                `;
                             } else {
                                 actionButtons = `
-                            <a href="/task/profile/${task.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
-                        `;
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="/task/profile/${task.id}" class="btn btn-sm btn-outline-primary shadow-sm rounded-circle d-flex align-items-center justify-content-center" title="View" style="width:34px; height:34px;">
+                                            <i class="mdi mdi-eye" style="font-size:18px;"></i>
+                                        </a>
+                                    </div>
+                                `;
                             }
 
-                            let progressBarClass = '';
-                            let progressValue = 0;
-                            let progressText = '';
-
-                            if (task.task_status === 'Pending') {
-                                progressValue = 25;
-                                progressBarClass = 'bg-danger';
-                                progressText = '25%';
-                            } else if (task.task_status === 'In-Progress') {
-                                progressValue = 50;
-                                progressBarClass = 'bg-warning';
-                                progressText = '50%';
+                            let progressBarClass = 'bg-danger';
+                            let progressValue = 25;
+                            let progressText = '25%';
+                            if (task.task_status === 'In-Progress') {
+                                progressValue = 50; progressBarClass = 'bg-warning'; progressText = '50%';
                             } else if (task.task_status === 'Completed') {
-                                progressValue = 100;
-                                progressBarClass = 'bg-success';
-                                progressText = '100%';
+                                progressValue = 100; progressBarClass = 'bg-success'; progressText = '100%';
                             }
 
                             let statusDisplay = `
-                        <div>
-                            <div class="progress mb-1" style="height: 20px;">
-                                <div class="progress-bar ${progressBarClass}" role="progressbar" style="width: ${progressValue}%;" aria-valuenow="${progressValue}" aria-valuemin="0" aria-valuemax="100">
-                                    ${progressText}
-                                </div>
-                            </div>
-                    `;
-
+                                <div>
+                                    <div class="progress mb-1" style="height: 20px;">
+                                        <div class="progress-bar ${progressBarClass}" role="progressbar"
+                                            style="width: ${progressValue}%;" aria-valuenow="${progressValue}"
+                                            aria-valuemin="0" aria-valuemax="100">${progressText}</div>
+                                    </div>
+                            `;
                             if (userRole !== 'employee') {
                                 statusDisplay += `
-                            <select class="form-select status-dropdown" data-id="${task.id}">
-                                <option value="Pending" ${task.task_status === 'Pending' ? 'selected' : ''}>Pending</option>
-                                <option value="In-Progress" ${task.task_status === 'In-Progress' ? 'selected' : ''}>In-Progress</option>
-                                <option value="Completed" ${task.task_status === 'Completed' ? 'selected' : ''}>Completed</option>
-                            </select>
-                        `;
+                                    <select class="form-select status-dropdown" data-id="${task.id}">
+                                        <option value="Pending" ${task.task_status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                        <option value="In-Progress" ${task.task_status === 'In-Progress' ? 'selected' : ''}>In-Progress</option>
+                                        <option value="Completed" ${task.task_status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                    </select>
+                                `;
                             }
-
                             statusDisplay += '</div>';
 
-                            // Mobile action buttons
                             let mobileActionsHtml = '';
                             if (userRole !== 'employee') {
                                 mobileActionsHtml = `
                                     <div class="detail-actions">
-                                        <a href="#" class="btn btn-sm subtask-btn" style="background: #E66136; color: white;" data-id="${task.id}" data-username="${task.username}" data-task_title="${task.task_title}" data-user_id="${task.user_id}" data-bs-toggle="modal" data-bs-target="#subtaskModal"><i class="mdi mdi-plus-box"></i> Subtask</a>
+                                        <a href="#" class="btn btn-sm subtask-btn" style="background:#E66136;color:white;"
+                                            data-id="${task.id}" data-username="${task.username}"
+                                            data-task_title="${task.task_title}" data-user_id="${task.user_id}"
+                                            data-bs-toggle="modal" data-bs-target="#subtaskModal">
+                                            <i class="mdi mdi-plus-box"></i> Subtask</a>
                                         <a href="/task/profile/${task.id}" class="btn btn-sm btn-primary"><i class="mdi mdi-eye"></i> View</a>
                                         <a href="/task/${task.id}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit</a>
                                         <a href="#" class="btn btn-sm btn-danger delete-task" data-id="${task.id}"><i class="mdi mdi-delete"></i> Delete</a>
@@ -452,408 +451,255 @@
                             }
 
                             tableRows += `
-                        <tr data-id="${task.id}">
-                            <td class="py-1">
-                                <div style="display: flex; align-items: flex-start; gap: 10px;">
-                                    <a href="/task/profile/${task.id}" class="text-decoration-none">
-                                        <img src="/upload/${task.profile_image || 'default-profile.jpg'}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                    </a>
-                                    <div style="flex: 1;">
-                                        <a href="/task/profile/${task.id}" class="text-decoration-none text-dark">
-                                            <span class="capitalize-text">${task.username}</span>
-                                        </a>
-                                        <div class="expanded-details" id="task-details-${task.id}" onclick="event.stopPropagation();">
-                                            <div class="detail-row">
-                                                <span class="detail-label">Title:</span>
-                                                <span class="detail-value">${task.task_title}</span>
+                                <tr data-id="${task.id}">
+                                    <td class="py-1">
+                                        <div style="display:flex;align-items:flex-start;gap:10px;">
+                                            <a href="/task/profile/${task.id}" class="text-decoration-none">
+                                                <img src="/upload/${task.profile_image || 'default-profile.jpg'}" alt="Profile"
+                                                    style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                                            </a>
+                                            <div style="flex:1;">
+                                                <a href="/task/profile/${task.id}" class="text-decoration-none text-dark">
+                                                    <span class="capitalize-text">${task.username}</span>
+                                                </a>
+                                                <div class="expanded-details" id="task-details-${task.id}" onclick="event.stopPropagation();">
+                                                    <div class="detail-row"><span class="detail-label">Title:</span><span class="detail-value">${task.task_title}</span></div>
+                                                    <div class="detail-row"><span class="detail-label">Assigned Date:</span><span class="detail-value">${task.assigned_date}</span></div>
+                                                    <div class="detail-row"><span class="detail-label">Due Date:</span><span class="detail-value">${task.due_date}</span></div>
+                                                    <div class="detail-row"><span class="detail-label">Status:</span><span class="detail-value">${task.task_status}</span></div>
+                                                    ${mobileActionsHtml}
+                                                </div>
                                             </div>
-                                            <div class="detail-row">
-                                                <span class="detail-label">Assigned Date:</span>
-                                                <span class="detail-value">${task.assigned_date}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <span class="detail-label">Due Date:</span>
-                                                <span class="detail-value">${task.due_date}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <span class="detail-label">Status:</span>
-                                                <span class="detail-value">${task.task_status}</span>
-                                            </div>
-                                            ${mobileActionsHtml}
                                         </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="desktop-only-col capitalize-text">${task.task_title}</td>
-                            <td class="desktop-only-col capitalize-text">${task.assigned_date}</td>
-                            <td class="desktop-only-col capitalize-text">${task.due_date}</td>
-                            <td class="desktop-only-col py-1">${statusDisplay}</td>
-                            <td style="display: none;">${task.created_at}</td>
-                            <td class="desktop-only-col" style="display: flex; align-items: center; gap: 8px; padding-bottom: 38px;">
-                                ${actionButtons}
-                            </td>
-                            <td class="mobile-expand-col text-center">
-                                <button type="button" class="expand-toggle" data-target="task-details-${task.id}" aria-label="Expand details"></button>
-                            </td>
-                        </tr>
-                    `;
+                                    </td>
+                                    <td class="desktop-only-col capitalize-text">${task.task_title}</td>
+                                    <td class="desktop-only-col capitalize-text">${task.assigned_date}</td>
+                                    <td class="desktop-only-col capitalize-text">${task.due_date}</td>
+                                    <td class="desktop-only-col py-1">${statusDisplay}</td>
+                                    <td style="display:none;">${task.created_at}</td>
+                                    <td class="desktop-only-col" style="display:flex;align-items:center;gap:8px;padding-bottom:38px;">${actionButtons}</td>
+                                    <td class="mobile-expand-col text-center">
+                                        <button type="button" class="expand-toggle" data-target="task-details-${task.id}" aria-label="Expand details"></button>
+                                    </td>
+                                </tr>
+                            `;
                         });
+
                         const $table = $('#task-table');
                         if ($.fn.DataTable.isDataTable($table)) {
                             $table.DataTable().clear().destroy();
                         }
-
                         $('#task-table tbody').html(tableRows);
                         setTimeout(() => {
                             $table.DataTable({
-                                order: [
-                                    [5, 'desc']
-                                ],
+                                order: [[5, 'desc']],
                                 columnDefs: [
-                                    {
-                                        targets: 5, // created_at
-                                        visible: false,
-                                        searchable: false
-                                    },
-                                    {
-                                        targets: 7, // mobile expand column
-                                        orderable: false,
-                                        searchable: false
-                                    }
+                                    { targets: 5, visible: false, searchable: false },
+                                    { targets: 7, orderable: false, searchable: false }
                                 ],
-                                language: {
-                                    search: "",
-                                    searchPlaceholder: "Search",
-                                }
+                                language: { search: "", searchPlaceholder: "Search" }
                             });
-                            // Apply mobile visibility
                             if (typeof applyMobileTableVisibility === 'function') {
                                 applyMobileTableVisibility();
                             }
                         }, 10);
 
-                        // $('#task-table').DataTable(); // Reinitialize
                     } else {
                         Swal.fire('Error', 'Failed to load task records', 'error');
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function() {
                     Swal.fire('Error', 'Failed to fetch task records', 'error');
                 }
             });
         }
 
-        // Call the fetchTasks function on page load
+        // Load tasks on page load
         fetchTasks();
+
+        // Status filter
+        $('#statusFilter').on('change', function() {
+            fetchTasks($(this).val());
+        });
+
+        // Status dropdown change in table
         $(document).on('change', '.status-dropdown', function() {
-            let taskId = $(this).data('id');
-            let newStatus = $(this).val();
-            console.log(newStatus);
-            updateTaskStatus(taskId, newStatus);
+            updateTaskStatus($(this).data('id'), $(this).val());
         });
 
         function updateTaskStatus(taskId, newStatus) {
-            const token = localStorage.getItem('token'); // JWT token
             $.ajax({
-                url: `<?= base_url('/api/task/updateStatus') ?>`, // API endpoint for updating status
+                url: '<?= base_url('/api/task/updateStatus') ?>',
                 type: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                data: JSON.stringify({
-                    id: taskId,
-                    status: newStatus
-                }),
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                data: JSON.stringify({ id: taskId, status: newStatus }),
                 success: function(response) {
                     if (response.status === 'success') {
-                        // Display success message
                         Swal.fire({
-                            icon: 'success',
-                            title: 'Status Updated',
-                            text: 'Subtask status updated successfully!',
-                            confirmButtonText: 'OK',
-                            confirmButtonColor: '#E66136'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                location.reload();
-                            }
-                        });
-
-                        // Update the status dropdown with the new status
-                        $(`tr[data-id="${taskId}"] .status-dropdown`).val(newStatus);
-
-                        // Re-render the progress bar dynamically
-                        updateProgressBar(taskId, newStatus);
-
-
+                            icon: 'success', title: 'Status Updated', text: 'Task status updated successfully!',
+                            confirmButtonText: 'OK', confirmButtonColor: '#E66136'
+                        }).then((result) => { if (result.isConfirmed) location.reload(); });
                     } else {
                         Swal.fire('Error', 'Failed to update task status', 'error');
                     }
                 },
-                error: function(xhr, status, error) {
-                    Swal.fire('Error', 'Failed to update task status', 'error');
-                }
+                error: function() { Swal.fire('Error', 'Failed to update task status', 'error'); }
             });
         }
 
-        // Function to update the progress bar
-        function updateProgressBar(taskId, newStatus) {
-            let progressBarClass = '';
-            let progressValue = 0;
-            let progressText = '';
-
-            if (newStatus === 'Pending') {
-                progressValue = 25;
-                progressBarClass = 'bg-danger';
-                progressText = '25%';
-            } else if (newStatus === 'In-Progress') {
-                progressValue = 50;
-                progressBarClass = 'bg-warning';
-                progressText = '50%';
-            } else if (newStatus === 'Completed') {
-                progressValue = 100;
-                progressBarClass = 'bg-success';
-                progressText = '100%';
-            }
-
-            // Dynamically update the progress bar for the specific task
-            $(`tr[data-id="${taskId}"] .progress-bar`)
-                .removeClass('bg-danger bg-warning bg-success') // Remove existing classes
-                .addClass(progressBarClass) // Add new class based on status
-                .css('width', `${progressValue}%`) // Update the width of the progress bar
-                .text(progressText); // Update the text inside the progress bar
-        }
-
-        // Handle delete action
+        // Delete task
         $(document).on('click', '.delete-task', function(e) {
             e.preventDefault();
             const taskId = $(this).data('id');
             Swal.fire({
-                title: 'Are you sure?',
-                text: 'This action cannot be undone!',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
-                buttonsStyling: false,
-                customClass: {
-                    confirmButton: 'hr-btnbg',
-                    cancelButton: 'hr-btnbg',
-                }
+                title: 'Are you sure?', text: 'This action cannot be undone!', icon: 'warning',
+                showCancelButton: true, confirmButtonText: 'Yes, delete it!', cancelButtonText: 'No, cancel!',
+                buttonsStyling: false, customClass: { confirmButton: 'hr-btnbg', cancelButton: 'hr-btnbg' }
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: `/api/task/${taskId}`,
-                        type: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
+                        url: `/api/task/${taskId}`, type: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                         success: function(response) {
                             if (response.status === 'success') {
-                                Swal.fire('Deleted!', 'The task record has been deleted.', 'success').then(() => {
+                                Swal.fire('Deleted!', 'The task has been deleted.', 'success').then(() => {
                                     $(`tr[data-id="${taskId}"]`).remove();
                                 });
                             } else {
-                                Swal.fire(
-                                    'Error!',
-                                    responseData.message, // Show the actual message from server
-                                    'error'
-                                );
+                                Swal.fire('Error!', 'Failed to delete task.', 'error');
                             }
                         },
                         error: function(xhr) {
-                            let errorMessage = 'There was an error deleting the city. Please try again.';
-
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message; // Get actual error message
-                            }
-
-                            Swal.fire(
-                                'Error!',
-                                errorMessage, // Show dynamic error message
-                                'error'
-                            );
+                            let msg = 'Error deleting task.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                            Swal.fire('Error!', msg, 'error');
                         }
                     });
                 }
             });
         });
-        // Filter change listener
-        $('#statusFilter').on('change', function() {
-            const selectedStatus = $(this).val(); // e.g., 'completed'
-            fetchTasks(selectedStatus); // Fetch filtered tasks
+
+        // Subtask button click - populate modal
+        $(document).on('click', '.subtask-btn', function() {
+            $('#user_id').val($(this).data('username'));
+            $('#task_title').val($(this).data('task_title'));
+            $('#subtask_user_id').val($(this).data('user_id'));
+            $('#main_task_id').val($(this).data('id'));
         });
-    });
-    $(document).on('click', '.subtask-btn', function() {
-        const taskId = $(this).data('id');
-        const userId = $(this).data('user_id');
-        const userName = $(this).data('username');
-        const taskTitle = $(this).data('task_title');
 
-        // Set fields in modal
-        $('#user_id').val(userName); // Display name (readonly)
-        $('#task_title').val(taskTitle); // Display task title
-
-        // Set hidden fields for use in AJAX
-        $('#subtask_user_id').val(userId);
-        $('#main_task_id').val(taskId);
-    });
-    $(document).ready(function() {
+        // Add more subtask fields
         let subtaskIndex = 1;
-
         $('#addMoreSubtask').on('click', function() {
             const html = `
-        <div class="subtask-group mb-3 border p-3 rounded position-relative" data-index="${subtaskIndex}">
-            <div class="row g-2 align-items-start">
-                <div class="col-md-12">
-                    <!-- Header row with title and remove icon -->
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label mb-0">SubTask Details</label>
-                        <button type="button" class="btn btn-link text-danger p-0 remove-subtask" title="Remove Subtask">
-                            <i class="mdi mdi-close fs-4"></i>
-                        </button>
-                    </div>
-                    <hr>
-
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <label class="form-label">SubTask Title</label>
-                            <input type="text" name="subtask_title[]" class="form-control" placeholder="Subtask Title" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Assigned Date</label>
-                            <input type="date" name="subtask_assigned_date[]" class="form-control">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Due Date</label>
-                            <input type="date" name="subtask_due_date[]" class="form-control">
-                        </div>
-                    </div>
-
-                    <div class="row mt-2">
-                        <div class="col-md-4">
-                        <label class="form-label">Upload Files</label>
-                        <input type="file" name="files_${subtaskIndex}[]" class="form-control" multiple>
-                    </div>
-                        <div class="col-md-4">
-                            <label class="form-label">SubTask Status</label>
-                            <select name="subtask_status[]" class="form-select">
-                                <option value="Pending">Pending</option>
-                                <option value="In-Progress">In-Progress</option>
-                                <option value="Completed">Completed</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Description</label>
-                            <textarea name="description[]" class="form-control" placeholder="Description"></textarea>
+                <div class="subtask-group mb-3 border p-3 rounded position-relative" data-index="${subtaskIndex}">
+                    <div class="row g-2 align-items-start">
+                        <div class="col-md-12">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0">SubTask Details</label>
+                                <button type="button" class="btn btn-link text-danger p-0 remove-subtask" title="Remove Subtask">
+                                    <i class="mdi mdi-close fs-4"></i>
+                                </button>
+                            </div>
+                            <hr>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">SubTask Title</label>
+                                    <input type="text" name="subtask_title[]" class="form-control" placeholder="Subtask Title" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Assigned Date</label>
+                                    <input type="date" name="subtask_assigned_date[]" class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Due Date</label>
+                                    <input type="date" name="subtask_due_date[]" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Upload Files</label>
+                                    <input type="file" name="files_${subtaskIndex}[]" class="form-control" multiple>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">SubTask Status</label>
+                                    <select name="subtask_status[]" class="form-select">
+                                        <option value="Pending">Pending</option>
+                                        <option value="In-Progress">In-Progress</option>
+                                        <option value="Completed">Completed</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Description</label>
+                                    <textarea name="description[]" class="form-control" placeholder="Description"></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        `;
+            `;
             $('#subtaskGroupContainer').append(html);
             subtaskIndex++;
-
         });
 
-        // Remove subtask on click
         $(document).on('click', '.remove-subtask', function() {
             $(this).closest('.subtask-group').remove();
         });
-    });
 
-
-    $('#saveSubtaskBtn').on('click', function() {
-        const formData = new FormData();
-
-        const subtasks = [];
-
-        $('#subtaskGroupContainer .subtask-group').each(function(index) {
-            const subtask = {
-                subtask_title: $(this).find('input[name="subtask_title[]"]').val(),
-                subtask_assigned_date: $(this).find('input[name="subtask_assigned_date[]"]').val(),
-                subtask_due_date: $(this).find('input[name="subtask_due_date[]"]').val(),
-                subtask_status: $(this).find('select[name="subtask_status[]"]').val(),
-                description: $(this).find('textarea[name="description[]"]').val()
-            };
-
-            subtasks.push(subtask);
-
-            const fileInput = $(this).find('input[type="file"]')[0];
-            if (fileInput && fileInput.files.length > 0) {
-                for (let i = 0; i < fileInput.files.length; i++) {
-                    formData.append(`files[${index}][]`, fileInput.files[i]);
-                }
-            }
-        });
-
-        formData.append('subtasks', JSON.stringify(subtasks));
-        formData.append('task_id', $('#main_task_id').val() || 0);
-        formData.append('user_id', $('#subtask_user_id').val() || 0);
-
-        $.ajax({
-            url: '<?= base_url("api/subtasks/create") ?>',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                Swal.fire({
-                    title: 'Success',
-                    text: response.message,
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                    buttonsStyling: false,
-                    customClass: {
-                        confirmButton: 'hr-btnbg'
-                    }
-                }).then(() => {
-                    location.reload();
+        // Save subtask
+        $('#saveSubtaskBtn').on('click', function() {
+            const formData = new FormData();
+            const subtasks = [];
+            $('#subtaskGroupContainer .subtask-group').each(function(index) {
+                subtasks.push({
+                    subtask_title: $(this).find('input[name="subtask_title[]"]').val(),
+                    subtask_assigned_date: $(this).find('input[name="subtask_assigned_date[]"]').val(),
+                    subtask_due_date: $(this).find('input[name="subtask_due_date[]"]').val(),
+                    subtask_status: $(this).find('select[name="subtask_status[]"]').val(),
+                    description: $(this).find('textarea[name="description[]"]').val()
                 });
-            },
-            error: function(xhr) {
-                if (xhr.status === 400 && xhr.responseJSON) {
-                    const errors = xhr.responseJSON.messages;
-
-                    // 1. Clear previous errors
-                    $('#subtaskForm .form-control, #subtaskForm .form-select').removeClass('is-invalid');
-                    $('#subtaskForm .invalid-feedback').remove(); // Remove old feedback
-
-                    // 2. Display errors below respective fields
-                    if (typeof displayValidationErrors === 'function') displayValidationErrors(errors);
-                    });
-
-                    // 3. Scroll to first error field
-                    const $firstError = $('.is-invalid').first();
-                    if ($firstError.length) {
-                        $('html, body').animate({
-                            scrollTop: $firstError.offset().top - 100
-                        }, 500);
+                const fileInput = $(this).find('input[type="file"]')[0];
+                if (fileInput && fileInput.files.length > 0) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        formData.append(`files[${index}][]`, fileInput.files[i]);
                     }
-                } else {
-                    Swal.fire('Error', 'Server error occurred.', 'error');
                 }
-            }
-        });
-    });
+            });
+            formData.append('subtasks', JSON.stringify(subtasks));
+            formData.append('task_id', $('#main_task_id').val() || 0);
+            formData.append('user_id', $('#subtask_user_id').val() || 0);
 
-    // 📥 Export to Excel functionality
-        $('#btnExportTasks').on('click', function () {
+            $.ajax({
+                url: '<?= base_url("api/subtasks/create") ?>', type: 'POST',
+                data: formData, processData: false, contentType: false,
+                success: function(response) {
+                    Swal.fire({
+                        title: 'Success', text: response.message, icon: 'success',
+                        confirmButtonText: 'OK', buttonsStyling: false,
+                        customClass: { confirmButton: 'hr-btnbg' }
+                    }).then(() => location.reload());
+                },
+                error: function(xhr) {
+                    if (xhr.status === 400 && xhr.responseJSON) {
+                        const errors = xhr.responseJSON.messages;
+                        $('#subtaskForm .form-control, #subtaskForm .form-select').removeClass('is-invalid');
+                        $('#subtaskForm .invalid-feedback').remove();
+                        if (typeof displayValidationErrors === 'function') displayValidationErrors(errors);
+                    } else {
+                        Swal.fire('Error', 'Server error occurred.', 'error');
+                    }
+                }
+            });
+        });
+
+        // Export to Excel
+        $('#btnExportTasks').on('click', function() {
             const $btn = $(this);
             const search = $('#task-table_filter input').val() || '';
             const status = $('#statusFilter').val() || '';
-            const token = localStorage.getItem('token');
-
-            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...');
-
-            const queryParams = new URLSearchParams({ search: search, status: status });
-
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Exporting...');
+            const queryParams = new URLSearchParams({ search, status });
             fetch(`<?= base_url('api/task/export') ?>?${queryParams.toString()}`, {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${token}` }
+                method: 'GET', headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(async response => {
                 $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
@@ -867,28 +713,18 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                const dateStr = new Date().toISOString().slice(0, 10);
-                a.download = `Tasks_${dateStr}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
+                a.download = `Tasks_${new Date().toISOString().slice(0,10)}.xlsx`;
+                document.body.appendChild(a); a.click(); a.remove();
                 window.URL.revokeObjectURL(url);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Exported!',
-                    text: 'Tasks exported to Excel successfully.',
-                    toast: true,
-                    position: 'top-end',
-                    timer: 3000,
-                    showConfirmButton: false
-                });
+                Swal.fire({ icon: 'success', title: 'Exported!', text: 'Tasks exported successfully.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
             })
             .catch(error => {
                 $btn.prop('disabled', false).html('<i class="mdi mdi-file-excel iconfontsize"></i> Export');
                 Swal.fire('Export Error', error.message || 'Failed to export tasks', 'error');
             });
         });
-    });
+
+    }); // end $(document).ready
 </script>
 
 <?= $this->endSection(); ?>
