@@ -27,7 +27,7 @@ $role = $user ? $user->role : null;
         .navbar .navbar-brand-wrapper .navbar-brand img,
         .sidebar-logo {
             max-width: 195px !important;
-            max-height: 60px !important;
+            max-height: 47px !important;
             width: auto !important;
             height: auto !important;
             object-fit: contain !important;
