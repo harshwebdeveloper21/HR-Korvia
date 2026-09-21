@@ -819,14 +819,14 @@
                                         <input type="file" name="profile_image" id="profile_image" class="form-control">
                                     </div>
                                     <div class="">
-                                        <img id="profile-image-preview" src="upload/default-profile.jpg" alt="Profile Image" class="img-fluid mb-2" width="80px" height="80px">
+                                        <img id="profile-image-preview" src="upload/1789966027_54c5a38ccda20f7c2bac.jpg" alt="Profile Image" class="img-fluid mb-2" width="80px" height="80px">
                                     </div> -->
                                     <div class="form-group">
                                         <label for="profile_image">Profile Image</label>
                                         <input type="file" name="profile_image" id="profile_image" class="form-control">
                                     </div>
                                     <div class="position-relative d-inline-block">
-                                        <img id="profile-image-preview" src="upload/default-profile.jpg" alt="Profile Image" class="img-fluid mb-2 rounded-circle" width="80px" height="80px">
+                                        <img id="profile-image-preview" src="upload/1789966027_54c5a38ccda20f7c2bac.jpg" alt="Profile Image" class="img-fluid mb-2 rounded-circle" width="80px" height="80px">
 
                                         <!-- Add delete button for profile preview -->
                                         <button type="button" class="btn btn-danger btn-sm rounded-circle delete-profile-btn"
@@ -894,7 +894,7 @@
                             `<option value="${response.country.id}" selected>${response.country.country_name}</option>`
                         );
                     } else {
-                        // 🔥 Handle duplicate error or other custom message
+                        // ðŸ”¥ Handle duplicate error or other custom message
                         Swal.fire({
                             icon: "error",
                             title: "Failed",
@@ -980,7 +980,7 @@
                             `<option value="${response.city.id}" selected>${response.city.city_name}</option>`
                         );
                     } else {
-                        // 👇 Handle duplicate or general error message
+                        // ðŸ‘‡ Handle duplicate or general error message
                         Swal.fire({
                             icon: "error",
                             title: "Failed",
@@ -1051,7 +1051,7 @@
                             timer: 2000
                         });
                     } else {
-                        // ❗ Show SweetAlert for errors like duplicate
+                        // â— Show SweetAlert for errors like duplicate
                         Swal.fire({
                             icon: "error",
                             title: "Error!",
@@ -1181,7 +1181,7 @@
                         ).val(response.country.id).trigger("change");
 
                     } else {
-                        // 👇 Show duplicate or custom error message
+                        // ðŸ‘‡ Show duplicate or custom error message
                         Swal.fire({
                             icon: "error",
                             title: "Failed",
@@ -1311,14 +1311,14 @@
                     // Update profile image if present
 
                     if (data.data.profile_image) {
-                        if (data.data.profile_image == 'default-profile.jpg') {
+                        if (data.data.profile_image == '1789966027_54c5a38ccda20f7c2bac.jpg') {
                             $('#profile-image').attr('src', IMAGE_BASE_URL + 'upload/' + data.data.profile_image);
                         } else {
                             $('#profile-image').attr('src', 'upload/' + data.data.profile_image);
                         }
                     } else {
                         // console.log('else ' + IMAGE_BASE_URL);
-                        $('#profile-image').attr('src', IMAGE_BASE_URL + 'upload/default-profile.jpg');
+                        $('#profile-image').attr('src', IMAGE_BASE_URL + 'upload/1789966027_54c5a38ccda20f7c2bac.jpg');
                     }
                 } else {
                     console.error('Error: Missing profile data');
@@ -1404,7 +1404,7 @@
                         if (data.profile_image) {
                             $('#profile-image-preview').attr('src', baseUrl + '/upload/' + data.profile_image);
                         } else {
-                            $('#profile-image-preview').attr('src', IMAGE_BASE_URL + 'upload/default-profile.jpg'); // Fallback image
+                            $('#profile-image-preview').attr('src', IMAGE_BASE_URL + 'upload/1789966027_54c5a38ccda20f7c2bac.jpg'); // Fallback image
                         }
                     }, 2000);
                     
@@ -1418,7 +1418,7 @@
         });
     });
 
-    // ─── Edit Bank Details ────────────────────────────────────────────
+    // â”€â”€â”€ Edit Bank Details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     $(document).ready(function () {
         $('#editBankBtn').on('click', function (e) {
             e.preventDefault();
@@ -1488,7 +1488,7 @@
             });
         });
     });
-    // ─────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
     function fetchCompanyLogo() {
@@ -1785,8 +1785,8 @@
 
             $(".error-message").remove(); // Remove old error messages
 
-            const form = $("#Updatecompany")[0]; // ✅ Get the form DOM element
-            const formData = new FormData(form); // ✅ Create FormData from the form
+            const form = $("#Updatecompany")[0]; // âœ… Get the form DOM element
+            const formData = new FormData(form); // âœ… Create FormData from the form
             formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
             $('#loader').show();

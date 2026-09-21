@@ -102,7 +102,7 @@
     }
 }
 
-/* ─── Modern Status Tabs ─── */
+/* â”€â”€â”€ Modern Status Tabs â”€â”€â”€ */
 .emp-status-tabs-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -163,7 +163,7 @@
     color: #94a3b8;
 }
 
-/* ─── Modal override: force visibility on ALL screen sizes for ALL modals ─── */
+/* â”€â”€â”€ Modal override: force visibility on ALL screen sizes for ALL modals â”€â”€â”€ */
 .modal {
     display: none;
     opacity: 1 !important;
@@ -180,7 +180,7 @@
     opacity: 0.5 !important;
     z-index: 9998 !important;
 }
-/* ─── Manage Employees Header Controls (Uniform Height, Width & Border-Radius) ─── */
+/* â”€â”€â”€ Manage Employees Header Controls (Uniform Height, Width & Border-Radius) â”€â”€â”€ */
 .emp-header-bar {
     display: flex;
     justify-content: space-between;
@@ -512,7 +512,7 @@
 
                 <div id="lm-loader" class="text-center py-4">
                     <div class="spinner-border" style="color:#E66136;" role="status">
-                        <span class="visually-hidden">Loading…</span>
+                        <span class="visually-hidden">Loadingâ€¦</span>
                     </div>
                     <p class="mt-2 text-muted small">Fetching monthly leave breakdown...</p>
                 </div>
@@ -624,7 +624,7 @@
             <div class="modal-body p-3">
                 <div id="ih-loader" class="text-center py-4">
                     <div class="spinner-border" style="color:#E66136;" role="status">
-                        <span class="visually-hidden">Loading…</span>
+                        <span class="visually-hidden">Loadingâ€¦</span>
                     </div>
                     <p class="mt-2 text-muted small">Fetching increment history...</p>
                 </div>
@@ -666,7 +666,7 @@
         function capitalizeFirstLetter(string) {
             return string ? string.charAt(0).toUpperCase() + string.slice(1).toLowerCase() : '';
         }
-        // ✅ Fetch and display employees
+        // âœ… Fetch and display employees
         function fetchEmployees(departmentId = '', viewType = 'active', month = '', year = '') {
             $.ajax({
                 url: '<?= base_url('/api/employees') ?>',
@@ -733,7 +733,7 @@
                                             <div class="d-flex align-items-center">
                                                 <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none me-2">
                                                     <img src="${employee.user_info.profile_image_url}" alt="Profile" width="34" height="34" class="rounded-circle"
-                                                        onerror="this.onerror=null; this.src='<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>';">
+                                                        onerror="this.onerror=null; this.src='<?= base_url(env('ImagePath') . '/upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>';">
                                                 </a>
                                                 <div class="text-truncate">
                                                     <a href="/employee/profile/${employee.user_info.id}" class="text-decoration-none text-dark fw-semibold text-truncate d-block" title="${empName}">
@@ -912,7 +912,7 @@
             });
         }
 
-        // ✅ Fetch department list
+        // âœ… Fetch department list
         function fetchDepartments() {
             $.ajax({
                 url: '<?= base_url('/api/getdepartments') ?>',
@@ -935,7 +935,7 @@
             });
         }
 
-        // ✅ Filter change events
+        // âœ… Filter change events
         function triggerFilter() {
             const selectedDeptId = $('#departmentFilter').val();
             const selectedMonth  = $('#monthFilter').val();
@@ -948,18 +948,18 @@
             triggerFilter();
         });
 
-        // ✅ Tab switch event
+        // âœ… Tab switch event
         $(document).on('click', '#employeeTabs .emp-status-tab-btn', function () {
             $('#employeeTabs .emp-status-tab-btn').removeClass('active');
             $(this).addClass('active');
             triggerFilter();
         });
 
-        // 🚀 Initial calls
+        // ðŸš€ Initial calls
         fetchDepartments();
         fetchEmployees('', 'active');
 
-        // 📥 Export to Excel functionality
+        // ðŸ“¥ Export to Excel functionality
         $('#btnExportEmployees').on('click', function () {
             const $btn = $(this);
             const departmentId = $('#departmentFilter').val() || '';
@@ -1068,9 +1068,9 @@
             if (open) hideBsModal(open.id);
         });
 
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // Status Change Modal Handler
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         function toggleStatusModalFields(status) {
             const isAct = String(status || '').toLowerCase() === 'active';
             if (isAct) {
@@ -1135,9 +1135,9 @@
             });
         });
 
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // Month-wise Leave History Modal Handler
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         $(document).on('click', '.open-leave-history', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1193,21 +1193,21 @@
         });
 
 
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // Permanent Delete Employee
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         window.deleteEmployee = function (employeeId, employeeName) {
             if (!employeeName) {
                 employeeName = $(`tr[data-id="${employeeId}"]`).find('a.text-dark').first().text().trim() || 'Employee #' + employeeId;
             }
 
-            // ⚠️ Detailed warning listing ALL data that will be permanently erased
+            // âš ï¸ Detailed warning listing ALL data that will be permanently erased
             Swal.fire({
-                title: '⚠️ Permanent Delete Warning',
+                title: 'âš ï¸ Permanent Delete Warning',
                 html: `
                     <div style="text-align:left; font-size:14px; line-height:1.7;">
                         <p>You are about to <strong>permanently delete</strong> the employee record for:</p>
-                        <p style="font-size:16px; font-weight:700; color:#E66136; margin:6px 0 12px;">👤 ${employeeName}</p>
+                        <p style="font-size:16px; font-weight:700; color:#E66136; margin:6px 0 12px;">ðŸ‘¤ ${employeeName}</p>
                     </div>
                 `,
                 icon: 'warning',
@@ -1343,7 +1343,7 @@
             $('#incrementModalLabel').html('<i class="mdi mdi-history me-1"></i> Add Increment History Record');
             $('#viewIncModalHeader').css('background', 'linear-gradient(135deg, #4b5563 0%, #374151 100%)');
             $('#view_inc_history_alert').show();
-            $('#view_inc_history_current_sal').text('₹ ' + rawSal.toLocaleString('en-IN'));
+            $('#view_inc_history_current_sal').text('â‚¹ ' + rawSal.toLocaleString('en-IN'));
             $('#view_inc_salary_label').html('Previous / Base Salary (&#8377;): <span class="text-danger">*</span>');
             $('#current_salary').val(rawSal).prop('readonly', false).css('background', '#fff');
             $('#view_inc_salary_help').show();
@@ -1354,7 +1354,7 @@
             $('#incrementModalLabel').html('<i class="mdi mdi-cash-plus me-1"></i> Add Salary Increment');
             $('#viewIncModalHeader').css('background', '#E66136');
             $('#view_inc_history_alert').hide();
-            $('#view_inc_salary_label').text('Current Salary (₹):');
+            $('#view_inc_salary_label').text('Current Salary (â‚¹):');
             $('#current_salary').val(rawSal).prop('readonly', true).css('background', '#e9ecef');
             $('#view_inc_salary_help').hide();
             $('#view_inc_last_date_group').show();
@@ -1466,9 +1466,9 @@
         });
     });
 
-    // ══════════════════════════════════════════════════════
-    // Increment History Modal — AJAX fetch
-    // ══════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Increment History Modal â€” AJAX fetch
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     $(document).on('click', '.open-increment-history', function (e) {
         e.preventDefault();
         e.stopPropagation();

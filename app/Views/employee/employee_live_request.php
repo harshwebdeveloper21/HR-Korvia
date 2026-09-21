@@ -212,7 +212,7 @@
                     let tableRows = '';
                     response.data.forEach((leave) => {
                         const empName = `${capitalizeFirstLetter(leave.firstname)} ${capitalizeFirstLetter(leave.lastname)}`;
-                        const profileImg = leave.profile_image ? `<?= base_url('upload/') ?>${leave.profile_image}` : '<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>';
+                        const profileImg = leave.profile_image ? `<?= base_url('upload/') ?>${leave.profile_image}` : '<?= base_url(env('ImagePath') . '/upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>';
                         const statusClass = `status-${(leave.status || '').toLowerCase()}`;
 
                         tableRows += `
@@ -220,7 +220,7 @@
                                 <td style="display:none;">${leave.id}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <img src="${profileImg}" class="profile-img" alt="Profile" onerror="this.src='<?= base_url(env('ImagePath') . '/upload/default-profile.jpg') ?>'">
+                                        <img src="${profileImg}" class="profile-img" alt="Profile" onerror="this.src='<?= base_url(env('ImagePath') . '/upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>'">
                                         <div>
                                             <span class="fw-semibold text-dark d-block">${empName}</span>
                                             <small class="text-muted d-block d-md-none">${leave.start_date} &bull; <span class="status-badge ${statusClass}" style="padding: 2px 8px; font-size: 10px; display: inline-block;">${leave.status}</span></small>

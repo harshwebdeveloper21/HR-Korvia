@@ -351,7 +351,7 @@
                                     $comment["profile_image"]
                                 )
                                     ? $comment["profile_image"]
-                                    : "default-profile.jpg"; ?>
+                                    : "1789966027_54c5a38ccda20f7c2bac.jpg"; ?>
                                 <img src="<?= base_url(
                                     "upload/" . $profileImage,
                                 ) ?>" alt="User" class="profile-pic me-2 rounded-circle" style="width:40px; height:40px; object-fit:cover;">
@@ -417,7 +417,7 @@
                     $("#employeeDepartment").text(data.department_name ?? 'N/A');
                     let profileImage = data.profile_image ?
                         `<?= base_url("upload/") ?>${data.profile_image}` :
-                        `<?= base_url("upload/default-profile.jpg") ?>`;
+                        `<?= base_url("upload/1789966027_54c5a38ccda20f7c2bac.jpg") ?>`;
 
                     $("#employeeImage").attr('src', profileImage);
 
@@ -545,7 +545,7 @@
                                 `<?= base_url(
                                     "upload/",
                                 ) ?>${comment.profile_image}` :
-                                `<?= base_url("upload/default-profile.jpg") ?>`;
+                                `<?= base_url("upload/1789966027_54c5a38ccda20f7c2bac.jpg") ?>`;
 
                             table += `
                                 <tr>
@@ -587,22 +587,22 @@
             case 'jpeg':
             case 'png':
             case 'gif':
-                return '🖼️';
+                return 'ðŸ–¼ï¸';
             case 'pdf':
-                return '📄';
+                return 'ðŸ“„';
             case 'doc':
             case 'docx':
-                return '📝';
+                return 'ðŸ“';
             case 'xls':
             case 'xlsx':
-                return '📊';
+                return 'ðŸ“Š';
             case 'zip':
             case 'rar':
-                return '🗜️';
+                return 'ðŸ—œï¸';
             case 'txt':
-                return '📃';
+                return 'ðŸ“ƒ';
             default:
-                return '📁';
+                return 'ðŸ“';
         }
     };
     $(document).on('click', '.edit-subtask', function() {
@@ -764,7 +764,7 @@
                     success: function(response) {
                         if (response.success) {
                             var comment = response.comment;
-                            var profileImage = comment.profile_image ? comment.profile_image : 'default-profile.jpg';
+                            var profileImage = comment.profile_image ? comment.profile_image : '1789966027_54c5a38ccda20f7c2bac.jpg';
                             var html = `
                                 <div class="comment d-flex">
                                     <img src="<?= base_url(

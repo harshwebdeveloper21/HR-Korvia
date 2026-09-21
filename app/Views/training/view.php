@@ -175,7 +175,7 @@
                         trainings.forEach((training) => {
                             let imageUrl = training.profile_image ?
                                 `/upload/${training.profile_image}` :
-                                `${baseImagePath}upload/default-profile.jpg`;
+                                `${baseImagePath}upload/1789966027_54c5a38ccda20f7c2bac.jpg`;
                             let actionButtons = '';
                             let mobileActionsHtml = '';
 
@@ -356,7 +356,7 @@
             });
         });
 
-        // 📥 Export to Excel functionality
+        // ðŸ“¥ Export to Excel functionality
         $('#btnExportTrainings').on('click', function () {
             const $btn = $(this);
             const search = $('#training-table_filter input').val() || '';
