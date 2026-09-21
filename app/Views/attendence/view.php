@@ -616,7 +616,7 @@
         </div>
 
         <div class="alert alert-info small">
-            ⚠️ This action will update attendance for all dates between selected range.
+            âš ï¸ This action will update attendance for all dates between selected range.
         </div>
 
       </div>
@@ -675,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
         const tableHeader = document.getElementById('table-header');
         const tableData = document.getElementById('table-data');
-        const defaultImagePath = "<?= base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>";
+        const defaultImagePath = "<?= base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>";
         
         // Filter users
         const startOfMonthStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;

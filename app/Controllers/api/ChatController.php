@@ -333,7 +333,7 @@ class ChatController extends ResourceController
             $message['sender_name'] = $message['firstname'];
             $message['profile_image'] = !empty($message['profile_image'])
                 ? base_url('upload/' . $message['profile_image'])
-                : base_url(env('ImagePath') . 'upload/default-profile.jpg');
+                : base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg');
 
             if (!empty($message['files'])) {
                 $filesArray = json_decode($message['files'], true);

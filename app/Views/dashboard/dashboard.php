@@ -431,7 +431,7 @@
     }
 
     /* ==========================================
-       Latest Announcements — Premium Design
+       Latest Announcements â€” Premium Design
     ========================================== */
     .ann-section-wrapper {
         background: #fff;
@@ -657,7 +657,7 @@
     }
     .ann-card:hover .ann-card-footer-read { opacity: 1; }
 
-    /* ── Marquee ticker ── */
+    /* â”€â”€ Marquee ticker â”€â”€ */
     .ann-marquee-outer {
         overflow: hidden;          /* clip cards outside viewport */
         position: relative;
@@ -674,7 +674,7 @@
         z-index: 3;
     }
 
-    /* ── Announcement Cards Row ── */
+    /* â”€â”€ Announcement Cards Row â”€â”€ */
     .ann-marquee-outer {
         position: relative;
         width: 100%;
@@ -689,13 +689,13 @@
         pointer-events: none;
         z-index: 3;
     }
-    /* Scrollable flex row — width:100% so overflow clips clones naturally */
+    /* Scrollable flex row â€” width:100% so overflow clips clones naturally */
     .ann-marquee-track {
         display: flex;
         gap: 14px;
         overflow-x: scroll;
         width: 100%;
-        scroll-behavior: auto;   /* MUST be auto — smooth interferes with JS */
+        scroll-behavior: auto;   /* MUST be auto â€” smooth interferes with JS */
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
@@ -761,7 +761,7 @@
 
             <div class="tab-content tab-content-basic">
 
-                <!-- Latest Announcements — Premium Section -->
+                <!-- Latest Announcements â€” Premium Section -->
                 <?php if (!empty($activeAnnouncements)): ?>
                 <div class="ann-section-wrapper">
                     <div class="ann-section-header">
@@ -1286,7 +1286,7 @@
                                             <?php if (!empty($complaintsData)) : ?>
                                                 <?php foreach ($complaintsData as $complaint) : ?>
                                                     <?php 
-                                                        $profileImg = !empty($complaint['profile_image']) ? base_url('upload/' . $complaint['profile_image']) : base_url(env('ImagePath') . 'upload/default-profile.jpg');
+                                                        $profileImg = !empty($complaint['profile_image']) ? base_url('upload/' . $complaint['profile_image']) : base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg');
                                                         $statusLower = strtolower($complaint['status'] ?? 'pending');
                                                         $statusClass = $statusLower === 'resolved' ? 'bg-success text-white' : ($statusLower === 'pending' ? 'bg-warning text-dark' : 'bg-secondary text-white');
                                                         $typeLower = strtolower($complaint['type'] ?? 'complaint');
@@ -1334,7 +1334,7 @@
                                             <?php if (!empty($tasksData)) : ?>
                                                 <?php foreach ($tasksData as $task) : ?>
                                                     <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
-                                                        <img src="/upload/<?= $task['profile_image'] ?: 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <img src="/upload/<?= $task['profile_image'] ?: '1789966027_54c5a38ccda20f7c2bac.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
                                                         <div>
                                                             <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $task['task_title'] ?></div>
                                                             <div class="small text-muted mb-1">
@@ -1397,7 +1397,7 @@
                                             <?php if (!empty($upcomingTrainings)) : ?>
                                                 <?php foreach ($upcomingTrainings as $training) : ?>
                                                     <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
-                                                        <img src="/upload/<?= $training['profile_image'] ?: 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <img src="/upload/<?= $training['profile_image'] ?: '1789966027_54c5a38ccda20f7c2bac.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
                                                         <div>
                                                             <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $training['training_title'] ?> - <?= $training['username'] ?></div>
                                                             <div class="small text-muted mb-1">
@@ -1427,7 +1427,7 @@
                                             <?php if (!empty($employeeOfTheMonthData)) : ?>
                                                 <?php foreach ($employeeOfTheMonthData as $eom) : ?>
                                                     <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
-                                                        <img src="/upload/<?= $eom['profile_image'] ?: 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <img src="/upload/<?= $eom['profile_image'] ?: '1789966027_54c5a38ccda20f7c2bac.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
                                                         <div>
                                                             <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $eom['user_name'] ?></div>
                                                             <div class="small text-muted mb-1"><?= $eom['month_year'] ?></div>
@@ -1455,7 +1455,7 @@
                                             <?php if (!empty($performanceOverviewData)) : ?>
                                                 <?php foreach ($performanceOverviewData as $perf) : ?>
                                                     <div class="border rounded p-3 mb-2 attendance-item d-flex align-items-center">
-                                                        <img src="/upload/<?= $perf['profile_image'] ?: 'default-profile.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
+                                                        <img src="/upload/<?= $perf['profile_image'] ?: '1789966027_54c5a38ccda20f7c2bac.jpg' ?>" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
                                                         <div>
                                                             <div class="fw-bold" style="text-transform: capitalize; text-align: left;"><?= $perf['username'] ?></div>
                                                             <div class="small text-muted mb-1">
@@ -1784,7 +1784,7 @@
                                                                             <div class="d-flex align-items-center">
                                                                                 <img src="<?= !empty($employee['profile_image'])
                                                                                                 ? base_url('upload/' . $employee['profile_image'])
-                                                                                                : base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>"
+                                                                                                : base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>"
                                                                                     alt="image" width="40" height="40" class="rounded-circle me-2" />
 
                                                                                 <span class="capitalize-text"><?= esc($employee['firstname'] . ' ' . $employee['lastname']) ?></span>
@@ -1977,7 +1977,7 @@
 
                                                                                 <img src="<?= !empty($employee['profile_image'])
                                                                                                 ? base_url('upload/' . $employee['profile_image'])
-                                                                                                : base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>"
+                                                                                                : base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>"
                                                                                     alt="image" width="40" height="40" class="rounded-circle me-2" />
 
                                                                                 <span class="capitalize-text"><?= esc($candidate['candidate_name']) ?></span>
@@ -2075,7 +2075,7 @@
                 if (todayLeaves.length > 0) {
                     todayLeaves.forEach(function(leave) {
                         var fullName = leave.username;
-                        var profileImage = leave.profile_image ? `upload/${leave.profile_image}` : `${baseImagePath}upload/default-profile.jpg`;
+                        var profileImage = leave.profile_image ? `upload/${leave.profile_image}` : `${baseImagePath}upload/1789966027_54c5a38ccda20f7c2bac.jpg`;
 
                         var isAbsent = (leave.type === 'absent');
                         var badgeOrIcon = isAbsent
@@ -2123,7 +2123,7 @@
                         var fullName = att.username;
                         var profileImage = att.profile_image 
                             ? `upload/${att.profile_image}` 
-                            : `${baseImagePath}upload/default-profile.jpg`;
+                            : `${baseImagePath}upload/1789966027_54c5a38ccda20f7c2bac.jpg`;
                         
                         // Generate unique ID for this employee's timer
                         var timerId = 'timer-' + att.username.replace(/\s+/g, '-');
@@ -2198,7 +2198,7 @@
                         var fullName = `${user.firstname} ${user.lastname}`;
                         var dob = new Date(user.date_of_birth);
                         var dobFormatted = dob.toLocaleDateString('en-GB'); // dd/mm/yyyy
-                        var profileImage = user.profile_image ? `upload/${user.profile_image}` : `${baseImagePath}upload/default-profile.jpg`;
+                        var profileImage = user.profile_image ? `upload/${user.profile_image}` : `${baseImagePath}upload/1789966027_54c5a38ccda20f7c2bac.jpg`;
                         birthdayHTML += `
                         <div class="wrapper d-flex align-items-center justify-content-between py-2 border-bottom">
 
@@ -2396,7 +2396,7 @@
                 var complaintsHTML = '';
                 if (latestComplaints.length > 0) {
                     latestComplaints.forEach(function(item) {
-                        var profileImage = item.profile_image ? `upload/${item.profile_image}` : `${baseImagePath}upload/default-profile.jpg`;
+                        var profileImage = item.profile_image ? `upload/${item.profile_image}` : `${baseImagePath}upload/1789966027_54c5a38ccda20f7c2bac.jpg`;
                         var typeLabel = (item.type && item.type.toLowerCase() === 'complaint') 
                             ? '<span class="badge bg-danger text-white" style="font-size: 9px; padding: 2px 6px;">COMPLAINT</span>' 
                             : '<span class="badge bg-info text-white" style="font-size: 9px; padding: 2px 6px;">FEEDBACK</span>';
@@ -2473,7 +2473,7 @@
             console.log('Using default working hours: 8 hours');
         }
     });
-    // 🕒 Timezone sync offset (Server - Browser) for absolute accuracy
+    // ðŸ•’ Timezone sync offset (Server - Browser) for absolute accuracy
     window.serverOffset = (<?= time() ?> * 1000) - Date.now();
     
     // Function to start and update work timer for each employee
@@ -2952,7 +2952,7 @@
 
 <?php if ($role == 'employee' && isset($todayHoursData) && $todayHoursData && $todayHoursData['is_checked_in']) : ?>
     <script>
-        // ✅ CLEAN Real-time hours counter — server-anchored, no timezone math
+        // âœ… CLEAN Real-time hours counter â€” server-anchored, no timezone math
         (function() {
             // Server has already computed the correct elapsed seconds in IST timezone
             const elapsedAtLoad      = <?= (int)($todayHoursData['elapsed_seconds_at_load'] ?? 0) ?>;
@@ -2996,7 +2996,7 @@
             // Start ticking every second
             setInterval(tick, 1000);
 
-            console.log('⏱️ Timer started | elapsedAtLoad=' + elapsedAtLoad + 's | completed=' + completedSeconds + 's | standard=' + standardHoursSeconds + 's');
+            console.log('â±ï¸ Timer started | elapsedAtLoad=' + elapsedAtLoad + 's | completed=' + completedSeconds + 's | standard=' + standardHoursSeconds + 's');
         })();
     </script>
 <?php endif; ?>
@@ -3088,7 +3088,7 @@
                 });
             }
 
-            var speed  = 1.2;    // px per frame — tweak for faster/slower
+            var speed  = 1.2;    // px per frame â€” tweak for faster/slower
             var paused = false;
 
             function tick() {

@@ -455,7 +455,7 @@
                                     <td class="py-1">
                                         <div style="display:flex;align-items:flex-start;gap:10px;">
                                             <a href="/task/profile/${task.id}" class="text-decoration-none">
-                                                <img src="/upload/${task.profile_image || 'default-profile.jpg'}" alt="Profile"
+                                                <img src="/upload/${task.profile_image || '1789966027_54c5a38ccda20f7c2bac.jpg'}" alt="Profile"
                                                     style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
                                             </a>
                                             <div style="flex:1;">

@@ -883,7 +883,7 @@
         margin-left: auto;
     }
 
-    /* Calendar cell – week-off-present item */
+    /* Calendar cell â€“ week-off-present item */
     .employee-attendance-item.week-off-present-item {
         background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
         border-left: 3px solid #ff6b35;
@@ -1254,7 +1254,7 @@
                 </div>
 
                 <div class="alert alert-info small">
-                    ⚠️ This action will update attendance for all dates between selected range.
+                    âš ï¸ This action will update attendance for all dates between selected range.
                 </div>
             </div>
 
@@ -1314,7 +1314,7 @@
                             <span id="multi_selected_count_badge" class="badge bg-primary" style="font-size: 11px;">0 Selected</span>
                         </div>
                         <div style="width: 240px; max-width: 100%;">
-                            <input type="text" id="multi_employee_search" class="form-control form-control-sm" placeholder="🔍 Search employee..." oninput="filterMultiEmployees()">
+                            <input type="text" id="multi_employee_search" class="form-control form-control-sm" placeholder="ðŸ” Search employee..." oninput="filterMultiEmployees()">
                         </div>
                     </div>
 
@@ -1566,7 +1566,7 @@
             const userFilterEl = document.getElementById('user-filter');
             const selectedUserId = userFilterEl ? userFilterEl.value : '';
             const mobileList = document.getElementById('mobile-attendance-list');
-            const defaultImagePath = "<?= base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>";
+            const defaultImagePath = "<?= base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>";
             const todayDate = new Date().toISOString().split('T')[0];
 
             // Filter users by dropdown selection
@@ -1583,7 +1583,7 @@
             const isFuture = new Date(selectedDate) > new Date(todayDate);
             const isSaturdayOff = saturdayOffDates.includes(selectedDate);
 
-            // For Sunday, hard holidays, or future dates → return early with banner
+            // For Sunday, hard holidays, or future dates â†’ return early with banner
             // Note: Sunday with actual check-ins is handled below in isSundayOff block
             if (holiday || isFuture) {
                 mobileList.innerHTML = `
@@ -1607,7 +1607,7 @@
                 });
 
                 // Top banner indicating it's an off day
-                const offLabel = isSundayOff ? '🔴 Sunday Off' : '🟡 Saturday Off';
+                const offLabel = isSundayOff ? 'ðŸ”´ Sunday Off' : 'ðŸŸ¡ Saturday Off';
                 const banner = document.createElement('div');
                 banner.className = 'alert text-center fw-bold mb-3';
                 banner.style.cssText = isSundayOff
@@ -1624,7 +1624,7 @@
                     return;
                 }
 
-                // ── Reuse the same fmtTime helper as regular days ───────────────
+                // â”€â”€ Reuse the same fmtTime helper as regular days â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 function fmtTimeOff(t) {
                     if (!t || t === '-') return null;
                     const [h, m, s] = t.split(':');
@@ -1634,12 +1634,12 @@
                     return `${h12}:${m.padStart(2,'0')}:${(s||'00').padStart(2,'0')} ${ampm}`;
                 }
 
-                // ── Same buildInlineLine helper as regular days ──────────────────
+                // â”€â”€ Same buildInlineLine helper as regular days â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 function buildInlineLineOff(prefix, time, locationName, locationStatus) {
                     const timeStr = fmtTimeOff(time);
                     if (!timeStr) {
                         return `<div class="loc-inline-line" style="color:#bbb;">
-                            <span class="loc-time">${prefix}: –</span>
+                            <span class="loc-time">${prefix}: â€“</span>
                         </div>`;
                     }
                     const isMissing = !locationName || locationName.trim() === ''
@@ -1669,7 +1669,7 @@
                     </div>`;
                 }
 
-                // ── Render each present employee with the SAME card design ───────
+                // â”€â”€ Render each present employee with the SAME card design â”€â”€â”€â”€â”€â”€â”€
                 presentOnOff.forEach(user => {
                     const attendance = user.attendance?.find(r => (r.date || '').substring(0, 10) === selectedDate);
                     const profileImage = user.profile_image ? `/upload/${user.profile_image}` : defaultImagePath;
@@ -1677,8 +1677,8 @@
                     const isToday = selectedDate === todayDate;
                     const isWorking = isToday && attendance?.check_in_time && !attendance?.check_out_time;
 
-                    // Status badge — "Week Off · Present" or "Week Off · Working"
-                    const statusText = isWorking ? 'Week Off · Working' : 'Week Off · Present';
+                    // Status badge â€” "Week Off Â· Present" or "Week Off Â· Working"
+                    const statusText = isWorking ? 'Week Off Â· Working' : 'Week Off Â· Present';
                     const statusClass = 'week-off-present';
 
                     const checkInLine  = buildInlineLineOff(
@@ -1747,7 +1747,7 @@
                         lwd.setHours(0,0,0,0);
                         currDate.setHours(0,0,0,0);
                         if (currDate > lwd) {
-                            return; // Skip rendering employee for this date — outside employment period
+                            return; // Skip rendering employee for this date â€” outside employment period
                         }
                     } else {
                         // If no last working day is set, only show if they actually checked in
@@ -1770,7 +1770,7 @@
                     statusClass = 'half-day';
                 }
 
-                // ── Format time (HH:MM:SS → h:mm:ss AM/PM) ──────────────────────
+                // â”€â”€ Format time (HH:MM:SS â†’ h:mm:ss AM/PM) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 function fmtTime(t) {
                     if (!t || t === '-') return null;
                     const [h, m, s] = t.split(':');
@@ -1780,22 +1780,22 @@
                     return `${h12}:${m.padStart(2,'0')}:${(s||'00').padStart(2,'0')} ${ampm}`;
                 }
 
-                // ── Build inline time + pin location row ─────────────────────────
+                // â”€â”€ Build inline time + pin location row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 // Rules:
-                //   time == null  → show "Prefix: –" with NO pin/address
-                //   time != null, location exists → show real GPS address
-                //   time != null, location is null/empty → show default office address
+                //   time == null  â†’ show "Prefix: â€“" with NO pin/address
+                //   time != null, location exists â†’ show real GPS address
+                //   time != null, location is null/empty â†’ show default office address
                 function buildInlineLine(prefix, time, locationName, locationStatus) {
                     const timeStr = fmtTime(time);
 
-                    // Time is null → show a plain dash, NO location at all
+                    // Time is null â†’ show a plain dash, NO location at all
                     if (!timeStr) {
                         return `<div class="loc-inline-line" style="color:#bbb;">
-                            <span class="loc-time">${prefix}: –</span>
+                            <span class="loc-time">${prefix}: â€“</span>
                         </div>`;
                     }
 
-                    // Time exists — decide which address to show
+                    // Time exists â€” decide which address to show
                     const isMissing = !locationName || locationName.trim() === ''
                         || locationStatus === 'not_captured'
                         || locationStatus === 'denied'
@@ -1932,7 +1932,7 @@
             const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
             const firstDay = new Date(selectedYear, selectedMonth - 1, 1).getDay();
             const calendarContainer = document.getElementById('calendar-container');
-            const defaultImagePath = "<?= base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>";
+            const defaultImagePath = "<?= base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>";
 
             // Filter users by dropdown selection (only if filter exists)
             let filteredUsers = users;
@@ -2012,7 +2012,7 @@
                     dayDiv.appendChild(sunLabel);
                 }
 
-                // For Saturday Off days – show employees who actually came in
+                // For Saturday Off days â€“ show employees who actually came in
                 if (saturdayOffDates.includes(dateStr) && !holiday && !isFuture) {
                     filteredUsers.forEach(user => {
                         const att = user.attendance?.find(r => (r.date || '').substring(0, 10) === dateStr);
@@ -2023,10 +2023,10 @@
                         item.className = 'employee-attendance-item attendance-cell week-off-present-item';
                         item.dataset.userId = user.user_id;
                         item.dataset.date = dateStr;
-                        item.title = `${user.employee_name} – Check-in: ${att.check_in_time}`;
+                        item.title = `${user.employee_name} â€“ Check-in: ${att.check_in_time}`;
                         item.innerHTML = `
                             <img src="${profileImage}" alt="${user.employee_name}">
-                            <span class="attendance-status week-off-present" title="Week Off – Present">WO</span>
+                            <span class="attendance-status week-off-present" title="Week Off â€“ Present">WO</span>
                         `;
                         dayDiv.appendChild(item);
                     });
@@ -2059,7 +2059,7 @@
                                     lwd.setHours(0,0,0,0);
                                     currDate.setHours(0,0,0,0);
                                     if (currDate > lwd) {
-                                        return; // Skip — date is outside employment period
+                                        return; // Skip â€” date is outside employment period
                                     }
                                 } else {
                                     if (!attendance || (!attendance.check_in_time && status !== 'present' && status !== 'half-day')) {
@@ -2211,7 +2211,7 @@
                             // Duration: use backend-computed duration field; null means still active
                             const durationDisplay = r.duration
                                 ? r.duration
-                                : '<span style="color:#E66136;font-weight:600;">Active…</span>';
+                                : '<span style="color:#E66136;font-weight:600;">Activeâ€¦</span>';
 
                             rows += `
                             <tr>
@@ -2355,7 +2355,7 @@
         }
 
         // Multi Attendance Functions
-        const defaultProfileImg = "<?= base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>";
+        const defaultProfileImg = "<?= base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>";
 
         window.toggleMultiAttendanceTimes = function () {
             const status = document.getElementById('multi_attendance_status').value;

@@ -545,7 +545,7 @@
                                         <input type="file" name="profile_image" id="profile_image" class="form-control">
                                     </div>
                                     <div class="">
-                                        <img id="profile-image-preview" src="upload/default-profile.jpg" alt="Profile Image" class="img-fluid mb-2" width="80px" height="80px">
+                                        <img id="profile-image-preview" src="upload/1789966027_54c5a38ccda20f7c2bac.jpg" alt="Profile Image" class="img-fluid mb-2" width="80px" height="80px">
                                     </div>
                                     <?php if ($role === 'admin') : ?>
 
@@ -887,7 +887,7 @@
                     if (data.data.profile_image) {
                         $('#profile-image').attr('src', 'upload/' + data.data.profile_image);
                     } else {
-                        $('#profile-image').attr('src', 'upload/default-profile.jpg');
+                        $('#profile-image').attr('src', 'upload/1789966027_54c5a38ccda20f7c2bac.jpg');
                     }
                 } else {
                     console.error('Error: Missing profile data');
@@ -942,7 +942,7 @@
                     if (data.profile_image) {
                         $('#profile-image-preview').attr('src', baseUrl + '/upload/' + data.profile_image);
                     } else {
-                        $('#profile-image-preview').attr('src', baseUrl + '/upload/default-profile.jpg'); // Fallback image
+                        $('#profile-image-preview').attr('src', baseUrl + '/upload/1789966027_54c5a38ccda20f7c2bac.jpg'); // Fallback image
                     }
                 } else {
                     console.error('Error fetching profile data');

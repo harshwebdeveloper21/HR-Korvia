@@ -264,7 +264,7 @@ $(document).ready(function () {
                     const tasks = statusFilter === 'All' ? response.data : response.data.filter(task => task.subtask_status === statusFilter);
 
                     tasks.forEach(task => {
-                        const profileImage = task.profile_image ? `upload/${task.profile_image}` : `${baseImagePath}upload/default-profile.jpg`;
+                        const profileImage = task.profile_image ? `upload/${task.profile_image}` : `${baseImagePath}upload/1789966027_54c5a38ccda20f7c2bac.jpg`;
                         const taskUrl = `/task/profile/${task.id}`;
                         const subtaskUrl = `/subtask/profile/${task.id}`;
                         const actionButtons = userRole !== 'employee'

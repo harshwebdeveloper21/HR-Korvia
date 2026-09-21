@@ -148,9 +148,9 @@
                         const createUserHTML = (user) => {
                             let profileImage = user.profile_image ?
                                 "<?= base_url('upload/') ?>" + user.profile_image :
-                                "<?= base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>";
+                                "<?= base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>";
 
-                            let statusIcon = user.chat_status === 'online' ? '🟢 Online' : '🔴 Offline';
+                            let statusIcon = user.chat_status === 'online' ? 'ðŸŸ¢ Online' : 'ðŸ”´ Offline';
 
                             return `
                         <li class="clearfix user-item" data-id="${user.id}" data-name="${user.name}" data-image="${profileImage}" data-status="${user.chat_status}">
@@ -193,7 +193,7 @@
                             $("#chatUserStatus").text(firstUser.chat_status === 'online' ? 'Online' : 'Offline');
                             let firstUserImage = firstUser.profile_image ?
                                 "<?= base_url('upload/') ?>" + firstUser.profile_image :
-                                "<?= base_url(env('ImagePath') . 'upload/default-profile.jpg') ?>";
+                                "<?= base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg') ?>";
                             $("#chatUserImage").attr("src", firstUserImage);
                             $(".user-item").first().addClass("active");
 

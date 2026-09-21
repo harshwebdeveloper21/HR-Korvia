@@ -91,7 +91,7 @@
                         performances.forEach((performance, index) => {
                             let imageUrl = performance.profile_image ?
                                 `/upload/${performance.profile_image}` :
-                                `${baseImagePath}upload/default-profile.jpg`;
+                                `${baseImagePath}upload/1789966027_54c5a38ccda20f7c2bac.jpg`;
 
                             // Desktop action buttons
                             let actionButtons = '';
@@ -289,7 +289,7 @@
             deletePerformanceRecord($(this).data('id'));
         });
 
-        // 📥 Export to Excel functionality
+        // ðŸ“¥ Export to Excel functionality
         $('#btnExportPerformance').on('click', function () {
             const $btn = $(this);
             const search = $('#performance-table_filter input').val() || '';

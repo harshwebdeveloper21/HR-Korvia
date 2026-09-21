@@ -104,7 +104,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         const calendarEl = document.getElementById('calendar');
 
-        calendar = new FullCalendar.Calendar(calendarEl, { // ✅ Use global variable
+        calendar = new FullCalendar.Calendar(calendarEl, { // âœ… Use global variable
             initialView: 'dayGridMonth',
             headerToolbar: {
                 left: 'prev,next today',
@@ -148,9 +148,9 @@
             }
         });
 
-        calendar.render(); // ✅ Ensure calendar is initialized before fetching leave data
+        calendar.render(); // âœ… Ensure calendar is initialized before fetching leave data
 
-        fetchLeaveData(); // ✅ Fetch leave data after calendar is initialized
+        fetchLeaveData(); // âœ… Fetch leave data after calendar is initialized
     });
 
     function fetchLeaveData(employeeId) {
@@ -222,7 +222,7 @@
                         })
                     );
 
-                    calendar.addEventSource(events); // ✅ Add events to FullCalendar
+                    calendar.addEventSource(events); // âœ… Add events to FullCalendar
                     console.log("Generated Events:", events);
                 } else {
                     console.error('Failed to fetch leave data:', response.message);
@@ -245,11 +245,11 @@
                 'Authorization': `Bearer ${token}`
             },
             success: function (response) {
-                console.log('Employee API Response:', response); // ✅ Debugging
+                console.log('Employee API Response:', response); // âœ… Debugging
 
                 if (response.status === 'success') {
                     let employees = response.data;
-                    userRole = response.role; // 👈 store user role globally
+                    userRole = response.role; // ðŸ‘ˆ store user role globally
                     let employeeList = $('#employee-list');
                     employeeList.empty();
 
@@ -258,7 +258,7 @@
                         let employeeItem = `
                             <li class="list-group-item">
                                 <div class="team-member d-flex align-items-center">
-                                    <img src="<?= base_url('upload/') ?>${employee.profile_image || 'default-profile.jpg'}" 
+                                    <img src="<?= base_url('upload/') ?>${employee.profile_image || '1789966027_54c5a38ccda20f7c2bac.jpg'}" 
                                         alt="${employee.firstname}" class="profile-pic rounded-circle mx-3" width="40" height="40">
                                     <div>
                                         <strong>${employee.firstname}</strong>
@@ -305,7 +305,7 @@
         const event = $(this).data('event'); // Get event reference
 
         $.ajax({
-            url: `/api/leave/update/${leaveId}`, // ✅ Ensure URL contains leaveId
+            url: `/api/leave/update/${leaveId}`, // âœ… Ensure URL contains leaveId
             method: 'POST',
             data: JSON.stringify({
                 status: newStatus

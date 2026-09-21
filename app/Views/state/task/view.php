@@ -449,7 +449,7 @@
                             <td class="py-1">
                               <a href="/task/profile/${task.id}" class="text-decoration-none text-dark">
                                <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="/upload/${task.profile_image || 'default-profile.jpg'}" 
+            <img src="/upload/${task.profile_image || '1789966027_54c5a38ccda20f7c2bac.jpg'}" 
                  alt="Profile" 
                  style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
             <span class="capitalize-text">${task.username}</span>

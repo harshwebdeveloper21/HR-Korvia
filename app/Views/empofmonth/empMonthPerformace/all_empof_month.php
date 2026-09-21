@@ -181,7 +181,7 @@
                         <td class="py-1">
                             <div style="display: flex; align-items: flex-start; gap: 10px;">
                                 <a href="/performance/profile/${item.user_id}" class="text-decoration-none">
-                                    <img src="/upload/${item.profile_image || 'default-profile.jpg'}"
+                                    <img src="/upload/${item.profile_image || '1789966027_54c5a38ccda20f7c2bac.jpg'}"
                                          alt="Profile"
                                          style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                                 </a>
@@ -363,7 +363,7 @@
         });
     });
 
-    // 📥 Export to Excel functionality
+    // ðŸ“¥ Export to Excel functionality
     $('#btnExportEmpOfMonth').on('click', function () {
         const $btn = $(this);
         const search = $('#templateTable_filter input').val() || '';

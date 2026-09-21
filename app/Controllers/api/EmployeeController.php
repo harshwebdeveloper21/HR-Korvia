@@ -464,7 +464,7 @@ class EmployeeController extends ResourceController
 
         $userInfo = $this->userInfoModel->insert($userInfoData);
 
-        // ✅ Notify Admins or HRs
+        // âœ… Notify Admins or HRs
         $notificationModel = new \App\Models\NotificationModel();
         $userModel = new \App\Models\UserModel();
 
@@ -482,7 +482,7 @@ class EmployeeController extends ResourceController
             ]);
         }
 
-        // 🎉 Birthday Notifications
+        // ðŸŽ‰ Birthday Notifications
         $today = date('m-d');
         $userInfoModel = new \App\Models\UserInfoModel();
 
@@ -778,7 +778,7 @@ class EmployeeController extends ResourceController
 
         $builder->where('users.is_deleted', 0);
 
-        // Get view type — 'active', 'inactive', 'resigned', 'fired', 'all'
+        // Get view type â€” 'active', 'inactive', 'resigned', 'fired', 'all'
         $viewType = strtolower($this->request->getGet('view') ?? 'active');
 
         if ($viewType === 'resigned') {
@@ -833,7 +833,7 @@ class EmployeeController extends ResourceController
                     'last_working_day' => $lastWorkingDay,
                     'last_increment_date' => $row['last_increment_date'] ?? 'N/A',
                     'last_increment_amount' => (float) ($row['last_increment_amount'] ?? 0),
-                    'profile_image_url' => !empty($row['profile_image']) ? base_url('upload/' . $row['profile_image']) : base_url('public/upload/default-profile.jpg'),
+                    'profile_image_url' => !empty($row['profile_image']) ? base_url('upload/' . $row['profile_image']) : base_url('public/upload/1789966027_54c5a38ccda20f7c2bac.jpg'),
                 ]
             ];
         }
@@ -867,7 +867,7 @@ class EmployeeController extends ResourceController
         if ($userInfo && !empty($userInfo['profile_image'])) {
             $userInfo['profile_image'] = base_url('upload/' . $userInfo['profile_image']);
         } else {
-            $userInfo['profile_image'] = base_url(env('ImagePath') . 'upload/default-profile.jpg'); // Set a default image
+            $userInfo['profile_image'] = base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg'); // Set a default image
         }
 
         // Append full face photo path if exists
@@ -926,7 +926,7 @@ class EmployeeController extends ResourceController
             return $this->failNotFound('Employee not found');
         }
 
-        // ── Start a transaction so everything succeeds or nothing changes ──
+        // â”€â”€ Start a transaction so everything succeeds or nothing changes â”€â”€
         $db->transStart();
 
         // 1. Attendance records
@@ -974,7 +974,7 @@ class EmployeeController extends ResourceController
         // 15. User info (profile)
         $db->table('user_info')->where('user_id', $id)->delete();
 
-        // 16. Finally — delete the user account itself
+        // 16. Finally â€” delete the user account itself
         $db->table('users')->where('id', $id)->delete();
 
         $db->transComplete();
@@ -1018,7 +1018,7 @@ class EmployeeController extends ResourceController
             return $this->failNotFound('Employee profile not found for user ID: ' . $id);
         }
 
-        $userInfoId   = $userInfo['id'];                   // user_info.id — what the profile view needs
+        $userInfoId   = $userInfo['id'];                   // user_info.id â€” what the profile view needs
         $loggedInUser = $this->authService->user();
         $employeeId   = $loggedInUser ? $loggedInUser->sub : null;
 
@@ -1071,7 +1071,7 @@ class EmployeeController extends ResourceController
         // Handle default profile image
         $user['profile_image'] = !empty($user['profile_image'])
             ? base_url('upload/' . $user['profile_image'])
-            : base_url(env('ImagePath') . 'upload/default-profile.jpg');
+            : base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg');
 
         return $this->response->setJSON([
             'success' => true,
@@ -1615,7 +1615,7 @@ class EmployeeController extends ResourceController
 
         return $this->respond([
             'status'  => 'success',
-            'message' => 'Salary incremented successfully! New salary: ₹' . number_format($newSalary, 2)
+            'message' => 'Salary incremented successfully! New salary: â‚¹' . number_format($newSalary, 2)
         ]);
     }
 
@@ -1630,12 +1630,12 @@ class EmployeeController extends ResourceController
             return $this->failValidationErrors('Employee ID is required.');
         }
 
-        // The profile page passes user_info.id — resolve it to users.id
+        // The profile page passes user_info.id â€” resolve it to users.id
         $userInfo = $this->userInfoModel->find($userInfoId);
         if (!$userInfo) {
             return $this->failNotFound('Employee not found.');
         }
-        $usersId = $userInfo['user_id']; // users.id — stored as employee_id in history
+        $usersId = $userInfo['user_id']; // users.id â€” stored as employee_id in history
 
         $db = \Config\Database::connect();
 
@@ -1692,7 +1692,7 @@ class EmployeeController extends ResourceController
             return $this->failValidationErrors('User ID is required.');
         }
 
-        // Resolve users.id → user_info row
+        // Resolve users.id â†’ user_info row
         $userInfo = $this->userInfoModel->where('user_id', $userId)->first();
         if (!$userInfo) {
             return $this->failNotFound('Employee not found.');

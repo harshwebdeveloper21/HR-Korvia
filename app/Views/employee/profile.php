@@ -51,9 +51,9 @@
                     <div class="profile-avatar-wrapper">
                         <label for="profile_image_input" style="cursor: pointer;" title="Click to change profile picture">
                             <img id="profile_image"
-                                src="<?= base_url(env('ImagePath') . 'upload/default-profile.jpg'); ?>"
+                                src="<?= base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg'); ?>"
                                 alt="Profile Avatar"
-                                onerror="this.onerror=null; this.src='<?= base_url(env('ImagePath') . 'upload/default-profile.jpg'); ?>';" />
+                                onerror="this.onerror=null; this.src='<?= base_url(env('ImagePath') . 'upload/1789966027_54c5a38ccda20f7c2bac.jpg'); ?>';" />
                             <div class="avatar-edit-badge" title="Upload new photo">
                                 <i class="mdi mdi-camera"></i>
                             </div>
@@ -904,7 +904,7 @@
                         currentEmployeeName = fullName;
                         currentEmployeeStatus = empStatus;
 
-                        setText('#user_info-salary', '₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                        setText('#user_info-salary', 'â‚¹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
                         $('#prof-current-salary').html('&#8377; ' + currentEmployeeSalary.toLocaleString('en-IN'));
 
                         setText('#acc_number', user.acc_number);
@@ -920,7 +920,7 @@
                         $('#user-lg').val(user.user_id);
                         $('#editOverviewBtn').attr('data-id', user.user_id);
 
-                        let profileImage = user.profile_image ? user.profile_image : '<?= base_url(env('ImagePath') . "upload/default-profile.jpg"); ?>';
+                        let profileImage = user.profile_image ? user.profile_image : '<?= base_url(env('ImagePath') . "upload/1789966027_54c5a38ccda20f7c2bac.jpg"); ?>';
                         $('#profile_image').attr('src', profileImage);
                     } else {
                         showError(data.message);
@@ -1345,9 +1345,9 @@
             });
         });
 
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // Increment History Management & Modal
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         let incrementHistoryLoaded = false;
 
         function loadIncrementHistory() {
@@ -1379,7 +1379,7 @@
                             currentEmployeeSalary = parseFloat(latest.new_salary);
                         }
                         $('#prof-current-salary').html('&#8377; ' + currentEmployeeSalary.toLocaleString('en-IN'));
-                        $('#user_info-salary').text('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                        $('#user_info-salary').text('â‚¹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
 
                         let rows = '';
                         res.history.forEach(function (r, idx) {
@@ -1433,7 +1433,7 @@
                 : currentEmployeeSalary;
             const incAmt = parseFloat($('#modal_inc_amount').val()) || 0;
             const newSal = baseSalary + incAmt;
-            $('#modal_inc_new_salary_preview').val('₹ ' + newSal.toLocaleString('en-IN'));
+            $('#modal_inc_new_salary_preview').val('â‚¹ ' + newSal.toLocaleString('en-IN'));
         }
 
         function setProfileIncrementModalMode(isHistoryOnly) {
@@ -1442,7 +1442,7 @@
                 $('#profileAddIncrementModalLabel').html('<i class="mdi mdi-history me-1"></i> Add Increment History Record');
                 $('#profileAddIncModalHeader').css('background', 'linear-gradient(135deg, #4b5563 0%, #374151 100%)');
                 $('#modal_inc_history_alert').show();
-                $('#modal_inc_history_current_sal').text('₹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
+                $('#modal_inc_history_current_sal').text('â‚¹ ' + currentEmployeeSalary.toLocaleString('en-IN'));
                 $('#modal_inc_salary_label').html('Previous / Base Salary (&#8377;) <span class="text-danger">*</span>');
                 $('#modal_inc_current_salary').val(currentEmployeeSalary).prop('readonly', false).css('background-color', '#fff');
                 $('#modal_inc_salary_help').show();
@@ -1453,7 +1453,7 @@
                 $('#profileAddIncrementModalLabel').html('<i class="mdi mdi-cash-plus me-1"></i> Add Salary Increment');
                 $('#profileAddIncModalHeader').css('background', 'linear-gradient(135deg, #E66136 0%, #f05929 100%)');
                 $('#modal_inc_history_alert').hide();
-                $('#modal_inc_salary_label').text('Current Salary (₹)');
+                $('#modal_inc_salary_label').text('Current Salary (â‚¹)');
                 $('#modal_inc_current_salary').val(currentEmployeeSalary).prop('readonly', true).css('background-color', '#e9ecef');
                 $('#modal_inc_salary_help').hide();
                 $('#modal_inc_amount_help').text('Enter the amount to add to current salary.');
@@ -1576,9 +1576,9 @@
             });
         });
 
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // Leave History Tab
-        // ══════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         let leaveHistoryLoaded = false;
 
         $(document).on('click shown.bs.tab', '#leaveHistoryTab, [data-bs-target="#leaveHistoryTabPane"]', function () {
@@ -1636,4 +1636,4 @@
 
 
 <?= $this->endSection(); ?>
-
+
