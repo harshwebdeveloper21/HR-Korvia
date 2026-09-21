@@ -1,19 +1,19 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="<?= base_url(env('ImagePath').'assets/vendors/js/vendor.bundle.base.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/vendors/bootstrap-datepicker/bootstrap-datepicker.min.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/vendors/chart.js/chart.umd.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/vendors/progressbar.js/progressbar.min.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/off-canvas.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/vendors/datatables.net/jquery.dataTables.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/vendors/datatables.net-bs4/dataTables.bootstrap4.js'); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/vendors/js/vendor.bundle.base.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/vendors/bootstrap-datepicker/bootstrap-datepicker.min.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/vendors/chart.js/chart.umd.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/vendors/progressbar.js/progressbar.min.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/off-canvas.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/vendors/datatables.net/jquery.dataTables.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/vendors/datatables.net-bs4/dataTables.bootstrap4.js?v=' . time()); ?>"></script>
 <script src="<?= base_url(env('ImagePath').'assets/js/template.js?v=' . time()); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/settings.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/hoverable-collapse.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/todolist.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/jquery.cookie.js'); ?>" type="text/javascript"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/dashboard.js'); ?>"></script>
-<script src="<?= base_url(env('ImagePath').'assets/js/datatable.js'); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/settings.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/hoverable-collapse.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/todolist.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/jquery.cookie.js?v=' . time()); ?>" type="text/javascript"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/dashboard.js?v=' . time()); ?>"></script>
+<script src="<?= base_url(env('ImagePath').'assets/js/datatable.js?v=' . time()); ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/progressbar.js/1.0.1/progressbar.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 <script src="<?= base_url(env('ImagePath').'assets/js/script.js?v=' . time()); ?>"></script>
