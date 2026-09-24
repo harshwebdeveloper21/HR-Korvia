@@ -13,6 +13,11 @@
 
 
     @media (max-width: 767px) {
+        .card .card-body {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+
         .filter-sm-res {
             flex-wrap: wrap !important;
         }
@@ -740,7 +745,7 @@
                                                         ${empName}
                                                     </a>
                                                     <div class="d-md-none small text-muted">
-                                                        <span class="badge bg-secondary py-0 px-1 me-1" style="font-size: 10px;">${empIdCode}</span>
+                                                        <span class="badge bg-secondary py-0 px-1 me-1" style="font-size: 12px;margin-top: 2px;padding: 3px !important;">${empIdCode}</span>
                                                         <span style="font-size: 11px;">${empDept}</span>
                                                     </div>
                                                 </div>                                                

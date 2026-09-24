@@ -9,7 +9,26 @@ $user = $authService->check();
 $role = $user ? $user->role : null;
 ?>
 
+<style>
+@media (max-width: 991px) {
+  .sidebar .nav .nav-item .nav-link {
+    padding: 8px 20px !important;
+  }
+  .sidebar .nav.sub-menu .nav-item .nav-link {
+    padding: 6px 20px 6px 40px !important;
+  }
+  .navbar-toggler .mdi:before {
+    font-size: larger;
+  }
+}
+</style>
 <nav class="sidebar sidebar-offcanvas" id="sidebar">
+  <div class="d-flex justify-content-between align-items-center d-lg-none px-4 py-3" style="border-bottom: 1px solid #f3f3f3; background: #fff;">
+    <img src="<?= getCompanyLogo(); ?>" alt="logo" style="max-height: 35px; width: auto; max-width: 150px; object-fit: contain;" />
+    <a href="javascript:void(0)" data-bs-toggle="offcanvas" class="text-secondary text-decoration-none">
+      <i class="mdi mdi-close fs-3 text-dark  "></i>
+    </a>
+  </div>
   <ul class="nav">
     <li class="nav-item">
       <a class="nav-link" href="<?= base_url('/dashboard') ?>">
