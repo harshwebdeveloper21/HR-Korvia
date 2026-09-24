@@ -3298,10 +3298,18 @@ class PayrollController extends ResourceController
             return $this->failUnauthorized('Unauthorized');
         }
 
+        $branchId = $this->authService->getBranchId();
+
         $userInfoModel = new \App\Models\UserInfoModel();
-        $employees = $userInfoModel->select('user_id, firstname, lastname')
-            ->orderBy('firstname', 'ASC')
-            ->findAll();
+        $builder = $userInfoModel->select('user_info.user_id, user_info.firstname, user_info.lastname')
+            ->join('users', 'users.id = user_info.user_id')
+            ->orderBy('user_info.firstname', 'ASC');
+
+        if ($branchId !== null) {
+            $builder->where('users.branch_id', $branchId);
+        }
+
+        $employees = $builder->findAll();
 
         return $this->response->setJSON([
             'status' => 'success',

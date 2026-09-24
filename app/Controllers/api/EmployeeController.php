@@ -400,15 +400,34 @@ class EmployeeController extends ResourceController
         $db->transStart();
 
         $userId = $this->userModel->insert([
-            'email' => $data['email'],
+            'email'    => $data['email'],
             'username' => $data['firstname'] . ' ' . $data['lastname'],
             'password' => $passwordHash,
-            'role' => $data['role'] ?? 'employee'
+            'role'     => $data['role'] ?? 'employee'
         ]);
 
         if (!$userId) {
             $db->transRollback();
             return $this->failServerError('Failed to create user.');
+        }
+
+        // ── Branch ID assignment ──────────────────────────────────────────────
+        // If the creator is HR, ALWAYS use the HR's own branch_id (never from form).
+        // If the creator is Admin, use the branch_id from form if provided.
+        $creatorUser    = $this->authService->check();
+        $creatorRole    = $creatorUser ? ($creatorUser->role ?? 'employee') : 'employee';
+        $assignBranchId = null;
+
+        if ($creatorRole === 'hr') {
+            // Force HR's branch — cannot be overridden
+            $authService    = new \App\Services\AuthService(service('request'));
+            $assignBranchId = $authService->getBranchId();
+        } elseif ($creatorRole === 'admin' && !empty($data['branch_id'])) {
+            $assignBranchId = (int)$data['branch_id'];
+        }
+
+        if ($assignBranchId) {
+            $this->userModel->update($userId, ['branch_id' => $assignBranchId]);
         }
 
         // Handle File Upload - Profile Image
@@ -765,8 +784,19 @@ class EmployeeController extends ResourceController
         // Role-based filtering
         if ($role === 'admin') {
             $builder->whereIn('users.role', ['employee', 'hr']);
+            
+            // Apply global branch filter if set in session
+            $filterBranchId = $this->authService->getBranchId();
+            if (!empty($filterBranchId)) {
+                $builder->where('users.branch_id', (int)$filterBranchId);
+            }
         } elseif ($role === 'hr') {
             $builder->where('users.role', 'employee');
+            // ── Branch scope: HR can ONLY see staff in their own branch ──
+            $hrBranchId = (new \App\Services\AuthService(service('request')))->getBranchId();
+            if ($hrBranchId) {
+                $builder->where('users.branch_id', $hrBranchId);
+            }
         } else {
             return $this->failForbidden('You do not have permission to view employees');
         }

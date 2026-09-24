@@ -250,6 +250,31 @@ $role = $user ? $user->role : null;
           </ul>
         </div>
       </li>
+      <?php if ($role === 'admin'): ?>
+      <!-- ── Branches (Admin only) ────────────────────────── -->
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/branches') ?>">
+          <i class="menu-icon mdi mdi-office-building"></i>
+          <span class="menu-title">Branches</span>
+        </a>
+      </li>
+      <?php endif; ?>
+      <?php if ($role === 'admin' || $role === 'hr'): ?>
+      <!-- ── Branch Rules ─────────────────────────────────── -->
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/branch-rules/edit') ?>">
+          <i class="menu-icon mdi mdi-cog-outline"></i>
+          <span class="menu-title">Branch Rules</span>
+        </a>
+      </li>
+      <!-- ── Staff Transfer ──────────────────────────────── -->
+      <li class="nav-item">
+        <a class="nav-link" href="<?= base_url('/staff-transfer') ?>">
+          <i class="menu-icon mdi mdi-swap-horizontal"></i>
+          <span class="menu-title">Staff Transfer</span>
+        </a>
+      </li>
+      <?php endif; ?>
 
       <!-- <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#eomMenu" aria-expanded="false" aria-controls="eomMenu">

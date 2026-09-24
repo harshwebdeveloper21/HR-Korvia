@@ -52,6 +52,7 @@ class AuthService
 
         session()->set("user_token", $token);
         session()->set("user_id", $user["id"]);
+        session()->set("branch_id", $user["branch_id"] ?? null);
 
         return $token;
     }
@@ -180,5 +181,46 @@ class AuthService
             "email" => $user["email"],
             "role" => $user["role"],
         ];
+    }
+
+    /**
+     * Get the branch_id for the currently authenticated user.
+     * Admin users have branch_id = NULL (can access all branches).
+     * HR and employee must have a branch_id.
+     *
+     * We do NOT store branch_id in the JWT so that transfers take effect
+     * immediately without requiring a new login.
+     *
+     * @return int|null  branch_id, or null for admin / unassigned
+     */
+    public function getBranchId(): ?int
+    {
+        $user = $this->check();
+        if (!$user) {
+            return null;
+        }
+
+        $userId = $user->sub ?? $user->id ?? null;
+        if (!$userId) {
+            return null;
+        }
+
+        $db   = db_connect();
+        $row  = $db->table('users')
+                   ->select('branch_id, role')
+                   ->where('id', $userId)
+                   ->get()->getRowArray();
+
+        if (!$row) {
+            return null;
+        }
+
+        // Admin checks session for active filter branch (null = full access)
+        if ($row['role'] === 'admin') {
+            $activeBranch = session()->get('admin_active_branch');
+            return !empty($activeBranch) ? (int)$activeBranch : null;
+        }
+
+        return isset($row['branch_id']) ? (int)$row['branch_id'] : null;
     }
 }

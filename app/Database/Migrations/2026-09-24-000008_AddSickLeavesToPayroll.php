@@ -6,8 +6,7 @@ use CodeIgniter\Database\Migration;
 
 class AddSickLeavesToPayroll extends Migration
 {
-    public function up()
-    {
+    public function up() { if ($this->db->fieldExists('used_sick_leaves', 'payroll')) { return; } 
         $this->forge->addColumn('payroll', [
             'used_sick_leaves' => [
                 'type' => 'DECIMAL',

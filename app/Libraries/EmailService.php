@@ -20,7 +20,9 @@ class EmailService
         $smtp = $smtpModel->getSettings();
 
         if (!$smtp) {
-            throw new \Exception("SMTP settings not found!");
+            $this->mailEnabled = false;
+            $this->email = null;
+            return;
         }
         
         // Check if mail sending is enabled
