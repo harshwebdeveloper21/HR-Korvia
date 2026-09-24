@@ -58,9 +58,25 @@ $role = $user ? $user->role : null;
         .navbar .navbar-brand-wrapper .brand-logo-mini {
             display: none !important;
         }
+        .sidebar-icon-only .navbar .navbar-brand-wrapper {
+            width: 70px !important;
+            min-width: 70px !important;
+            padding-right: 0 !important;
+            border-right: none !important;
+            justify-content: center !important;
+        }
         .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo,
         .sidebar-icon-only .navbar .navbar-brand-wrapper .brand-logo-mini {
             display: none !important;
+        }
+        .sidebar-icon-only .navbar .navbar-brand-wrapper .me-3 {
+            margin-right: 0 !important;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        .sidebar-icon-only .navbar .navbar-menu-wrapper {
+            width: calc(100% - 70px) !important;
         }
     }
 
