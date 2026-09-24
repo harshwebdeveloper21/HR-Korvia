@@ -19,6 +19,13 @@ class CreateCompanyLogoTable extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => '255',
             ],
+            'pdf_logo' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+            ],
             'favicon_icon' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '255',

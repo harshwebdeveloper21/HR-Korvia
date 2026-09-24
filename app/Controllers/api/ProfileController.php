@@ -73,7 +73,13 @@ class ProfileController extends ResourceController
         // Fetch additional user information from `user_info` table
         $userInfo = $this->userInfoModel->where('user_id', $user->sub)->first();
         if (!$userInfo) {
-            return $this->failNotFound('User not found in user_info table');
+            $userInfo = [
+                'firstname' => '', 'lastname' => '', 'email' => '', 'gender' => '',
+                'date_of_birth' => '', 'address_1' => '', 'address_2' => '',
+                'state_id' => '', 'postcode' => '', 'city_id' => '', 'country_id' => '',
+                'contact_number' => '', 'designation_id' => '', 'department_id' => '',
+                'joining_date' => '', 'working_location' => '', 'profile_image' => ''
+            ];
         }
 
         // Fetch designation and department names
@@ -165,7 +171,13 @@ class ProfileController extends ResourceController
         // Fetch additional user information from the `user_info` table
         $userInfo = $this->userInfoModel->where('user_id', $user->sub)->first();
         if (!$userInfo) {
-            return $this->failNotFound('User not found in user_info table');
+            $userInfo = [
+                'firstname' => '', 'lastname' => '', 'email' => '', 'gender' => '',
+                'date_of_birth' => '', 'address_1' => '', 'address_2' => '',
+                'state_id' => '', 'postcode' => '', 'city_id' => '', 'country_id' => '',
+                'contact_number' => '', 'designation_id' => '', 'department_id' => '',
+                'joining_date' => '', 'working_location' => '', 'profile_image' => ''
+            ];
         }
 
         // Fetch company details
@@ -310,7 +322,7 @@ class ProfileController extends ResourceController
         // Check if user_info exists
         $userInfo = $this->userInfoModel->where('user_id', $userId)->first();
         if (!$userInfo) {
-            return $this->failNotFound('User info not found for update');
+            $userInfo = ['profile_image' => null];
         }
 
         // Handle profile image upload if present
@@ -355,7 +367,7 @@ class ProfileController extends ResourceController
             'username' => $data['firstname'], // Full name
         ]);
         // print_r($data);die;
-        $this->userInfoModel->where('user_id', $userId)->set([
+        $userInfoData = [
             'firstname' => $data['firstname'],
             'lastname' => $data['lastname'],
             'email' => $data['email'],
@@ -373,7 +385,15 @@ class ProfileController extends ResourceController
             'joining_date' => $data['joining_date'] ?? null,
             'working_location' => $data['working_location'] ?? null,
             'profile_image' => $profileImageName, // Updated image name
-        ])->update();
+        ];
+
+        if (!$this->userInfoModel->where('user_id', $userId)->first()) {
+            $userInfoData['user_id'] = $userId;
+            $userInfoData['role'] = $user->role ?? 'employee';
+            $this->userInfoModel->insert($userInfoData);
+        } else {
+            $this->userInfoModel->where('user_id', $userId)->set($userInfoData)->update();
+        }
 
         return $this->respond([
             'status' => 'success',

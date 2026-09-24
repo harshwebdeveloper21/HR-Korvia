@@ -6,10 +6,9 @@ use CodeIgniter\Database\Migration;
 
 class AddLocationColumnsToAttendance extends Migration
 {
-    public function up()
-    {
+    public function up() { if ($this->db->fieldExists('ip_address', 'attendance')) { return; } 
         $fields = [
-            // ── Check-In location fields ──────────────────────────────
+            // â”€â”€ Check-In location fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             'ip_address' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 64,
@@ -41,7 +40,7 @@ class AddLocationColumnsToAttendance extends Migration
                 'after'      => 'longitude',
             ],
 
-            // ── Check-Out location fields ─────────────────────────────
+            // â”€â”€ Check-Out location fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             'checkout_ip_address' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 64,

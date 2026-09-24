@@ -7,6 +7,10 @@ $authService = new AuthService($request);
 $user = $authService->check();
 
 $role = $user ? $user->role : null;
+
+$branchesList = [];
+$branchModel = new \App\Models\BranchModel();
+$branchesList = $branchModel->getActiveBranches();
 ?>
 <style>   
     .check-in-out-container:not(.role-admin) #check-out-btn {
@@ -440,6 +444,40 @@ $role = $user ? $user->role : null;
                     <i class="mdi mdi-alarm-off me-2 fs-5"></i> Check Out
                 </button>
             </li>
+            <!-- Branch Dropdown -->
+            <?php if (!empty($branchesList) && $role === 'admin'): ?>
+            <?php $activeBranch = session()->get('admin_active_branch'); ?>
+            <li class="nav-item d-flex align-items-center">
+                <select class="form-select form-select-sm border-0 shadow-sm" id="navbarBranchSelect" style="background-color: rgba(255,255,255,0.9); color: #444; border-radius: 20px; padding: 2px 10px; font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;">
+                    <option value="">All Branches</option>
+                    <?php foreach ($branchesList as $br): ?>
+                        <option value="<?= htmlspecialchars($br['id']) ?>" <?= ($activeBranch == $br['id']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($br['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <script>
+                document.getElementById('navbarBranchSelect').addEventListener('change', function(e) {
+                    const branchId = e.target.value;
+                    fetch('/api/branches/set-active', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ branch_id: branchId })
+                    })
+                    .then(r => r.json())
+                    .then(() => {
+                        window.location.reload();
+                    })
+                    .catch(console.error);
+                });
+                </script>
+            </li>
+            <?php endif; ?>
+
             <li class="nav-item d-none d-lg-block d-block" id="datetime-display">
                 <div class="input-group date datepicker navbar-date-picker">
                     <span class="nav-link text-muted fw-semibold" id="currentDateTime" style="white-space: nowrap;"></span>

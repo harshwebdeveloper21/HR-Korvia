@@ -1,0 +1,235 @@
+<?php
+
+namespace App\Controllers\Api;
+
+use CodeIgniter\RESTful\ResourceController;
+use App\Services\AuthService;
+use App\Models\StaffTransferModel;
+use App\Models\UserModel;
+use App\Models\BranchModel;
+use App\Models\AuditLogModel;
+
+/**
+ * StaffTransferController — transfers staff between branches.
+ *
+ * Permission rules:
+ *   - Admin: can always transfer any staff.
+ *   - HR with can_transfer_staff=1: can transfer staff from their own branch.
+ *   - HR with can_transfer_staff=0: 403 on all transfer actions.
+ */
+class StaffTransferController extends ResourceController
+{
+    protected $authService;
+    protected $transferModel;
+    protected $userModel;
+    protected $branchModel;
+    protected $auditLog;
+
+    public function __construct()
+    {
+        $this->authService   = new AuthService(service('request'));
+        $this->transferModel = new StaffTransferModel();
+        $this->userModel     = new UserModel();
+        $this->branchModel   = new BranchModel();
+        $this->auditLog      = new AuditLogModel();
+    }
+
+    // -- Helpers ---------------------------------------------------------------
+
+    private function getAuthedUser(): ?object
+    {
+        return $this->authService->check() ?: null;
+    }
+
+    private function canTransfer(object $user): bool
+    {
+        if ($user->role === 'admin') {
+            return true;
+        }
+        if ($user->role === 'hr') {
+            $userId = $user->sub ?? $user->id ?? null;
+            $row = $this->userModel->find($userId);
+            return !empty($row['can_transfer_staff']) && $row['can_transfer_staff'] == 1;
+        }
+        return false;
+    }
+
+    // -- Page Views ------------------------------------------------------------
+
+    public function page()
+    {
+        $user = $this->getAuthedUser();
+        if (!$user) {
+            return redirect()->to('/login');
+        }
+
+        if (!$this->canTransfer($user)) {
+            return redirect()->to('/dashboard')->with('error', 'You do not have permission to transfer staff.');
+        }
+
+        $branches = $this->branchModel->getActiveBranches();
+
+        return view('staff_transfer/index', [
+            'role'     => $user->role,
+            'branches' => $branches,
+        ]);
+    }
+
+    // -- API Endpoints ---------------------------------------------------------
+
+    /**
+     * POST api/staff-transfer/initiate — perform the transfer
+     */
+    public function initiate()
+    {
+        $user = $this->getAuthedUser();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        if (!$this->canTransfer($user)) {
+            return $this->respond(['status' => 'error', 'message' => 'You do not have permission to transfer staff.'], 403);
+        }
+
+        $data         = $this->request->getJSON(true) ?? $this->request->getPost();
+        $staffId      = (int)($data['user_id'] ?? 0);
+        $toBranchId   = (int)($data['to_branch_id'] ?? 0);
+        $effectiveDate = $data['effective_date'] ?? date('Y-m-d');
+        $reason       = $data['reason'] ?? '';
+        $actorId      = $user->sub ?? $user->id ?? null;
+
+        if (!$staffId || !$toBranchId) {
+            return $this->respond(['status' => 'error', 'message' => 'user_id and to_branch_id are required.'], 422);
+        }
+
+        $staff = $this->userModel->find($staffId);
+        if (!$staff || $staff['is_deleted'] || !in_array($staff['role'], ['employee', 'hr'])) {
+            return $this->respond(['status' => 'error', 'message' => 'Staff member not found.'], 404);
+        }
+
+        $fromBranchId = (int)($staff['branch_id'] ?? 0);
+
+        // HR can only transfer staff from their own branch
+        if ($user->role === 'hr') {
+            $hrBranchId = $this->authService->getBranchId();
+            if ($fromBranchId !== $hrBranchId) {
+                return $this->respond([
+                    'status'  => 'error',
+                    'message' => 'You can only transfer staff from your own branch.',
+                ], 403);
+            }
+        }
+
+        // Cannot transfer to same branch
+        if ($fromBranchId === $toBranchId) {
+            return $this->respond(['status' => 'error', 'message' => 'Staff is already in the target branch.'], 422);
+        }
+
+        // Validate target branch exists
+        $toBranch = $this->branchModel->find($toBranchId);
+        if (!$toBranch) {
+            return $this->respond(['status' => 'error', 'message' => 'Target branch not found.'], 404);
+        }
+
+        // Use a transaction for atomicity
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // 1. Update user's branch
+            $this->userModel->update($staffId, ['branch_id' => $toBranchId]);
+
+            // 2. Record transfer history
+            $this->transferModel->insert([
+                'user_id'        => $staffId,
+                'from_branch_id' => $fromBranchId,
+                'to_branch_id'   => $toBranchId,
+                'transferred_by' => $actorId,
+                'reason'         => $reason,
+                'effective_date' => $effectiveDate,
+                'created_at'     => date('Y-m-d H:i:s'),
+            ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Transaction failed.');
+            }
+
+            $this->auditLog->log($actorId, 'staff.transfer', 'StaffTransfer', $staffId,
+                ['branch_id' => $fromBranchId],
+                ['branch_id' => $toBranchId, 'effective_date' => $effectiveDate]);
+
+            return $this->respond([
+                'status'  => 'success',
+                'message' => 'Staff transferred successfully. New branch rules apply from ' . $effectiveDate . '.',
+            ]);
+
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'StaffTransfer::initiate error: ' . $e->getMessage());
+            return $this->respond(['status' => 'error', 'message' => 'Transfer failed. Please try again.'], 500);
+        }
+    }
+
+    /**
+     * GET api/staff-transfer/history?branch_id=X&user_id=Y
+     */
+    public function history()
+    {
+        $user = $this->getAuthedUser();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        if (!$this->canTransfer($user)) {
+            return $this->respond(['status' => 'error', 'message' => 'Access denied.'], 403);
+        }
+
+        $userId   = (int)($this->request->getGet('user_id') ?? 0);
+        $branchId = (int)($this->request->getGet('branch_id') ?? 0);
+
+        if ($userId) {
+            $records = $this->transferModel->getHistoryForUser($userId);
+        } elseif ($user->role === 'admin') {
+            $records = $this->transferModel->getAllHistory($branchId ?: null);
+        } else {
+            // HR sees transfers in their branch
+            $hrBranchId = $this->authService->getBranchId();
+            $records = $this->transferModel->getAllHistory($hrBranchId);
+        }
+
+        return $this->respond(['status' => 'success', 'data' => $records]);
+    }
+
+    /**
+     * GET api/staff-transfer/eligible-staff — staff that can be transferred
+     */
+    public function eligibleStaff()
+    {
+        $user = $this->getAuthedUser();
+        if (!$user) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        if (!$this->canTransfer($user)) {
+            return $this->respond(['status' => 'error', 'message' => 'Access denied.'], 403);
+        }
+
+        $builder = $this->db->table('users u')
+            ->select('u.id, ui.firstname, ui.lastname, u.email, u.branch_id, b.name AS branch_name')
+            ->join('user_info ui', 'ui.user_id = u.id', 'left')
+            ->join('branches b', 'b.id = u.branch_id', 'left')
+            ->where('u.is_deleted', 0)
+            ->whereIn('u.role', ['employee', 'hr']);
+
+        if ($user->role === 'hr') {
+            $hrBranchId = $this->authService->getBranchId();
+            $builder->where('u.branch_id', $hrBranchId);
+        }
+
+        $staff = $builder->orderBy('ui.firstname')->get()->getResultArray();
+
+        return $this->respond(['status' => 'success', 'data' => $staff]);
+    }
+}

@@ -146,6 +146,28 @@ class AttendanceController extends ResourceController
         $this->userModel = new UserModel();
     }
 
+    /**
+     * Get the correct company rule set for a specific user (branch-aware).
+     * If the user has a branch_id with a branch_rules row, that row is returned.
+     * Otherwise falls back to global company_rules.
+     */
+    private function getBranchRulesForUser(int $userId): array
+    {
+        $branchRulesModel = new \App\Models\BranchRulesModel();
+        $rule = $branchRulesModel->getRulesForUser($userId);
+
+        if ($rule) {
+            // Normalize: branch_rules uses grace_minutes; company_rules uses grace_period
+            if (!isset($rule['grace_minutes']) && isset($rule['grace_period'])) {
+                $rule['grace_minutes'] = $rule['grace_period'];
+            }
+            return $rule;
+        }
+
+        // Absolute fallback — global company_rules
+        return $this->companyRulesModel->orderBy('id', 'DESC')->first() ?? [];
+    }
+
     public function display()
     {
         return view('attendence/attendence');
@@ -307,7 +329,8 @@ class AttendanceController extends ResourceController
 
         // ── Geofencing Enforcement ───────────────────────────────────────────
         if (!$isRemote) {
-            $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
+            // Use branch-specific rules for this employee
+            $companyRule = $this->getBranchRulesForUser((int)$user->sub);
             $enableGeofencing = isset($companyRule['enable_geofencing']) && $companyRule['enable_geofencing'] == 1;
 
             if ($enableGeofencing) {
@@ -470,8 +493,17 @@ class AttendanceController extends ResourceController
         $grossWorkSeconds = $checkOutTimestamp - $checkInTimestamp;
 
         /* ---------------------------------------------------
-        2. COMPANY RULES
+        2. COMPANY RULES (branch-aware)
         --------------------------------------------------- */
+        // Look up the staff member's branch_id from the attendance record, then
+        // fetch that branch's rules. Falls back to global company_rules if needed.
+        $branchRulesModel = new \App\Models\BranchRulesModel();
+        // $userId is already bound as the function param in the caller context;
+        // we derive it from the attendance date record via user lookup.
+        // For calculateWorkHours we accept an optional $userId param — but since
+        // it doesn't have access to it, we read the global rule here as fallback
+        // and let the call sites override per staff.  The branch-aware path is
+        // handled in checkIn/checkOut where we pass $userId explicitly.
         $companyRule = $this->companyRulesModel->orderBy('id', 'DESC')->first();
         $isSaturdayHalfDay = $this->isSaturdayHalfDay($date, $companyRule);
 

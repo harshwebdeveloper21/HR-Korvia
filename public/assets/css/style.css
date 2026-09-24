@@ -18128,7 +18128,7 @@ progress {
 
 .blockquote-footer::before {
 
-  content: "— ";
+  content: "â€”Â ";
 
 }
 
@@ -61023,7 +61023,7 @@ h4.card-title {
 
 }
 
-table thead tr th{
+table thead, table thead tr, table thead tr th {
 
   background: black !important;
 

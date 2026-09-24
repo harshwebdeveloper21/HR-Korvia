@@ -431,7 +431,7 @@
     }
 
     /* ==========================================
-       Latest Announcements â€” Premium Design
+       Latest Announcements Ã¢â‚¬â€ Premium Design
     ========================================== */
     .ann-section-wrapper {
         background: #fff;
@@ -657,7 +657,7 @@
     }
     .ann-card:hover .ann-card-footer-read { opacity: 1; }
 
-    /* â”€â”€ Marquee ticker â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Marquee ticker Ã¢â€â‚¬Ã¢â€â‚¬ */
     .ann-marquee-outer {
         overflow: hidden;          /* clip cards outside viewport */
         position: relative;
@@ -674,7 +674,7 @@
         z-index: 3;
     }
 
-    /* â”€â”€ Announcement Cards Row â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Announcement Cards Row Ã¢â€â‚¬Ã¢â€â‚¬ */
     .ann-marquee-outer {
         position: relative;
         width: 100%;
@@ -689,13 +689,13 @@
         pointer-events: none;
         z-index: 3;
     }
-    /* Scrollable flex row â€” width:100% so overflow clips clones naturally */
+    /* Scrollable flex row Ã¢â‚¬â€ width:100% so overflow clips clones naturally */
     .ann-marquee-track {
         display: flex;
         gap: 14px;
         overflow-x: scroll;
         width: 100%;
-        scroll-behavior: auto;   /* MUST be auto â€” smooth interferes with JS */
+        scroll-behavior: auto;   /* MUST be auto Ã¢â‚¬â€ smooth interferes with JS */
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
@@ -761,7 +761,7 @@
 
             <div class="tab-content tab-content-basic">
 
-                <!-- Latest Announcements â€” Premium Section -->
+                <!-- Latest Announcements Ã¢â‚¬â€ Premium Section -->
                 <?php if (!empty($activeAnnouncements)): ?>
                 <div class="ann-section-wrapper">
                     <div class="ann-section-header">
@@ -842,7 +842,7 @@
 
                                                         <!-- Second row: Count and icon side by side -->
                                                         <div class="d-flex justify-content-between align-items-center">
-                                                            <h4 class="rate-percentage fw-bold mb-0" id="this-week-employees" style="font-size: 26px;">3</h4>
+                                                            <h4 class="rate-percentage fw-bold mb-0" id="this-week-employees" style="font-size: 26px;">0</h4>
                                                             <div class="icon rounded-circle d-flex align-items-center justify-content-center iconsize"
                                                                 style="width: 48px; height: 48px; background-color: #f4f5f7; color: #E66136;">
                                                                 <i class="mdi mdi-account-group mdi-24px"></i>
@@ -896,7 +896,7 @@
 
                                                     <!-- Second row: Count and icon side by side -->
                                                     <div class="d-flex justify-content-between align-items-center">
-                                                        <h4 class="rate-percentage fw-bold mb-0" id="this-week-attendance" style="font-size: 26px;">3</h4>
+                                                        <h4 class="rate-percentage fw-bold mb-0" id="this-week-attendance" style="font-size: 26px;">0</h4>
                                                         <div class="icon rounded-circle d-flex align-items-center justify-content-center iconsize"
                                                             style="width: 48px; height: 48px; background-color: #f4f5f7; color: #E66136;">
                                                             <i class="mdi mdi-account-check mdi-24px"></i>
@@ -919,7 +919,7 @@
 
                                                     <!-- Second row: Count and icon side by side -->
                                                     <div class="d-flex justify-content-between align-items-center">
-                                                        <h4 class="rate-percentage fw-bold mb-0" id="this-week-task" style="font-size: 26px;">3</h4>
+                                                        <h4 class="rate-percentage fw-bold mb-0" id="this-week-task" style="font-size: 26px;">0</h4>
                                                         <div class="icon rounded-circle d-flex align-items-center justify-content-center iconsize"
                                                             style="width: 48px; height: 48px; background-color: #f4f5f7; color: #E66136;">
                                                             <i class="mdi mdi-format-list-checks mdi-24px"></i>
@@ -1017,7 +1017,7 @@
 
                                                     <!-- Second row: Count and icon side by side -->
                                                     <div class="d-flex justify-content-between align-items-center">
-                                                        <h4 class="rate-percentage fw-bold mb-0" id="this-month-attendance" style="font-size: 26px;">3</h4>
+                                                        <h4 class="rate-percentage fw-bold mb-0" id="this-month-attendance" style="font-size: 26px;">0</h4>
                                                         <div class="icon rounded-circle d-flex align-items-center justify-content-center iconsize"
                                                             style="width: 48px; height: 48px; background-color: #f4f5f7; color: #E66136;">
                                                             <i class="mdi mdi-account-check mdi-24px"></i>
@@ -2473,7 +2473,7 @@
             console.log('Using default working hours: 8 hours');
         }
     });
-    // ðŸ•’ Timezone sync offset (Server - Browser) for absolute accuracy
+    // Ã°Å¸â€¢â€™ Timezone sync offset (Server - Browser) for absolute accuracy
     window.serverOffset = (<?= time() ?> * 1000) - Date.now();
     
     // Function to start and update work timer for each employee
@@ -2952,7 +2952,7 @@
 
 <?php if ($role == 'employee' && isset($todayHoursData) && $todayHoursData && $todayHoursData['is_checked_in']) : ?>
     <script>
-        // âœ… CLEAN Real-time hours counter â€” server-anchored, no timezone math
+        // Ã¢Å“â€¦ CLEAN Real-time hours counter Ã¢â‚¬â€ server-anchored, no timezone math
         (function() {
             // Server has already computed the correct elapsed seconds in IST timezone
             const elapsedAtLoad      = <?= (int)($todayHoursData['elapsed_seconds_at_load'] ?? 0) ?>;
@@ -2996,7 +2996,7 @@
             // Start ticking every second
             setInterval(tick, 1000);
 
-            console.log('â±ï¸ Timer started | elapsedAtLoad=' + elapsedAtLoad + 's | completed=' + completedSeconds + 's | standard=' + standardHoursSeconds + 's');
+            console.log('Ã¢ÂÂ±Ã¯Â¸Â Timer started | elapsedAtLoad=' + elapsedAtLoad + 's | completed=' + completedSeconds + 's | standard=' + standardHoursSeconds + 's');
         })();
     </script>
 <?php endif; ?>
@@ -3088,7 +3088,7 @@
                 });
             }
 
-            var speed  = 1.2;    // px per frame â€” tweak for faster/slower
+            var speed  = 1.2;    // px per frame Ã¢â‚¬â€ tweak for faster/slower
             var paused = false;
 
             function tick() {

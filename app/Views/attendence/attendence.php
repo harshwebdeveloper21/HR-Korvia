@@ -305,9 +305,7 @@
                     </thead>
                     <tbody id="employee-attendance-body">
                         <tr>
-                            <td colspan="10" class="text-center py-4 text-muted">
-                                <span class="spinner-border spinner-border-sm me-2"></span> Loading attendance summary...
-                            </td>
+                            <td colspan="10"><div class="d-flex justify-content-center align-items-center w-100 py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading attendance summary...</div></td>
                         </tr>
                     </tbody>
                 </table>
@@ -350,7 +348,7 @@
             const year = document.getElementById('year-selector').value;
 
             document.getElementById('employee-attendance-body').innerHTML = 
-                '<tr><td colspan="10" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading attendance summary...</td></tr>';
+                '<tr><td colspan="10"><div class="d-flex justify-content-center align-items-center w-100 py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading attendance summary...</div></td></tr>';
 
             fetch(`/api/attendance/getAttendance/${month}/${year}`, { headers })
                 .then(response => response.json())
@@ -359,13 +357,13 @@
                         renderEmployeeTable(data.data, month, year);
                     } else {
                         document.getElementById('employee-attendance-body').innerHTML =
-                            '<tr><td colspan="10" class="text-center py-4 text-muted">No attendance data found for this period.</td></tr>';
+                            '<tr><td colspan="10"><div class="d-flex justify-content-center align-items-center w-100 py-4 text-muted">No attendance data found for this period.</div></td></tr>';
                     }
                 })
                 .catch(error => {
                     console.error('Error loading attendance:', error);
                     document.getElementById('employee-attendance-body').innerHTML =
-                        '<tr><td colspan="10" class="text-center py-4 text-danger">Error loading data. Please try again.</td></tr>';
+                        '<tr><td colspan="10"><div class="d-flex justify-content-center align-items-center w-100 py-4 text-danger">Error loading data. Please try again.</div></td></tr>';
                 });
         };
 
