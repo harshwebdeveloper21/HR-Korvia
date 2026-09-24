@@ -721,7 +721,7 @@
 
             <!-- Dropdown Filter for This Week / This Month -->
 
-            <div class="thismonth mt-2">
+            <div class="thismonth mb-3">
 
                 <div class="dropdown dropdown-button-wrapper btn-res-sm-isze">
                     <!-- Icon positioned absolutely inside the button -->

@@ -50,7 +50,7 @@
 
 .expanded-details.show {
     z-index: 4;
-    width: calc(100% + 55px);
+    width: calc(100% + 92px);
     margin-right: -55px;
     margin-top: 24px;
     position: relative;
@@ -102,6 +102,7 @@
 
 /* Desktop styles */
 @media (min-width: 768px) {
+
     .mobile-expand-col,
     .expanded-details-row {
         display: none !important;
@@ -110,6 +111,12 @@
 
 /* Mobile styles */
 @media (max-width: 767px) {
+
+    .card .card-body {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
     .expand-toggle {
         display: flex !important;
     }
@@ -144,7 +151,7 @@
 
     .table-responsive table tbody tr {
         background: #fff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         border-radius: 8px;
     }
 
@@ -162,197 +169,201 @@
     }
 
     /* Auto-wrap card headers on mobile screens to prevent button overflow */
-    .card-body > .d-flex.justify-content-between,
-    .card-body > .d-md-flex.justify-content-between {
+    .card-body>.d-flex.justify-content-between,
+    .card-body>.d-md-flex.justify-content-between {
         flex-direction: column !important;
         align-items: flex-start !important;
-/* Mobile Expandable Table Styles */
+        /* Mobile Expandable Table Styles */
 
-/* Expandable Row Toggle Button */
-.expand-toggle {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 2px solid #ff9800;
-    background: transparent;
-    color: #ff9800;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    padding: 0;
-    line-height: 1;
-}
+        /* Expandable Row Toggle Button */
+        .expand-toggle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #ff9800;
+            background: transparent;
+            color: #ff9800;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            padding: 0;
+            line-height: 1;
+        }
 
-.expand-toggle:hover {
-    background: #ff9800;
-    color: #fff;
-}
+        .expand-toggle:hover {
+            background: #ff9800;
+            color: #fff;
+        }
 
-.expand-toggle.expanded {
-    background: #dc3545;
-    border-color: #dc3545;
-    color: #fff;
-}
+        .expand-toggle.expanded {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #fff;
+        }
 
-.expand-toggle.expanded::before {
-    content: '−';
-}
+        .expand-toggle.expanded::before {
+            content: '−';
+        }
 
-.expand-toggle::before {
-    content: '+';
-}
+        .expand-toggle::before {
+            content: '+';
+        }
 
-/* Expanded Details Panel */
-.expanded-details {
-    display: none;
-    background: #f8f9fa;
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 10px;
-    border-left: 3px solid #ff9800;
-}
+        /* Expanded Details Panel */
+        .expanded-details {
+            display: none;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 3px solid #ff9800;
+        }
 
-.expanded-details.show {
-    z-index: 4;
-    width: calc(100% + 55px);
-    margin-right: -55px;
-    margin-top: 24px;
-    position: relative;
-    display: block;
-}
+        .expanded-details.show {
+            z-index: 4;
+            width: calc(100% + 55px);
+            margin-right: -55px;
+            margin-top: 24px;
+            position: relative;
+            display: block;
+        }
 
-.detail-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-    border-bottom: 1px solid #e9ecef;
-}
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
 
-.detail-row:last-child {
-    border-bottom: none;
-}
+        .detail-row:last-child {
+            border-bottom: none;
+        }
 
-.detail-label {
-    font-weight: 600;
-    color: #495057;
-    font-size: 13px;
-}
+        .detail-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 13px;
+        }
 
-.detail-value {
-    color: #212529;
-    font-size: 13px;
-}
+        .detail-value {
+            color: #212529;
+            font-size: 13px;
+        }
 
-.detail-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-    /* padding-top: 10px;
+        .detail-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            /* padding-top: 10px;
     border-top: 1px solid #e9ecef; */
-    flex-wrap: wrap;
-}
+            flex-wrap: wrap;
+        }
 
-.detail-actions .btn {
-    /* font-size: 11px;
+        .detail-actions .btn {
+            /* font-size: 11px;
     padding: 5px 7px; */
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-.detail-actions .btn i {
-    font-size: 14px;
-}
+        .detail-actions .btn i {
+            font-size: 14px;
+        }
 
-/* Desktop styles */
-@media (min-width: 768px) {
-    .mobile-expand-col,
-    .expanded-details-row {
-        display: none !important;
-    }
-}
+        /* Desktop styles */
+        @media (min-width: 768px) {
 
-/* Mobile styles */
-@media (max-width: 767px) {
-    .expand-toggle {
-        display: flex !important;
-    }
+            .mobile-expand-col,
+            .expanded-details-row {
+                display: none !important;
+            }
+        }
 
-    .mobile-expand-col {
-        display: table-cell !important;
-    }
+        /* Mobile styles */
+        @media (max-width: 767px) {
+            .expand-toggle {
+                display: flex !important;
+            }
 
-    table th.mobile-expand-col,
-    table td.mobile-expand-col {
-        display: table-cell !important;
-        width: 60px !important;
-        text-align: center !important;
-        vertical-align: top !important;
-        padding-top: 18px !important;
-    }
+            .mobile-expand-col {
+                display: table-cell !important;
+            }
 
-    .desktop-only-col {
-        display: none !important;
-    }
+            table th.mobile-expand-col,
+            table td.mobile-expand-col {
+                display: table-cell !important;
+                width: 60px !important;
+                text-align: center !important;
+                vertical-align: top !important;
+                padding-top: 18px !important;
+            }
 
-    table thead th.desktop-only-col,
-    table tbody td.desktop-only-col {
-        display: none !important;
-    }
+            .desktop-only-col {
+                display: none !important;
+            }
 
-    /* Style tables for mobile card-like rows */
-    .table-responsive table {
-        border-collapse: separate;
-        border-spacing: 0 8px;
-    }
+            table thead th.desktop-only-col,
+            table tbody td.desktop-only-col {
+                display: none !important;
+            }
 
-    .table-responsive table tbody tr {
-        background: #fff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        border-radius: 8px;
-    }
+            /* Style tables for mobile card-like rows */
+            .table-responsive table {
+                border-collapse: separate;
+                border-spacing: 0 8px;
+            }
 
-    .table-responsive table tbody tr td {
-        vertical-align: middle;
-        padding: 12px 8px;
-    }
+            .table-responsive table tbody tr {
+                background: #fff;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+            }
 
-    .table-responsive table tbody tr td:first-child {
-        border-radius: 8px 0 0 8px;
-    }
+            .table-responsive table tbody tr td {
+                vertical-align: middle;
+                padding: 12px 8px;
+            }
 
-    .table-responsive table tbody tr td:last-child {
-        border-radius: 0 8px 8px 0;
-    }
+            .table-responsive table tbody tr td:first-child {
+                border-radius: 8px 0 0 8px;
+            }
 
-    /* Auto-wrap card headers on mobile screens to prevent button overflow */
-    .card-body > .d-flex.justify-content-between,
-    .card-body > .d-md-flex.justify-content-between {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 12px !important;
-    }
+            .table-responsive table tbody tr td:last-child {
+                border-radius: 0 8px 8px 0;
+            }
 
-    .card-body > .d-flex.justify-content-between > div.d-flex,
-    .card-body > .d-flex.justify-content-between > div.d-md-flex,
-    .card-body > .d-md-flex.justify-content-between > div.d-flex,
-    .card-body > .d-md-flex.justify-content-between > div.d-md-flex {
-        flex-wrap: wrap !important;
-        width: 100% !important;
-    }
-    
-    .content-wrapper {
-        padding: 0 !important;
-    }
-    .grid-margin, .card {
-        margin: 0 !important;
-        border-radius: 0 !important;
-    }
-    .card-body {
-        padding: 10px !important;
-    }
-}
+            /* Auto-wrap card headers on mobile screens to prevent button overflow */
+            .card-body>.d-flex.justify-content-between,
+            .card-body>.d-md-flex.justify-content-between {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
+
+            .card-body>.d-flex.justify-content-between>div.d-flex,
+            .card-body>.d-flex.justify-content-between>div.d-md-flex,
+            .card-body>.d-md-flex.justify-content-between>div.d-flex,
+            .card-body>.d-md-flex.justify-content-between>div.d-md-flex {
+                flex-wrap: wrap !important;
+                width: 100% !important;
+            }
+
+            .content-wrapper {
+                padding: 0 !important;
+            }
+
+            .grid-margin,
+            .card {
+                margin: 0 !important;
+                border-radius: 0 !important;
+            }
+
+            .card-body {
+                padding: 10px !important;
+            }
+        }
