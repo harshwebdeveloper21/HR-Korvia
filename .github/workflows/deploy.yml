@@ -43,7 +43,7 @@ jobs:
           server: 82.29.163.188
           username: u378554361.korviahrftp
           password: Z@44!m=DdX?e
-          server-dir: /public_html/
+          server-dir: /
           local-dir: ./build_output/
           protocol: ftp       # 🔥 switch to ftp first (stable)
           port: 21
