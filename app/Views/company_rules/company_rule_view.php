@@ -158,12 +158,13 @@
                     <table class="table table-striped w-100" id="rules-Table">
                         <thead>
                             <tr>
+                                <th style="width: 15%;">Branch</th>
                                 <th style="width: 14%;">Working Hours</th>
-                                <th class="desktop-only-col" style="width: 25%;">Saturday Off Pattern</th>
-                                <th class="desktop-only-col text-center" style="width: 12%;">Yearly Holidays</th>
-                                <th class="desktop-only-col text-center" style="width: 10%;">Tax</th>
-                                <th class="desktop-only-col text-center" style="width: 15%;">Taxable Salary Amount</th>
-                                <th class="desktop-only-col text-center" style="width: 13%;">Lunch Break</th>
+                                <th class="desktop-only-col" style="width: 20%;">Saturday Off Pattern</th>
+                                <th class="desktop-only-col text-center" style="width: 10%;">Yearly Holidays</th>
+                                <th class="desktop-only-col text-center" style="width: 8%;">Tax</th>
+                                <th class="desktop-only-col text-center" style="width: 12%;">Taxable Salary</th>
+                                <th class="desktop-only-col text-center" style="width: 10%;">Lunch Break</th>
                                 <th class="desktop-only-col text-center" style="width: 11%;">Action</th>
                                 <th class="mobile-expand-col text-center" style="width: 50px;">Details</th>
                             </tr>
@@ -215,12 +216,11 @@
                         $('#header-action-btn').html('<a href="/creates-rules" class="btn hr-btnbg text-white"><i class="mdi mdi-plus"></i> Add Company Rules</a>');
                         tableRows = `
                             <tr>
-                                <td colspan="8" class="text-center py-5">
+                                <td colspan="9" class="text-center py-5">
                                     <div class="mb-3">
                                         <i class="mdi mdi-alert-circle-outline text-muted" style="font-size: 48px;"></i>
                                     </div>
                                     <h5 class="text-muted mb-3">No company rules found.</h5>
-
                                 </td>
                             </tr>
                         `;
@@ -248,6 +248,7 @@
 
                         tableRows += `
                     <tr data-id="${rule.id}">
+                        <td><span class="fw-bold text-danger">${rule.branch_name || 'Global'}</span></td>
                         <td>
                             <div style="flex: 1;">
                                 <span class="fw-bold">${rule.working_hours_per_day} hours</span>
@@ -273,7 +274,7 @@
                                         <span class="detail-value">${rule.lunch_break ?? '-'}</span>
                                     </div>
                                     <div class="detail-actions">
-                                        <a href="/creates-rules" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit Rules</a>
+                                        <a href="/creates-rules?branch_id=${rule.branch_id || ''}" class="btn btn-sm btn-warning"><i class="mdi mdi-pencil"></i> Edit Rules</a>
                                     </div>
                                 </div>
                             </div>
@@ -284,7 +285,7 @@
                         <td class="desktop-only-col text-center">${rule.salary_above_tax ?? 0}</td>
                         <td class="desktop-only-col text-center">${rule.lunch_break ?? '-'}</td>
                         <td class="desktop-only-col text-center">
-                            <a href="/creates-rules" class="text-warning fs-5" title="Edit Rules">
+                            <a href="/creates-rules?branch_id=${rule.branch_id || ''}" class="text-warning fs-5" title="Edit Rules">
                                 <i class="mdi mdi-pencil"></i>
                             </a>
                         </td>
@@ -294,6 +295,7 @@
                     </tr>
                 `;
                     });
+                    }
 
                     $('#rules-Table-Body').html(tableRows);
 

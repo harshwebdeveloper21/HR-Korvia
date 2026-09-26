@@ -796,6 +796,17 @@
         }
 
         // Load existing data initially
+        const urlParams = new URLSearchParams(window.location.search);
+        const branchIdFromUrl = urlParams.get('branch_id');
+
+        if (branchIdFromUrl) {
+            // Set the dropdown to match the branch_id in the URL if it exists
+            const selectEl = $('#top_branch_select');
+            if (selectEl.find('option[value="' + branchIdFromUrl + '"]').length) {
+                selectEl.val(branchIdFromUrl);
+            }
+        }
+
         loadBranchRules($('#top_branch_select').val());
 
         // When branch changes, fetch rules for that branch
