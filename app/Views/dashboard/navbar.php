@@ -388,7 +388,7 @@ $branchesList = $branchModel->getActiveBranches();
         <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center p-1 me-2 border-0 bg-transparent text-white" type="button" data-bs-toggle="offcanvas">
             <span class="mdi mdi-menu text-white fs-4"></span>
         </button>
-        <div class="d-flex align-items-center">
+        <div class="d-none d-lg-flex align-items-center">
             <a class="navbar-brand brand-logo m-0 p-0" href="/dashboard">
                 <img src="<?= getCompanyLogo(); ?>" alt="logo" class="sidebar-logo" />
             </a>
