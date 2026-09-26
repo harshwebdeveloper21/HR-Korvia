@@ -11,6 +11,7 @@ class BranchModel extends Model
 
     protected $allowedFields = [
         'name', 'code', 'address', 'city', 'phone', 'status',
+        'latitude', 'longitude', 'radius',
         'created_at', 'updated_at', 'deleted_at',
     ];
 
