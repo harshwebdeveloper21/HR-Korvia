@@ -63,6 +63,31 @@
             </select>
           </div>
 
+          <h5 class="mb-3 text-primary"><i class="mdi mdi-map-marker me-1"></i> Location Settings (For Geofencing)</h5>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-semibold">Latitude</label>
+              <input type="text" id="latitude" class="form-control"
+                     value="<?= htmlspecialchars($branch['latitude'] ?? '') ?>" placeholder="e.g. 19.0760">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-semibold">Longitude</label>
+              <input type="text" id="longitude" class="form-control"
+                     value="<?= htmlspecialchars($branch['longitude'] ?? '') ?>" placeholder="e.g. 72.8777">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-semibold">Radius (Meters)</label>
+              <input type="number" id="radius" class="form-control"
+                     value="<?= htmlspecialchars($branch['radius'] ?? '100') ?>">
+            </div>
+          </div>
+          <div class="mb-4">
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="getCurrentLocation()">
+              <i class="mdi mdi-crosshairs-gps me-1"></i> Get Current Location
+            </button>
+            <small class="text-muted ms-2">Click to fetch coordinates of your current position.</small>
+          </div>
+
           <div id="formError" class="alert alert-danger d-none"></div>
 
           <div class="d-flex gap-2">
@@ -102,6 +127,9 @@ document.getElementById('branchForm').addEventListener('submit', async function(
     city:    document.getElementById('city').value.trim(),
     phone:   document.getElementById('phone').value.trim(),
     status:  document.getElementById('status').value,
+    latitude: document.getElementById('latitude').value.trim(),
+    longitude: document.getElementById('longitude').value.trim(),
+    radius:  document.getElementById('radius').value.trim(),
   };
 
   const url    = isEdit ? `/api/branches/${branchId}` : '/api/branches';
@@ -138,5 +166,22 @@ document.getElementById('branchForm').addEventListener('submit', async function(
     btn.innerHTML = '<i class="mdi mdi-content-save me-1"></i>Save';
   }
 });
+
+function getCurrentLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        document.getElementById('latitude').value = position.coords.latitude.toFixed(6);
+        document.getElementById('longitude').value = position.coords.longitude.toFixed(6);
+      },
+      (error) => {
+        alert('Unable to retrieve your location. Please ensure location services are enabled.');
+      },
+      { enableHighAccuracy: true }
+    );
+  } else {
+    alert('Geolocation is not supported by your browser.');
+  }
+}
 </script>
 <?php $this->endSection(); ?>

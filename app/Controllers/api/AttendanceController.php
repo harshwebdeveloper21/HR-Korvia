@@ -334,8 +334,7 @@ class AttendanceController extends ResourceController
             $enableGeofencing = isset($companyRule['enable_geofencing']) && $companyRule['enable_geofencing'] == 1;
 
             if ($enableGeofencing) {
-                $locationSettingsModel = new \App\Models\LocationSettingsModel();
-                $officeLocation = $locationSettingsModel->first();
+                $officeLocation = $this->getOfficeLocationForUser((int)$user->sub);
 
                 if ($officeLocation && $officeLocation['latitude'] && $officeLocation['longitude']) {
                     if ($checkinLat === null || $checkinLng === null) {
@@ -807,8 +806,7 @@ class AttendanceController extends ResourceController
             $enableGeofencing = isset($companyRule['enable_geofencing']) && $companyRule['enable_geofencing'] == 1;
 
             if ($enableGeofencing) {
-                $locationSettingsModel = new \App\Models\LocationSettingsModel();
-                $officeLocation = $locationSettingsModel->first();
+                $officeLocation = $this->getOfficeLocationForUser((int)$user->sub);
 
                 if ($officeLocation && $officeLocation['latitude'] && $officeLocation['longitude']) {
                     if ($coLat === null || $coLng === null) {
@@ -1896,8 +1894,7 @@ class AttendanceController extends ResourceController
         }
 
         // Check location if location settings are configured
-        $locationSettingsModel = new LocationSettingsModel();
-        $locationSettings = $locationSettingsModel->getSettings();
+        $locationSettings = $this->getOfficeLocationForUser((int)$user->sub);
 
         // Check if this employee is a remote worker — remote employees skip location validation
         $userInfoForLocation = new \App\Models\UserInfoModel();
@@ -2675,6 +2672,26 @@ class AttendanceController extends ResourceController
             'status' => 'success',
             'message' => "Attendance updated for {$successCount} employee(s) successfully.",
         ]);
+    }
+    /**
+     * Get office location for a user (prioritizing branch location over global settings)
+     */
+    private function getOfficeLocationForUser($userId)
+    {
+        $user = (new \App\Models\UserModel())->find($userId);
+        if ($user && !empty($user['branch_id'])) {
+            $branch = (new \App\Models\BranchModel())->find($user['branch_id']);
+            if ($branch && !empty($branch['latitude']) && !empty($branch['longitude'])) {
+                return [
+                    'latitude' => $branch['latitude'],
+                    'longitude' => $branch['longitude'],
+                    'radius' => isset($branch['radius']) ? $branch['radius'] : 100,
+                ];
+            }
+        }
+        
+        $locationSettingsModel = new \App\Models\LocationSettingsModel();
+        return $locationSettingsModel->first();
     }
 }
 

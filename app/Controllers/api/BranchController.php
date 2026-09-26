@@ -227,9 +227,12 @@ class BranchController extends ResourceController
             'name'    => trim($data['name']),
             'code'    => strtoupper(trim($data['code'])),
             'address' => $data['address'] ?? null,
-            'city'    => $data['city'] ?? null,
-            'phone'   => $data['phone'] ?? null,
-            'status'  => $data['status'] ?? 'active',
+            'city'      => $data['city'] ?? null,
+            'phone'     => $data['phone'] ?? null,
+            'status'    => $data['status'] ?? 'active',
+            'latitude'  => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'radius'    => isset($data['radius']) ? (int)$data['radius'] : 100,
         ];
 
         $branchService = new \App\Services\BranchService();
@@ -274,9 +277,12 @@ class BranchController extends ResourceController
             'name'    => trim($data['name']),
             'code'    => strtoupper(trim($data['code'])),
             'address' => $data['address'] ?? $branch['address'],
-            'city'    => $data['city'] ?? $branch['city'],
-            'phone'   => $data['phone'] ?? $branch['phone'],
-            'status'  => $data['status'] ?? $branch['status'],
+            'city'      => $data['city'] ?? $branch['city'],
+            'phone'     => $data['phone'] ?? $branch['phone'],
+            'status'    => $data['status'] ?? $branch['status'],
+            'latitude'  => $data['latitude'] ?? $branch['latitude'],
+            'longitude' => $data['longitude'] ?? $branch['longitude'],
+            'radius'    => isset($data['radius']) ? (int)$data['radius'] : ($branch['radius'] ?? 100),
         ];
 
         $this->branchModel->update($id, $updateData);
