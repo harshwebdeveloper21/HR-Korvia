@@ -81,11 +81,14 @@
                      value="<?= htmlspecialchars($branch['radius'] ?? '100') ?>">
             </div>
           </div>
-          <div class="mb-4">
+          <div class="mb-4 d-flex align-items-center flex-wrap gap-2">
             <button type="button" class="btn btn-sm btn-outline-info" onclick="getCurrentLocation()">
               <i class="mdi mdi-crosshairs-gps me-1"></i> Get Current Location
             </button>
-            <small class="text-muted ms-2">Click to fetch coordinates of your current position.</small>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="getCoordinatesFromAddress()" id="btnFetchAddress">
+              <i class="mdi mdi-map-search me-1"></i> Get Coordinates from Address
+            </button>
+            <small class="text-muted w-100 mt-1">Fetch coordinates from your device or by looking up the branch address.</small>
           </div>
 
           <div id="formError" class="alert alert-danger d-none"></div>
@@ -181,6 +184,40 @@ function getCurrentLocation() {
     );
   } else {
     alert('Geolocation is not supported by your browser.');
+  }
+}
+
+async function getCoordinatesFromAddress() {
+  const address = document.getElementById('address').value.trim();
+  const city = document.getElementById('city').value.trim();
+  
+  if (!address && !city) {
+    alert('Please enter an Address or City to fetch coordinates.');
+    return;
+  }
+  
+  const query = encodeURIComponent(`${address} ${city}`);
+  const btn = document.getElementById('btnFetchAddress');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Fetching...';
+  
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      document.getElementById('latitude').value = parseFloat(data[0].lat).toFixed(6);
+      document.getElementById('longitude').value = parseFloat(data[0].lon).toFixed(6);
+    } else {
+      alert('Could not find coordinates for this address. Please try adding more details or use "Get Current Location".');
+    }
+  } catch (error) {
+    console.error(error);
+    alert('Error fetching coordinates. Please try again later.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
   }
 }
 </script>
