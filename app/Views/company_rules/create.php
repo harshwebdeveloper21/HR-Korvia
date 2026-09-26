@@ -36,8 +36,26 @@
     <div class="col-12 grid-margin">
         <div class="card">
             <div class="card-body">
-                <h4 class="card-title">Company Rules</h4>
-                <!-- <p class="text-muted">Configure your HR policies, payroll settings, and attendance rules</p> -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="card-title mb-0">Company Rules</h4>
+                    <?php $role = session()->get('role'); ?>
+                    <?php if ($role === 'admin'): ?>
+                    <div style="width: 250px;">
+                        <select class="form-control border-danger" id="top_branch_select" style="border-width: 2px;">
+                            <option value="">Global Rules</option>
+                            <?php
+                                $branchModel = new \App\Models\BranchModel();
+                                $allBranches = $branchModel->findAll();
+                                foreach ($allBranches as $br):
+                            ?>
+                                <option value="<?= htmlspecialchars($br['id']) ?>"><?= htmlspecialchars($br['name']) ?> (<?= htmlspecialchars($br['code'] ?? '') ?>)</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php else: ?>
+                        <input type="hidden" id="top_branch_select" value="<?= session()->get('branch_id') ?>">
+                    <?php endif; ?>
+                </div>
 
                 <form id="companyRulesForm">
                     <input type="hidden" name="id" id="id">
@@ -678,7 +696,9 @@
                 enable_geofencing: $('#enable_geofencing').is(':checked'),
                 office_latitude: $('#office_latitude').val(),
                 office_longitude: $('#office_longitude').val(),
-                office_radius: $('#office_radius').val()
+                office_radius: $('#office_radius').val(),
+                // Branch
+                branch_id: $('#top_branch_select').val() || null
             };
 
             const token = localStorage.getItem('token');
@@ -692,6 +712,8 @@
                 },
                 data: JSON.stringify(formData),
                 success: function (response) {
+                    $('.is-invalid').removeClass('is-invalid');
+                    $('.error-text').remove();
                     if (response.status === 'success') {
                         $('#responseMessage').html(`<div class="alert alert-success">${response.message}</div>`);
                         setTimeout(() => location.reload(), 1500);
@@ -700,49 +722,86 @@
                     }
                 },
                 error: function (xhr) {
-                    $('#responseMessage').html(`<div class="alert alert-danger">Error: ${xhr.responseJSON?.message || 'Something went wrong'}</div>`);
+                    $('.is-invalid').removeClass('is-invalid');
+                    $('.error-text').remove();
+                    $('#responseMessage').html('');
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = xhr.responseJSON.errors;
+                        for (const field in errors) {
+                            const input = $('#' + field);
+                            if (input.length) {
+                                input.addClass('is-invalid');
+                                const parent = input.closest('.input-group').length ? input.closest('.input-group').parent() : input.parent();
+                                parent.append(`<div class="text-danger mt-1 small error-text">${errors[field]}</div>`);
+                            }
+                        }
+                    } else {
+                        $('#responseMessage').html(`<div class="alert alert-danger">Error: ${xhr.responseJSON?.message || 'Something went wrong'}</div>`);
+                    }
                 }
             });
         });
 
-        // Load existing data
-        fetch("<?= base_url('api/rules_get') ?>")
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    const rules = data.data;
-                    // Populate all fields
-                    Object.keys(rules).forEach(key => {
-                        const element = document.getElementById(key);
+        function loadBranchRules(branchId = '') {
+            let url = "<?= base_url('api/rules_get') ?>";
+            if (branchId) {
+                url += "?branch_id=" + encodeURIComponent(branchId);
+            }
+            
+            // reset form first
+            $('#companyRulesForm')[0].reset();
+            $('#id').val('');
+            $('#display_working_hours').text('');
+            $('.is-invalid').removeClass('is-invalid');
+            $('.error-text').remove();
+            $('#responseMessage').html('');
 
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const rules = data.data;
+                        // Populate all fields
+                        Object.keys(rules).forEach(key => {
+                            const element = document.getElementById(key);
 
-                        if (element) {
-                            if (element.type === 'checkbox') {
-                                element.checked = rules[key] == 1 || rules[key] === true;
-                            } else {
-                                if (key === "working_hours_per_day") {
-                                    var hoursDecimal = parseFloat(rules[key]);
-                                    const hours = Math.floor(hoursDecimal);
-                                    const minutes = Math.round((hoursDecimal - hours) * 60);
+                            if (element) {
+                                if (element.type === 'checkbox') {
+                                    element.checked = rules[key] == 1 || rules[key] === true;
+                                } else {
+                                    if (key === "working_hours_per_day") {
+                                        var hoursDecimal = parseFloat(rules[key]);
+                                        const hours = Math.floor(hoursDecimal);
+                                        const minutes = Math.round((hoursDecimal - hours) * 60);
 
-                                    const workingHoursDisplay = minutes > 0
-                                        ? `${hours}h ${minutes}m`
-                                        : `${hours}h`;
+                                        const workingHoursDisplay = minutes > 0
+                                            ? `${hours}h ${minutes}m`
+                                            : `${hours}h`;
 
-                                    $('#display_working_hours').text(
-                                        `Working time per day: ${workingHoursDisplay}`
-                                    );
+                                        $('#display_working_hours').text(
+                                            `Working time per day: ${workingHoursDisplay}`
+                                        );
+                                    }
+
+                                    element.value = rules[key] || '';
                                 }
-
-                                element.value = rules[key] || '';
                             }
-                        }
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Load existing data initially
+        loadBranchRules($('#top_branch_select').val());
+
+        // When branch changes, fetch rules for that branch
+        $('#top_branch_select').on('change', function() {
+            loadBranchRules($(this).val());
+        });
         // Get My Location functionality
         $('#btnGetLocation').on('click', function() {
             const btn = $(this);

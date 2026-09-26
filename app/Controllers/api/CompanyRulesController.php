@@ -48,7 +48,17 @@ class CompanyRulesController extends BaseController
 
     public function rules_get()
     {
-        $rules = $this->rulesModel->first();
+        $branchId = $this->request->getGet('branch_id');
+
+        if (!empty($branchId)) {
+            $rules = $this->rulesModel->where('branch_id', $branchId)->first();
+        } else {
+            $rules = $this->rulesModel->groupStart()->where('branch_id', null)->orWhere('branch_id', 0)->groupEnd()->first();
+            if (!$rules) {
+                // Fallback for legacy global row
+                $rules = $this->rulesModel->first();
+            }
+        }
         
         $locationSettingsModel = new \App\Models\LocationSettingsModel();
         $locationSettings = $locationSettingsModel->first();
@@ -80,7 +90,10 @@ class CompanyRulesController extends BaseController
         if (empty($data['working_hours_per_day'])) {
             return $this->response->setJSON([
                 'status' => 'error',
-                'message' => 'Working hours per day is required.'
+                'message' => 'Validation failed',
+                'errors' => [
+                    'working_hours_per_day' => 'Working hours per day is required.'
+                ]
             ])->setStatusCode(400);
         }
 
@@ -114,8 +127,8 @@ class CompanyRulesController extends BaseController
             'saturday_half_day_pattern' => $data['saturday_half_day_pattern'] ?? null,
 
             // Saturday Working Hours Override
-            'saturday_working_hours'     => (float) ($data['saturday_working_hours'] ?? 4),
-            'saturday_full_day_override' => ($data['saturday_full_day_override'] === false) ? 0 : 1,
+            'saturday_working_hours'     => isset($data['saturday_working_hours']) ? (float) $data['saturday_working_hours'] : 4,
+            'saturday_full_day_override' => empty($data['saturday_full_day_override']) ? 0 : 1,
 
             // Leave Management
             // 'yearly_holidays' => $data['yearly_holidays'] ?? 0,
@@ -167,9 +180,21 @@ class CompanyRulesController extends BaseController
         ];
 
         try {
-            if (!empty($data['id'])) {
+            $branchId = !empty($data['branch_id']) ? (int)$data['branch_id'] : null;
+            
+            // Check if rule exists for this specific branch
+            if (!empty($branchId)) {
+                $existingRule = $this->rulesModel->where('branch_id', $branchId)->first();
+            } else {
+                $existingRule = $this->rulesModel->groupStart()->where('branch_id', null)->orWhere('branch_id', 0)->groupEnd()->first();
+                if (!$existingRule && !empty($data['id'])) {
+                     $existingRule = $this->rulesModel->find($data['id']);
+                }
+            }
+
+            if ($existingRule) {
                 // Update existing record
-                $this->rulesModel->update($data['id'], $insertData);
+                $this->rulesModel->update($existingRule['id'], $insertData);
                 $message = 'Company rules updated successfully.';
             } else {
                 // Insert new record
