@@ -3,7 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
-use App\Models\CompanyRulesModel;
+use App\Models\BranchRulesModel;
 
 class CompanyRulesController extends BaseController
 {
@@ -11,7 +11,7 @@ class CompanyRulesController extends BaseController
 
     public function __construct()
     {
-        $this->rulesModel = new CompanyRulesModel();
+        $this->rulesModel = new BranchRulesModel();
     }
 
     public function company_rules()
@@ -31,19 +31,22 @@ class CompanyRulesController extends BaseController
 
     public function rules()
     {
-        $rules = $this->rulesModel->findAll();
+        $authService = new \App\Services\AuthService($this->request);
+        $branchId = $authService->getBranchId();
 
-        if ($rules) {
-            return $this->response->setJSON([
-                'status' => 'success',
-                'data'   => $rules
-            ]);
-        } else {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'No rules found.'
-            ]);
+        $builder = $this->rulesModel->select('branch_rules.*, branches.name as branch_name')
+                                    ->join('branches', 'branches.id = branch_rules.branch_id', 'left');
+
+        if (!empty($branchId)) {
+            $builder = $builder->where('branch_rules.branch_id', $branchId);
         }
+        
+        $rules = $builder->findAll();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $rules
+        ]);
     }
 
     public function rules_get()
