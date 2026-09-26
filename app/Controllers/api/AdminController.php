@@ -582,6 +582,13 @@ class AdminController extends ResourceController
         $endOfMonth = date('Y-m-t');    // Last day of current month
         $startOfYear = date('Y-01-01'); // 1st Jan this year
         $endOfYear = date('Y-m-d'); // today
+        // Branch Filter Logic for Dashboard
+        $branchFilterSql = "";
+        $filterBranchId = $this->authService->getBranchId();
+        if (!empty($filterBranchId)) {
+            $branchFilterSql = " AND users.branch_id = " . (int)$filterBranchId . " ";
+        }
+
         // Only admin and HR can see new employees this week
         if (in_array($role, ['admin', 'hr'])) {
             $db = \Config\Database::connect();
@@ -591,12 +598,13 @@ class AdminController extends ResourceController
                              FROM users
                              LEFT JOIN user_info ON user_info.user_id = users.id
                              WHERE users.role IN ('employee', 'hr')
-                               AND users.is_deleted = 0
-                               AND (
-                                   user_info.status IS NULL
-                                   OR (LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
-                               )
-                               AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())";
+                                AND users.is_deleted = 0
+                                {$branchFilterSql}
+                                AND (
+                                    user_info.status IS NULL
+                                    OR (LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
+                                )
+                                AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= CURDATE())";
             $activeEmpResult = $db->query($activeEmpSQL)->getRow();
             $activeEmpCount  = (int)($activeEmpResult->cnt ?? 0);
 
@@ -618,6 +626,7 @@ class AdminController extends ResourceController
                          LEFT JOIN user_info ON user_info.user_id = users.id
                          WHERE users.role IN ('employee', 'hr')
                            AND users.is_deleted = 0
+                           {$branchFilterSql}
                            AND (
                                user_info.status IS NULL
                                OR (LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
@@ -636,19 +645,24 @@ class AdminController extends ResourceController
                        AND leaves.status = 'approved'
                        AND users.role IN ('employee', 'hr')
                        AND users.is_deleted = 0
+                       {$branchFilterSql}
                        AND (user_info.status IS NULL OR LOWER(user_info.status) NOT IN ('inactive', 'resigned'))
                        AND (user_info.last_working_day IS NULL OR user_info.last_working_day >= '{$todayDate}')
                      ORDER BY users.username ASC";
         $approvedLeavesToday = $db->query($leaveSql)->getResultArray();
 
-        $todayAttendanceRaw = $this->attendanceModel
+        $attendanceQuery = $this->attendanceModel
             ->select('attendance.id, attendance.user_id, attendance.check_in_time, attendance.check_out_time, users.username, user_info.profile_image, user_info.working_location')
             ->join('users', 'users.id = attendance.user_id', 'inner')
             ->join('user_info', 'user_info.user_id = users.id', 'left')
             ->where('attendance.date', $todayDate)
-            ->where('users.is_deleted', 0)
-            ->orderBy('attendance.id', 'DESC')
-            ->findAll();
+            ->where('users.is_deleted', 0);
+            
+        if (!empty($filterBranchId)) {
+            $attendanceQuery->where('users.branch_id', (int)$filterBranchId);
+        }
+
+        $todayAttendanceRaw = $attendanceQuery->orderBy('attendance.id', 'DESC')->findAll();
 
         // ── Group all records per user, accumulate completed sessions ──
         $todayAttendance = [];
