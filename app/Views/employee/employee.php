@@ -519,6 +519,29 @@
                                     <div class="error" id="contact_number-Error"></div>
                                 </div>
                             </div>
+                            <?php if (session()->get('role') === 'admin'): ?>
+                                <?php 
+                                    $branchModel = new \App\Models\BranchModel();
+                                    $branchesList = $branchModel->findAll();
+                                ?>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Branch</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="mdi mdi-source-branch fs-5"></i></span>
+                                            </div>
+                                            <select class="form-select" name="branch_id" id="branch_id">
+                                                <option value="">Select Branch</option>
+                                                <?php foreach ($branchesList as $branch): ?>
+                                                    <option value="<?= htmlspecialchars($branch['id']) ?>"><?= htmlspecialchars($branch['name']) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="error" id="branch_id-Error"></div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <div class="form-group text-end">
                             <button type="button" class="btn btn-secondary prev-step interviewsmbtn me-2" id="prev2"
@@ -886,7 +909,7 @@
                 }
             });
         } else if (step === 2) {
-            let fields = ['address_1', 'address_2', 'state_id', 'postcode', 'city_id', 'country_id', 'contact_number'];
+            let fields = ['address_1', 'address_2', 'state_id', 'postcode', 'city_id', 'country_id', 'contact_number', 'branch_id'];
             fields.forEach(field => {
                 data.append(field, $('#' + field).val());
                 formData.append(field, $('#' + field).val());
