@@ -82,7 +82,7 @@ $role = $user ? $user->role : null;
         </a>
       </li>
     <?php endif; ?>
-    <li class="nav-item nav-category">Menus</li>
+    <!-- <li class="nav-item nav-category">Menus</li> -->
     <?php if ($role === 'admin' || $role === 'hr'): ?>
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#ui-basic" aria-expanded="false" aria-controls="ui-basic">

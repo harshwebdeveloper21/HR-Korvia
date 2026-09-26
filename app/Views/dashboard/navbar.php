@@ -94,6 +94,7 @@ $branchesList = $branchModel->getActiveBranches();
             padding: 0 10px !important;
             display: flex !important;
             flex-direction: row !important;
+            flex-wrap: nowrap !important;
             align-items: center !important;
             justify-content: space-between !important;
         }
@@ -188,6 +189,9 @@ $branchesList = $branchModel->getActiveBranches();
         }
 
         .navbar-nav.ms-auto {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
             gap: 8px !important;
             margin-left: -10px !important;
         }
@@ -327,6 +331,9 @@ $branchesList = $branchModel->getActiveBranches();
         }
 
         .navbar-nav.ms-auto {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
             gap: 8px !important;
             margin-left: -10px !important;
         }
