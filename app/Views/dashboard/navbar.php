@@ -448,7 +448,7 @@ $branchesList = $branchModel->getActiveBranches();
             <?php if (!empty($branchesList) && $role === 'admin'): ?>
             <?php $activeBranch = session()->get('admin_active_branch'); ?>
             <li class="nav-item d-flex align-items-center">
-                <select class="form-select form-select-sm border-0 shadow-sm" id="navbarBranchSelect" style="background-color: rgba(255,255,255,0.9); color: #444; border-radius: 20px; padding: 2px 10px; font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;">
+                <select class="form-select shadow-none text-muted fw-semibold" id="navbarBranchSelect" style="background: #ffffff; height: 41px; border: 1px solid #DFDFDF; border-radius: 6px; cursor: pointer; font-family: 'Manrope', sans-serif; font-size: 14px; padding-top: 0; padding-bottom: 0; margin: 0;">
                     <option value="">All Branches</option>
                     <?php foreach ($branchesList as $br): ?>
                         <option value="<?= htmlspecialchars($br['id']) ?>" <?= ($activeBranch == $br['id']) ? 'selected' : '' ?>>
