@@ -368,52 +368,59 @@
 
             /* DataTables Mobile Layout Fixes */
             .dataTables_wrapper .row {
-                margin-left: 0;
-                margin-right: 0;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
             }
             
-            .dataTables_wrapper .col-sm-12 {
-                padding-left: 0;
-                padding-right: 0;
+            .dataTables_wrapper .row > div {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: 0 0 100% !important;
+                margin-bottom: 10px !important;
             }
             
             .dataTables_wrapper .dataTables_length,
             .dataTables_wrapper .dataTables_filter {
                 text-align: left !important;
-                margin-bottom: 12px;
+                float: none !important;
+                width: 100% !important;
             }
             
             .dataTables_wrapper .dataTables_length label {
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-                margin-bottom: 0;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                margin-bottom: 0 !important;
+                width: 100% !important;
             }
 
             .dataTables_wrapper .dataTables_length select {
-                margin: 0 10px;
-                display: inline-block;
-                width: auto;
+                margin: 0 10px !important;
+                display: inline-block !important;
+                width: auto !important;
             }
 
             .dataTables_wrapper .dataTables_filter label {
-                display: flex;
-                align-items: center;
-                width: 100%;
-                justify-content: flex-start;
-                margin-bottom: 0;
+                display: flex !important;
+                align-items: center !important;
+                width: 100% !important;
+                justify-content: space-between !important;
+                margin-bottom: 0 !important;
             }
             
             .dataTables_wrapper .dataTables_filter input {
-                margin-left: 10px;
-                flex: 1;
-                width: auto;
-                display: inline-block;
+                margin-left: 10px !important;
+                flex: 1 !important;
+                width: 100% !important;
+                max-width: none !important;
+                display: inline-block !important;
             }
 
             .dataTables_wrapper .dataTables_info {
                 text-align: center !important;
-                padding-top: 15px !important;
+                padding-top: 10px !important;
                 padding-bottom: 10px !important;
             }
 
@@ -421,12 +428,13 @@
                 display: flex !important;
                 justify-content: center !important;
                 text-align: center !important;
+                margin-top: 0 !important;
             }
             
             .dataTables_wrapper .dataTables_paginate .pagination {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                margin: 0 auto;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+                margin: 0 auto !important;
             }
         }
