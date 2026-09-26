@@ -713,7 +713,27 @@
                         </div>
 
                         <div class="row">
-                            <input type="hidden" name="role" id="role" value="employee">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Role <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="mdi mdi-account-cog-outline fs-5"></i></span>
+                                        </div>
+                                        <select class="form-select" id="role" name="role">
+                                            <option value="">Select Role</option>
+                                            <option value="admin">Admin</option>
+                                            <option value="hr">HR</option>
+                                            <option value="employee" selected>Employee</option>
+                                            <option value="candidate">Candidate</option>
+                                        </select>
+                                    </div>
+                                    <div class="error" id="role-Error"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Profile Image</label>
@@ -731,19 +751,6 @@
                                     </div>
                                     <img id="profile-preview" class="profile_image" src="" alt="Profile Image"
                                         style="max-width: 100px; display: none;">
-                                    <!-- <div class="error" id="profile_image-Error"></div>
-                                    <label>Role</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="mdi mdi-account-cog-outline fs-5"></i></span>
-                                        </div>
-                                        <select class="form-select" id="role" name="role">
-                                            <option value="">Select Role</option>
-                                            <option value="hr">HR</option>
-                                            <option value="employee" selected>Employee</option>
-                                        </select>
-                                    </div>
-                                    <div class="error" id="role-Error"></div> -->
                                 </div>
                             </div>
                             <div class="col-md-6">
