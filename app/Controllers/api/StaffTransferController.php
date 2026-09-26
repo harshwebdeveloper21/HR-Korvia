@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Controllers\Api;
 
 use CodeIgniter\RESTful\ResourceController;
@@ -10,7 +9,7 @@ use App\Models\BranchModel;
 use App\Models\AuditLogModel;
 
 /**
- * StaffTransferController � transfers staff between branches.
+ * StaffTransferController ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â transfers staff between branches.
  *
  * Permission rules:
  *   - Admin: can always transfer any staff.
@@ -58,10 +57,16 @@ class StaffTransferController extends ResourceController
 
     public function page()
     {
-        $user = $this->getAuthedUser();
-        if (!$user) {
+        // Use session-based auth for page load (no JWT header on browser requests)
+        $userId   = session()->get('user_id');
+        $userRole = session()->get('role');
+
+        if (!$userId || !$userRole) {
             return redirect()->to('/login');
         }
+
+        // Build a simple user object from session for canTransfer check
+        $user = (object)['role' => $userRole, 'id' => $userId, 'sub' => $userId];
 
         if (!$this->canTransfer($user)) {
             return redirect()->to('/dashboard')->with('error', 'You do not have permission to transfer staff.');
@@ -69,16 +74,33 @@ class StaffTransferController extends ResourceController
 
         $branches = $this->branchModel->getActiveBranches();
 
+        // Load all employees server-side so the dropdown works without AJAX auth issues
+        $db = \Config\Database::connect();
+        $builder = $db->table('users u')
+            ->select('u.id, ui.firstname, ui.lastname, u.email, u.branch_id, b.name AS branch_name')
+            ->join('user_info ui', 'ui.user_id = u.id', 'left')
+            ->join('branches b', 'b.id = u.branch_id', 'left')
+            ->where('u.is_deleted', 0)
+            ->where('u.role !=', 'admin');
+
+        if ($userRole === 'hr') {
+            $hrBranchId = $this->authService->getBranchId();
+            $builder->where('u.branch_id', $hrBranchId);
+        }
+
+        $staffList = $builder->orderBy('ui.firstname')->get()->getResultArray();
+
         return view('staff_transfer/index', [
-            'role'     => $user->role,
-            'branches' => $branches,
+            'role'      => $userRole,
+            'branches'  => $branches,
+            'staffList' => $staffList,
         ]);
     }
 
     // -- API Endpoints ---------------------------------------------------------
 
     /**
-     * POST api/staff-transfer/initiate � perform the transfer
+     * POST api/staff-transfer/initiate ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â perform the transfer
      */
     public function initiate()
     {
@@ -203,7 +225,7 @@ class StaffTransferController extends ResourceController
     }
 
     /**
-     * GET api/staff-transfer/eligible-staff � staff that can be transferred
+     * GET api/staff-transfer/eligible-staff ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â staff that can be transferred
      */
     public function eligibleStaff()
     {
@@ -221,7 +243,7 @@ class StaffTransferController extends ResourceController
             ->join('user_info ui', 'ui.user_id = u.id', 'left')
             ->join('branches b', 'b.id = u.branch_id', 'left')
             ->where('u.is_deleted', 0)
-            ->whereIn('u.role', ['employee', 'hr']);
+            ;
 
         if ($user->role === 'hr') {
             $hrBranchId = $this->authService->getBranchId();
@@ -233,3 +255,4 @@ class StaffTransferController extends ResourceController
         return $this->respond(['status' => 'success', 'data' => $staff]);
     }
 }
+

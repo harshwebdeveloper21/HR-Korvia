@@ -149,6 +149,10 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title mb-0">Manage Rules</h4>
+                    <a href="/creates-rules" class="btn hr-btnbg text-white">
+                        <i class="mdi mdi-plus"></i> Add Company Rules
+                    </a>
+                
                 </div>
                 <div class="table-responsive">
                     <table class="table table-striped w-100" id="rules-Table">
@@ -207,7 +211,22 @@
                         '5': '5th Sat',
                     };
 
-                    rules.forEach((rule, index) => {
+                    if (rules.length === 0) {
+                        $('#header-action-btn').html('<a href="/creates-rules" class="btn hr-btnbg text-white"><i class="mdi mdi-plus"></i> Add Company Rules</a>');
+                        tableRows = `
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="mb-3">
+                                        <i class="mdi mdi-alert-circle-outline text-muted" style="font-size: 48px;"></i>
+                                    </div>
+                                    <h5 class="text-muted mb-3">No company rules found.</h5>
+
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        $('#header-action-btn').html('');
+                        rules.forEach((rule, index) => {
                         // Badges for desktop table
                         const satBadges = rule.saturday_off_pattern
                             ? rule.saturday_off_pattern
@@ -309,6 +328,7 @@
                     }
 
                 } else {
+                        $('#header-action-btn').html('');
                     console.error('Failed to fetch rules:', responseData.message);
                 }
             })
@@ -349,6 +369,7 @@
                             document.querySelector(`tr[data-id="${ruleId}"]`)?.remove();
                             Swal.fire('Deleted!', 'The rule has been deleted.', 'success');
                         } else {
+                        $('#header-action-btn').html('');
                             Swal.fire('Error!', data.message || 'Failed to delete.', 'error');
                         }
                     })

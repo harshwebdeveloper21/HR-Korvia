@@ -152,6 +152,9 @@ class CompanyRulesController extends BaseController
             // 'enable_biometric' => isset($data['enable_biometric']) ? 1 : 0,
             'enable_geofencing' => ($data['enable_geofencing'] === true) ? 1 : 0,
             // 'auto_checkout' => isset($data['auto_checkout']) ? 1 : 0,
+
+            // Branch
+            'branch_id' => !empty($data['branch_id']) ? (int)$data['branch_id'] : null,
         ];
 
         $locationSettingsModel = new \App\Models\LocationSettingsModel();

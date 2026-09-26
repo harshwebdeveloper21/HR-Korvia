@@ -1040,7 +1040,7 @@
             let myform = document.getElementById("multistepForm");
 
             if (myform) {
-                // 👉 Remove EMP# prefix before FormData is created
+                // Ã°Å¸â€˜â€° Remove EMP# prefix before FormData is created
                 let rawEmpId = $('#employee_id').val();
                 if (rawEmpId.startsWith('EMP#')) {
                     $('#employee_id_display').val($('#employee_id').val()); // Optional redundancy
@@ -1182,6 +1182,7 @@
                         $('#city_id').val(userInfo.city_id);
                         $('#country_id_main').val(userInfo.country_id);
                         $('#contact_number').val(userInfo.contact_number);
+                        $('#branch_id').val(user.branch_id);
                         $('#emergency_contact').val(userInfo.emergency_contact);
 
                         const empIdVal = userInfo.employee_id || ('EMP-' + String(user.id).padStart(3, '0'));
@@ -1380,7 +1381,7 @@
                             `<option value="${response.country.id}">${response.country.country_name}</option>`
                         );
                     } else {
-                        // 🔥 Handle duplicate error or other custom message
+                        // Ã°Å¸â€Â¥ Handle duplicate error or other custom message
                         Swal.fire({
                             icon: "error",
                             title: "Failed",
@@ -1450,7 +1451,7 @@
                             `<option value="${response.country.id}" selected>${response.country.state_name}</option>`
                         );
                     } else {
-                        // 👇 Show duplicate or custom error message
+                        // Ã°Å¸â€˜â€¡ Show duplicate or custom error message
                         Swal.fire({
                             icon: "error",
                             title: "Failed",
@@ -1535,7 +1536,7 @@
                             `<option value="${response.city.id}" selected>${response.city.city_name}</option>`
                         );
                     } else {
-                        // 👇 Handle duplicate or general error message
+                        // Ã°Å¸â€˜â€¡ Handle duplicate or general error message
                         Swal.fire({
                             icon: "error",
                             title: "Failed",
@@ -1604,7 +1605,7 @@
                             timer: 2000
                         });
                     } else {
-                        // ❗ Show SweetAlert for errors like duplicate
+                        // Ã¢Ââ€” Show SweetAlert for errors like duplicate
                         Swal.fire({
                             icon: "error",
                             title: "Error!",
