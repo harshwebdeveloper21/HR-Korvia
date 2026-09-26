@@ -34,49 +34,7 @@
             padding: 2px !important;
         }
 
-        .dataTables_wrapper .row:first-child {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            gap: 8px !important;
-            margin-bottom: 12px !important;
-        }
-        .dataTables_wrapper .row:first-child > div {
-            width: auto !important;
-            max-width: 100% !important;
-            flex: 0 0 auto !important;
-            padding: 0 !important;
-        }
-        .dataTables_length label {
-            display: flex !important;
-            align-items: center !important;
-            gap: 6px !important;
-            font-size: 13px !important;
-            margin-bottom: 0 !important;
-        }
-        .dataTables_length select {
-            width: auto !important;
-            font-size: 13px !important;
-            padding: 4px 8px !important;
-        }
-        .dataTables_filter {
-            float: right !important;
-            text-align: right !important;
-        }
-        .dataTables_filter label {
-            display: flex !important;
-            align-items: center !important;
-            gap: 6px !important;
-            font-size: 13px !important;
-            margin-bottom: 0 !important;
-        }
-        .dataTables_filter input {
-            width: 160px !important;
-            max-width: 100% !important;
-            font-size: 13px !important;
-            padding: 4px 8px !important;
-        }
+
     }
 
     @media (min-width: 767px) {
