@@ -1996,13 +1996,20 @@ class PayrollController extends ResourceController
         $halfDayWorkHours = $half_day_hours * $halfDays;
         $totalWorkHours = $workingHours + $halfDayWorkHours;
 
-        $employees = $userInfoModel
+        $authService = new \App\Services\AuthService($this->request);
+        $branchId = $authService->getBranchId();
+
+        $employeeBuilder = $userInfoModel
             ->select('user_info.*, users.username')
             ->join('users', 'users.id = user_info.user_id')
             ->where('users.is_deleted', 0)
-            ->whereIn('user_info.role', ['employee', 'hr'])
-            ->orderBy('users.username', 'ASC')
-            ->findAll();
+            ->whereIn('user_info.role', ['employee', 'hr']);
+            
+        if (!empty($branchId)) {
+            $employeeBuilder = $employeeBuilder->where('users.branch_id', $branchId);
+        }
+
+        $employees = $employeeBuilder->orderBy('users.username', 'ASC')->findAll();
 
         // Filter out Inactive/Resigned employees who have zero attendance in the selected month
         $inactiveUserIds = [];
