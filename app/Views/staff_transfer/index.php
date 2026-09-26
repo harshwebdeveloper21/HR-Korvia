@@ -6,17 +6,29 @@
     <div class="card mb-4">
       <div class="card-body">
         <h4 class="card-title mb-1">
-          <i class="mdi mdi-swap-horizontal text-primary me-2"></i>Transfer Staff
+          <i class="mdi mdi-swap-horizontal text-primary me-2"></i>Transfer Employee
         </h4>
-        <p class="text-muted mb-4">Move a staff member to a different branch.</p>
+        <p class="text-muted mb-4">Move an employee member to a different branch.</p>
 
         <div id="alertBox"></div>
 
         <form id="transferForm">
           <div class="mb-3">
-            <label class="form-label fw-semibold">Staff Member <span class="text-danger">*</span></label>
-            <select id="staffSelect" class="form-select" required>
-              <option value="">Loading staff...</option>
+            <label class="form-label fw-semibold">Employee Member <span class="text-danger">*</span></label>
+            <select id="staffSelect" name="staffSelect" class="form-select" required>
+              <option value="">Select employee member</option>
+              <?php if (!empty($staffList)): ?>
+                <?php foreach ($staffList as $s): ?>
+                  <option value="<?= $s['id'] ?>"
+                    data-branch="<?= htmlspecialchars($s['branch_id'] ?? '') ?>"
+                    data-branchname="<?= htmlspecialchars($s['branch_name'] ?? 'Unassigned') ?>">
+                    <?= htmlspecialchars(trim($s['firstname'] . ' ' . $s['lastname'])) ?>
+                    - <?= htmlspecialchars($s['branch_name'] ?? 'Unassigned') ?>
+                  </option>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <option value="" disabled>No employees found</option>
+              <?php endif; ?>
             </select>
             <div id="currentBranch" class="form-text text-muted mt-1"></div>
           </div>
@@ -65,30 +77,42 @@
 
 <?php $this->section('scripts'); ?>
 <script>
-// Load eligible staff
-fetch('/api/staff-transfer/eligible-staff')
-  .then(r => r.json())
-  .then(d => {
-    const sel = document.getElementById('staffSelect');
-    if (!d.data || !d.data.length) {
-      sel.innerHTML = '<option value="">No eligible staff found</option>';
-      return;
-    }
-    sel.innerHTML = '<option value="">Select staff member</option>' +
-      d.data.map(s => `<option value="${s.id}" data-branch="${s.branch_id}" data-branchname="${escHtml(s.branch_name || 'Unassigned')}">
-        ${escHtml(s.firstname + ' ' + s.lastname)} — ${escHtml(s.branch_name || 'Unassigned')}
-      </option>`).join('');
-  });
+const token = localStorage.getItem('token') || '';
+const headers = {
+  'Authorization': 'Bearer ' + token,
+  'Content-Type': 'application/json'
+};
 
-document.getElementById('staffSelect').addEventListener('change', function() {
+// Initialize Select2 on dropdowns for searchable experience
+$(document).ready(function() {
+  if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+    $('#staffSelect').select2({
+      placeholder: 'Search employee member...',
+      allowClear: true,
+      width: '100%'
+    });
+    $('#toBranchSelect').select2({
+      placeholder: 'Select target branch',
+      allowClear: true,
+      width: '100%'
+    });
+  }
+});
+
+// Show current branch when staff is selected
+$(document).on('change', '#staffSelect', function() {
   const opt = this.options[this.selectedIndex];
-  const info = document.getElementById('currentBranch');
-  info.textContent = this.value ? 'Current Branch: ' + (opt.dataset.branchname || 'Unassigned') : '';
+  if (opt && this.value) {
+    const info = document.getElementById('currentBranch');
+    info.textContent = 'Current Branch: ' + (opt.dataset.branchname || 'Unassigned');
+  } else {
+    document.getElementById('currentBranch').textContent = '';
+  }
 });
 
 // Load history
 function loadHistory() {
-  fetch('/api/staff-transfer/history')
+  fetch('/api/staff-transfer/history', { headers })
     .then(r => r.json())
     .then(d => {
       const el = document.getElementById('historyList');
@@ -100,7 +124,7 @@ function loadHistory() {
         <div class="border-start border-primary ps-3 mb-3">
           <div class="fw-semibold">${escHtml(t.firstname + ' ' + t.lastname)}</div>
           <div class="small text-muted">
-            ${escHtml(t.from_branch_name || '—')} ? ${escHtml(t.to_branch_name || '—')}
+            ${escHtml(t.from_branch_name || '-')} &rarr; ${escHtml(t.to_branch_name || '-')}
           </div>
           <div class="small text-muted">
             ${t.effective_date || ''} &bull;
@@ -108,10 +132,13 @@ function loadHistory() {
           </div>
           ${t.reason ? `<div class="small fst-italic">${escHtml(t.reason)}</div>` : ''}
         </div>`).join('');
+    })
+    .catch(() => {
+      document.getElementById('historyList').innerHTML = '<p class="text-muted text-center py-2">No transfers yet.</p>';
     });
 }
 
-// Transfer form
+// Transfer form submit
 document.getElementById('transferForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const btn = document.getElementById('transferBtn');
@@ -128,7 +155,7 @@ document.getElementById('transferForm').addEventListener('submit', async functio
   try {
     const res  = await fetch('/api/staff-transfer/initiate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify(payload)
     });
     const data = await res.json();
@@ -141,6 +168,10 @@ document.getElementById('transferForm').addEventListener('submit', async functio
     if (data.status === 'success') {
       document.getElementById('transferForm').reset();
       document.getElementById('effectiveDate').value = new Date().toISOString().split('T')[0];
+      if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+        $('#staffSelect').val(null).trigger('change');
+        $('#toBranchSelect').val(null).trigger('change');
+      }
       loadHistory();
     }
   } catch {
