@@ -1,5 +1,6 @@
 <?= $this->extend("layout") ?>
 <?= $this->section("content") ?>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <style>
 .status-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.75rem;font-weight:700;text-transform:uppercase;}
 .s-submitted{background:#FEF3C7;color:#92400E;} .s-manager_approved{background:#DBEAFE;color:#1E40AF;}
@@ -11,6 +12,7 @@
 .filter-btn { border: 1px solid #E5E7EB; background: #fff; color: #4B5563; border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; }
 .filter-btn:hover { border-color: #E66136; color: #E66136; background: #FFF1F0; }
 .filter-btn.active { background: #E66136; color: #fff; border-color: #E66136; box-shadow: 0 4px 6px -1px rgba(230, 97, 54, 0.2); }
+
 </style>
 <div class="container-fluid">
   <?php if (session()->getFlashdata('success')): ?>
@@ -31,7 +33,7 @@
   </div>
 
   <div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
+    <div class="card-body p-4">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0" id="hrResTable">
           <thead style="background:#1F2937;color:#fff;">
@@ -61,15 +63,16 @@
               <td><?= $r['notice_days'] ?> d<?= $r['notice_waived'] ? ' <span class="badge bg-info text-dark">Waived</span>' : '' ?></td>
               <td><span class="status-badge s-<?= $r['status'] ?>"><?= $r['status'] === 'submitted' ? 'Pending' : ucfirst(str_replace('_',' ',$r['status'])) ?></span></td>
               <td>
-                <a href="<?= base_url('/resignation/hr/detail/'.$r['id']) ?>" class="btn btn-sm" style="background:#E66136;color:#fff;">
+                <?php 
+                  $tabMap = ['notice_period' => 'notice', 'handover' => 'handover', 'clearance' => 'clearance', 'fnf' => 'fnf', 'relieved' => 'fnf'];
+                  $tabQuery = isset($tabMap[$r['status']]) ? '?tab=' . $tabMap[$r['status']] : '';
+                ?>
+                <a href="<?= base_url('/resignation/hr/detail/'.$r['id']) . $tabQuery ?>" class="btn btn-sm" style="background:#E66136;color:#fff;">
                   <i class="mdi mdi-eye me-1"></i>View
                 </a>
               </td>
             </tr>
             <?php endforeach; ?>
-            <tr id="emptyFilterRow" style="display:none;">
-              <td colspan="7" class="text-center py-5 text-muted">No resignations match the selected filter.</td>
-            </tr>
             <?php endif; ?>
           </tbody>
         </table>
@@ -79,29 +82,43 @@
 </div>
 
 <?= $this->section('scripts') ?>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script>
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    this.classList.add('active');
-    
-    const filter = this.dataset.filter;
-    let visibleCount = 0;
-    
-    document.querySelectorAll('#hrResTable tbody tr.data-row').forEach(row => {
-      if (filter === 'all' || row.dataset.status === filter) {
-        row.style.display = '';
-        visibleCount++;
-      } else {
-        row.style.display = 'none';
-      }
+$(document).ready(function() {
+    // Custom DataTables filter for the status tabs
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex, rowData, counter) {
+        if (settings.nTable.id !== 'hrResTable') {
+            return true;
+        }
+        
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        if (!activeFilterBtn) return true;
+        
+        const filter = activeFilterBtn.dataset.filter;
+        if (filter === 'all') return true;
+        
+        // Get the data-status attribute from the row node
+        const rowNode = settings.aoData[dataIndex].nTr;
+        if (!rowNode) return true;
+        
+        return rowNode.dataset.status === filter;
     });
 
-    const emptyRow = document.getElementById('emptyFilterRow');
-    if (emptyRow) {
-      emptyRow.style.display = visibleCount === 0 ? '' : 'none';
-    }
-  });
+    const table = $('#hrResTable').DataTable({
+        "pageLength": 10,
+        "language": {
+            "emptyTable": "No resignations match the selected filter or found."
+        }
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            table.draw();
+        });
+    });
 });
 </script>
 <?= $this->endSection() ?>
