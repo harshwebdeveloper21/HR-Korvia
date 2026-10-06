@@ -2049,7 +2049,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="btnSaveWeeklyOff">
+        <button type="button" class="btn hr-btnbg" id="btnSaveWeeklyOff">
           <i class="mdi mdi-content-save me-1"></i>Save Weekly Off
         </button>
       </div>

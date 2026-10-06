@@ -24,22 +24,30 @@ class WeeklyOffController extends ResourceController
     public function getEmployees()
     {
         $user = $this->authService->check();
-        if (!$user || !in_array($user->role, ['admin', 'hr'])) {
+        if (!$user || !in_array($user->role, ['admin', 'hr', 'branch_admin'])) {
             return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 403);
         }
 
         $db = \Config\Database::connect();
 
-        $employees = $db->table('users u')
+        $query = $db->table('users u')
             ->select('u.id, u.username, u.branch_id, b.name as branch_name,
                       ui.firstname, ui.lastname, ui.profile_image, ui.employee_id,
                       COALESCE(ui.weekly_off, "none") as weekly_off')
             ->join('user_info ui', 'ui.user_id = u.id', 'left')
             ->join('branches b', 'b.id = u.branch_id', 'left')
             ->whereIn('u.role', ['employee', 'department_manager', 'branch_admin', 'hr'])
-            ->where('u.is_deleted', 0)
-            ->orderBy('ui.firstname', 'ASC')
-            ->get()->getResultArray();
+            ->where('u.is_deleted', 0);
+
+        // branch_admin can only see employees in their own branch
+        if ($user->role === 'branch_admin') {
+            $branchId = $this->authService->getBranchId();
+            if ($branchId) {
+                $query->where('u.branch_id', (int)$branchId);
+            }
+        }
+
+        $employees = $query->orderBy('ui.firstname', 'ASC')->get()->getResultArray();
 
         return $this->respond([
             'status' => 'success',
@@ -54,7 +62,7 @@ class WeeklyOffController extends ResourceController
     public function assign()
     {
         $user = $this->authService->check();
-        if (!$user || !in_array($user->role, ['admin', 'hr'])) {
+        if (!$user || !in_array($user->role, ['admin', 'hr', 'branch_admin'])) {
             return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 403);
         }
 
@@ -74,9 +82,23 @@ class WeeklyOffController extends ResourceController
         $db = \Config\Database::connect();
         $updated = 0;
 
+        // branch_admin can only update employees in their own branch
+        $allowedBranchId = null;
+        if ($user->role === 'branch_admin') {
+            $allowedBranchId = (int)$this->authService->getBranchId();
+        }
+
         foreach ($employeeIds as $empId) {
             $empId = (int)$empId;
-            // Check if user_info row exists
+
+            // If branch_admin, verify the employee belongs to their branch
+            if ($allowedBranchId) {
+                $empUser = $db->table('users')->select('branch_id')->where('id', $empId)->get()->getRowArray();
+                if (!$empUser || (int)($empUser['branch_id'] ?? 0) !== $allowedBranchId) {
+                    continue; // skip employees from other branches
+                }
+            }
+
             $existing = $db->table('user_info')->where('user_id', $empId)->get()->getRowArray();
             if ($existing) {
                 $db->table('user_info')
