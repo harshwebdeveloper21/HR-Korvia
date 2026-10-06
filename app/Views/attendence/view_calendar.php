@@ -114,6 +114,18 @@
         color: #007bff;
     }
 
+    .attendance-status.weekoff {
+        color: #6c757d;
+    }
+
+    .attendance-status.holiday {
+        color: #17a2b8;
+    }
+
+    .attendance-status.leave {
+        color: #198754;
+    }
+
     .attendance-status.late {
         color: #6c757d;
     }
@@ -343,6 +355,21 @@
 
     .mobile-employee-status.working {
         background-color: #007bff;
+        color: white;
+    }
+
+    .mobile-employee-status.weekoff {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .mobile-employee-status.holiday {
+        background-color: #17a2b8;
+        color: white;
+    }
+
+    .mobile-employee-status.leave {
+        background-color: #198754;
         color: white;
     }
 
@@ -855,6 +882,9 @@
     .status-badge-pill.half-day     { background: #ffc107; color: #000; }
     .status-badge-pill.absent       { background: #dc3545; color: white; }
     .status-badge-pill.working      { background: #007bff; color: white; }
+    .status-badge-pill.weekoff      { background: #6c757d; color: white; }
+    .status-badge-pill.holiday      { background: #17a2b8; color: white; }
+    .status-badge-pill.leave        { background: #198754; color: white; }
     .status-badge-pill.week-off-present {
         background: linear-gradient(135deg, #ff6b35 0%, #e53e3e 100%);
         color: white;
@@ -1780,6 +1810,15 @@
                 } else if (status === 'half-day') {
                     statusText = attendance.is_late == 1 ? 'Half Day (Late)' : 'Half Day';
                     statusClass = 'half-day';
+                } else if (status === 'week off') {
+                    statusText = 'Week Off';
+                    statusClass = 'weekoff';
+                } else if (status === 'holiday') {
+                    statusText = 'Holiday';
+                    statusClass = 'holiday';
+                } else if (status === 'leave') {
+                    statusText = 'Leave';
+                    statusClass = 'leave';
                 }
 
                 // - Format time (HH:MM:SS - h:mm:ss AM/PM) -
@@ -2105,6 +2144,15 @@
                             } else if (status === 'half-day') {
                                 statusLetter = attendance.is_late == 1 ? 'H (L)' : 'H';
                                 statusClass = 'half-day';
+                            } else if (status === 'week off') {
+                                statusLetter = 'WO';
+                                statusClass = 'weekoff';
+                            } else if (status === 'holiday') {
+                                statusLetter = 'HO';
+                                statusClass = 'holiday';
+                            } else if (status === 'leave') {
+                                statusLetter = 'L';
+                                statusClass = 'leave';
                             } else {
                                 statusLetter = 'A';
                                 statusClass = 'absent';

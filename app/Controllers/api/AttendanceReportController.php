@@ -101,7 +101,7 @@ class AttendanceReportController extends Controller
 
         // Fetch Employees
         $userInfoModel = new UserInfoModel();
-        $userBuilder = $userInfoModel->select('user_info.user_id as id, user_info.firstname, user_info.lastname, user_info.employee_id, user_info.profile_image, department.department_name')
+        $userBuilder = $userInfoModel->select('user_info.user_id as id, user_info.firstname, user_info.lastname, user_info.employee_id, user_info.profile_image, user_info.weekly_off, department.department_name')
             ->join('department', 'department.id = user_info.department_id', 'left')
             ->join('users', 'users.id = user_info.user_id', 'left')
             ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned') OR user_info.status IS NULL)")
@@ -186,9 +186,12 @@ class AttendanceReportController extends Controller
             $holidayCount = 0;
             $weekOffCount = 0;
 
+            $empWeeklyOff = !empty($emp['weekly_off']) ? strtolower(trim($emp['weekly_off'])) : 'sunday';
+
             for ($d = 1; $d <= $totalDaysInMonth; $d++) {
                 $currentDate = sprintf('%04d-%02d-%02d', $selectedYear, $selectedMonth, $d);
-                $dayOfWeek = date('w', strtotime($currentDate)); // 0 = Sunday
+                $currentDayName = strtolower(date('l', strtotime($currentDate)));
+                $isEmployeeWeeklyOff = ($empWeeklyOff !== 'none' && $currentDayName === $empWeeklyOff);
 
                 $code = '-';
                 $tooltip = '';
@@ -200,9 +203,9 @@ class AttendanceReportController extends Controller
                         $tooltip = 'Holiday: ' . $holidayMap[$currentDate];
                         $statusType = 'holiday';
                         $holidayCount++;
-                    } elseif ($dayOfWeek == 0) {
+                    } elseif ($isEmployeeWeeklyOff) {
                         $code = 'WO';
-                        $tooltip = 'Sunday (Week Off)';
+                        $tooltip = ucfirst($currentDayName) . ' (Week Off)';
                         $statusType = 'weekoff';
                         $weekOffCount++;
                     } else {
@@ -248,9 +251,9 @@ class AttendanceReportController extends Controller
                         $tooltip = 'Holiday: ' . $holidayMap[$currentDate];
                         $statusType = 'holiday';
                         $holidayCount++;
-                    } elseif ($dayOfWeek == 0) {
+                    } elseif ($isEmployeeWeeklyOff) {
                         $code = 'WO';
-                        $tooltip = 'Sunday (Week Off)';
+                        $tooltip = ucfirst($currentDayName) . ' (Week Off)';
                         $statusType = 'weekoff';
                         $weekOffCount++;
                     } else {

@@ -1813,9 +1813,12 @@ class AttendanceController extends ResourceController
                     continue;
                 }
 
-                // Sunday off (date('N') returns 7 for Sunday)
-                if (date('N', strtotime($date)) == 7) {
-                    // If the employee actually checked in on this Sunday, use their real record
+                // ── Employee Specific Weekly Off ──
+                $empWeeklyOff = !empty($userInfo['weekly_off']) ? strtolower(trim($userInfo['weekly_off'])) : 'sunday';
+                $currentDayName = strtolower(date('l', strtotime($date)));
+
+                if ($empWeeklyOff !== 'none' && $currentDayName === $empWeeklyOff) {
+                    // If the employee actually checked in on their Week Off, use their real record
                     if (isset($attendanceByDate[$date])) {
                         $record = $attendanceByDate[$date];
                         $formattedAttendance[] = [
@@ -1838,7 +1841,7 @@ class AttendanceController extends ResourceController
                             'check_out_location_name' => $record['check_out_location_name'] ?? null,
                         ];
                     } else {
-                        // No check-in on this Sunday → mark as Week Off with no data
+                        // No check-in on this Week Off → mark as Week Off with no data
                         $formattedAttendance[] = [
                             'date'           => $date,
                             'check_in_time'  => null,
@@ -3196,6 +3199,12 @@ class AttendanceController extends ResourceController
 
             for ($day = 1; $day <= $totalDaysInMonth; $day++) {
                 $dStr          = "$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-" . str_pad($day, 2, '0', STR_PAD_LEFT);
+                
+                // Employee-specific weekly off
+                $empWeeklyOff  = !empty($uInfo['weekly_off']) ? strtolower(trim($uInfo['weekly_off'])) : 'sunday';
+                $currentDayName = strtolower(date('l', strtotime($dStr)));
+                $isEmployeeWeeklyOff = ($empWeeklyOff !== 'none' && $currentDayName === $empWeeklyOff);
+                
                 $dayOfWeek     = (int)date('N', strtotime($dStr)); // 1=Mon 7=Sun
                 $isHoliday     = in_array($dStr, $holidayDates);
                 $isSaturdayOff = in_array($dStr, $saturdayOffDates);
@@ -3205,7 +3214,7 @@ class AttendanceController extends ResourceController
                 if (!$isFuture && !$isOutOfEmp) {
                     if ($isIncludedHoliday == "1") {
                         $userWorkingDays++;
-                    } elseif ($dayOfWeek != 7 && !$isHoliday && !$isSaturdayOff) {
+                    } elseif (!$isEmployeeWeeklyOff && !$isHoliday && !$isSaturdayOff) {
                         $userWorkingDays++;
                     }
                 }
@@ -3235,7 +3244,7 @@ class AttendanceController extends ResourceController
                         $statusLabel = 'HO';
                         $hoDays++;
                         if ($isIncludedHoliday == "1") $presentDays++;
-                    } elseif ($hasWeekOff || $dayOfWeek == 7 || $isSaturdayOff) {
+                    } elseif ($hasWeekOff || $isEmployeeWeeklyOff || $isSaturdayOff) {
                         $statusLabel = 'WO';
                         $woDays++;
                         if ($isIncludedHoliday == "1") $presentDays++;
