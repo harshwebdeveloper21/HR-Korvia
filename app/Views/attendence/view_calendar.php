@@ -1637,19 +1637,10 @@
                 return;
             }
 
-            // For Saturday Off / Sunday Off: show banner then render employees who checked in
-            // with exactly the same card design as regular working days
+            // Show a top banner if it's a global Saturday Off or Sunday
             const isSundayOff = (dayOfWeek === 0);
-
             if (isSaturdayOff || isSundayOff) {
-                // Employees who checked in on this off day
-                const presentOnOff = filteredUsers.filter(user => {
-                    const rec = user.attendance?.find(r => (r.date || '').substring(0, 10) === selectedDate);
-                    return rec && rec.check_in_time;
-                });
-
-                // Top banner indicating it's an off day
-                const offLabel = isSundayOff ? '<i class="mdi mdi-circle text-danger me-1"></i> Sunday Off' : '<i class="mdi mdi-circle text-warning me-1"></i> Saturday Off';
+                const offLabel = isSundayOff ? '<i class="mdi mdi-circle text-danger me-1"></i> Sunday' : '<i class="mdi mdi-circle text-warning me-1"></i> Saturday Off';
                 const banner = document.createElement('div');
                 banner.className = 'alert text-center fw-bold mb-3';
                 banner.style.cssText = isSundayOff
@@ -1657,14 +1648,9 @@
                     : 'background:#fff3cd;color:#664d03;border:1px solid #ffecb5;border-radius:8px;';
                 banner.innerHTML = offLabel;
                 mobileList.appendChild(banner);
+            }
 
-                if (presentOnOff.length === 0) {
-                    const noOne = document.createElement('div');
-                    noOne.className = 'alert alert-secondary text-center';
-                    noOne.textContent = 'No employees came to office today.';
-                    mobileList.appendChild(noOne);
-                    return;
-                }
+            // - Reuse the same fmtTime helper as regular days -
 
                 // - Reuse the same fmtTime helper as regular days -
                 function fmtTimeOff(t) {
@@ -1710,59 +1696,6 @@
                         ${pin}
                     </div>`;
                 }
-
-                // - Render each present employee with the SAME card design -
-                presentOnOff.forEach(user => {
-                    const attendance = user.attendance?.find(r => (r.date || '').substring(0, 10) === selectedDate);
-                    const profileImage = user.profile_image ? `/upload/${user.profile_image}` : defaultImagePath;
-
-                    const isToday = selectedDate === todayDate;
-                    const isWorking = isToday && attendance?.check_in_time && !attendance?.check_out_time;
-
-                    // Status badge — "Week Off · Present" or "Week Off · Working"
-                    const statusText = isWorking ? 'Week Off · Working' : 'Week Off · Present';
-                    const statusClass = 'week-off-present';
-
-                    const checkInLine  = buildInlineLineOff(
-                        'In',
-                        attendance?.check_in_time,
-                        attendance?.check_in_location_name,
-                        attendance?.check_in_location_status
-                    );
-                    const checkOutLine = buildInlineLineOff(
-                        'Out',
-                        attendance?.check_out_time  ?? null,
-                        attendance?.check_out_location_name  ?? null,
-                        attendance?.check_out_location_status ?? null
-                    );
-
-                    const employeeCard = document.createElement('div');
-                    employeeCard.className = 'mobile-employee-card';
-                    employeeCard.dataset.userId = user.user_id;
-                    employeeCard.dataset.date   = selectedDate;
-
-                    employeeCard.innerHTML = `
-                        <img src="${profileImage}" alt="${user.employee_name}">
-                        <div class="mobile-employee-info">
-                            <div class="mobile-employee-name">${user.employee_name}</div>
-                            <div class="loc-info-block">
-                                ${checkInLine}
-                                ${checkOutLine}
-                            </div>
-                        </div>
-                        <div class="status-badge-pill ${statusClass}">${statusText}</div>
-                    `;
-
-                    <?php if (isset($role) && in_array($role, ['hr', 'admin'])): ?>
-                        employeeCard.addEventListener('click', () => {
-                            openAttendanceModal(user.user_id, selectedDate);
-                        });
-                    <?php endif; ?>
-
-                    mobileList.appendChild(employeeCard);
-                });
-                return;
-            }
 
             if (filteredUsers.length === 0) {
                 mobileList.innerHTML = '<div class="alert alert-warning">No employees found</div>';
@@ -2079,28 +2012,8 @@
                     dayDiv.appendChild(sunLabel);
                 }
 
-                // For Saturday Off days - show employees who actually came in
-                if (saturdayOffDates.includes(dateStr) && !holiday && !isFuture) {
-                    filteredUsers.forEach(user => {
-                        const att = user.attendance?.find(r => (r.date || '').substring(0, 10) === dateStr);
-                        if (!att || !att.check_in_time) return; // only show those who checked in
-
-                        const profileImage = user.profile_image ? `/upload/${user.profile_image}` : defaultImagePath;
-                        const item = document.createElement('div');
-                        item.className = 'employee-attendance-item attendance-cell week-off-present-item';
-                        item.dataset.userId = user.user_id;
-                        item.dataset.date = dateStr;
-                        item.title = `${user.employee_name} – Check-in: ${att.check_in_time}`;
-                        item.innerHTML = `
-                            <img src="${profileImage}" alt="${user.employee_name}">
-                            <span class="attendance-status week-off-present" title="Week Off – Present">WO</span>
-                        `;
-                        dayDiv.appendChild(item);
-                    });
-                }
-
-                // Employee attendance for regular working days
-                if (!holiday && !saturdayOffDates.includes(dateStr) && dayOfWeek !== 0 && !isFuture) {
+                // Render employee icons for the calendar grid
+                if (!holiday && !isFuture) {
                     filteredUsers.forEach(user => {
                         const attendance = user.attendance?.find(record => {
                             const recordDate = record.date ? record.date.substring(0, 10) : '';
