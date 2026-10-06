@@ -311,7 +311,7 @@
                                                     class="mdi mdi-email-outline fs-5"></i></span>
                                         </div>
                                         <input type="text" class="form-control" name="email" id="email"
-                                            placeholder="Enter your email address" autocomplete="off" />
+                                            placeholder="Enter your email address" autocomplete="off" <?= in_array($currentUserRole ?? 'employee', ['admin', 'hr']) ? '' : 'readonly' ?> />
                                     </div>
                                     <div class="error" id="email-Error"></div>
                                 </div>
@@ -325,7 +325,7 @@
                                                     class="mdi mdi-lock-outline fs-5"></i></span>
                                         </div>
                                         <input type="password" class="form-control" id="password" name="password"
-                                            placeholder="Enter a secure password" autocomplete="off" />
+                                            placeholder="Enter a secure password" autocomplete="off" <?= in_array($currentUserRole ?? 'employee', ['admin', 'hr']) ? '' : 'readonly' ?> />
                                     </div>
                                     <div class="error" id="password-Error"></div>
                                 </div>
