@@ -671,6 +671,11 @@
 
                         if (employees.length > 0) {
                             employees.forEach((employee) => {
+                                // Skip Super Admin from being displayed in the list
+                                if (employee.user && employee.user.role === 'admin') {
+                                    return;
+                                }
+
                                 const empIdCode = employee.user_info.employee_id || ('EMP-' + String(employee.user.id).padStart(3, '0'));
                                 const empName = `${capitalizeFirstLetter(employee.user_info.firstname || 'N/A')} ${capitalizeFirstLetter(employee.user_info.lastname || '')}`;
                                 const empEmail = employee.user?.email || 'N/A';
