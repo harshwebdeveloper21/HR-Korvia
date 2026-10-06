@@ -265,7 +265,10 @@
                 </div>
 
                 <!-- Multi-step Form -->
-                <form id="multistepForm" enctype="multipart/form-data">
+                <form id="multistepForm" enctype="multipart/form-data" autocomplete="off">
+                    <!-- Dummy inputs to absorb Chrome autofill before the real fields -->
+                    <input type="text"     name="fake_user" style="display:none;" autocomplete="username"     tabindex="-1" aria-hidden="true">
+                    <input type="password" name="fake_pass" style="display:none;" autocomplete="new-password" tabindex="-1" aria-hidden="true">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" id="csrfToken">
                     <!-- Step 1: Personal Information -->
                     <div class="form-step step active" id="step1">
@@ -310,8 +313,10 @@
                                             <span class="input-group-text"><i
                                                     class="mdi mdi-email-outline fs-5"></i></span>
                                         </div>
-                                        <input type="text" class="form-control" name="email" id="email"
-                                            placeholder="Enter your email address" autocomplete="off" <?= in_array($currentUserRole ?? 'employee', ['admin', 'hr']) ? '' : 'readonly' ?> />
+                                        <input type="text" class="form-control" name="emp_email" id="emp_email"
+                                            placeholder="Enter email address" autocomplete="off"
+                                            readonly onfocus="this.removeAttribute('readonly');"
+                                            <?= in_array($currentUserRole ?? 'employee', ['admin', 'hr']) ? '' : 'style="pointer-events:none;"' ?> />
                                     </div>
                                     <div class="error" id="email-Error"></div>
                                 </div>
@@ -324,8 +329,10 @@
                                             <span class="input-group-text"><i
                                                     class="mdi mdi-lock-outline fs-5"></i></span>
                                         </div>
-                                        <input type="password" class="form-control" id="password" name="password"
-                                            placeholder="Enter a secure password" autocomplete="off" <?= in_array($currentUserRole ?? 'employee', ['admin', 'hr']) ? '' : 'readonly' ?> />
+                                        <input type="password" class="form-control" id="emp_new_password" name="emp_new_password"
+                                            placeholder="Leave blank to keep current password" autocomplete="new-password"
+                                            readonly onfocus="this.removeAttribute('readonly');"
+                                            <?= in_array($currentUserRole ?? 'employee', ['admin', 'hr']) ? '' : 'style="pointer-events:none;"' ?> />
                                     </div>
                                     <div class="error" id="password-Error"></div>
                                 </div>
@@ -948,9 +955,22 @@
             console.log(user_id);
 
             if (user_id) {
-                var fields = ['firstname', 'lastname', 'email', 'date_of_birth'];
+                var fields = ['firstname', 'lastname', 'date_of_birth'];
             } else {
-                var fields = ['firstname', 'lastname', 'email', 'password', 'date_of_birth'];
+                var fields = ['firstname', 'lastname', 'date_of_birth'];
+            }
+
+            // Always append email and password using renamed field IDs
+            var emailVal = $('#emp_email').val();
+            var passwordVal = $('#emp_new_password').val();
+            data.append('email', emailVal);
+            formData.append('email', emailVal);
+            if (!user_id && passwordVal) {
+                data.append('password', passwordVal);
+                formData.append('password', passwordVal);
+            } else if (user_id && passwordVal) {
+                data.append('password', passwordVal);
+                formData.append('password', passwordVal);
             }
 
             fields.forEach(field => {
@@ -1097,6 +1117,16 @@
                     $('#employee_id_display').val($('#employee_id').val()); // Optional redundancy
                 }
                 let fd = new FormData(myform);
+                // Map renamed anti-autofill fields back to server-expected keys
+                fd.delete('emp_email');
+                fd.delete('emp_new_password');
+                fd.delete('fake_user');
+                fd.delete('fake_pass');
+                fd.append('email', $('#emp_email').val() || '');
+                var newPwd = $('#emp_new_password').val();
+                if (newPwd) {
+                    fd.append('password', newPwd);
+                }
                 let csrfTokenName = '<?= csrf_token() ?>';
                 let csrfTokenValue = $('#csrfToken').val();
                 fd.append(csrfTokenName, csrfTokenValue);
@@ -1150,8 +1180,13 @@
                                 error: function (xhr) {
                                     $('#loader').hide();
                                     let errorMsg = 'An error occurred during the update.';
-                                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                                        errorMsg = xhr.responseJSON.message;
+                                    if (xhr.responseJSON) {
+                                        // CodeIgniter returns validation errors under .messages
+                                        if (xhr.responseJSON.messages && typeof xhr.responseJSON.messages === 'object') {
+                                            errorMsg = Object.values(xhr.responseJSON.messages).join('\n');
+                                        } else if (xhr.responseJSON.message) {
+                                            errorMsg = xhr.responseJSON.message;
+                                        }
                                     }
                                     Swal.fire({
                                         icon: 'error',
@@ -1262,7 +1297,8 @@
             // ================= EDIT MODE =================
             $('h4.card-title').text('Edit Employee');
             $('.password-required-star').hide();
-            $('#password').val('').attr('placeholder', 'Leave blank to keep current password');
+            // Edit mode init: clear password, let AJAX fill email from DB
+            $('#emp_new_password').val('');
 
             $.ajax({
                 url: `<?= base_url("api/employee/") ?>${userId}`,
@@ -1279,8 +1315,15 @@
                         $('#id').val(user.id);
                         $('#firstname').val(userInfo.firstname);
                         $('#lastname').val(userInfo.lastname);
-                        $('#email').val(user.email);
-                        $('#password').val(''); // Empty on edit
+                        // Set employee email explicitly; clear password (never prefill)
+                        $('#emp_email').val(user.email);
+                        $('#emp_new_password').val('');
+                        // Defeat late-firing Chrome autofill: re-apply after 300ms
+                        const _empEmail = user.email;
+                        setTimeout(function () {
+                            $('#emp_email').val(_empEmail);
+                            $('#emp_new_password').val('');
+                        }, 300);
                         $('input[name="gender"][value="' + (userInfo.gender || 'male') + '"]').prop('checked', true);
                         $('#marital_status').val(userInfo.marital_status);
                         $('#date_of_birth').val(userInfo.date_of_birth);
@@ -1351,7 +1394,9 @@
             // ================= CREATE MODE =================
             $('h4.card-title').text('Add Employee');
             $('.password-required-star').show();
-            $('#password').val('').attr('placeholder', 'Enter a secure password');
+            // Add mode init: clear both fields for a fresh form
+            $('#emp_email').val('');
+            $('#emp_new_password').val('');
 
             // Fetch the last employee ID for new employee
             $.ajax({
