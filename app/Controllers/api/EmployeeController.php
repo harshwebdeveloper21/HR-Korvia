@@ -622,6 +622,9 @@ class EmployeeController extends ResourceController
         // Validate incoming data
         $data = $this->request->getPost();
 
+        // Normalise email from submitted form (JS sends as 'email')
+        $submittedEmail = trim($data['email'] ?? '');
+
         // Start with basic validation rules
         $rules = [
             'firstname' => 'required|min_length[3]',
@@ -635,11 +638,40 @@ class EmployeeController extends ResourceController
             return $this->failValidationErrors($this->validator->getErrors());
         }
 
-        // Check if the user exists
+        // Validate email: required + valid format
+        if (empty($submittedEmail)) {
+            return $this->failValidationErrors(['email' => 'Email is required.']);
+        }
+        if (!filter_var($submittedEmail, FILTER_VALIDATE_EMAIL)) {
+            return $this->failValidationErrors(['email' => 'Please enter a valid email address.']);
+        }
 
+        // Check if the user exists
         $existingUser = $this->userModel->find($id);
         if (!$existingUser) {
             return $this->failNotFound('User not found');
+        }
+
+        // -- Email uniqueness check: reject if another active user already owns this email --
+        $db = \Config\Database::connect();
+        $emailConflict = $db->query(
+            "SELECT id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) AND id != ? AND is_deleted = 0 LIMIT 1",
+            [$submittedEmail, (int)$id]
+        )->getRow();
+        if ($emailConflict) {
+            return $this->failValidationErrors(['email' => 'This email is already used by another account.']);
+        }
+
+        // -- Safety guard: reject if submitted email matches logged-in admin's email
+        //    but the employee being edited is a different person.
+        $loggedInUser = $this->authService->check();
+        if ($loggedInUser) {
+            // JWT payload uses 'sub' for the user ID (standard claim)
+            $loggedInUserId = isset($loggedInUser->sub) ? (int)$loggedInUser->sub : 0;
+            $loggedInEmail  = isset($loggedInUser->email) ? strtolower(trim($loggedInUser->email)) : '';
+            if ($loggedInUserId !== (int)$id && $loggedInEmail !== '' && $loggedInEmail === strtolower($submittedEmail)) {
+                return $this->failValidationErrors(['email' => 'This email belongs to another account.']);
+            }
         }
 
         // Check if a new password is provided
@@ -759,7 +791,7 @@ class EmployeeController extends ResourceController
         }
 
         $userUpdateData = [
-            'email'         => $data['email'],
+            'email'         => $submittedEmail,  // validated & unique-checked above
             'username'      => ($data['firstname'] ?? '') . ' ' . ($data['lastname'] ?? ''),
             'role'          => $role,
             'password'      => $hashedPassword,
@@ -792,7 +824,7 @@ class EmployeeController extends ResourceController
         $this->userInfoModel->where('user_id', $id)->set([
             'firstname' => $data['firstname'] ?? '',
             'lastname' => $data['lastname'] ?? '',
-            'email' => $data['email'] ?? '',
+            'email' => $submittedEmail,
             'gender' => $gender,
             'date_of_birth' => $data['date_of_birth'] ?? null,
             'address_1' => $data['address_1'] ?? '',
