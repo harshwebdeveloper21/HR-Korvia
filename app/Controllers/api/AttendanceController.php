@@ -3513,8 +3513,13 @@ class AttendanceController extends ResourceController
             $sheet->getColumnDimension('A')->setWidth(18);
             $sheet->getColumnDimension('B')->setWidth(12);
 
-            // Freeze pane at C5
-            $sheet->freezePane('C' . ($rowOffset + 5));
+            // Only freeze panes on the very first employee block (row 5 = header)
+            // Subsequent employees share the same sheet with rowOffset; calling
+            // freezePane again would move the freeze point deep into the data and
+            // break the horizontal/vertical scrollbars.
+            if ($rowOffset === 0) {
+                $sheet->freezePane('C5');
+            }
 
             // Outer border
             $blockEnd = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($dayColStart - 1 + $totalDaysInMonth);
@@ -3543,6 +3548,9 @@ class AttendanceController extends ResourceController
         }
 
         $spreadsheet->setActiveSheetIndex(0);
+        // Ensure the sheet opens at the top-left so both scrollbars are fully accessible
+        $spreadsheet->getActiveSheet()->setSelectedCell('A1');
+        $spreadsheet->getActiveSheet()->getSheetView()->setTopLeftCell('A1');
         $filename = "Attendance_Detail_{$monthNameStr}_{$year}.xlsx";
         $writer   = new Xlsx($spreadsheet);
 
