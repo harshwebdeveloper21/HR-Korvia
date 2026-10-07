@@ -2,6 +2,27 @@
 
 <?= $this->section('content'); ?>
 
+<style>
+    .dash-status-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 7px;
+        border-radius: 4px;
+    }
+    .dash-status-absent {
+        background: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.14) !important;
+        color: var(--hr-primary-text, #e66136) !important;
+    }
+    .dash-status-leave {
+        background: #f1f5f9 !important;
+        color: #475569 !important;
+        border: 1px solid rgba(var(--hr-primary-rgb, 230, 97, 54), 0.25);
+    }
+    .dash-status-icon,
+    .dash-status-text {
+        color: var(--hr-primary-text, #e66136) !important;
+    }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -2103,11 +2124,11 @@
 
                         var isAbsent = (leave.type === 'absent');
                         var badgeOrIcon = isAbsent
-                            ? `<div class="d-flex align-items-center" style="gap:6px;"><span class="badge" style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:600;padding:3px 7px;border-radius:4px;">Absent</span><i class="mdi mdi-calendar-remove fs-4 text-danger"></i></div>`
-                            : `<div class="d-flex align-items-center" style="gap:6px;"><span class="badge" style="background:#fff7ed;color:#ea580c;font-size:11px;font-weight:600;padding:3px 7px;border-radius:4px;">Leave</span><i class="mdi mdi-calendar-check fs-4" style="color:#E66136"></i></div>`;
+                            ? `<div class="d-flex align-items-center" style="gap:6px;"><span class="badge dash-status-badge dash-status-absent">Absent</span><i class="mdi mdi-calendar-remove fs-4 dash-status-icon"></i></div>`
+                            : `<div class="d-flex align-items-center" style="gap:6px;"><span class="badge dash-status-badge dash-status-leave">Leave</span><i class="mdi mdi-calendar-check fs-4 dash-status-icon"></i></div>`;
 
                         var subtitle = isAbsent
-                            ? `<small class="text-danger mb-0 fw-semibold">Absent Today</small>`
+                            ? `<small class="mb-0 fw-semibold dash-status-text">Absent Today</small>`
                             : `<small class="text-muted mb-0">${leave.start_date} to ${leave.end_date}</small>`;
 
                         var targetLink = isAbsent ? `/leaveview` : `/leaveview`;

@@ -127,7 +127,9 @@ $isEmployee = ($role === 'employee');
   color: var(--hr-on-primary, #ffffff) !important;
 }
 #sidebar.erp-sidebar .erp-dashboard-wrap.active > .nav-link .menu-icon,
-#sidebar.erp-sidebar .erp-dashboard-link.active .menu-icon {
+#sidebar.erp-sidebar .erp-dashboard-wrap.active > .nav-link .menu-title,
+#sidebar.erp-sidebar .erp-dashboard-link.active .menu-icon,
+#sidebar.erp-sidebar .erp-dashboard-link.active .menu-title {
   color: var(--hr-on-primary, #ffffff) !important;
 }
 

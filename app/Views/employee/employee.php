@@ -259,24 +259,108 @@
                         </a>
                     </div>
                 </div>
-                <!-- Progress Bar -->
-                <div class="progress">
-                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated"></div>
-                </div>
+                <style>
+                    #multistepForm .form-step {
+                        display: block !important;
+                        margin-top: 0;
+                        padding: 18px 0 6px;
+                        border-top: 1px solid #eef0f4;
+                    }
+                    #multistepForm .form-step:first-of-type {
+                        border-top: none;
+                        padding-top: 6px;
+                    }
+                    #multistepForm .form-step > h5 {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        font-size: 15px;
+                        font-weight: 600;
+                        color: var(--hr-primary-text, #e66136);
+                        margin-bottom: 16px;
+                    }
+                    #multistepForm .form-step > h5::before {
+                        content: "";
+                        width: 4px;
+                        height: 18px;
+                        border-radius: 4px;
+                        background: var(--hr-primary, #e66136);
+                    }
+                    /* Compact spacing to reduce scrolling */
+                    #multistepForm .form-step {
+                        padding: 12px 0 2px;
+                    }
+                    #multistepForm .form-step > h5 {
+                        margin-bottom: 10px;
+                    }
+                    #multistepForm .form-group {
+                        margin-bottom: 12px !important;
+                    }
+                    #multistepForm .form-group > label,
+                    #multistepForm label.form-label {
+                        font-size: 12.5px;
+                        margin-bottom: 4px !important;
+                        font-weight: 500;
+                    }
+                    #multistepForm .input-group > .form-control,
+                    #multistepForm .input-group > .form-select,
+                    #multistepForm .input-group-text {
+                        min-height: 38px;
+                        height: 38px;
+                        padding-top: 6px;
+                        padding-bottom: 6px;
+                        font-size: 13px;
+                    }
+                    #multistepForm .input-group > textarea.form-control {
+                        height: auto;
+                        min-height: 62px;
+                        resize: vertical;
+                    }
+                    #multistepForm .error:empty {
+                        display: none;
+                    }
 
-                <!-- Multi-step Form -->
+                    /* Each section is split into many 2-field rows; flatten them so fields flow into one grid. */
+                    #multistepForm .form-step {
+                        --bs-gutter-x: 1.5rem;
+                        display: flex !important;
+                        flex-wrap: wrap;
+                        align-items: flex-start;
+                        margin-left: calc(var(--bs-gutter-x) * -0.5);
+                        margin-right: calc(var(--bs-gutter-x) * -0.5);
+                    }
+                    #multistepForm .form-step > .row {
+                        display: contents;
+                    }
+                    #multistepForm .form-step > h5 {
+                        flex: 0 0 100%;
+                        padding: 0 calc(var(--bs-gutter-x) * 0.5);
+                    }
+                    #multistepForm .form-step > [class*="col-"],
+                    #multistepForm .form-step > .row > [class*="col-"] {
+                        padding-left: calc(var(--bs-gutter-x) * 0.5);
+                        padding-right: calc(var(--bs-gutter-x) * 0.5);
+                    }
+                    #multistepForm .employee-form-actions {
+                        border-top: 1px solid #eef0f4;
+                        padding-top: 16px;
+                        margin-top: 8px;
+                    }
+                </style>
+
+                <!-- Single-page Employee Form -->
                 <form id="multistepForm" enctype="multipart/form-data" autocomplete="off">
                     <!-- Dummy inputs to absorb Chrome autofill before the real fields -->
                     <input type="text"     name="fake_user" style="display:none;" autocomplete="username"     tabindex="-1" aria-hidden="true">
                     <input type="password" name="fake_pass" style="display:none;" autocomplete="new-password" tabindex="-1" aria-hidden="true">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" id="csrfToken">
                     <!-- Step 1: Personal Information -->
-                    <div class="form-step step active" id="step1">
+                        <div class="form-step" id="step1">
                         <input type="hidden" id="id" name="id" value="<?= !empty($user['id']) ? esc($user['id']) : '' ?>" />
 
                         <h5>Personal Information</h5>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>First Name <span class="text-danger">*</span></label>
                                     <div class="input-group">
@@ -289,7 +373,7 @@
                                     <div class="error" id="firstname-Error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Last Name <span class="text-danger">*</span></label>
                                     <div class="input-group">
@@ -305,7 +389,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Email <span class="text-danger">*</span></label>
                                     <div class="input-group">
@@ -321,7 +405,7 @@
                                     <div class="error" id="email-Error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Password <span class="text-danger password-required-star">*</span></label>
                                     <div class="input-group">
@@ -339,7 +423,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Gender</label>
                                     <div class="input-group border rounded-1">
@@ -362,7 +446,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Date of Birth</label>
                                     <div class="input-group">
@@ -379,7 +463,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Remaining Paid Leave</label>
                                     <div class="input-group">
@@ -394,7 +478,7 @@
                                     <div class="error" id="remaining_paid_leave-Error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Remaining Sick Leave</label>
                                     <div class="input-group">
@@ -410,15 +494,10 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group text-end">
-
-                            <button type="button" class="btn hr-btnbg next-step interviewsmbtn" id="next1">Next</button>
-
-                        </div>
                     </div>
 
                     <!-- Step 2: Address -->
-                    <div class="form-step step" id="step2">
+                    <div class="form-step" id="step2">
                         <h5>Address & Contacts</h5>
                         <div class="row">
                             <div class="col-md-6">
@@ -426,7 +505,7 @@
                                     <label>Address 1</label>
                                     <div class="input-group">
                                         <textarea class="form-control" name="address_1" id="address_1"
-                                            placeholder="Enter your primary address" rows="5"></textarea>
+                                            placeholder="Enter your primary address" rows="2"></textarea>
                                     </div>
                                     <div class="error" id="address_1-Error"></div>
                                 </div>
@@ -436,7 +515,7 @@
                                     <label>Address 2</label>
                                     <div class="input-group">
                                         <textarea class="form-control" name="address_2" id="address_2"
-                                            placeholder="Enter your secondary address (optional)" rows="5"></textarea>
+                                            placeholder="Enter your secondary address (optional)" rows="2"></textarea>
                                     </div>
                                     <div class="error" id="address_2-Error"></div>
                                 </div>
@@ -444,7 +523,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>State</label>
@@ -469,7 +548,7 @@
                                     <div class="error" id="state_id-Error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>Country</label>
@@ -501,7 +580,7 @@
 
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>City</label>
@@ -526,7 +605,7 @@
                                     <div class="error" id="city_id-Error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Postcode</label>
                                     <div class="input-group">
@@ -540,7 +619,7 @@
                                     <div class="error" id="postcode-Error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Contact Number</label>
                                     <div class="input-group">
@@ -562,7 +641,7 @@
                                 $branchesList = !empty($branches) ? $branches : (new \App\Models\BranchModel())->where('status', 'active')->orderBy('name', 'ASC')->findAll();
                             ?>
                             <?php if ($isEmpAdminOrHr): ?>
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-lg-4">
                                     <div class="form-group">
                                         <label>Branch <span class="text-danger">*</span></label>
                                         <div class="input-group">
@@ -583,20 +662,13 @@
                                 <input type="hidden" name="branch_id" id="branch_id" value="<?= htmlspecialchars($empBranchId) ?>">
                             <?php endif; ?>
                         </div>
-                        <div class="form-group text-end">
-                            <button type="button" class="btn btn-secondary prev-step interviewsmbtn me-2" id="prev2"
-                                style="display: none;">Previous</button>
-                            <button type="button" class="btn hr-btnbg next-step interviewsmbtn" id="next2"
-                                style="display: none;">Next</button>
-
-                        </div>
                     </div>
 
                     <!-- Step 3: Job Details -->
-                    <div class="form-step step" id="step3">
+                    <div class="form-step" id="step3">
                         <h5>Job Details</h5>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Employee ID <span class="text-danger">*</span></label>
                                     <div class="input-group">
@@ -609,7 +681,7 @@
 
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>Department <span class="text-danger">*</span></label>
@@ -650,7 +722,7 @@
 
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <div class="mb-2 d-flex justify-content-between align-items-center">
                                         <label>Designation</label>
@@ -687,7 +759,7 @@
                                     <div class="error" id="designation_id-Error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Joining Date</label>
                                     <div class="input-group">
@@ -703,7 +775,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Working Location</label>
                                     <div class="input-group">
@@ -720,7 +792,7 @@
                                     <div class="error" id="working_location-Error"></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Salary <span class="text-danger">*</span></label>
                                     <div class="input-group">
@@ -737,7 +809,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Employment Status</label>
                                     <div class="input-group">
@@ -752,7 +824,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Last Working Day <small class="text-muted">(If Inactive/Resigned)</small></label>
                                     <div class="input-group">
@@ -766,7 +838,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Role <span class="text-danger">*</span></label>
                                     <div class="input-group">
@@ -804,7 +876,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Profile Image</label>
                                     <input type="file" name="profile_image" class="file-upload-default profile_image"
@@ -823,7 +895,7 @@
                                         style="max-width: 100px; display: none;">
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-4">
                                 <div class="form-group">
                                     <label>Face Photo <small class="text-muted">(For Biometric
                                             Attendance)</small></label>
@@ -847,12 +919,11 @@
                             </div>
                         </div>
 
-                        <div class="form-group text-end mt-4">
-                            <button type="button" class="btn btn-secondary prev-step interviewsmbtn me-2" id="prev3"
-                                style="display: none;">Previous</button>
-                            <button type="submit" class="btn hr-btnbg submit-form interviewsmbtn" id="submitForm"
-                                style="display: none;">Submit</button>
-                        </div>
+                    </div>
+
+                    <div class="form-group text-end employee-form-actions">
+                        <a href="<?= base_url('/empview') ?>" class="btn btn-secondary interviewsmbtn me-2">Cancel</a>
+                        <button type="submit" class="btn hr-btnbg submit-form interviewsmbtn" id="submitForm">Submit</button>
                     </div>
                 </form>
                 <div class="error" id="form_error" style="display: none;"></div>
@@ -918,29 +989,49 @@
 </script>
 <script>
     const token = localStorage.getItem('token'); // JWT token
-    let currentStep = 1;
     let formData = new FormData();
 
-    function showStep(step) {
-        $('.step').removeClass('active');
-        $('#step' + step).addClass('active');
-        $('#next1, #next2, #prev2, #prev3, #submitForm').hide(); // Hide all buttons initially
+    // All sections are shown on one page; kept so existing calls stay harmless.
+    function showStep() {}
 
-        if (step === 1) {
-            $('#next1').show();
-        } else if (step === 2) {
-            $('#prev2').show();
-            $('#next2').show();
-        } else if (step === 3) {
-            $('#prev3').show();
-            $('#submitForm').show();
+    function clearFormErrors() {
+        $('#multistepForm .error').text('').hide();
+        $('#multistepForm .has-error').removeClass('has-error');
+    }
+
+    function scrollToFirstError(fallbackSection) {
+        let $target = $('#multistepForm .error').filter(function () {
+            return $(this).text().trim() !== '';
+        }).first();
+        if (!$target.length) {
+            $target = $(fallbackSection);
+        }
+        if ($target.length) {
+            $('html, body').animate({ scrollTop: $target.offset().top - 140 }, 300);
         }
     }
 
-
-    function updateProgress(step) {
-        let progress = (step - 1) * 50;
-        $('#progressBar').css('width', progress + '%');
+    // Server-side validation runs section by section and stops at the first invalid one.
+    function validateAllSections(callback) {
+        clearFormErrors();
+        validateStep(1, function (ok1) {
+            if (!ok1) {
+                scrollToFirstError('#step1');
+                return callback(false);
+            }
+            validateStep(2, function (ok2) {
+                if (!ok2) {
+                    scrollToFirstError('#step2');
+                    return callback(false);
+                }
+                validateStep(3, function (ok3) {
+                    if (!ok3) {
+                        scrollToFirstError('#step3');
+                    }
+                    callback(ok3);
+                });
+            });
+        });
     }
 
     function validateStep(step, callback) {
@@ -1052,16 +1143,6 @@
     }
 
 
-    $('#next1').click(function () {
-        validateStep(1, function (isValid) {
-            if (isValid) {
-                currentStep++;
-                showStep(currentStep);
-                updateProgress(currentStep);
-            }
-        });
-    });
-
     function fetchNextEmployeeId(callback) {
         if ($('#id').val()) return; // Don't overwrite in edit mode
         const currentVal = $('#employee_id').val();
@@ -1087,23 +1168,6 @@
             }
         });
     }
-
-    $('#next2').click(function () {
-        validateStep(2, function (isValid) {
-            if (isValid) {
-                currentStep++;
-                showStep(currentStep);
-                updateProgress(currentStep);
-                fetchNextEmployeeId();
-            }
-        });
-    });
-
-    $('#prev2, #prev3').click(function () {
-        currentStep--;
-        showStep(currentStep);
-        updateProgress(currentStep);
-    });
 
     $(document).ready(function () {
         $(document).on('click', '#submitForm', function (e) {
@@ -1133,7 +1197,7 @@
 
                 const userId = $('#id').val();
 
-                validateStep(3, function (isValid) {
+                validateAllSections(function (isValid) {
                     if (isValid) {
                         $('#loader').show();
 
@@ -1273,10 +1337,6 @@
                 console.error('Form element not found');
             }
         });
-    });
-
-    $(document).ready(function () {
-        showStep(currentStep);
     });
 
     $(document).ready(function () {
