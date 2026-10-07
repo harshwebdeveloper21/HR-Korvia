@@ -470,6 +470,7 @@
         </style>
 
         <?php
+        $backUrl = service('request')->getGet('from') === 'employees' ? '/empview' : '/addinterview';
         $requiredDocs = ['salary_1', 'salary_2', 'salary_3', 'experience_letter', 'id_proof', 'edu_cert'];
         $tabsConfig = [
             1 => ['title' => 'Salary slips', 'keys' => ['salary_1', 'salary_2', 'salary_3']],
@@ -502,7 +503,7 @@
                             <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
                         </div>
                     </div>
-                    <a href="/addinterview" class="btn-outline-action text-decoration-none text-nowrap"><i class="mdi mdi-arrow-left"></i> Back</a>
+                    <a href="<?= $backUrl ?>" class="btn-outline-action text-decoration-none text-nowrap"><i class="mdi mdi-arrow-left"></i> Back</a>
                 </div>
             </div>
 
@@ -684,6 +685,7 @@ window.csrfHash = '<?= csrf_hash() ?>';
 $(document).ready(function() {
     const candidateId = "<?= esc($selectedCandidate['id'] ?? '') ?>";
     const totalTabs = 4;
+    const backUrl = <?= json_encode($backUrl ?? '/addinterview') ?>;
     const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--hr-primary').trim() || '#e8602c';
     let missingRequired = 0;
 
@@ -739,12 +741,12 @@ $(document).ready(function() {
                 confirmButtonText: 'Yes, leave',
                 cancelButtonText: 'Stay'
             }).then((result) => {
-                if (result.isConfirmed) window.location.href = '/addinterview';
+                if (result.isConfirmed) window.location.href = backUrl;
             });
             return;
         }
         Swal.fire('Success', 'All required documents are uploaded!', 'success').then(() => {
-            window.location.href = '/addinterview';
+            window.location.href = backUrl;
         });
     });
 

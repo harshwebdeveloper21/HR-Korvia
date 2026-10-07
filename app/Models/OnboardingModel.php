@@ -9,8 +9,23 @@ class OnboardingModel extends Model
     protected $table = 'onboarding';
     protected $primaryKey = 'id';
     protected $allowedFields = ['candidate_id', 'department_id', 'job_id', 'start_date', 'onboarding_status',
-    'docu_submitted','offer_later_id', 'created_at', 'created_by'];
+    'docu_submitted','offer_later_id', 'annual_ctc', 'created_at', 'created_by'];
     protected $useTimestamps = true;
+
+    /** Monthly salary (annual CTC / 12) from the candidate's latest onboarding, or null if no CTC is set. */
+    public function monthlySalaryForCandidate($candidateId): ?float
+    {
+        if (empty($candidateId)) {
+            return null;
+        }
+        $row = $this->select('annual_ctc')
+            ->where('candidate_id', $candidateId)
+            ->where('annual_ctc >', 0)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        return $row ? round((float) $row['annual_ctc'] / 12, 2) : null;
+    }
 
     public function getRecruitmentProgress($userRole, $userId)
     {

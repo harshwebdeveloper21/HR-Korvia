@@ -1172,6 +1172,7 @@ $routes->group("", ["filter" => "noauth"], function ($routes) {
 
 $routes->get("run_db_update", "\App\Controllers\DBUpdateController::index");
 $routes->get("/candidate-documents/(:num)", "CandidateDocumentsController::show/$1");
+$routes->get("/employee-documents/(:num)", "CandidateDocumentsController::employee/$1");
 
 $routes->get(
     "api/interview/export",

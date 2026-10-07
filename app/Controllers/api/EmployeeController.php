@@ -897,7 +897,10 @@ class EmployeeController extends ResourceController
 
         // Build query with join
         $builder = $this->userModel
-            ->select('users.*, user_info.employee_id, user_info.status, user_info.status_reason, user_info.last_working_day, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, user_info.salary, user_info.last_increment_date, user_info.last_increment_amount, department.department_name, users.department_id, employee_leaves.paid_leave, employee_leaves.casual_leave, branches.name as branch_name')
+            ->select('users.*, user_info.employee_id, user_info.status, user_info.status_reason, user_info.last_working_day, user_info.firstname, user_info.lastname, user_info.profile_image, user_info.joining_date, user_info.id as user_info_id, user_info.salary, user_info.last_increment_date, user_info.last_increment_amount, department.department_name, users.department_id, employee_leaves.paid_leave, employee_leaves.casual_leave, branches.name as branch_name, '
+                . '(SELECT MAX(iv.id) FROM interviews iv WHERE iv.convert_to_employee = 1 AND (iv.email = users.email OR iv.candidate_id IN (SELECT cx.id FROM candidate cx WHERE cx.email = users.email))) as interview_id, '
+                . '(SELECT MAX(ia.id) FROM interview_assessments ia JOIN interviews iv2 ON iv2.id = ia.interview_id WHERE iv2.convert_to_employee = 1 AND (iv2.email = users.email OR iv2.candidate_id IN (SELECT cy.id FROM candidate cy WHERE cy.email = users.email))) as assessment_id, '
+                . '(SELECT MAX(cz.id) FROM candidate cz WHERE cz.email = users.email) as candidate_id', false)
             ->join('user_info', 'user_info.user_id = users.id')
             ->join('department', 'department.id = users.department_id', 'left')
             ->join('employee_leaves', 'employee_leaves.employee_id = users.id', 'left')
@@ -1000,7 +1003,12 @@ class EmployeeController extends ResourceController
                     'last_increment_date' => $row['last_increment_date'] ?? 'N/A',
                     'last_increment_amount' => (float) ($row['last_increment_amount'] ?? 0),
                     'profile_image_url' => getUserProfileImage($row['profile_image'] ?? null),
-                ]
+                ],
+                'recruitment' => [
+                    'interview_id'  => $row['interview_id'] ? (int) $row['interview_id'] : null,
+                    'assessment_id' => $row['assessment_id'] ? (int) $row['assessment_id'] : null,
+                    'candidate_id'  => $row['candidate_id'] ? (int) $row['candidate_id'] : null,
+                ],
             ];
         }
 

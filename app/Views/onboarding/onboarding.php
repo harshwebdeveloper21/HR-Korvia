@@ -318,13 +318,23 @@
                                 </div>
                             </div>
                         </div>
-                         <div class="col-md-6">
-                              <div class="col-sm-3">
-                                 <div class="text-center" id="template-preview">
-                            <img id="template-image" src="" alt="Offer Template Preview" class="img-fluid" style="max-height: 50px; display: none; border: 1px solid #ccc; padding: 5px;">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label">Annual CTC (₹)</label>
+                                <div class="col-sm-9">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
+                                        </div>
+                                        <input type="text" inputmode="decimal" class="form-control" name="annual_ctc" id="annual_ctc" placeholder="e.g. 3,60,000" autocomplete="off" />
+                                    </div>
+                                    <small class="text-muted d-block">Shown as the offered CTC in the offer letter. Employee monthly salary = CTC ÷ 12<span id="annual_ctc_monthly"></span>.</small>
+                                    <div class="text-center" id="template-preview">
+                                        <img id="template-image" src="" alt="Offer Template Preview" class="img-fluid" style="max-height: 50px; display: none; border: 1px solid #ccc; padding: 5px;">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                              </div>
-                          </div>
                     </div>
 
                     <!-- Submit Button -->
@@ -771,6 +781,8 @@
                         $('#start_date').val(onboarding.start_date);
                         $('#onboarding_status').val(onboarding.onboarding_status);
                         $('#docu_submitted').val(onboarding.docu_submitted);
+                        $('#annual_ctc').val(onboarding.annual_ctc ? formatInr(onboarding.annual_ctc) : '');
+                        updateMonthlyHint();
                         $('#id').val(onboarding.id);
 
                         $('#submitBtn').text('Update');
@@ -783,6 +795,22 @@
                 }
             });
         }
+
+        function formatInr(value) {
+            const num = parseFloat(String(value).replace(/[^0-9.]/g, ''));
+            if (isNaN(num)) return '';
+            return num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+        }
+
+        function updateMonthlyHint() {
+            const annual = parseFloat(String($('#annual_ctc').val()).replace(/[^0-9.]/g, ''));
+            $('#annual_ctc_monthly').text(annual > 0 ? ` (₹ ${formatInr((annual / 12).toFixed(2))})` : '');
+        }
+
+        $('#annual_ctc').on('input', updateMonthlyHint).on('blur', function () {
+            $(this).val(formatInr($(this).val()));
+            updateMonthlyHint();
+        });
 
         $('#offer_later_id').on('change', function () {
             const templateId = $(this).val();

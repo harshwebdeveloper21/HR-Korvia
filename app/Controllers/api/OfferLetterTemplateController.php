@@ -511,6 +511,18 @@ class OfferLetterTemplateController extends ResourceController
         return $templateContent;
     }
 
+    private function formatIndianAmount(float $amount): string
+    {
+        $decimals = fmod($amount, 1.0) > 0 ? '.' . substr(number_format($amount, 2, '.', ''), -2) : '';
+        $whole = (string) (int) floor($amount);
+        if (strlen($whole) > 3) {
+            $last3 = substr($whole, -3);
+            $rest = substr($whole, 0, -3);
+            $whole = preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', $rest) . ',' . $last3;
+        }
+        return $whole . $decimals;
+    }
+
     public function generateOfferLetter($candidateId, $templateId)
     {
         $templateModel = new \App\Models\OfferLetterTemplateModel();
@@ -529,7 +541,7 @@ class OfferLetterTemplateController extends ResourceController
 
         $company = $companyModel->first();
         $candidate = (!empty($candidateId) && $candidateId !== 'sample' && $candidateId != 0) ? $candidateModel->find($candidateId) : null;
-        $onboarding = $candidate ? $onboardingModel->where('candidate_id', $candidateId)->first() : null;
+        $onboarding = $candidate ? $onboardingModel->where('candidate_id', $candidateId)->orderBy('id', 'DESC')->first() : null;
 
         $job = ($candidate && !empty($candidate['job_id'])) 
             ? $jobModel->find($candidate['job_id']) 
@@ -664,8 +676,11 @@ class OfferLetterTemplateController extends ResourceController
         }
 
         $annualCtc = '';
-        if (!empty($salary)) {
-            $annualCtc = is_numeric($salary) ? number_format((float) $salary) : $salary;
+        $ctcSource = (isset($onboarding['annual_ctc']) && (float) $onboarding['annual_ctc'] > 0)
+            ? $onboarding['annual_ctc']
+            : (is_numeric($salary) ? ((float) $salary > 0 ? (float) $salary * 12 : '') : $salary);
+        if (!empty($ctcSource)) {
+            $annualCtc = is_numeric($ctcSource) ? $this->formatIndianAmount((float) $ctcSource) : $ctcSource;
         }
 
         $sigData = $this->getDigitalSignatureData();
@@ -704,7 +719,7 @@ class OfferLetterTemplateController extends ResourceController
             'creator_email'         => $creatorEmail,
             'creator_designation'   => $creatorDesignation,
             'signer_designation'    => $creatorDesignation,
-            'salary'                => $formattedSalary,
+            'salary'                => (isset($onboarding['annual_ctc']) && (float) $onboarding['annual_ctc'] > 0) ? '₹ ' . $annualCtc . ' per annum' : $formattedSalary,
             'salary_terms'          => $formattedSalary,
             'docu_submitted'        => $docuSubmitted,
             'documents_submitted'   => $docuSubmitted,

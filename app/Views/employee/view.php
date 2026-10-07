@@ -825,6 +825,25 @@
                                                                 <i class="fa fa-key text-secondary me-2"></i> Change Password
                                                             </a>
                                                         </li>
+                                                        ${employee.recruitment?.interview_id ? `
+                                                        <li>
+                                                            <a href="/interview/pdf/${employee.recruitment.interview_id}" target="_blank" rel="noopener" class="dropdown-item py-2">
+                                                                <i class="mdi mdi-printer text-secondary me-2 fs-6"></i> Print Interview Form
+                                                            </a>
+                                                        </li>
+                                                        ` : ''}
+                                                        ${employee.recruitment?.assessment_id ? `
+                                                        <li>
+                                                            <a href="/assessment/pdf/${employee.recruitment.assessment_id}" target="_blank" rel="noopener" class="dropdown-item py-2">
+                                                                <i class="mdi mdi-printer-check text-secondary me-2 fs-6"></i> Print Assessment
+                                                            </a>
+                                                        </li>
+                                                        ` : ''}
+                                                        <li>
+                                                            <a href="/employee-documents/${employee.user.id}" class="dropdown-item py-2">
+                                                                <i class="mdi mdi-file-document-multiple-outline text-warning me-2 fs-6"></i> ${employee.recruitment?.interview_id ? 'Candidate Documents' : 'Documents'}
+                                                            </a>
+                                                        </li>
                                                         <li><hr class="dropdown-divider my-1"></li>
                                                         <li>
                                                             <a href="javascript:void(0)" onclick="deleteEmployee(${employee.user.id}, '${empName.replace(/'/g, "\\'")}')" class="dropdown-item py-2 text-danger delete-employee" data-id="${employee.user.id}" data-name="${empName}">

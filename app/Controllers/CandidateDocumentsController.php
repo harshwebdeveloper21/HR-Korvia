@@ -52,6 +52,52 @@ class CandidateDocumentsController extends BaseController
         ]);
     }
 
+    public function employee($userId)
+    {
+        $authUser = (new \App\Services\AuthService($this->request))->check();
+        if (!$authUser) {
+            return redirect()->to('/login');
+        }
+        if (!in_array($authUser->role, ['admin', 'hr', 'branch_admin'], true)) {
+            return redirect()->to('/dashboard')->with('error', 'You do not have access to employee documents.');
+        }
+
+        $db = \Config\Database::connect();
+
+        $user = $db->table('users u')
+            ->select('u.id, u.email, ui.firstname, ui.lastname, ui.contact_number, ui.job_id, ui.address_1')
+            ->join('user_info ui', 'ui.user_id = u.id', 'left')
+            ->where('u.id', $userId)
+            ->get()->getRowArray();
+
+        if (!$user || empty($user['email'])) {
+            return redirect()->to('/empview')->with('error', 'Employee not found.');
+        }
+
+        $candidate = $db->table('candidate')->where('email', $user['email'])->orderBy('id', 'DESC')->get()->getRowArray();
+
+        if ($candidate) {
+            $candidateId = (int) $candidate['id'];
+        } else {
+            $name = trim(($user['firstname'] ?? '') . ' ' . ($user['lastname'] ?? '')) ?: $user['email'];
+            $db->table('candidate')->insert([
+                'candidate_name'  => $name,
+                'email'           => $user['email'],
+                'job_id'          => (int) ($user['job_id'] ?? 0),
+                'job_date'        => date('Y-m-d'),
+                'phone_number'    => (string) ($user['contact_number'] ?? ''),
+                'current_address' => $user['address_1'] ?? null,
+                'status'          => 'employee_record',
+                'created_by'      => (int) ($authUser->id ?? 0),
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s'),
+            ]);
+            $candidateId = (int) $db->insertID();
+        }
+
+        return redirect()->to('/candidate-documents/' . $candidateId . '?from=employees');
+    }
+
     public function upload()
     {
         $db = \Config\Database::connect();

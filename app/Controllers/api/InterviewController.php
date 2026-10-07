@@ -841,6 +841,13 @@ class InterviewController extends ResourceController
         // Upsert into user_info
         $existingInfo = $userInfoModel->where('user_id', $userId)->first();
         $nameParts = explode(' ', ($interview['full_name'] ?? $interview['candidate_name'] ?? 'Employee'), 2);
+        $monthlySalary = (new \App\Models\OnboardingModel())->monthlySalaryForCandidate($interview['candidate_id'] ?? null);
+        if ($monthlySalary === null && is_numeric($interview['offered_salary'] ?? null)) {
+            $monthlySalary = (float) $interview['offered_salary'];
+        }
+        if ($monthlySalary === null) {
+            $monthlySalary = (float) ($existingInfo['salary'] ?? 0);
+        }
         $userInfoData = [
             'user_id' => $userId,
             'firstname' => $nameParts[0] ?? '',
@@ -853,7 +860,7 @@ class InterviewController extends ResourceController
             'department_id' => $departmentId,
             'joining_date' => $interview['joining_date'] ?? null,
             'job_id' => $interview['job_id'] ?? null,
-            'salary' => $interview['offered_salary'] ?? null,
+            'salary' => $monthlySalary,
             'status' => 'active'
         ];
         

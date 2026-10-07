@@ -271,6 +271,10 @@ class CandidateController extends ResourceController
             ->join('department', 'department.id = jobs.department_id', 'left')
             ->join('users u', 'u.email = candidate.email AND u.is_deleted = 0', 'left')
             ->join('user_info ui', 'ui.user_id = u.id', 'left')
+            ->groupStart()
+                ->where('candidate.status !=', 'employee_record')
+                ->orWhere('candidate.status IS NULL')
+            ->groupEnd()
             ->groupBy('candidate.id')
             ->orderBy('candidate.created_at', 'DESC')
             ->findAll();
@@ -812,7 +816,9 @@ class CandidateController extends ResourceController
 
         $designationId = !empty($this->request->getPost('designation_id')) ? (int)$this->request->getPost('designation_id') : null;
         $joiningDate   = !empty($this->request->getPost('joining_date')) ? $this->request->getPost('joining_date') : date('Y-m-d');
-        $salary        = !empty($this->request->getPost('salary')) ? (float)$this->request->getPost('salary') : 0.00;
+        $salary        = !empty($this->request->getPost('salary'))
+            ? (float)$this->request->getPost('salary')
+            : ((new \App\Models\OnboardingModel())->monthlySalaryForCandidate($candidate['id']) ?? 0.00);
         $targetRole    = in_array($this->request->getPost('role'), ['employee', 'department_manager'], true) ? $this->request->getPost('role') : 'employee';
         $location      = $this->request->getPost('working_location') ?: 'On-Site';
 

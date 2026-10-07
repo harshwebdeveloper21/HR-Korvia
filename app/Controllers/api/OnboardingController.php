@@ -29,6 +29,17 @@ class OnboardingController extends ResourceController
         $this->authService = new AuthService(service('request'));
     }
 
+    private function normalizeAnnualCtc(): void
+    {
+        $post = $this->request->getPost();
+        if (!array_key_exists('annual_ctc', $post)) {
+            return;
+        }
+        $post['annual_ctc'] = preg_replace('/[^0-9.\-]/', '', (string) $post['annual_ctc']);
+        $this->request->setGlobal('post', $post);
+        $this->request->setGlobal('request', array_merge($this->request->fetchGlobal('request') ?? [], ['annual_ctc' => $post['annual_ctc']]));
+    }
+
     // Render create onboarding form (if needed for web views)
     public function create($id = null)
     {
@@ -64,6 +75,8 @@ class OnboardingController extends ResourceController
             return $this->failUnauthorized('Unauthorized: Token missing or invalid');
         }
 
+        $this->normalizeAnnualCtc();
+
         // Validate input data
         $validationRules = [
             'candidate_id' => 'required',
@@ -74,6 +87,7 @@ class OnboardingController extends ResourceController
             // 'acc_number' => 'required',
             'offer_later_id' => 'required',
             'docu_submitted' => 'required',
+            'annual_ctc' => 'permit_empty|decimal|greater_than_equal_to[0]',
         ];
 
         $validationMessages = [
@@ -95,6 +109,10 @@ class OnboardingController extends ResourceController
             'docu_submitted' => [
                 'required' => ' Please provide details of the documents submitted.',
             ],
+            'annual_ctc' => [
+                'decimal' => 'Annual CTC must be a valid amount.',
+                'greater_than_equal_to' => 'Annual CTC cannot be negative.',
+            ],
         ];
 
         if (!$this->validate($validationRules, $validationMessages)) {
@@ -107,6 +125,7 @@ class OnboardingController extends ResourceController
 
         // Get the form data
         $data = $this->request->getPost();
+        $data['annual_ctc'] = ($data['annual_ctc'] ?? '') !== '' ? $data['annual_ctc'] : null;
         $userInfoModel = new \App\Models\UserInfoModel();
         $usersModel = new \App\Models\UserModel();
         $candidateModel = new \App\Models\CandidateModel();
@@ -193,9 +212,13 @@ class OnboardingController extends ResourceController
             $emailService->sendOnboardingEmail($data);
             $employeeNote = ''; // ✅ Default value to avoid "undefined variable" error
             if ($data['onboarding_status'] === 'completed') { // Only update when status is 'Completed'
+                $infoUpdate = ['status' => 'completed', 'role' => 'employee', 'joining_date' => $data['start_date']];
+                if (!empty($data['annual_ctc']) && (float) $data['annual_ctc'] > 0) {
+                    $infoUpdate['salary'] = round((float) $data['annual_ctc'] / 12, 2);
+                }
                 $updated = $userInfoModel
                     ->where('id', $userInfo['id'])
-                    ->set(['status' => 'completed', 'role' => 'employee','joining_date' => $data['start_date']])
+                    ->set($infoUpdate)
                     ->update();
 
                 if (!$updated) {
@@ -346,7 +369,9 @@ class OnboardingController extends ResourceController
             return $this->failForbidden('Forbidden: You do not have access to this resource');
         }
 
+        $this->normalizeAnnualCtc();
         $data = $this->request->getPost();
+        $data['annual_ctc'] = ($data['annual_ctc'] ?? '') !== '' ? $data['annual_ctc'] : null;
 
         // Validate leave_type
         $validationRules = [
@@ -358,8 +383,7 @@ class OnboardingController extends ResourceController
             // 'acc_number' => 'required',
             'docu_submitted' => 'required',
             'offer_later_id' => 'required',
-
-
+            'annual_ctc' => 'permit_empty|decimal|greater_than_equal_to[0]',
         ];
         $validationMessages = [
             'candidate_id' => [
@@ -388,6 +412,10 @@ class OnboardingController extends ResourceController
             ],
             'docu_submitted' => [
                 'required' => ' Please provide details of the documents submitted.',
+            ],
+            'annual_ctc' => [
+                'decimal' => 'Annual CTC must be a valid amount.',
+                'greater_than_equal_to' => 'Annual CTC cannot be negative.',
             ],
         ];
 
@@ -431,12 +459,20 @@ class OnboardingController extends ResourceController
             ], 400);
         }
         // Check if onboarding_status is changing from "Pending" to "Completed"
+        $monthlyFromCtc = (!empty($data['annual_ctc']) && (float) $data['annual_ctc'] > 0)
+            ? round((float) $data['annual_ctc'] / 12, 2)
+            : null;
+
         if ($existingRecord['onboarding_status'] === 'pending' && $data['onboarding_status'] === 'completed') {
 
             // Update userinfo table
+            $infoUpdate = ['status' => 'completed', 'role' => 'employee'];
+            if ($monthlyFromCtc !== null) {
+                $infoUpdate['salary'] = $monthlyFromCtc;
+            }
             $updated = $userInfoModel
                 ->where('id', $userInfo['id'])
-                ->set(['status' => 'completed', 'role' => 'employee'])
+                ->set($infoUpdate)
                 ->update();
 
             if (!$updated) {
@@ -453,6 +489,8 @@ class OnboardingController extends ResourceController
                     ->set(['role' => 'employee','joining_date' => $data['start_date']])
                     ->update();
             }
+        } elseif ($data['onboarding_status'] === 'completed' && $monthlyFromCtc !== null && (float) ($userInfo['salary'] ?? 0) <= 0) {
+            $userInfoModel->update($userInfo['id'], ['salary' => $monthlyFromCtc]);
         }
 
         // Update the record
