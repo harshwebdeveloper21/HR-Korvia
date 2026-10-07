@@ -291,8 +291,16 @@ $isEmployee = ($role === 'employee');
                   <li class="nav-item"> <a class="nav-link" href="/empview">Manage Employee</a></li>
                   <li class="nav-item"> <a class="nav-link" href="/employee">Add Employee</a></li>
                   <li class="nav-item"> <a class="nav-link" href="/gadget-issuance">Gadget Issuance</a></li>
+                  <li class="nav-item"> <a class="nav-link" href="/organization-tree">Organization Tree</a></li>
                 </ul>
               </div>
+            </li>
+          <?php elseif ($isDeptManager || $isEmployee): ?>
+            <li class="nav-item erp-entry">
+              <a class="nav-link" href="<?= base_url('/organization-tree') ?>">
+                <i class="menu-icon mdi mdi-sitemap-outline"></i>
+                <span class="menu-title">Organization Tree</span>
+              </a>
             </li>
           <?php endif; ?>
 

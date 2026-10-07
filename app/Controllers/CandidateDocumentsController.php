@@ -88,7 +88,7 @@ class CandidateDocumentsController extends BaseController
                 'phone_number'    => (string) ($user['contact_number'] ?? ''),
                 'current_address' => $user['address_1'] ?? null,
                 'status'          => 'employee_record',
-                'created_by'      => (int) ($authUser->id ?? 0),
+                'created_by'      => (int) ($authUser->sub ?? $authUser->id ?? 0),
                 'created_at'      => date('Y-m-d H:i:s'),
                 'updated_at'      => date('Y-m-d H:i:s'),
             ]);

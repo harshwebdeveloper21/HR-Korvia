@@ -194,6 +194,7 @@ $routes->get("/employee/profile/view/(:num)", 'api\EmployeeController::profilevi
 $routes->get("/employee/details/(:num)", 'api\EmployeeController::details/$1');
 
 $routes->get("/empview", "api\EmployeeController::display");
+$routes->get("/organization-tree", "OrgTreeController::index");
 $routes->get("/employee-live-request", "api\EmployeeController::liveRequest");
 
 $routes->get("/job", "api\JobController::creates");
