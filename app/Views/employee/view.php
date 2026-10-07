@@ -43,7 +43,7 @@
         }
     }
 
-@media (min-width: 768px) {
+@media (min-width: 992px) {
     .table-responsive {
         overflow-x: visible !important;
     }

@@ -7,8 +7,8 @@
 <link rel="apple-touch-icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png'); ?>" />
 <link rel="manifest" href="<?= base_url('manifest.json'); ?>">
 <meta name="msapplication-TileImage" content="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png'); ?>">
-<meta name="msapplication-TileColor" content="#e66136">
-<meta name="theme-color" content="#e66136">
+<meta name="msapplication-TileColor" content="<?= esc(getPrimaryColor()) ?>">
+<meta name="theme-color" content="<?= esc(getPrimaryColor()) ?>">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -41,6 +41,8 @@
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/jobs.css?v=' . time()); ?>">
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/style.css?v=' . time()); ?>">
 <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/mobile-table.css?v=' . time()); ?>">
+<link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/css/table-theme.css?v=' . time()); ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
 <meta name="csrf-token" content="<?= csrf_hash() ?>" data-name="<?= csrf_token() ?>">
 <meta name="csrf-name" content="<?= csrf_token() ?>">
+<?= view('dashboard/theme') ?>

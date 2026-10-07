@@ -14,8 +14,8 @@
     <link rel="apple-touch-icon" href="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>">
     <link rel="manifest" href="<?= base_url('manifest.json') ?>">
     <meta name="msapplication-TileImage" content="<?= base_url(env('ImagePath') . 'assets/images/fab_fav_icon.png') ?>">
-    <meta name="msapplication-TileColor" content="#e66136">
-    <meta name="theme-color" content="#e66136">
+    <meta name="msapplication-TileColor" content="<?= esc(getPrimaryColor()) ?>">
+    <meta name="theme-color" content="<?= esc(getPrimaryColor()) ?>">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="<?= base_url(env('ImagePath') . 'assets/vendors/mdi/css/materialdesignicons.min.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= base_url(env("ImagePath") . "assets/css/login.css?v=" . time()) ?>">
+    <?= view('dashboard/theme') ?>
 </head>
 
 <body class="login-page-body">

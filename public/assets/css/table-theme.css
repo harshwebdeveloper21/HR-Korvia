@@ -1,0 +1,312 @@
+/* ══════════════════════════════════════════════════════
+   Global Table Theme (follows Settings → Theme Color)
+   Variables come from app/Views/dashboard/theme.php
+   ══════════════════════════════════════════════════════ */
+
+/* `:not(#hr-table-theme)` lifts specificity above page-level `#table-id thead th` rules. */
+body table:not(#hr-table-theme):not(.table-condensed):not(.ui-datepicker-calendar):not(.employee-table) > thead,
+body table:not(#hr-table-theme):not(.table-condensed):not(.ui-datepicker-calendar):not(.employee-table) > thead > tr,
+body table:not(#hr-table-theme):not(.table-condensed):not(.ui-datepicker-calendar):not(.employee-table) > thead > tr > th {
+    background: var(--hr-primary, #e66136) !important;
+    background-color: var(--hr-primary, #e66136) !important;
+    color: var(--hr-on-primary, #ffffff) !important;
+    box-shadow: none !important;
+}
+
+body table:not(#hr-table-theme):not(.table-condensed):not(.ui-datepicker-calendar):not(.employee-table) > thead > tr > th {
+    font-family: Poppins, sans-serif !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em !important;
+    padding: 12px 10px !important;
+    border: none !important;
+    white-space: nowrap;
+    vertical-align: middle !important;
+}
+
+body table:not(#hr-table-theme):not(.table-condensed):not(.ui-datepicker-calendar):not(.employee-table) > thead > tr > th :is(i, span, a, strong, small, b) {
+    color: inherit !important;
+}
+
+/* hr-edge-* classes mark the first/last *visible* cells (set in theme.php), since tables often have hidden columns. */
+body table:not(#hr-table-theme) > thead > tr > th.hr-edge-tl {
+    border-top-left-radius: 10px !important;
+}
+
+body table:not(#hr-table-theme) > thead > tr > th.hr-edge-tr {
+    border-top-right-radius: 10px !important;
+}
+
+.table:not(.table-bordered) > tbody > tr > td.hr-edge-bl {
+    border-bottom-left-radius: 10px;
+}
+
+.table:not(.table-bordered) > tbody > tr > td.hr-edge-br {
+    border-bottom-right-radius: 10px;
+}
+
+/* DataTables sort arrows: readable on any primary */
+table.dataTable > thead .sorting::before,
+table.dataTable > thead .sorting::after,
+table.dataTable > thead .sorting_asc::before,
+table.dataTable > thead .sorting_asc::after,
+table.dataTable > thead .sorting_desc::before,
+table.dataTable > thead .sorting_desc::after {
+    color: var(--hr-on-primary, #ffffff) !important;
+}
+
+/* ── Body rows ─────────────────────────────────────────── */
+.table {
+    --bs-table-striped-bg: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.035);
+    --bs-table-hover-bg: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.08);
+}
+
+/* Separate borders are needed for the rounded header corners. */
+.table:not(.table-bordered) {
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-bg-type: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.035) !important;
+}
+
+.table > tbody > tr > td {
+    padding: 11px 14px;
+    font-size: 13px;
+    color: #334155;
+    border-top: none;
+    border-bottom: 1px solid #eef0f4;
+    vertical-align: middle;
+}
+
+.table > tbody > tr {
+    transition: background-color 0.15s ease;
+}
+
+.table > tbody > tr:hover > td {
+    --bs-table-bg-state: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.08);
+    background-color: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.08);
+}
+
+.table > tbody > tr:last-child > td {
+    border-bottom: none;
+}
+
+.table > tbody > tr > td.dataTables_empty {
+    padding: 28px 14px;
+    color: #94a3b8;
+    font-size: 13.5px;
+}
+
+.table-bordered > tbody > tr > td {
+    border: 1px solid #eef0f4;
+}
+
+/* ── DataTables controls ──────────────────────────────── */
+.dataTables_wrapper {
+    font-size: 13px;
+    color: #475569;
+}
+
+.dataTables_wrapper .dataTables_length label,
+.dataTables_wrapper .dataTables_filter label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #475569;
+    margin-bottom: 12px;
+}
+
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #dfe3ea !important;
+    border-radius: 8px !important;
+    height: 36px;
+    padding: 4px 10px !important;
+    font-size: 13px;
+    background-color: #fff;
+    box-shadow: none !important;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    min-width: 70px;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    margin-left: 0 !important;
+}
+
+.dataTables_wrapper .dataTables_length select:focus,
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: var(--hr-primary, #e66136) !important;
+    box-shadow: 0 0 0 3px rgba(var(--hr-primary-rgb, 230, 97, 54), 0.15) !important;
+}
+
+.dataTables_wrapper .dataTables_info {
+    color: #64748b;
+    font-size: 12.5px;
+    padding-top: 14px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 10px !important;
+}
+
+.dataTables_wrapper .pagination {
+    gap: 4px;
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+.dataTables_wrapper .page-item .page-link {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    color: #475569 !important;
+    background: #fff !important;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: none !important;
+    transition: all 0.15s ease;
+}
+
+.dataTables_wrapper .page-item:not(.disabled):not(.active) .page-link:hover {
+    border-color: var(--hr-primary, #e66136) !important;
+    color: var(--hr-primary-text, #e66136) !important;
+}
+
+.dataTables_wrapper .page-item.active .page-link {
+    background: var(--hr-primary, #e66136) !important;
+    border-color: var(--hr-primary, #e66136) !important;
+    color: var(--hr-on-primary, #ffffff) !important;
+    font-weight: 600;
+}
+
+.dataTables_wrapper .page-item.disabled .page-link {
+    color: #cbd5e1 !important;
+    background: #f8fafc !important;
+}
+
+/* Non-bootstrap DataTables pagination */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 8px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: var(--hr-primary, #e66136) !important;
+    border-color: var(--hr-primary, #e66136) !important;
+    color: var(--hr-on-primary, #ffffff) !important;
+}
+
+/* ── Mobile expand toggle (mobile-table.css) follows theme ── */
+.expand-toggle {
+    border-color: var(--hr-primary, #e66136) !important;
+    color: var(--hr-primary-text, #e66136) !important;
+}
+
+.expand-toggle:hover {
+    background: var(--hr-primary, #e66136) !important;
+    color: var(--hr-on-primary, #ffffff) !important;
+}
+
+.expanded-details {
+    border-left-color: var(--hr-primary, #e66136) !important;
+}
+
+/* ── Tablet: allow horizontal scroll instead of squashing ── */
+@media (max-width: 991.98px) {
+    .table-responsive,
+    .dataTables_wrapper > .row > .col-sm-12 {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive::-webkit-scrollbar,
+    .dataTables_wrapper > .row > .col-sm-12::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb,
+    .dataTables_wrapper > .row > .col-sm-12::-webkit-scrollbar-thumb {
+        background: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.4);
+        border-radius: 6px;
+    }
+
+    body table:not(#hr-table-theme):not(.table-condensed):not(.ui-datepicker-calendar):not(.employee-table) > thead > tr > th {
+        font-size: 12px !important;
+        padding: 11px 10px !important;
+    }
+
+    .table > tbody > tr > td {
+        padding: 10px;
+    }
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 767.98px) {
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        text-align: left !important;
+        width: 100%;
+    }
+
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .dataTables_wrapper .dataTables_filter label {
+        flex-wrap: nowrap;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        flex: 1 1 auto;
+        width: 100% !important;
+        min-width: 0;
+    }
+
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        text-align: center !important;
+        width: 100%;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .pagination {
+        justify-content: center !important;
+    }
+
+    .dataTables_wrapper .page-item .page-link {
+        min-width: 30px;
+        height: 30px;
+        font-size: 12px;
+        padding: 0 8px !important;
+    }
+
+    body table:not(#hr-table-theme):not(.table-condensed):not(.ui-datepicker-calendar):not(.employee-table) > thead > tr > th {
+        font-size: 11px !important;
+        padding: 10px 8px !important;
+        letter-spacing: 0.02em !important;
+    }
+
+    .table > tbody > tr > td {
+        font-size: 12.5px;
+        padding: 10px 8px;
+    }
+
+    /* Card-style rows from mobile-table.css: keep row hover/stripe subtle */
+    .table-responsive table tbody tr:hover > td {
+        background-color: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.05);
+    }
+}

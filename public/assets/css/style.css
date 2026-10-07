@@ -44487,7 +44487,7 @@ code {
 
 .proBanner-padding-top {
 
-  padding-top: 97px !important;
+  padding-top: 70px !important;
 
 }
 
@@ -57610,7 +57610,7 @@ dl li {
 
 .page-body-wrapper {
 
-  min-height: calc(100vh - 97px);
+  min-height: calc(100vh - 70px);
 
   display: -webkit-flex;
 
@@ -57624,7 +57624,7 @@ dl li {
 
   padding-right: 0;
 
-  padding-top: 97px;
+  padding-top: 70px;
 
 }
 
@@ -57646,7 +57646,7 @@ dl li {
 
   width: calc(100% - 220px);
 
-  min-height: calc(100vh - 97px);
+  min-height: calc(100vh - 70px);
 
   display: -webkit-flex;
 
@@ -57698,7 +57698,7 @@ dl li {
 
 .sidebar {
 
-  min-height: calc(100vh - 97px);
+  min-height: calc(100vh - 70px);
 
   /* background: #F4F5F7; */
   background: #FFF;
@@ -58349,7 +58349,7 @@ dl li {
 
     position: fixed;
 
-    max-height: calc(100vh - 97px);
+    max-height: calc(100vh - 70px);
 
     top: 80px;
 
@@ -58616,7 +58616,7 @@ dl li {
   /* width: calc(100% - 220px); */
   width: calc(100% - 247px);
 
-  height: 97px;
+  height: 70px;
 
 }
 
@@ -59082,7 +59082,7 @@ dl li {
 
     right: 20px;
 
-    top: 97px;
+    top: 70px;
 
     width: calc(100% - 40px);
 
@@ -61732,7 +61732,7 @@ dl li {
 
   .sidebar-fixed .sidebar .nav {
 
-    max-height: calc(100vh - 97px);
+    max-height: calc(100vh - 70px);
 
     overflow: auto;
 
@@ -62019,9 +62019,9 @@ table thead,
 table thead tr,
 table thead tr th {
 
-  background: black !important;
+  background: var(--hr-primary, #e66136) !important;
 
-  color: white !important;
+  color: var(--hr-on-primary, #ffffff) !important;
 
   font-family: Poppins, sans-serif !important;
 

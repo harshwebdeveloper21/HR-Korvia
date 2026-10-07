@@ -31,7 +31,7 @@ $(document).ready(function () {
     var $this = $(this);
     var href = $this.attr('href');
 
-    if (href) {
+    if (href && href.charAt(0) !== '#') {
       var hrefPath = new URL(href, window.location.origin).pathname.replace(/\/$/, '');
 
       var isMatch = (currentPath === hrefPath);
@@ -46,36 +46,30 @@ $(document).ready(function () {
       }
 
       if (isMatch) {
+        $this.addClass('active');
+        $this.parents('.collapse').addClass('show');
+
         if ($this.closest('.sub-menu').length) {
-          // Submenu item matched
-          $this.addClass('active');
-          $this.closest('.collapse').addClass('show');
-
-          var $parentLink = $this.closest('.collapse').prev('.nav-link');
-          $parentLink.addClass('active');
-
-          // 🔶 Apply styles to parent menu link
-          $parentLink.css({
-            'color': '#E66136',
-            'font-weight': '600',
-            'background-color': '#ffffff', // white background
-            'border-radius': '8px'         // optional: make it rounded
-          });
-
-          $parentLink.find('i.menu-icon').css('color', '#E66136');
-        } else {
-          // Dashboard or other main links
+          $this.closest('.collapse').prev('.nav-link').addClass('active');
+        } else if (!$this.closest('.erp-group-list').length) {
           $this.closest('.nav-item').addClass('active');
-          $this.css({
-            'color': '#E66136',
-            'font-weight': '600',
-            'background-color': '#ffffff', // white background
-            'border-radius': '8px'
-          });
-          $this.find('i.menu-icon').css('color', '#E66136');
         }
       }
     }
+  });
+
+  // Keep only the module that holds the current page open, then sync toggle states with what is visible.
+  var $activeModule = $('.sidebar .erp-module').not('.erp-dashboard-wrap').has('.nav-link.active').first();
+  if ($activeModule.length) {
+    $('.sidebar .erp-module').not($activeModule).children('.collapse.show').removeClass('show');
+  }
+  $('.sidebar [data-bs-toggle="collapse"]').each(function () {
+    var target = $(this).attr('href') || $(this).attr('data-bs-target');
+    if (!target || target.charAt(0) !== '#') {
+      return;
+    }
+    var isOpen = $(target).hasClass('show');
+    $(this).attr('aria-expanded', isOpen ? 'true' : 'false').toggleClass('collapsed', !isOpen);
   });
 });
 
@@ -97,9 +91,18 @@ $(document).ready(function () {
     //   addActiveClass($this);
     // });
 
-    // Close other submenu in sidebar on opening any
-    sidebar.on('show.bs.collapse', '.collapse', function () {
-      sidebar.find('.collapse.show').collapse('hide');
+    // Close sibling menus, and keep the group that contains the menu being opened.
+    sidebar.on('show.bs.collapse', '.collapse', function (e) {
+      if (e.target !== this) {
+        return;
+      }
+      var current = this;
+      sidebar.find('.collapse.show').each(function () {
+        if (this === current || $.contains(this, current) || $.contains(current, this)) {
+          return;
+        }
+        $(this).collapse('hide');
+      });
     });
 
     // Change sidebar and content-wrapper height

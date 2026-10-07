@@ -354,18 +354,24 @@
             display: block !important;
         }
 
-        /* ── DESKTOP VIEW (>= 992px): 97px on Top -> 62px on Scroll ── */
+        /* ── DESKTOP VIEW (>= 992px): 70px on Top -> 62px on Scroll ── */
         @media (min-width: 992px) {
             .navbar.default-layout {
-                height: 97px !important;
-                min-height: 97px !important;
+                height: 70px !important;
+                min-height: 70px !important;
             }
 
             .navbar.default-layout .navbar-brand-wrapper,
             .navbar.default-layout .navbar-menu-wrapper {
-                height: 97px !important;
-                min-height: 97px !important;
+                height: 70px !important;
+                min-height: 70px !important;
                 transition: height 0.25s ease !important;
+            }
+
+            .navbar.default-layout .navbar-menu-wrapper .navbar-nav .nav-item .welcome-text {
+                font-size: 22px !important;
+                line-height: 1.3 !important;
+                margin-bottom: 0 !important;
             }
 
             .navbar.default-layout.headerLight,
@@ -383,29 +389,29 @@
             }
 
             .navbar .navbar-brand-wrapper {
-                width: 241px !important;
-                min-width: 241px !important;
-                max-width: 241px !important;
+                width: 270px !important;
+                min-width: 270px !important;
+                max-width: 270px !important;
                 border-right: 1px solid rgba(255, 255, 255, 0.25) !important;
                 padding-right: 15px !important;
             }
 
             .page-body-wrapper {
-                padding-top: 97px !important;
+                padding-top: 70px !important;
                 display: flex !important;
-                min-height: calc(100vh - 97px) !important;
+                min-height: calc(100vh - 70px) !important;
                 position: relative !important;
                 transition: padding-top 0.25s ease !important;
             }
 
             .sidebar {
                 position: fixed !important;
-                top: 97px !important;
+                top: 70px !important;
                 left: 0 !important;
                 bottom: 0 !important;
-                width: 241px !important;
-                height: calc(100vh - 97px) !important;
-                max-height: calc(100vh - 97px) !important;
+                width: 270px !important;
+                height: calc(100vh - 70px) !important;
+                max-height: calc(100vh - 70px) !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
                 overscroll-behavior: contain !important;
@@ -432,9 +438,9 @@
             }
 
             .main-panel {
-                margin-left: 241px !important;
-                width: calc(100% - 241px) !important;
-                min-height: calc(100vh - 97px) !important;
+                margin-left: 270px !important;
+                width: calc(100% - 270px) !important;
+                min-height: calc(100vh - 70px) !important;
                 transition: width 0.25s ease, margin-left 0.25s ease !important;
             }
 

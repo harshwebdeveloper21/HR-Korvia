@@ -16,6 +16,7 @@ class CompanyLogoModel extends Model
         'company_address',      // Added
         'company_phone',        // Added
         'company_email',        // Added
+        'primary_color',
         'created_by'
     ];
 }
