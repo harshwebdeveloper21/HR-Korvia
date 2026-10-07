@@ -7,4 +7,6 @@ writable/**/*.txt
 vendor/*
 public/upload/*
 /app/config/*
+!/app/config/Routes.php
+!/app/Config/Routes.php
 .env
