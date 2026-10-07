@@ -1,4 +1,5 @@
 vendor/
 .env
 app/Config/
+!app/Config/Routes.php
 .git
