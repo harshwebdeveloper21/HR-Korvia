@@ -46,4 +46,6 @@
 <meta name="csrf-token" content="<?= csrf_hash() ?>" data-name="<?= csrf_token() ?>">
 <meta name="csrf-name" content="<?= csrf_token() ?>">
 <?= view('dashboard/theme') ?>
+<?php if (is_file(FCPATH . 'assets/js/action-menu.js')): ?>
 <script src="<?= base_url(env('ImagePath') . 'assets/js/action-menu.js?v=' . filemtime(FCPATH . 'assets/js/action-menu.js')); ?>" defer></script>
+<?php endif; ?>
