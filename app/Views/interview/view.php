@@ -110,6 +110,9 @@
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
                     <h4 class="card-title mb-0">Manage Interviews</h4>
                     <div class="d-flex flex-wrap gap-2">
+                        <a href="<?= base_url("/assessment") ?>" class="btn hr-btnbg attendenceall text-nowrap">
+                            <i class="mdi mdi-clipboard-check-outline iconfontsize"></i> Assessments
+                        </a>
                         <button type="button" id="btnExportInterviews" class="btn hr-btnbg attendenceall text-nowrap">
                             <i class="mdi mdi-file-excel iconfontsize"></i> Export
                         </button>
@@ -180,7 +183,47 @@
     </div>
 </div>
 
+<?php if (session()->getFlashdata('success')): ?>
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        Swal.fire({ icon: 'success', title: <?= json_encode(session()->getFlashdata('success')) ?>, toast: true, position: 'top-end', timer: 2500, showConfirmButton: false });
+    });
+</script>
+<?php endif; ?>
+<script>
+    function assessmentLink(interview, style) {
+        const hasAssessment = !!interview.assessment_id;
+        const href = hasAssessment
+            ? `/assessment/edit/${interview.assessment_id}?from=interviews`
+            : `/assessment/create?interview_id=${interview.id}&from=interviews`;
+        const title = hasAssessment ? 'Edit Assessment' : 'Add Assessment';
+        if (style === 'button') {
+            return `<a href="${href}" class="btn btn-sm hr-btnbg"><i class="mdi mdi-clipboard-check-outline"></i> ${hasAssessment ? 'Assessment' : 'Assess'}</a>`;
+        }
+        const color = hasAssessment ? 'text-success' : 'text-warning';
+        const icon = hasAssessment ? 'mdi-clipboard-check' : 'mdi-clipboard-plus-outline';
+        return `<a href="${href}" class="${color} fs-5" title="${title}"><i class="mdi ${icon}"></i></a>`;
+    }
+
+    function assessmentPrintLinks(interview, style) {
+        if (!interview.assessment_id) return '';
+        const url = `/assessment/pdf/${interview.assessment_id}`;
+        if (style === 'button') {
+            return `<a href="${url}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary text-white"><i class="mdi mdi-printer-check"></i> Assessment</a>`;
+        }
+        return `<a href="${url}" target="_blank" rel="noopener" class="text-secondary fs-5" title="Print Assessment"><i class="mdi mdi-printer-check"></i></a>
+                <a href="${url}?download=1" class="text-info fs-5" title="Download Assessment PDF"><i class="mdi mdi-file-download-outline"></i></a>`;
+    }
+
+    function documentsLink(interview, style) {
+        if (!interview.candidate_id || interview.candidate_id == 0) return '';
+        const href = `/candidate-documents/${interview.candidate_id}`;
+        if (style === 'button') {
+            return `<a href="${href}" class="btn btn-sm btn-warning text-white"><i class="mdi mdi-file-document-multiple-outline"></i> Documents</a>`;
+        }
+        return `<a href="${href}" class="text-warning fs-5" title="Candidate Documents"><i class="mdi mdi-file-document-multiple-outline"></i></a>`;
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         const token = localStorage.getItem('token'); // JWT token from login
 
@@ -215,6 +258,11 @@
                                             <span class="detail-value capitalize-text">${interview.selection_status || 'N/A'}</span>
                                         </div>
                                         <div class="detail-actions">
+                                            ${assessmentLink(interview, 'button')}
+                                            ${assessmentPrintLinks(interview, 'button')}
+                                            ${documentsLink(interview, 'button')}
+                                            <a href="/interview/pdf/${interview.id}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary text-white"><i class="mdi mdi-printer"></i> Print</a>
+                                            <a href="/interview/pdf/${interview.id}?download=1" class="btn btn-sm btn-info text-white"><i class="mdi mdi-download"></i> PDF</a>
                                             <a href="/interviews/${interview.id}" class="btn btn-sm btn-success text-white"><i class="mdi mdi-pencil"></i> Edit</a>
                                             <button type="button" class="btn btn-sm btn-danger" onclick="deleteInterviewById(${interview.id}, '${interview.status || ''}')"><i class="mdi mdi-delete"></i> Delete</button>
                                         </div>
@@ -232,6 +280,12 @@
                         <td class="desktop-only-col capitalize-text">${interview.selection_status || 'N/A'}</td>
                         <td class="desktop-only-col">
                             <div style="display: flex; align-items: center; gap: 8px;">
+                                <a href="/interview/display/${interview.id}" class="text-primary fs-5" title="View"><i class="mdi mdi-eye"></i></a>
+                                ${assessmentLink(interview, 'icon')}
+                                ${assessmentPrintLinks(interview, 'icon')}
+                                ${documentsLink(interview, 'icon')}
+                                <a href="/interview/pdf/${interview.id}" target="_blank" rel="noopener" class="text-secondary fs-5" title="Print Interview Form"><i class="mdi mdi-printer"></i></a>
+                                <a href="/interview/pdf/${interview.id}?download=1" class="text-info fs-5" title="Download Interview PDF"><i class="mdi mdi-download"></i></a>
                                 <a href="/interviews/${interview.id}" class="text-success fs-5" title="Edit"><i class="mdi mdi-pencil"></i></a>
                                 <a href="javascript:void(0);" class="text-danger fs-5" title="Delete"
                                    onclick="deleteInterviewById(${interview.id}, '${interview.status || ''}')">

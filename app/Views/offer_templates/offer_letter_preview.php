@@ -1,14 +1,25 @@
+<?php
+$firstPage = (!empty($parsed_pages) && is_array($parsed_pages)) ? (string) ($parsed_pages[0] ?? '') : (string) ($content ?? '');
+$ownLetterhead = strpos($firstPage, 'ol-letterhead') !== false;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>JOINING LETTER</title>
+    <title><?= esc($document_title ?? 'JOINING LETTER') ?></title>
     <style>
         @page {
+<?php if ($ownLetterhead): ?>
+            margin-top: 36px;
+            margin-bottom: <?= !empty($footer_img_src) ? '45px' : '36px' ?>;
+            margin-left: 48pt;
+            margin-right: 48pt;
+<?php else: ?>
             margin-top: 120px;
             margin-bottom: 45px;
             margin-left: 70pt;
             margin-right: 70pt;
+<?php endif; ?>
         }
 
         body {
@@ -260,6 +271,7 @@
 </head>
 <body>
 
+    <?php if (!$ownLetterhead): ?>
     <!-- Header (repeats on each page) -->
     <header>
         <?php if (!empty($header_img_src)): ?>
@@ -283,6 +295,7 @@
             </table>
         <?php endif; ?>
     </header>
+    <?php endif; ?>
 
     <!-- Footer (repeats on each page if uploaded) -->
     <?php if (!empty($footer_img_src)): ?>
@@ -297,7 +310,7 @@
                 <div style="page-break-before: always;"></div>
             <?php endif; ?>
             <div class="content" style="<?= $idx > 0 ? 'padding-top: 5px;' : '' ?>">
-                <?php if ($idx === 0): ?>
+                <?php if ($idx === 0 && !$ownLetterhead): ?>
                     <div class="template-title-wrapper">
                         <h3><u>JOINING LETTER</u></h3>
                     </div>
@@ -310,9 +323,11 @@
     <?php else: ?>
         <!-- Main Content (Page 1) -->
         <div class="content">
+            <?php if (!$ownLetterhead): ?>
             <div class="template-title-wrapper">
                 <h3><u>JOINING LETTER</u></h3>
             </div>
+            <?php endif; ?>
 
             <div class="body-content">
                 <?= $content ?>

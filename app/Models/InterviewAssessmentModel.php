@@ -14,7 +14,7 @@ class InterviewAssessmentModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'interview_id', 'job_title', 'department', 'interview_round', 'interviewer_name',
-        'interview_date', 'interview_mode', 'ratings_data', 'overall_score', 'feedback',
+        'interview_date', 'interview_mode', 'contact_number', 'reporting_manager', 'ratings_data', 'overall_score', 'feedback',
         'expected_salary', 'notice_period', 'current_salary', 'joining_date', 'recommendation', 'next_step', 'final_remarks'
     ];
 

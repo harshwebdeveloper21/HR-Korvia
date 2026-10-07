@@ -51,35 +51,67 @@
         border: none !important;
     }
 
-    fieldset {
-        display: none;
+    #multiStepForm .job-section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--hr-primary-text, var(--hr-primary, #e66136));
+        background: rgba(var(--hr-primary-rgb, 230, 97, 54), .08);
+        border-left: 3px solid var(--hr-primary, #e66136);
+        border-radius: 4px;
+        padding: 7px 12px;
+        margin: 4px 0 14px;
     }
-
-    fieldset:first-of-type {
-        display: block;
+    #multiStepForm .form-group { margin-bottom: 14px !important; }
+    #multiStepForm .form-group > label,
+    #multiStepForm .job-label-row label {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 4px;
     }
-
-    .step {
-        width: 33.3%;
-        display: inline-block;
-        text-align: center;
-        font-weight: bold;
+    #multiStepForm .job-label-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 26px;
+        margin-bottom: 4px;
     }
-
-    .step.active {
-        color: #fff;
-        background: #007bff;
-        border-radius: 5px;
+    #multiStepForm .job-label-row label { margin-bottom: 0; }
+    #multiStepForm .job-add-btn {
+        font-size: 11px;
+        padding: 2px 8px;
+        line-height: 1.5;
+        border-radius: 4px;
     }
-
-    .step.completed {
-        color: #fff;
-        background: #28a745;
-        border-radius: 5px;
+    #multiStepForm .form-control,
+    #multiStepForm .form-select { min-height: 38px; font-size: 13.5px; }
+    #multiStepForm .job-gender-box {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        min-height: 38px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 4px 12px;
+        background: #fff;
     }
-
-    .progress-bar {
-        background-color: #E66136 !important;
+    #multiStepForm .job-gender-box .form-check { margin: 0; }
+    #multiStepForm .salary-range-container {
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 10px 14px;
+    }
+    .job-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 6px;
     }
 
     @media (max-width: 767px) {
@@ -286,235 +318,158 @@
                     </a>
                 </div>
 
-                <div class="progress mb-4">
-                    <div class="progress-bar  progress-bar-striped progress-bar-animated" role="progressbar"
-                        style="width: 33%;" id="progressBar"></div>
-                </div>
                 <form id="multiStepForm">
                     <input type="hidden" id="id" name="id" value="">
-                    <!-- Step 1 -->
-                    <fieldset>
 
-                        <h5>Step 1: Job Details</h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3 form-group">
-                                <label>Job Title</label>
-                                <div class="input-group">
-
-                                    <span class="input-group-text"><i class="mdi mdi-briefcase-outline"></i></span>
-                                    <input type="text" class="form-control" name="job_title" id="job_title"
-                                        placeholder="Enter job title">
-
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3 form-group">
-                                <label>Description</label>
-                                <div class="input-group">
-                                    <!-- <span class="input-group-text"><i class="mdi mdi-text"></i></span> -->
-                                    <textarea class="form-control" name="description" id="description"
-                                        placeholder="Enter descripetion"></textarea>
-                                </div>
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <div class="mb-2 d-flex justify-content-between align-items-center">
-                                    <label>Department</label>
-                                    <button type="button"
-                                        class="btn p-1 btn-sm d-flex align-items-center rounded addbtn-white attendenceall"
-                                        style="background-color: #E66136;font-size:14px" data-bs-toggle="modal"
-                                        data-bs-target="#adddepartementModal">
-                                        <i class="mdi mdi-plus iconfontsize"></i> Add Department
-                                    </button>
-                                </div>
-                                <!-- <label>Department</label> -->
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="mdi mdi-domain"></i></span>
-                                    <select class="form-select" name="department_id" id="department_id">
-                                        <option value="">Select department Type</option>
-                                        <?php foreach (
-                                            $departments
-                                            as $department
-                                        ): ?>
-                                            <option value="<?= $department[
-                                                "id"
-                                            ] ?>"><?= $department[
-                                                 "department_name"
-                                             ] ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-
-
-                            <div class="col-md-6 mb-3 form-group">
-                                <label>Job Type</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="mdi mdi-briefcase"></i></span>
-                                    <select class="form-control" name="job_type" id="job_type">
-                                        <option value="full">Full Time</option>
-                                        <option value="part">Part Time</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3 form-group">
-                                    <label>Age Range</label>
-                                    <div class="input-group mb-3">
-                                        <div class="w-100 salary-range-container">
-                                            <div class="d-flex justify-content-between">
-                                                <span>Min: <span id="ageMinValue">18</span></span>
-                                                <span>Max: <span id="ageMaxValue">65</span></span>
-                                            </div>
-
-                                            <!-- Age Range Slider -->
-                                            <div id="ageSlider"></div>
-
-                                            <input type="hidden" name="age" id="age_range_hidden">
-
-                                            <div class="text-center mt-2">
-                                                Selected Range: <span class="badge" style="background-color: #E66136;"
-                                                    id="age">18 - 65</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="px-3">
-                                        <label style="font-size: 13px;">Gender</label>
-                                        <div class="input-group border rounded-1" style="width: 481px;">
-                                            <span class="input-group-text bg-white"><i
-                                                    class="mdi mdi-gender-male-female"></i></span>
-                                            <div class="d-flex flex-wrap align-items-center mx-3">
-                                                <div class="form-check mx-4">
-                                                    <input class="form-check-input" type="radio" name="gender" id="male"
-                                                        value="male">
-                                                    <label class="form-check-label" for="male">Male</label>
-                                                </div>
-                                                <div class="form-check mx-4">
-                                                    <input class="form-check-input" type="radio" name="gender"
-                                                        id="female" value="female">
-                                                    <label class="form-check-label" for="female">Female</label>
-                                                </div>
-                                                <div class="form-check mx-4">
-                                                    <input class="form-check-input" type="radio" name="gender"
-                                                        id="both" value="both">
-                                                    <label class="form-check-label" for="both">Both</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="error" id="gender-Error"></div>
-                                    </div>
-                                </div>
-
-
+                    <div class="job-section-title"><i class="mdi mdi-briefcase-outline"></i> Job Details</div>
+                    <div class="row">
+                        <div class="col-md-6 col-lg-4 form-group">
+                            <label>Job Title</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-briefcase-outline"></i></span>
+                                <input type="text" class="form-control" name="job_title" id="job_title"
+                                    placeholder="Enter job title">
                             </div>
                         </div>
-                        <button type="button" class="btn  hr-btnbg next-step float-end addsmbtnres">Next</button>
-                    </fieldset>
-
-                    <!-- Step 2 -->
-                    <fieldset>
-                        <h5>Step 2: Final Details</h5>
-                        <div class="row">
-
-                            <div class="col-md-6 mb-3 form-group">
-                                <label>Salary Range</label>
-                                <div class="input-group mb-3">
-                                    <div class="w-100 salary-range-container">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <div class="d-flex align-items-center">
-                                                <span class="me-2">Min:</span> 
-                                                <input type="number" id="salaryMinValue" class="form-control form-control-sm" value="1000" style="width: 80px;" min="0">
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <span class="me-2">Max:</span> 
-                                                <input type="number" id="salaryMaxValue" class="form-control form-control-sm" value="100000" style="width: 80px;" min="0">
-                                            </div>
-                                        </div>
-
-                                        <!-- Salary Range Slider -->
-                                        <div id="salarySlider"></div>
-
-                                        <input type="hidden" name="salary_range" id="salary_range_hidden">
-
-                                        <div class="text-center mt-2">
-                                            Selected Range: <span class="badge" style="background-color: #E66136;"
-                                                id="salary_range">1000 - 100000</span>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="col-md-6 col-lg-4 form-group">
+                            <div class="job-label-row">
+                                <label>Department</label>
+                                <button type="button" class="btn btn-sm hr-btnbg job-add-btn" data-bs-toggle="modal"
+                                    data-bs-target="#adddepartementModal">
+                                    <i class="mdi mdi-plus"></i> Add Department
+                                </button>
                             </div>
-                            <div class="col-md-6 mb-3 form-group">
-                                <label>Experience</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i
-                                            class="mdi mdi-briefcase-check-outline"></i></span>
-                                    <input type="number" class="form-control" name="experience" id="experience"
-                                        placeholder="Enter experience in years">
-                                </div>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-domain"></i></span>
+                                <select class="form-select" name="department_id" id="department_id">
+                                    <option value="">Select Department</option>
+                                    <?php foreach ($departments as $department): ?>
+                                        <option value="<?= $department["id"] ?>"><?= esc($department["department_name"]) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3 form-group">
-                                <div class="mb-2 d-flex justify-content-between align-items-center">
-                                    <label class="mb-3">Location</label>
-                                    <button type="button"
-                                        class="btn p-1 btn-sm d-flex align-items-center rounded-pill addbtn-white attendenceall"
-                                        style="background-color: #E66136; font-size:11px" data-bs-toggle="modal"
-                                        data-bs-target="#addlocationModal">
-                                        <i class="mdi mdi-plus me-2 iconfontsize"></i> ADD LOCATION
-                                    </button>
-
-                                </div>
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text"><i class="mdi mdi-map-marker"></i></span>
-                                    <select id="locations_id" name="locations_id" class="form-select">
-                                        <option value="">Select Location Name</option>
-                                        <?php foreach ($locations as $job): ?>
-                                            <option value="<?= $job[
-                                                "location_id"
-                                            ] ?>"><?= esc(
-                                                 $job["job_location"],
-                                             ) ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3 form-group">
-                                <div class="mb-2 d-flex justify-content-between align-items-center">
-                                    <label>Address</label>
-                                    <button type="button"
-                                        class="btn p-1 btn-sm d-flex align-items-center rounded-pill addbtn-white attendenceall"
-                                        style="background-color: #E66136;font-size:11px" data-bs-toggle="modal"
-                                        data-bs-target="#addAddressModal">
-                                        <i class="mdi mdi-plus me-2 iconfontsize"></i> ADD ADDRESS
-                                    </button>
-                                </div>
-                                <!-- <button type="button" class="btn  hr-btnbg btn-sm">Address</button> -->
-                                <div class="input-group mb-3 form-group">
-                                    <span class="input-group-text"><i class="mdi mdi-map-marker"></i></span>
-                                    <select id="addresses_id" name="addresses_id" class="form-select">
-                                        <option value="">Select Address</option>
-                                    </select>
-
-
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3 form-group">
-                                    <label>Close Date</label>
-                                    <div class="input-group mb-3">
-                                        <span class="input-group-text"><i class="mdi mdi-calendar"></i></span>
-                                        <input type="date" class="form-control" name="close_date" id="close_date">
-                                    </div>
-                                </div>
+                        <div class="col-md-6 col-lg-4 form-group">
+                            <label>Job Type</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-briefcase"></i></span>
+                                <select class="form-select" name="job_type" id="job_type">
+                                    <option value="full">Full Time</option>
+                                    <option value="part">Part Time</option>
+                                </select>
                             </div>
                         </div>
-                        <button type="button" class="btn hr-btnbg prev-step addsmbtnres">Previous</button>
-                        <button type="submit" class="btn hr-btnbg float-end addsmbtnres" id="mainSubmitBtn">Submit</button>
-                    </fieldset>
+                        <div class="col-md-6 col-lg-4 form-group">
+                            <label>Experience (Years)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-briefcase-check-outline"></i></span>
+                                <input type="number" class="form-control" name="experience" id="experience"
+                                    placeholder="Enter experience in years">
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4 form-group">
+                            <label>Close Date</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-calendar"></i></span>
+                                <input type="date" class="form-control" name="close_date" id="close_date">
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4 form-group">
+                            <label>Gender</label>
+                            <div class="job-gender-box">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="gender" id="male" value="male">
+                                    <label class="form-check-label" for="male">Male</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="gender" id="female" value="female">
+                                    <label class="form-check-label" for="female">Female</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="gender" id="both" value="both">
+                                    <label class="form-check-label" for="both">Both</label>
+                                </div>
+                            </div>
+                            <div class="error" id="gender-Error"></div>
+                        </div>
+                    </div>
+
+                    <div class="job-section-title"><i class="mdi mdi-map-marker-outline"></i> Location &amp; Range</div>
+                    <div class="row">
+                        <div class="col-md-6 col-lg-4 form-group">
+                            <div class="job-label-row">
+                                <label>Location</label>
+                                <button type="button" class="btn btn-sm hr-btnbg job-add-btn" data-bs-toggle="modal"
+                                    data-bs-target="#addlocationModal">
+                                    <i class="mdi mdi-plus"></i> Add Location
+                                </button>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-map-marker"></i></span>
+                                <select id="locations_id" name="locations_id" class="form-select">
+                                    <option value="">Select Location Name</option>
+                                    <?php foreach ($locations as $job): ?>
+                                        <option value="<?= $job["location_id"] ?>"><?= esc($job["job_location"]) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4 form-group">
+                            <div class="job-label-row">
+                                <label>Address</label>
+                                <button type="button" class="btn btn-sm hr-btnbg job-add-btn" data-bs-toggle="modal"
+                                    data-bs-target="#addAddressModal">
+                                    <i class="mdi mdi-plus"></i> Add Address
+                                </button>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="mdi mdi-map-marker"></i></span>
+                                <select id="addresses_id" name="addresses_id" class="form-select">
+                                    <option value="">Select Address</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-12 col-lg-4 form-group">
+                            <label>Age Range</label>
+                            <div class="salary-range-container">
+                                <div class="d-flex justify-content-between">
+                                    <span>Min: <span id="ageMinValue">18</span></span>
+                                    <span class="badge" style="background-color: #E66136;" id="age">18 - 65</span>
+                                    <span>Max: <span id="ageMaxValue">65</span></span>
+                                </div>
+                                <div id="ageSlider"></div>
+                                <input type="hidden" name="age" id="age_range_hidden">
+                            </div>
+                        </div>
+                        <div class="col-md-12 col-lg-6 form-group">
+                            <label>Salary Range</label>
+                            <div class="salary-range-container">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">Min:</span>
+                                        <input type="number" id="salaryMinValue" class="form-control form-control-sm" value="1000" style="width: 100px; min-height: 30px;" min="0">
+                                    </div>
+                                    <span class="badge" style="background-color: #E66136;" id="salary_range">1000 - 100000</span>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">Max:</span>
+                                        <input type="number" id="salaryMaxValue" class="form-control form-control-sm" value="100000" style="width: 100px; min-height: 30px;" min="0">
+                                    </div>
+                                </div>
+                                <div id="salarySlider"></div>
+                                <input type="hidden" name="salary_range" id="salary_range_hidden">
+                            </div>
+                        </div>
+                        <div class="col-md-12 col-lg-6 form-group">
+                            <label>Description</label>
+                            <textarea class="form-control" name="description" id="description" rows="3"
+                                placeholder="Enter description"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="job-form-actions">
+                        <a href="/jobview" class="btn btn-light addsmbtnres">Cancel</a>
+                        <button type="submit" class="btn hr-btnbg addsmbtnres" id="mainSubmitBtn">Submit</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -525,21 +480,13 @@
 
 <script>
     $(document).ready(function () {
-        let currentStep = 0;
-        let steps = $("fieldset");
-        let progressBar = $("#progressBar");
         const token = localStorage.getItem("token");
         let isEditMode = false;
         let jobId = new URLSearchParams(window.location.search).get("id");
 
-        function updateProgressBar() {
-            let progress = ((currentStep + 1) / steps.length) * 100;
-            progressBar.css("width", progress + "%");
-        }
-
-        function validateStep(step) {
+        function validateForm() {
             let isValid = true;
-            let inputs = $(steps[step]).find("input, textarea, select");
+            let inputs = $("#multiStepForm").find("input, textarea, select");
 
             inputs.each(function () {
                 let input = $(this);
@@ -619,22 +566,6 @@
             }
         });
 
-        $(".next-step").click(function () {
-            if (validateStep(currentStep)) {
-                $(steps[currentStep]).hide();
-                currentStep++;
-                $(steps[currentStep]).show();
-                updateProgressBar();
-            }
-        });
-
-        $(".prev-step").click(function () {
-            $(steps[currentStep]).hide();
-            currentStep--;
-            $(steps[currentStep]).show();
-            updateProgressBar();
-        });
-
         initializeSalarySlider();
         initializeAgeSlider();
 
@@ -660,7 +591,13 @@
                 console.warn("Slider error:", err);
             }
 
-            if (!validateStep(currentStep)) return; // Validate last step before submitting
+            if (!validateForm()) {
+                const firstErr = $("#multiStepForm .is-invalid, #multiStepForm .invalid-feedback").first();
+                if (firstErr.length) {
+                    $('html, body').animate({ scrollTop: firstErr.offset().top - 120 }, 200);
+                }
+                return;
+            }
 
             let formData = new FormData(this);
             const csrfName = $('meta[name="csrf-token"]').attr('data-name');
@@ -760,22 +697,18 @@
                         let salaryMin = parseInt(salaryMinMax[0]);
                         let salaryMax = parseInt(salaryMinMax[1]);
 
-                        $('#salary_min').val(salaryMin);
-                        $('#salary_max').val(salaryMax);
-                        $('#salaryMinValue').text(salaryMin);
-                        $('#salaryMaxValue').text(salaryMax);
-                        $('#salary_range').text(`${salaryMin} - ${salaryMax}`);
+                        if (!isNaN(salaryMin) && !isNaN(salaryMax)) {
+                            initializeSalarySlider(salaryMin, salaryMax);
+                        }
 
                         // Set the age range
                         let ageMinMax = job.age.split('-'); // Assuming "18-40"
                         let ageMin = parseInt(ageMinMax[0]);
                         let ageMax = parseInt(ageMinMax[1]);
 
-                        $('#age_min').val(ageMin);
-                        $('#age_max').val(ageMax);
-                        $('#ageMinValue').text(ageMin);
-                        $('#ageMaxValue').text(ageMax);
-                        $('#age').text(`${ageMin} - ${ageMax}`);
+                        if (!isNaN(ageMin) && !isNaN(ageMax)) {
+                            initializeAgeSlider(ageMin, ageMax);
+                        }
                         $('#mainSubmitBtn').text('Update'); // Change button text to "Update"
                         $('.card-title').text('Edit job');
                         jobId = job.id; // Set the department ID for future reference

@@ -73,8 +73,8 @@ $isEmployee = ($role === 'employee');
 #sidebar.erp-sidebar .erp-module-toggle {
   display: flex !important;
   align-items: center !important;
-  margin: 4px 12px !important;
-  padding: 11px 14px !important;
+  margin: 3px 12px !important;
+  padding: 8px 12px !important;
   font-weight: 600 !important;
   font-size: 14px !important;
   background: #ffffff !important;
@@ -83,7 +83,7 @@ $isEmployee = ($role === 'employee');
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 #sidebar.erp-sidebar .erp-dashboard-link {
-  margin-bottom: 8px !important;
+  margin-bottom: 6px !important;
 }
 #sidebar.erp-sidebar .erp-dashboard-link .menu-icon,
 #sidebar.erp-sidebar .erp-module-toggle .menu-icon {
@@ -134,7 +134,7 @@ $isEmployee = ($role === 'employee');
 }
 
 #sidebar.erp-sidebar .erp-group-list {
-  padding: 4px 0 6px !important;
+  padding: 2px 0 4px !important;
   margin: 0 !important;
 }
 #sidebar.erp-sidebar .erp-group-list > .nav-item > .nav-link {
@@ -142,10 +142,11 @@ $isEmployee = ($role === 'employee');
   align-items: center !important;
   background: transparent !important;
   color: #3a4252 !important;
-  margin: 2px 12px !important;
-  padding: 9px 12px !important;
+  margin: 1px 12px !important;
+  padding: 6px 12px !important;
   font-weight: 500 !important;
   font-size: 13.5px !important;
+  line-height: 1.35 !important;
   border: none !important;
 }
 #sidebar.erp-sidebar .erp-group-list > .nav-item > .nav-link i.menu-icon {
@@ -157,6 +158,12 @@ $isEmployee = ($role === 'employee');
 }
 #sidebar.erp-sidebar .erp-group-list > .nav-item > .nav-link .menu-arrow {
   color: #9aa3b2 !important;
+}
+#sidebar.erp-sidebar .nav .nav-item .nav-link i.menu-arrow:before {
+  transform: rotate(0deg) !important;
+}
+#sidebar.erp-sidebar .nav .nav-item .nav-link[aria-expanded="true"] i.menu-arrow:before {
+  transform: rotate(180deg) !important;
 }
 #sidebar.erp-sidebar .erp-group-list > .nav-item > .nav-link:hover {
   background: rgba(var(--hr-primary-rgb, 230, 97, 54), 0.06) !important;
@@ -189,7 +196,7 @@ $isEmployee = ($role === 'employee');
 }
 
 #sidebar.erp-sidebar .nav.sub-menu {
-  padding: 2px 0 6px !important;
+  padding: 1px 0 4px !important;
   margin: 0 !important;
   background: transparent !important;
 }
@@ -200,7 +207,8 @@ $isEmployee = ($role === 'employee');
   color: #4b5568 !important;
   background: transparent !important;
   margin: 1px 12px 1px 36px !important;
-  padding: 7px 12px !important;
+  padding: 5px 12px !important;
+  line-height: 1.35 !important;
   border-radius: 10px !important;
   font-size: 13px !important;
   font-weight: 500 !important;
@@ -221,8 +229,8 @@ $isEmployee = ($role === 'employee');
 #sidebar.erp-sidebar .erp-geofence > .nav-link {
   display: flex !important;
   align-items: center !important;
-  margin: 10px 12px !important;
-  padding: 10px 12px !important;
+  margin: 6px 12px !important;
+  padding: 7px 12px !important;
   color: #3a4252 !important;
   background: transparent !important;
   font-weight: 500 !important;
@@ -424,8 +432,6 @@ $isEmployee = ($role === 'employee');
                   <li class="nav-item"> <a class="nav-link" href="/jobview">Jobs</a></li>
                   <li class="nav-item"> <a class="nav-link" href="/candidateview">Candidates</a></li>
                   <li class="nav-item"> <a class="nav-link" href="/addinterview">Interviews Information</a></li>
-                  <li class="nav-item"> <a class="nav-link" href="/assessment">Interviews Assessments</a></li>
-                  <li class="nav-item"> <a class="nav-link" href="/candidate-documents">Candidate Documents</a></li>
                   <li class="nav-item"> <a class="nav-link" href="/onboardingview">Employees Onboarding</a></li>
                   <li class="nav-item"> <a class="nav-link" href="/offer-templates-view">Offer Letter Templates</a></li>
                 </ul>

@@ -635,6 +635,39 @@ class OfferLetterTemplateController extends ResourceController
         $creatorDesignation = $creator['designation'] ?? 'Co-Founder & CEO/CTO';
         $formattedSalary = !empty($salary) ? $salary : '2-month max will be Training Period then after, your position will be Trainee Digital Marketing SEO Executive and salary Based on your performance';
 
+        $isSample = !$candidate;
+        $db = \Config\Database::connect();
+
+        $workLocation = '';
+        if (!empty($job['locations_id'])) {
+            $loc = $db->table('job_location')->where('location_id', $job['locations_id'])->get()->getRowArray();
+            $workLocation = $loc['job_location'] ?? '';
+            if (!empty($job['addresses_id'])) {
+                $addr = $db->table('job_location_addresses')->where('address_id', $job['addresses_id'])->get()->getRowArray();
+                if (!empty($addr['address'])) {
+                    $workLocation = trim($addr['address'] . ($workLocation ? ', ' . $workLocation : ''));
+                }
+            }
+        }
+
+        $reportingManager = '';
+        if ($candidate && $db->tableExists('interview_assessments') && $db->fieldExists('reporting_manager', 'interview_assessments')) {
+            $assessment = $db->table('interview_assessments ia')
+                ->select('ia.reporting_manager')
+                ->join('interviews i', 'i.id = ia.interview_id')
+                ->where('i.candidate_id', $candidate['id'])
+                ->where('ia.reporting_manager IS NOT NULL')
+                ->where('ia.reporting_manager !=', '')
+                ->orderBy('ia.id', 'DESC')
+                ->get()->getRowArray();
+            $reportingManager = $assessment['reporting_manager'] ?? '';
+        }
+
+        $annualCtc = '';
+        if (!empty($salary)) {
+            $annualCtc = is_numeric($salary) ? number_format((float) $salary) : $salary;
+        }
+
         $sigData = $this->getDigitalSignatureData();
 
         $data = [
@@ -676,8 +709,17 @@ class OfferLetterTemplateController extends ResourceController
             'docu_submitted'        => $docuSubmitted,
             'documents_submitted'   => $docuSubmitted,
             'submitted_documents'   => $docuSubmitted,
-            'reporting_to'          => 'Simran Goswami',
-            'supervisor'            => 'Simran Goswami',
+            'reporting_to'          => $reportingManager ?: ($isSample ? '[Reporting Manager]' : '-'),
+            'supervisor'            => $reportingManager ?: ($isSample ? '[Reporting Manager]' : '-'),
+            'reporting_manager'     => $reportingManager ?: ($isSample ? '[Reporting Manager]' : '-'),
+            'ref_number'            => $isSample ? 'XXXX' : sprintf('%04d', $candidate['id']),
+            'letter_date'           => date('d/m/Y'),
+            'candidate_address'     => $isSample ? '[Candidate Address]' : trim((string) ($candidate['current_address'] ?? '')),
+            'work_location'         => $workLocation ?: ($isSample ? '[Work Location]' : '-'),
+            'employment_type'       => !empty($job['job_type']) ? ucwords(str_replace(['_', '-'], ' ', $job['job_type'])) : ($isSample ? '[Employment Type]' : '-'),
+            'joining_date_dmy'      => date('d/m/Y', strtotime($rawStartDate)),
+            'offer_valid_until'     => date('d/m/Y', strtotime('+7 days')),
+            'annual_ctc'            => $annualCtc ?: '[Amount]',
             'working_hours'         => '09:30 AM till 06:15 PM (Monday to Friday)',
             'digital_signature'     => $sigData['digital_signature'],
             'digital_signature_img' => $sigData['digital_signature_img'],
@@ -717,6 +759,7 @@ class OfferLetterTemplateController extends ResourceController
 
         $finalHtml = view('offer_templates/offer_letter_preview', array_merge($data, [
             'parsed_pages' => $parsedPages,
+            'document_title' => $template['title'] ?? 'Joining Letter',
             'content' => $parsedPages[0] ?? '',
             'content_page2' => $parsedPages[1] ?? '',
         ]));
@@ -732,7 +775,7 @@ class OfferLetterTemplateController extends ResourceController
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        $safeTitle = 'Joining_Letter';
+        $safeTitle = trim(preg_replace('/[^A-Za-z0-9]+/', '_', (string) ($template['title'] ?? '')), '_') ?: 'Joining_Letter';
         $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $candidateName);
         $filename = "{$safeTitle}_{$safeName}.pdf";
 

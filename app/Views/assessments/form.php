@@ -1,371 +1,328 @@
 <?= $this->extend("layout") ?>
 <?= $this->section("content") ?>
+<?php
+$assessment = $assessment ?? null;
+$isEdit = $assessment !== null;
+$val = static function (string $field, $default = '') use ($assessment) {
+    return old($field, $assessment[$field] ?? $default);
+};
+$oldRating = static function (string $key) use ($savedRatings) {
+    return (int) old('rating_' . $key, $savedRatings[$key] ?? 0);
+};
+$selectedRec = old('recommendation', $assessment['recommendation'] ?? '');
+$returnTo = old('return_to', $returnTo ?? '');
+$cancelUrl = $returnTo === 'interviews' ? '/addinterview' : '/assessment';
+$selectedInterview = (string) old('interview_id', $assessment['interview_id'] ?? ($preselectInterview ?? ''));
+$autoFillOnLoad = !$isEdit && !empty($preselectInterview) && old('interview_id') === null;
+?>
 <style>
-.assessment-wizard { font-family: "Inter", sans-serif; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-.wizard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.wizard-tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
-.wizard-tab { padding: 10px 20px; cursor: pointer; color: #666; font-weight: 500; }
-.wizard-tab.active { border-bottom: 2px solid #e75c25; color: #e75c25; margin-bottom: -2px; }
-.wizard-card { display: none; }
-.wizard-card.active { display: block; }
-.rating-btn { width: 40px; height: 40px; border: 1px solid #ccc; border-radius: 4px; background: white; margin-right: 5px; cursor: pointer; }
-.rating-btn.active { border-color: #e75c25; color: #e75c25; font-weight: bold; background: #fff5f2; }
-.overall-score-box { text-align: center; border: 1px solid #ddd; padding: 10px 20px; border-radius: 8px; background: #fff; }
-.score-number { font-size: 24px; font-weight: bold; }
-.rec-btn { background-color: #fff; border: 1px solid #ced4da; color: #495057; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; }
-.rec-btn:hover { border-color: #aeb5bc; background-color: #f8f9fa; }
-.btn-check:checked + .rec-btn { background-color: #fff !important; color: #e75c25 !important; border-color: #e75c25 !important; font-weight: bold; box-shadow: 0 0 0 1px #e75c25; }
+    .as-wrap { width: 100%; max-width: 1400px; margin: 0 auto; }
+    .as-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+    .as-header h3 { font-size: 22px; font-weight: 600; color: #111827; margin-bottom: 2px; }
+    .as-header p { font-size: 13px; color: #6b7280; margin: 0; }
+    .as-score {
+        text-align: center; min-width: 120px; padding: 8px 18px; border-radius: 8px;
+        border: 1px solid rgba(var(--hr-primary-rgb, 230, 97, 54), .35);
+        background: rgba(var(--hr-primary-rgb, 230, 97, 54), .06);
+    }
+    .as-score .num { font-size: 24px; font-weight: 700; color: var(--hr-primary-text, var(--hr-primary, #e66136)); line-height: 1.1; }
+    .as-score .lbl { font-size: 11px; color: #6b7280; font-weight: 600; }
+    .as-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px 20px 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .as-section-title {
+        display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+        color: var(--hr-primary-text, var(--hr-primary, #e66136));
+        background: rgba(var(--hr-primary-rgb, 230, 97, 54), .08);
+        border-left: 3px solid var(--hr-primary, #e66136);
+        border-radius: 4px; padding: 7px 12px; margin: 6px 0 14px;
+    }
+    .as-section-title .tag { opacity: .75; font-weight: 600; }
+    #assessmentForm .form-label { font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+    #assessmentForm .form-label .req { color: #dc3545; }
+    #assessmentForm .form-control, #assessmentForm .form-select { border-radius: 6px; border: 1px solid #d1d5db; padding: 7px 10px; font-size: 13.5px; min-height: 38px; }
+    #assessmentForm .form-control:focus, #assessmentForm .form-select:focus { border-color: var(--hr-primary, #e66136); box-shadow: 0 0 0 2px rgba(var(--hr-primary-rgb, 230, 97, 54), .2); }
+    #assessmentForm .mb-3 { margin-bottom: 12px !important; }
+    .as-hint { font-size: 12px; color: #6b7280; font-style: italic; margin: -6px 0 10px; }
+
+    .as-rating-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+    .as-rating-table th, .as-rating-table td { padding: 8px 10px; border-bottom: 1px solid #eef0f3; vertical-align: middle; }
+    .as-rating-table tr:last-child td { border-bottom: none; }
+    .as-rating-table thead th { font-size: 12px; text-align: center; }
+    .as-rating-table thead th:first-child { text-align: left; }
+    .as-rating-table .param-title { font-weight: 600; font-size: 13.5px; color: #111827; }
+    .as-rating-table .param-desc { font-size: 12px; color: #6b7280; }
+    .as-rating-table td.rate-cell { text-align: center; width: 11%; }
+    .as-rating-table tr.is-missing td { background: #fff5f5; }
+    .rate-option { display: inline-flex; flex-direction: column; align-items: center; cursor: pointer; margin: 0; }
+    .rate-option input { position: absolute; opacity: 0; pointer-events: none; }
+    .rate-option span {
+        width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #cbd2dc; display: inline-flex; align-items: center; justify-content: center;
+        font-weight: 600; font-size: 13px; color: #4b5563; background: #fff; transition: all .15s ease;
+    }
+    .rate-option:hover span { border-color: var(--hr-primary, #e66136); }
+    .rate-option input:checked + span { background: var(--hr-primary, #e66136); border-color: var(--hr-primary, #e66136); color: var(--hr-on-primary, #fff); }
+    .rate-option input:focus-visible + span { box-shadow: 0 0 0 3px rgba(var(--hr-primary-rgb, 230, 97, 54), .25); }
+    .as-total-row { display: flex; justify-content: space-between; align-items: center; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; margin: 12px 0 16px; font-weight: 600; }
+    .as-total-row .val { color: var(--hr-primary-text, var(--hr-primary, #e66136)); font-size: 16px; }
+
+    .rec-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .rec-option { position: relative; margin: 0; }
+    .rec-option input { position: absolute; opacity: 0; pointer-events: none; }
+    .rec-option span {
+        display: flex; align-items: center; gap: 8px; border: 1.5px solid #d1d5db; border-radius: 8px; padding: 10px 12px;
+        font-size: 13.5px; font-weight: 500; cursor: pointer; background: #fff; transition: all .15s ease;
+    }
+    .rec-option span::before { content: ""; width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #9ca3af; flex: 0 0 16px; }
+    .rec-option input:checked + span { border-color: var(--hr-primary, #e66136); background: rgba(var(--hr-primary-rgb, 230, 97, 54), .06); color: var(--hr-primary-text, var(--hr-primary, #e66136)); font-weight: 600; }
+    .rec-option input:checked + span::before { background: var(--hr-primary, #e66136); border-color: var(--hr-primary, #e66136); box-shadow: inset 0 0 0 3px #fff; }
+    .rec-options.is-missing .rec-option span { border-color: #dc3545; }
+    .as-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+    @media (max-width: 767px) {
+        .as-rating-table thead { display: none; }
+        .as-rating-table, .as-rating-table tbody, .as-rating-table tr, .as-rating-table td { display: block; width: 100%; }
+        .as-rating-table tr { border-bottom: 1px solid #eef0f3; padding: 8px 0; }
+        .as-rating-table td { border: none; padding: 4px 10px; }
+        .as-rating-table td.rate-cell { display: inline-block; width: auto; padding: 4px 6px; }
+        .rate-option small { display: block; font-size: 10px; color: #6b7280; }
+    }
+    @media (min-width: 768px) {
+        .rate-option small { display: none; }
+    }
 </style>
 
-<div class="content-wrapper assessment-wizard">
-    <div class="wizard-header">
-        <div>
-            <h2>Interview assessment</h2>
-            <p class="text-muted">Riya Patel - Sales Executive - Technical round</p>
-        </div>
-        <div class="overall-score-box">
-            <div class="score-number" id="overall-score">0.0</div>
-            <div class="text-muted" style="font-size: 12px;">Overall score / 5</div>
+<div class="row">
+    <div class="col-12 grid-margin">
+        <div class="as-wrap">
+            <div class="as-header">
+                <div>
+                    <h3><?= $isEdit ? 'Edit Candidate Assessment' : 'Candidate Assessment Form' ?></h3>
+                    <p>Confidential – For Internal Use Only</p>
+                </div>
+                <div class="as-score">
+                    <div class="num"><span id="scoreTotal">0</span> / 30</div>
+                    <div class="lbl">OVERALL RATING</div>
+                </div>
+            </div>
+
+            <?php if (session()->getFlashdata('error')): ?>
+                <div class="alert alert-danger py-2"><?= esc(session()->getFlashdata('error')) ?></div>
+            <?php endif; ?>
+
+            <form method="POST" action="<?= $isEdit ? '/assessment/update/' . $assessment['id'] : '/assessment/store' ?>" id="assessmentForm" novalidate>
+                <?= csrf_field() ?>
+                <input type="hidden" name="return_to" value="<?= esc($returnTo) ?>">
+                <div class="as-card">
+                    <div class="as-section-title"><span class="tag">Section A</span> | Interview Details</div>
+                    <div class="row">
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <label class="form-label" for="interviewSelect">Candidate Name <span class="req">*</span></label>
+                            <select class="form-select" name="interview_id" id="interviewSelect">
+                                <option value="">Select Candidate</option>
+                                <?php foreach ($interviews as $inv):
+                                    $invDate = (string) ($inv['interview_date'] ?? '');
+                                    if ($invDate === '' || strpos($invDate, '0000') === 0) {
+                                        $invDate = (!empty($inv['schedule_date']) && strpos($inv['schedule_date'], '0000') !== 0) ? substr($inv['schedule_date'], 0, 10) : '';
+                                    }
+                                ?>
+                                    <option value="<?= $inv['id'] ?>"
+                                        data-job="<?= esc($inv['position_applied_for'] ?? '') ?>"
+                                        data-dept="<?= esc($inv['department_name'] ?? '') ?>"
+                                        data-round="<?= esc($inv['interview_round'] ?? '') ?>"
+                                        data-date="<?= esc($invDate) ?>"
+                                        data-interviewer="<?= esc(trim((string) ($inv['interviewer_name'] ?? ''))) ?>"
+                                        data-mobile="<?= esc($inv['mobile_number'] ?? '') ?>"
+                                        <?= $selectedInterview === (string) $inv['id'] ? 'selected' : '' ?>>
+                                        <?= esc($inv['candidate_name'] ?: 'Unknown Candidate') ?><?= !empty($inv['position_applied_for']) ? ' — ' . esc($inv['position_applied_for']) : '' ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <label class="form-label" for="jobTitle">Position Applied For</label>
+                            <input type="text" class="form-control" name="job_title" id="jobTitle" placeholder="e.g. Sales Executive" value="<?= esc($val('job_title')) ?>">
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <label class="form-label" for="interviewDate">Date of Interview <span class="req">*</span></label>
+                            <input type="date" class="form-control" name="interview_date" id="interviewDate" value="<?= esc($val('interview_date')) ?>">
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <label class="form-label" for="interviewerName">Interviewer Name</label>
+                            <input type="text" class="form-control" name="interviewer_name" id="interviewerName" placeholder="Interviewer name" value="<?= esc($val('interviewer_name')) ?>">
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <label class="form-label" for="interviewRound">Interview Round</label>
+                            <input type="text" class="form-control" name="interview_round" id="interviewRound" list="asRoundList" placeholder="e.g. 1st Round" value="<?= esc($val('interview_round')) ?>">
+                            <datalist id="asRoundList">
+                                <option value="1st Round"></option>
+                                <option value="2nd Round"></option>
+                                <option value="Technical Round"></option>
+                                <option value="HR Round"></option>
+                                <option value="Final Round"></option>
+                            </datalist>
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <label class="form-label" for="department">Department</label>
+                            <select class="form-select" name="department" id="department">
+                                <option value="">Select Department</option>
+                                <?php foreach ($departments as $dept): ?>
+                                    <option value="<?= esc($dept['department_name']) ?>" <?= $val('department') === $dept['department_name'] ? 'selected' : '' ?>><?= esc($dept['department_name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <label class="form-label" for="contactNumber">Contact Number</label>
+                            <input type="text" class="form-control" name="contact_number" id="contactNumber" placeholder="Contact number" value="<?= esc($val('contact_number')) ?>">
+                        </div>
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <label class="form-label" for="reportingManager">Reporting Manager</label>
+                            <input type="text" class="form-control" name="reporting_manager" id="reportingManager" placeholder="Reporting manager" value="<?= esc($val('reporting_manager')) ?>">
+                        </div>
+                    </div>
+
+                    <div class="as-section-title"><span class="tag">Section B</span> | Competency Evaluation</div>
+                    <p class="as-hint">Please rate the candidate on each parameter (1 = Poor, 5 = Excellent).</p>
+                    <div class="table-responsive-sm">
+                        <table class="as-rating-table">
+                            <thead>
+                                <tr>
+                                    <th>Evaluation Parameter</th>
+                                    <?php foreach ($ratingLabels as $num => $label): ?>
+                                        <th><?= $num ?><br><span style="font-weight:500;"><?= esc($label) ?></span></th>
+                                    <?php endforeach; ?>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($competencies as $key => [$title, $desc]): $current = $oldRating($key); ?>
+                                    <tr data-key="<?= $key ?>">
+                                        <td>
+                                            <div class="param-title"><?= esc($title) ?></div>
+                                            <div class="param-desc"><?= esc($desc) ?></div>
+                                        </td>
+                                        <?php foreach ($ratingLabels as $num => $label): ?>
+                                            <td class="rate-cell">
+                                                <label class="rate-option" title="<?= esc($label) ?>">
+                                                    <input type="radio" name="rating_<?= $key ?>" value="<?= $num ?>" <?= $current === $num ? 'checked' : '' ?>>
+                                                    <span><?= $num ?></span>
+                                                    <small><?= esc($label) ?></small>
+                                                </label>
+                                            </td>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="as-total-row">
+                        <span>Overall Rating (Total Score out of 30)</span>
+                        <span class="val"><span id="scoreTotalRow">0</span> / 30</span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-6 mb-3">
+                            <div class="as-section-title"><span class="tag">Section C</span> | Key Strengths</div>
+                            <textarea class="form-control" name="strengths" rows="3" placeholder="What did the candidate do well?"><?= esc(old('strengths', $savedFeedback['strengths'] ?? '')) ?></textarea>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <div class="as-section-title"><span class="tag">Section D</span> | Areas of Concern / Development Needs</div>
+                            <textarea class="form-control" name="weaknesses" rows="3" placeholder="Any concerns or areas to develop?"><?= esc(old('weaknesses', $savedFeedback['weaknesses'] ?? '')) ?></textarea>
+                        </div>
+                    </div>
+
+                    <div class="as-section-title"><span class="tag">Section E</span> | Final Recommendation <span class="req text-danger">*</span></div>
+                    <div class="rec-options" id="recOptions">
+                        <?php foreach ($recommendations as $idx => $rec): ?>
+                            <label class="rec-option">
+                                <input type="radio" name="recommendation" value="<?= esc($rec) ?>" <?= $selectedRec === $rec ? 'checked' : '' ?>>
+                                <span><?= esc($rec) ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="as-footer">
+                    <a href="<?= $cancelUrl ?>" class="btn btn-light">Cancel</a>
+                    <button type="submit" class="btn hr-btnbg" id="submitBtn"><?= $isEdit ? 'Update Assessment' : 'Submit Assessment' ?></button>
+                </div>
+            </form>
         </div>
     </div>
-
-    <div class="wizard-tabs">
-        <div class="wizard-tab active" data-step="1">Details</div>
-        <div class="wizard-tab" data-step="2">Ratings</div>
-        <div class="wizard-tab" data-step="3">Feedback</div>
-        <div class="wizard-tab" data-step="4">Expectations</div>
-        <div class="wizard-tab" data-step="5">Decision</div>
-    </div>
-
-    <form method="POST" action="<?= isset($assessment) ? '/assessment/update/' . $assessment['id'] : '/assessment/store' ?>" id="assessmentForm" novalidate>
-        <?= csrf_field() ?>
-        <!-- Step 1: Details -->
-        <div class="wizard-card active" id="step-1">
-            <h4>Interview details</h4>
-            <p class="text-muted">Enter the details for this interview assessment.</p>
-            
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Candidate</label>
-                    <select class="form-select" name="interview_id" id="interviewSelect" onchange="fillInterviewDetails()">
-                        <option value="">Select Candidate...</option>
-                        <?php if(!empty($interviews)): foreach($interviews as $inv): ?>
-                            <option value="<?= $inv['id'] ?>" 
-                                data-job="<?= htmlspecialchars((string)($inv['position_applied_for'] ?? '')) ?>"
-                                data-dept="<?= htmlspecialchars((string)($inv['department_name'] ?? '')) ?>"
-                                data-round="<?= htmlspecialchars((string)($inv['interview_round'] ?? '')) ?>"
-                                data-date="<?= htmlspecialchars((string)($inv['interview_date'] ?? '')) ?>"
-                                data-interviewer="<?= htmlspecialchars((string)($inv['interviewer_name'] ?? '')) ?>"
-                                <?= (isset($assessment) && $assessment['interview_id'] == $inv['id']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars((string)($inv['candidate_name'] ?? $inv['full_name'] ?? 'Unknown Candidate')) ?>
-                            </option>
-                        <?php endforeach; endif; ?>
-                    </select>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Job title</label>
-                    <input type="text" class="form-control" name="job_title" id="jobTitle" placeholder="Enter job title" value="<?= htmlspecialchars((string)($assessment['job_title'] ?? '')) ?>">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Department</label>
-                    <select class="form-select" name="department" id="department">
-                        <option value="">Select department...</option>
-                        <?php if(isset($departments)): foreach($departments as $dept): ?>
-                            <option value="<?= htmlspecialchars((string)($dept['department_name'] ?? '')) ?>"
-                                <?= (isset($assessment) && $assessment['department'] == $dept['department_name']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars((string)($dept['department_name'] ?? '')) ?>
-                            </option>
-                        <?php endforeach; endif; ?>
-                    </select>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Interview round</label>
-                    <input type="text" class="form-control" name="interview_round" id="interviewRound" placeholder="e.g. Technical" value="<?= htmlspecialchars((string)($assessment['interview_round'] ?? '')) ?>">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Interviewer</label>
-                    <input type="text" class="form-control" name="interviewer_name" placeholder="Enter interviewer name" value="<?= htmlspecialchars((string)($assessment['interviewer_name'] ?? '')) ?>">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Interview date *</label>
-                    <input type="date" class="form-control" name="interview_date" id="interviewDate" value="<?= htmlspecialchars((string)($assessment['interview_date'] ?? '')) ?>">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Interview mode</label>
-                    <select class="form-select" name="mode">
-                        <option <?= (($assessment['interview_mode'] ?? '') == 'In person') ? 'selected' : '' ?>>In person</option>
-                        <option <?= (($assessment['interview_mode'] ?? '') == 'Phone') ? 'selected' : '' ?>>Phone</option>
-                        <option <?= (($assessment['interview_mode'] ?? '') == 'Video call') ? 'selected' : '' ?>>Video call</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- Step 2: Ratings -->
-        <div class="wizard-card" id="step-2">
-            <h4>Skill ratings</h4>
-            <p class="text-muted">Rate each area from 1 to 5. Comments are optional.</p>
-
-            <div id="ratings-container">
-            <?php 
-            // When editing, load saved ratings. Otherwise show default.
-            $savedRatings = [];
-            if (isset($assessment['ratings_data']) && !empty($assessment['ratings_data'])) {
-                $savedRatings = is_array($assessment['ratings_data']) 
-                    ? $assessment['ratings_data'] 
-                    : json_decode($assessment['ratings_data'], true) ?? [];
-            }
-            if (empty($savedRatings)) {
-                $savedRatings = [['title' => 'Technical / job knowledge', 'desc' => 'Skills needed for the role', 'rating' => 0, 'comment' => '']];
-            }
-            $i = 0;
-            foreach ($savedRatings as $row): $i++;
-            ?>
-            <div class="row align-items-center border-bottom py-3 rating-row">
-                <div class="col-md-4">
-                    <input type="text" class="form-control border-0 fw-bold bg-transparent p-0 mb-1" name="criteria_title_<?= $i ?>" value="<?= htmlspecialchars((string)($row['title'] ?? '')) ?>">
-                    <input type="text" class="form-control border-0 text-muted bg-transparent p-0" style="font-size: 12px;" name="criteria_desc_<?= $i ?>" value="<?= htmlspecialchars((string)($row['desc'] ?? '')) ?>">
-                </div>
-                <div class="col-md-4 d-flex">
-                    <input type="hidden" name="rating_<?= $i ?>" class="rating-input" value="<?= (int)($row['rating'] ?? 0) ?>">
-                    <?php for($r=1; $r<=5; $r++): ?>
-                    <button type="button" class="rating-btn <?= ((int)($row['rating'] ?? 0) == $r) ? 'active' : '' ?>" onclick="setRating(this, <?= $i ?>, <?= $r ?>)"><?= $r ?></button>
-                    <?php endfor; ?>
-                </div>
-                <div class="col-md-4 d-flex align-items-center">
-                    <input type="text" class="form-control me-2" name="comment_<?= $i ?>" placeholder="Comment (optional)" value="<?= htmlspecialchars((string)($row['comment'] ?? '')) ?>">
-                    <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="$(this).closest('.rating-row').remove(); calculateScore();"><i class="mdi mdi-close"></i></button>
-                </div>
-            </div>
-            <?php endforeach; ?>
-            </div>
-            
-            <div class="mt-3">
-                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" onclick="addRatingRow()"><i class="mdi mdi-plus"></i> Add new skill</button>
-            </div>
-            
-            <p class="text-muted mt-3" style="font-size:12px;">1 Poor · 2 Below average · 3 Average · 4 Good · 5 Excellent</p>
-        </div>
-
-        <!-- Step 3: Feedback -->
-        <div class="wizard-card" id="step-3">
-            <h4>Written feedback</h4>
-            <p class="text-muted">Keep it specific so the next interviewer can build on it.</p>
-            <?php 
-            // Parse feedback JSON if saved, else empty
-            $feedbackData = [];
-            if (isset($assessment['feedback']) && !empty($assessment['feedback'])) {
-                $decoded = json_decode($assessment['feedback'], true);
-                $feedbackData = is_array($decoded) ? $decoded : [];
-            }
-            ?>
-            <div class="mb-3">
-                <label>Strengths</label>
-                <textarea class="form-control" name="strengths" rows="3" placeholder="What did the candidate do well?"><?= htmlspecialchars((string)($feedbackData['strengths'] ?? '')) ?></textarea>
-            </div>
-            <div class="mb-3">
-                <label>Weaknesses or concerns</label>
-                <textarea class="form-control" name="weaknesses" rows="3" placeholder="Anything that worried you?"><?= htmlspecialchars((string)($feedbackData['weaknesses'] ?? '')) ?></textarea>
-            </div>
-            <div class="mb-3">
-                <label>Additional notes</label>
-                <textarea class="form-control" name="notes" rows="3"><?= htmlspecialchars((string)($feedbackData['notes'] ?? '')) ?></textarea>
-            </div>
-        </div>
-
-        <!-- Step 4: Expectations -->
-        <div class="wizard-card" id="step-4">
-            <h4>Candidate expectations</h4>
-            <p class="text-muted">Details HR needs for the offer stage.</p>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label>Current salary (per year)</label>
-                    <input type="number" class="form-control" name="current_salary" placeholder="e.g. 4,80,000" value="<?= htmlspecialchars((string)($assessment['current_salary'] ?? '')) ?>">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label>Expected salary (per year)</label>
-                    <input type="number" class="form-control" name="expected_salary" placeholder="e.g. 6,00,000" value="<?= htmlspecialchars((string)($assessment['expected_salary'] ?? '')) ?>">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label>Notice period (days)</label>
-                    <input type="number" class="form-control" name="notice_period" placeholder="e.g. 30" value="<?= htmlspecialchars((string)($assessment['notice_period'] ?? '')) ?>">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label>Available joining date</label>
-                    <input type="date" class="form-control" name="joining_date" value="<?= htmlspecialchars((string)($assessment['joining_date'] ?? '')) ?>">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label>Probation period (months)</label>
-                    <input type="number" class="form-control" name="probation_period" placeholder="e.g. 6" value="<?= htmlspecialchars((string)($assessment['probation_period'] ?? '')) ?>">
-                </div>
-            </div>
-        </div>
-
-        <!-- Step 5: Decision -->
-        <div class="wizard-card" id="step-5">
-            <h4>Decision</h4>
-            <p class="text-muted">Your final recommendation for this round.</p>
-            <div class="mb-4">
-                <label class="mb-2">Recommendation *</label><br>
-                <div role="group" aria-label="Recommendation options">
-                    <input type="radio" class="btn-check" name="recommendation" id="recStrongHire" autocomplete="off" value="Strong hire" <?= (($assessment['recommendation'] ?? '') == 'Strong hire') ? 'checked' : '' ?>>
-                    <label class="rec-btn me-2" for="recStrongHire">Strong hire</label>
-
-                    <input type="radio" class="btn-check" name="recommendation" id="recHire" autocomplete="off" value="Hire" <?= (($assessment['recommendation'] ?? '') == 'Hire') ? 'checked' : '' ?>>
-                    <label class="rec-btn me-2" for="recHire">Hire</label>
-
-                    <input type="radio" class="btn-check" name="recommendation" id="recHold" autocomplete="off" value="Hold" <?= (($assessment['recommendation'] ?? '') == 'Hold') ? 'checked' : '' ?>>
-                    <label class="rec-btn me-2" for="recHold">Hold</label>
-
-                    <input type="radio" class="btn-check" name="recommendation" id="recReject" autocomplete="off" value="Reject" <?= (($assessment['recommendation'] ?? '') == 'Reject') ? 'checked' : '' ?>>
-                    <label class="rec-btn" for="recReject">Reject</label>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label>Next step</label>
-                    <select class="form-select" name="next_step" id="next_step">
-                        <option value="">Select</option>
-                        <option <?= (($assessment['next_step'] ?? '') == 'Move to next round') ? 'selected' : '' ?>>Move to next round</option>
-                        <option <?= (($assessment['next_step'] ?? '') == 'Send offer') ? 'selected' : '' ?>>Send offer</option>
-                        <option <?= (($assessment['next_step'] ?? '') == 'Keep in talent pool') ? 'selected' : '' ?>>Keep in talent pool</option>
-                        <option <?= (($assessment['next_step'] ?? '') == 'Close') ? 'selected' : '' ?>>Close</option>
-                    </select>
-                </div>
-                <div class="col-md-6 mb-3" id="next_round_date_box" style="display:none;">
-                    <label>Next round date</label>
-                    <input type="date" class="form-control" name="next_round_date">
-                </div>
-            </div>
-            <div class="mb-3">
-                <label>Final remarks</label>
-                <textarea class="form-control" name="final_remarks" rows="3"><?= htmlspecialchars((string)($assessment['final_remarks'] ?? '')) ?></textarea>
-            </div>
-        </div>
-
-        <!-- Footer Buttons -->
-        <div class="d-flex justify-content-between mt-4 border-top pt-3">
-            <input type="hidden" name="overall_score" id="overall_score_input">
-            <button type="button" class="btn btn-sm btn-secondary" onclick="prevStep()">Previous</button>
-            <div>
-                <button type="button" class="btn btn-sm btn-primary" style="background-color:#e75c25; border-color:#e75c25;" onclick="nextStep()" id="nextBtn">Next</button>
-                <button type="submit" class="btn btn-sm btn-primary" style="background-color:#e75c25; border-color:#e75c25; display:none;" id="submitBtn">Submit Assessment</button>
-            </div>
-        </div>
-
-    </form>
 </div>
 
 <script>
-let currentStep = 1;
-const totalSteps = 5;
-
-$('.wizard-tab').click(function(){
-    const step = $(this).data('step');
-    goToStep(step);
-});
-
-function goToStep(step) {
-    $('.wizard-tab').removeClass('active');
-    $('.wizard-card').removeClass('active');
-    
-    $('.wizard-tab[data-step="'+step+'"]').addClass('active');
-    $('#step-'+step).addClass('active');
-    
-    currentStep = step;
-    
-    if(step === totalSteps) {
-        $('#nextBtn').hide();
-        $('#submitBtn').show();
-    } else {
-        $('#nextBtn').show();
-        $('#submitBtn').hide();
+$(function () {
+    function calculateScore() {
+        let total = 0;
+        $('#assessmentForm .as-rating-table tbody tr').each(function () {
+            const checked = $(this).find('input[type="radio"]:checked');
+            if (checked.length) total += parseInt(checked.val(), 10);
+        });
+        $('#scoreTotal, #scoreTotalRow').text(total);
     }
-}
 
-function nextStep() {
-    if(currentStep < totalSteps) goToStep(currentStep + 1);
-}
+    $('#assessmentForm').on('change', '.as-rating-table input[type="radio"]', function () {
+        $(this).closest('tr').removeClass('is-missing');
+        calculateScore();
+    });
+    $('#assessmentForm').on('change', 'input[name="recommendation"]', function () {
+        $('#recOptions').removeClass('is-missing');
+    });
 
-function prevStep() {
-    if(currentStep > 1) goToStep(currentStep - 1);
-}
-
-function setRating(btn, questionId, ratingValue) {
-    // Remove active from siblings
-    $(btn).siblings().removeClass("active");
-    $(btn).addClass("active");
-    // Set hidden input
-    $(btn).siblings(".rating-input").val(ratingValue);
-    
-    calculateScore();
-}
-
-function calculateScore() {
-    let total = 0;
-    let count = 0;
-    $('.rating-input').each(function() {
-        let val = parseInt($(this).val());
-        if(val > 0) {
-            total += val;
-            count++;
+    $('#interviewSelect').on('change', function () {
+        const selected = $(this).find('option:selected');
+        if (!selected.val()) return;
+        const fill = function (selector, value) {
+            if (value) $(selector).val(value);
+        };
+        fill('#jobTitle', selected.data('job'));
+        fill('#interviewRound', selected.data('round'));
+        fill('#interviewDate', selected.data('date'));
+        fill('#interviewerName', selected.data('interviewer'));
+        fill('#contactNumber', selected.data('mobile'));
+        const dept = selected.data('dept');
+        if (dept && $('#department option').filter(function () { return $(this).val() === dept; }).length) {
+            $('#department').val(dept);
         }
     });
-    
-    let avg = count > 0 ? (total / count).toFixed(1) : "0.0";
-    $('#overall-score').text(avg);
-    $('#overall_score_input').val(avg);
-}
 
-$('#next_step').change(function(){
-    if($(this).val() === "Move to next round") {
-        $('#next_round_date_box').show();
-    } else {
-        $('#next_round_date_box').hide();
-    }
+    $('#assessmentForm').on('submit', function (e) {
+        let message = '';
+        const $first = [];
+
+        if (!$('#interviewSelect').val()) {
+            message = 'Please select a candidate.';
+            $first.push($('#interviewSelect'));
+        } else if (!$('#interviewDate').val()) {
+            message = 'Date of interview is required.';
+            $first.push($('#interviewDate'));
+        }
+
+        $('#assessmentForm .as-rating-table tbody tr').each(function () {
+            if (!$(this).find('input[type="radio"]:checked').length) {
+                $(this).addClass('is-missing');
+                if (!message) message = 'Please rate the candidate on every competency.';
+                $first.push($(this));
+            }
+        });
+
+        if (!$('input[name="recommendation"]:checked').length) {
+            $('#recOptions').addClass('is-missing');
+            if (!message) message = 'Please select a final recommendation.';
+            $first.push($('#recOptions'));
+        }
+
+        if (message) {
+            e.preventDefault();
+            if ($first.length) {
+                $('html, body').animate({ scrollTop: $first[0].offset().top - 120 }, 200);
+            }
+            Swal.fire({ icon: 'error', title: 'Incomplete form', text: message, customClass: { confirmButton: 'hr-btnbg' } });
+        }
+    });
+
+    calculateScore();
+    <?php if ($autoFillOnLoad): ?>
+    $('#interviewSelect').trigger('change');
+    <?php endif; ?>
 });
-
-let rowCount = <?= $i ?>;
-function addRatingRow() {
-    rowCount++;
-    let html = `
-    <div class="row align-items-center border-bottom py-3 rating-row">
-        <div class="col-md-4">
-            <input type="text" class="form-control border-0 fw-bold bg-transparent p-0 mb-1" name="criteria_title_${rowCount}" placeholder="Enter Skill Name">
-            <input type="text" class="form-control border-0 text-muted bg-transparent p-0" style="font-size: 12px;" name="criteria_desc_${rowCount}" placeholder="Description (optional)">
-        </div>
-        <div class="col-md-4 d-flex">
-            <input type="hidden" name="rating_${rowCount}" class="rating-input" value="0">
-            <button type="button" class="rating-btn" onclick="setRating(this, ${rowCount}, 1)">1</button>
-            <button type="button" class="rating-btn" onclick="setRating(this, ${rowCount}, 2)">2</button>
-            <button type="button" class="rating-btn" onclick="setRating(this, ${rowCount}, 3)">3</button>
-            <button type="button" class="rating-btn" onclick="setRating(this, ${rowCount}, 4)">4</button>
-            <button type="button" class="rating-btn" onclick="setRating(this, ${rowCount}, 5)">5</button>
-        </div>
-        <div class="col-md-4 d-flex align-items-center">
-            <input type="text" class="form-control me-2" name="comment_${rowCount}" placeholder="Comment (optional)">
-            <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="$(this).closest('.rating-row').remove(); calculateScore();"><i class="mdi mdi-close"></i></button>
-        </div>
-    </div>
-    `;
-    $('#ratings-container').append(html);
-}
-
-function fillInterviewDetails() {
-    var selected = $('#interviewSelect').find('option:selected');
-    if(selected.val()) {
-        $('#jobTitle').val(selected.data('job'));
-        $('#department').val(selected.data('dept'));
-        $('#interviewRound').val(selected.data('round'));
-        $('#interviewDate').val(selected.data('date'));
-        $('input[name="interviewer_name"]').val(selected.data('interviewer'));
-    } else {
-        $('#jobTitle').val('');
-        $('#department').val('');
-        $('#interviewRound').val('');
-        $('#interviewDate').val('');
-        $('input[name="interviewer_name"]').val('');
-    }
-}
 </script>
 <?= $this->endSection() ?>

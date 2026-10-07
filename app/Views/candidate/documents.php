@@ -6,19 +6,11 @@
 .progress-container { width: 200px; text-align: right; }
 .progress-text { font-size: 14px; font-weight: 500; margin-bottom: 5px; display: flex; justify-content: space-between;}
 .progress-bar-custom { height: 8px; background-color: #e9ecef; border-radius: 4px; overflow: hidden; display: flex; }
-.progress-bar-fill { height: 100%; background-color: #e75c25; transition: width 0.3s ease; }
-.wizard-tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 20px; gap: 20px;}
-.wizard-tab { padding: 10px 0; cursor: pointer; color: #666; font-weight: 500; position: relative; }
-.wizard-tab.active { color: #e75c25; }
-.wizard-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background-color: #e75c25; }
-.tab-badge { background-color: #f1f3f5; color: #495057; font-size: 12px; padding: 2px 8px; border-radius: 12px; margin-left: 5px; font-weight: 600;}
-.wizard-tab.active .tab-badge { background-color: #f1f3f5; color: #495057; }
-.wizard-card { display: none; }
-.wizard-card.active { display: block; }
+.progress-bar-fill { height: 100%; background-color: var(--hr-primary, #e75c25); transition: width 0.3s ease; }
 .doc-item { padding: 20px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 .doc-info { flex: 1; }
 .doc-info h5 { margin-bottom: 5px; font-size: 16px; font-weight: 600; color: #212529;}
-.doc-info h5 span.text-danger { color: #e75c25 !important; }
+.doc-info h5 span.text-danger { color: var(--hr-primary, #e75c25) !important; }
 .doc-info p { margin-bottom: 8px; font-size: 13px; color: #6c757d; }
 .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; margin-right: 10px; }
 .status-approved { background-color: #d1e7dd; color: #0f5132; }
@@ -26,20 +18,20 @@
 .status-not-uploaded { background-color: #f1f3f5; color: #6c757d; }
 .file-name { font-size: 13px; color: #495057; }
 .reject-reason { font-size: 13px; color: #dc3545; margin-top: 8px; }
-.btn-upload { color: #e75c25; border-color: #e75c25; background: white; }
-.btn-upload:hover { background-color: #e75c25; color: white; }
+.btn-upload { color: var(--hr-primary, #e75c25); border-color: var(--hr-primary, #e75c25); background: white; }
+.btn-upload:hover { background-color: var(--hr-primary-dark, #e75c25); color: var(--hr-on-primary, #fff); }
 .btn-replace { color: #495057; border-color: #ced4da; background: white; }
 .btn-replace:hover { background-color: #f8f9fa; }
 .btn-remove { color: #495057; border-color: #ced4da; background: white; }
 .btn-remove:hover { background-color: #f8f9fa; }
 .footer-buttons { padding-top: 20px; border-top: 1px solid #eee; }
-.btn-primary-custom { background-color: #e75c25; border-color: #e75c25; color: white; }
-.btn-primary-custom:hover { background-color: #d05321; border-color: #d05321; color: white; }
+.btn-primary-custom { background-color: var(--hr-primary, #e75c25); border-color: var(--hr-primary, #e75c25); color: var(--hr-on-primary, #fff); }
+.btn-primary-custom:hover { background-color: var(--hr-primary-dark, #d05321); border-color: var(--hr-primary-dark, #d05321); color: var(--hr-on-primary, #fff); }
 .preview-container { margin-top: 0; display: none; flex-shrink: 0; }
 .preview-container img { max-height: 80px; max-width: 150px; border-radius: 5px; border: 1px solid #ddd; object-fit: cover; }
 </style>
 
-<div class="content-wrapper doc-wizard">
+<div class="content-wrapper doc-wizard<?= isset($selectedCandidate) ? ' doc-wizard-detail' : '' ?>">
     <?php if (!isset($selectedCandidate)): ?>
 <style>
     /* DataTable mobile styles */
@@ -78,7 +70,7 @@
                                         <td><?= esc($c['email']) ?></td>
                                         <td><?= esc($c['phone_number'] ?? 'N/A') ?></td>
                                         <td>
-                                            <a href="/candidate-documents/<?= $c['id'] ?>" class="btn btn-sm text-white" style="background-color: rgb(230, 97, 54); border-color: rgb(230, 97, 54);"><i class="mdi mdi-eye"></i> View / Upload</a>
+                                            <a href="/candidate-documents/<?= $c['id'] ?>" class="btn btn-sm hr-btnbg"><i class="mdi mdi-eye"></i> View / Upload</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -133,14 +125,11 @@
     });
 </script>
 <?php else: ?>
-        <div class="mb-3">
-            <a href="/candidate-documents" class="btn btn-sm btn-outline-secondary">&larr; Back to Selection</a>
-        </div>
-
         <style>
             :root {
-                --brand-color: #e8602c;
-                --brand-hover: #d05321;
+                --brand-color: var(--hr-primary, #e8602c);
+                --brand-hover: var(--hr-primary-dark, #d05321);
+                --brand-on: var(--hr-on-primary, #fff);
                 --text-color: #1c2230;
                 --muted-color: #6b7385;
                 --border-color: #e6e8ee;
@@ -208,41 +197,6 @@
                 transition: width 0.3s ease;
             }
 
-            .wizard-tabs {
-                display: flex;
-                overflow-x: auto;
-                border-bottom: 1px solid var(--border-color);
-                white-space: nowrap;
-                scrollbar-width: none; /* Firefox */
-            }
-            .wizard-tabs::-webkit-scrollbar { display: none; } /* Chrome */
-
-            .wizard-tab {
-                padding: 16px 24px;
-                font-size: 14px;
-                font-weight: 500;
-                color: var(--muted-color);
-                cursor: pointer;
-                position: relative;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .wizard-tab.active {
-                color: var(--brand-color);
-            }
-
-            .wizard-tab.active::after {
-                content: '';
-                position: absolute;
-                bottom: -1px;
-                left: 0;
-                width: 100%;
-                height: 2px;
-                background-color: var(--brand-color);
-            }
-
             .tab-pill {
                 font-size: 11px;
                 font-weight: 700;
@@ -263,12 +217,12 @@
             }
 
             .info-note {
-                background-color: #fdf5f2; /* Light orange */
-                color: #5c3a21;
+                background-color: rgba(var(--hr-primary-rgb, 232, 96, 44), .08);
+                color: var(--hr-primary-text, #5c3a21);
                 font-size: 13px;
                 padding: 12px 16px;
                 border-radius: 8px;
-                margin-bottom: 24px;
+                margin-bottom: 16px;
             }
 
             .doc-row {
@@ -354,7 +308,7 @@
             }
             .month-picker-icon {
                 background-color: var(--brand-color);
-                color: white;
+                color: var(--brand-on);
                 padding: 4px 8px;
                 display: flex;
                 align-items: center;
@@ -392,7 +346,7 @@
             .btn-brand {
                 background: var(--brand-color);
                 border: 1px solid var(--brand-color);
-                color: white;
+                color: var(--brand-on);
                 font-size: 13px;
                 font-weight: 600;
                 padding: 8px 20px;
@@ -401,11 +355,12 @@
             }
             .btn-brand:hover {
                 background: var(--brand-hover);
-                color: white;
+                color: var(--brand-on);
             }
             .btn-brand:disabled {
-                background: #f0a384;
-                border-color: #f0a384;
+                background: var(--brand-color);
+                border-color: var(--brand-color);
+                opacity: .55;
                 cursor: not-allowed;
             }
 
@@ -423,8 +378,66 @@
                 display: none;
             }
 
-            .wizard-card { display: none; }
-            .wizard-card.active { display: block; }
+            .wizard-card { margin-bottom: 24px; }
+            .wizard-card:last-child { margin-bottom: 0; }
+            .doc-section-title {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                font-size: 13px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .4px;
+                color: var(--hr-primary-text, var(--hr-primary, var(--brand-color)));
+                background: rgba(var(--hr-primary-rgb, 232, 96, 44), .08);
+                border-left: 4px solid var(--hr-primary, var(--brand-color));
+                border-radius: 6px;
+                padding: 9px 14px;
+            }
+            .doc-section-title .title-left { display: flex; align-items: center; gap: 8px; }
+            .doc-section-title .btn-outline-action { text-transform: none; letter-spacing: 0; padding: 4px 12px; font-size: 12px; }
+
+            .header-right { display: flex; align-items: center; gap: 16px; }
+            .doc-wizard.doc-wizard-detail { padding: 0; background: transparent; box-shadow: none; }
+            .doc-wizard-detail .wizard-header { padding: 16px 20px; }
+            .doc-wizard-detail .wizard-content { padding: 16px 20px; }
+            .doc-wizard-detail .wizard-footer { padding: 14px 20px; }
+
+            .doc-sections { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+            .doc-sections .wizard-card { margin-bottom: 0; min-width: 0; }
+            .doc-sections .span-full { grid-column: 1 / -1; }
+            .doc-sections .span-2 { grid-column: span 2; }
+            .doc-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+            .doc-list.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .doc-list.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .doc-list .doc-row {
+                grid-template-columns: 52px minmax(0, 1fr);
+                gap: 12px;
+                align-items: start;
+                padding: 12px;
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                background: #fff;
+            }
+            .doc-list .doc-row:last-child { border-bottom: 1px solid var(--border-color); }
+            .doc-list .doc-thumbnail { width: 52px; height: 64px; font-size: 9px; }
+            .doc-list .doc-title { font-size: 13.5px; margin-bottom: 6px; }
+            .doc-list .doc-meta { gap: 6px; }
+            .doc-list .file-name { flex-basis: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+            .doc-list .doc-actions { grid-column: 1 / -1; justify-content: flex-end; gap: 8px; }
+            .doc-list .doc-actions .btn-brand, .doc-list .doc-actions .btn-outline-action { padding: 5px 14px; font-size: 12px; }
+
+            @media (max-width: 1199px) {
+                .doc-list.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 991px) {
+                .doc-sections { grid-template-columns: minmax(0, 1fr); }
+                .doc-sections .span-2 { grid-column: auto; }
+            }
+            @media (max-width: 575px) {
+                .doc-list.cols-2, .doc-list.cols-3 { grid-template-columns: minmax(0, 1fr); }
+            }
 
             /* Focus Styles */
             button:focus-visible, input:focus-visible {
@@ -452,6 +465,7 @@
                     gap: 16px;
                 }
                 .progress-block { width: 100%; }
+                .header-right { width: 100%; }
             }
         </style>
 
@@ -478,23 +492,18 @@
                     <h1>Documents for <?= esc($selectedCandidate['candidate_name']) ?></h1>
                     <p class="subtitle">Upload salary slips, experience letter and other required documents.</p>
                 </div>
-                <div class="progress-block">
-                    <div class="progress-text">
-                        <span id="progress-text-label">0 of 0 required</span>
-                        <span id="progress-text-percent">0%</span>
+                <div class="header-right">
+                    <div class="progress-block">
+                        <div class="progress-text">
+                            <span id="progress-text-label">0 of 0 required</span>
+                            <span id="progress-text-percent">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
                     </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
-                    </div>
+                    <a href="/addinterview" class="btn-outline-action text-decoration-none text-nowrap"><i class="mdi mdi-arrow-left"></i> Back</a>
                 </div>
-            </div>
-
-            <div class="wizard-tabs" role="tablist">
-                <?php foreach ($tabsConfig as $step => $tab): ?>
-                    <div class="wizard-tab <?= $step == 1 ? 'active' : '' ?>" data-step="<?= $step ?>" role="tab" tabindex="0" aria-selected="<?= $step == 1 ? 'true' : 'false' ?>">
-                        <?= $tab['title'] ?> <span class="tab-pill" id="tab-pill-<?= $step ?>">0/0</span>
-                    </div>
-                <?php endforeach; ?>
             </div>
 
             <div class="wizard-content">
@@ -597,51 +606,58 @@
                 }
                 ?>
 
-                <!-- Step 1: Salary slips -->
-                <div class="wizard-card active" id="step-1" data-keys="<?= implode(',', $tabsConfig[1]['keys']) ?>">
-                    <?php 
-                    renderNewDocItem('salary_1', 'Salary slip, month 1', 'August 2026', true, $docsMap, true); 
-                    renderNewDocItem('salary_2', 'Salary slip, month 2', 'July 2026', true, $docsMap, true); 
-                    renderNewDocItem('salary_3', 'Salary slip, month 3', 'June 2026', true, $docsMap, true); 
-                    ?>
-                </div>
+                <?php
+                $sectionTitle = static function (int $step, string $title, string $extra = ''): string {
+                    return '<div class="doc-section-title"><span class="title-left">' . esc($title)
+                        . ' <span class="tab-pill" id="tab-pill-' . $step . '">0/0</span></span>' . $extra . '</div>';
+                };
+                ?>
 
-                <!-- Step 2: Previous company -->
-                <div class="wizard-card" id="step-2" data-keys="<?= implode(',', $tabsConfig[2]['keys']) ?>">
-                    <?php 
-                    renderNewDocItem('experience_letter', 'Experience letter', 'From your previous company', true, $docsMap); 
-                    ?>
-                </div>
-
-                <!-- Step 3: ID and education -->
-                <div class="wizard-card" id="step-3" data-keys="<?= implode(',', $tabsConfig[3]['keys']) ?>">
-                    <?php 
-                    renderNewDocItem('id_proof', 'Aadhaar card', 'Aadhaar or PAN', true, $docsMap); 
-                    renderNewDocItem('edu_cert', 'Highest degree certificate', 'Highest qualification', true, $docsMap); 
-                    ?>
-                </div>
-
-                <!-- Step 4: Other documents -->
-                <div class="wizard-card" id="step-4" data-keys="<?= implode(',', $tabsConfig[4]['keys']) ?>">
-                    <div class="d-flex justify-content-end mb-3">
-                        <button type="button" class="btn-outline-action" id="addMoreOtherDocBtn" style="color: var(--brand-color); border-color: var(--brand-color);">
-                            + Add more document
-                        </button>
+                <div class="doc-sections">
+                    <div class="wizard-card span-full" id="step-1" data-keys="<?= implode(',', $tabsConfig[1]['keys']) ?>">
+                        <?= $sectionTitle(1, $tabsConfig[1]['title']) ?>
+                        <div class="doc-list cols-3">
+                            <?php
+                            renderNewDocItem('salary_1', 'Salary slip, month 1', 'August 2026', true, $docsMap, true);
+                            renderNewDocItem('salary_2', 'Salary slip, month 2', 'July 2026', true, $docsMap, true);
+                            renderNewDocItem('salary_3', 'Salary slip, month 3', 'June 2026', true, $docsMap, true);
+                            ?>
+                        </div>
                     </div>
-                    <div id="other-docs-container">
-                        <?php 
-                        foreach ($tabsConfig[4]['keys'] as $idx => $k) {
-                            $title = ($idx == 0) ? 'Resume' : (($idx == 1) ? 'Passport photo' : 'Other document');
-                            renderNewDocItem($k, $title, '', false, $docsMap);
-                        }
-                        ?>
+
+                    <div class="wizard-card" id="step-2" data-keys="<?= implode(',', $tabsConfig[2]['keys']) ?>">
+                        <?= $sectionTitle(2, $tabsConfig[2]['title']) ?>
+                        <div class="doc-list">
+                            <?php renderNewDocItem('experience_letter', 'Experience letter', 'From your previous company', true, $docsMap); ?>
+                        </div>
+                    </div>
+
+                    <div class="wizard-card span-2" id="step-3" data-keys="<?= implode(',', $tabsConfig[3]['keys']) ?>">
+                        <?= $sectionTitle(3, $tabsConfig[3]['title']) ?>
+                        <div class="doc-list cols-2">
+                            <?php
+                            renderNewDocItem('id_proof', 'Aadhaar card', 'Aadhaar or PAN', true, $docsMap);
+                            renderNewDocItem('edu_cert', 'Highest degree certificate', 'Highest qualification', true, $docsMap);
+                            ?>
+                        </div>
+                    </div>
+
+                    <div class="wizard-card span-full" id="step-4" data-keys="<?= implode(',', $tabsConfig[4]['keys']) ?>">
+                        <?= $sectionTitle(4, $tabsConfig[4]['title'], '<button type="button" class="btn-outline-action" id="addMoreOtherDocBtn" style="color: var(--brand-color); border-color: var(--brand-color);">+ Add more document</button>') ?>
+                        <div id="other-docs-container" class="doc-list cols-3">
+                            <?php
+                            foreach ($tabsConfig[4]['keys'] as $idx => $k) {
+                                $title = ($idx == 0) ? 'Resume' : (($idx == 1) ? 'Passport photo' : 'Other document');
+                                renderNewDocItem($k, $title, '', false, $docsMap);
+                            }
+                            ?>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="wizard-footer">
-                <button type="button" class="btn-outline-action" id="prevBtn" style="display:none;" aria-label="Previous step">Previous</button>
-                <button type="button" class="btn-brand" id="nextBtn" aria-label="Next step">Next</button>
+                <button type="button" class="btn-brand ms-auto" id="doneBtn">Done</button>
             </div>
         </div>
     <?php endif; ?>
@@ -667,8 +683,9 @@ window.csrfHash = '<?= csrf_hash() ?>';
 
 $(document).ready(function() {
     const candidateId = "<?= esc($selectedCandidate['id'] ?? '') ?>";
-    let currentTab = 1;
     const totalTabs = 4;
+    const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--hr-primary').trim() || '#e8602c';
+    let missingRequired = 0;
 
     function updateProgress() {
         let totalReq = 0;
@@ -687,16 +704,8 @@ $(document).ready(function() {
         $('#progress-text-label').text(`${uploadedReq} of ${totalReq} required`);
         $('#progress-text-percent').text(`${pct}%`);
         $('#progress-bar-fill').css('width', `${pct}%`);
+        missingRequired = totalReq - uploadedReq;
 
-        if (pct === 100) {
-            $('#nextBtn').prop('disabled', false);
-        } else {
-            // Can enforce next button disabled if all req not met, but for UX maybe just final submit?
-            // Actually prompt says: Next stays disabled until all required documents are uploaded.
-            // Let's do it per tab or globally? "Next stays disabled until all required documents are uploaded (keep the current rule if one already exists)."
-            // Currently there was no rule restricting Next, but I'll add one if needed. Let's just calculate for the active tab.
-        }
-        
         // Update pills
         for (let i = 1; i <= totalTabs; i++) {
             let tabTotal = 0;
@@ -719,44 +728,24 @@ $(document).ready(function() {
 
     updateProgress();
 
-    function showTab(n) {
-        currentTab = n;
-        $('.wizard-tab').removeClass('active').attr('aria-selected', 'false');
-        $('.wizard-card').removeClass('active');
-        
-        $(`.wizard-tab[data-step="${n}"]`).addClass('active').attr('aria-selected', 'true');
-        $(`#step-${n}`).addClass('active');
-
-        if (n == 1) {
-            $('#prevBtn').hide();
-        } else {
-            $('#prevBtn').show();
-        }
-        
-        if (n == totalTabs) {
-            $('#nextBtn').html('Done');
-        } else {
-            $('#nextBtn').html('Next');
-        }
-    }
-
-    $('.wizard-tab').click(function(){
-        const step = $(this).data('step');
-        showTab(step);
-    });
-
-    $('#prevBtn').click(function(){
-        if(currentTab > 1) showTab(currentTab - 1);
-    });
-    
-    $('#nextBtn').click(function(){
-        if(currentTab < totalTabs) {
-            showTab(currentTab + 1);
-        } else {
-            Swal.fire('Success', 'All steps completed!', 'success').then(() => {
-                window.location.href = '/candidate-documents';
+    $('#doneBtn').click(function(){
+        if (missingRequired > 0) {
+            Swal.fire({
+                title: 'Documents pending',
+                text: `${missingRequired} required document(s) are still missing. Leave this page anyway?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: themeColor,
+                confirmButtonText: 'Yes, leave',
+                cancelButtonText: 'Stay'
+            }).then((result) => {
+                if (result.isConfirmed) window.location.href = '/addinterview';
             });
+            return;
         }
+        Swal.fire('Success', 'All required documents are uploaded!', 'success').then(() => {
+            window.location.href = '/addinterview';
+        });
     });
 
     // Add More Document Logic
@@ -902,7 +891,7 @@ $(document).ready(function() {
                     updateProgress();
                 } else {
                     errObj.text(response.message || 'Upload failed.').show();
-                    actions.find('button').text(originalBtnText).prop('disabled', false);
+                    row.find('.doc-actions button').text(originalBtnText).prop('disabled', false);
                 }
             },
             error: function() {
@@ -922,7 +911,7 @@ $(document).ready(function() {
             text: "This document will be deleted permanently.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#e8602c',
+            confirmButtonColor: themeColor,
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Yes, remove it!'
         }).then((result) => {

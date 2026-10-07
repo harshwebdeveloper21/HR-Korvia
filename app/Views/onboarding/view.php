@@ -307,6 +307,7 @@
                                                     data-candidate-name="${onboarding.candidate_name}">
                                                     <i class="mdi mdi-download"></i> Letter
                                                 </a>
+                                                <a href="/offer-letter/generate/${onboarding.candidate_id}/${onboarding.offer_later_id}" target="_blank" rel="noopener" class="btn btn-sm btn-dark"><i class="mdi mdi-printer"></i> Print</a>
                                             </div>
                                         </div>
                                     </div>
@@ -333,6 +334,9 @@
                                         data-offer-letter-id="${onboarding.offer_later_id}"
                                         data-candidate-name="${onboarding.candidate_name}" style="color:black">
                                         <i class="mdi mdi-download"></i>
+                                    </a>
+                                    <a href="/offer-letter/generate/${onboarding.candidate_id}/${onboarding.offer_later_id}" target="_blank" rel="noopener" class="text-secondary fs-5" title="Print Offer Letter">
+                                        <i class="mdi mdi-printer"></i>
                                     </a>
                                 </div>
                             </td>

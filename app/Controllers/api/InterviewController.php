@@ -83,6 +83,18 @@ class InterviewController extends ResourceController
 
         // Get form data
         $data = $this->request->getPost();
+        $this->ensureColumns();
+        $this->normalizeSchedule($data);
+        if (empty($data['schedule_date'])) {
+            $data['schedule_date'] = date('Y-m-d H:i:s');
+        }
+        $data['job_id'] = !empty($data['job_id']) ? $data['job_id'] : 0;
+        $data['description'] = $data['description'] ?? '';
+        foreach (['department_id', 'interviewer_id', 'joining_date'] as $nullable) {
+            if (isset($data[$nullable]) && $data[$nullable] === '') {
+                $data[$nullable] = null;
+            }
+        }
         if (!isset($data['status']) || empty($data['status'])) {
             if (!empty($data['selection_status'])) {
                 $data['status'] = $data['selection_status'];
@@ -97,10 +109,16 @@ class InterviewController extends ResourceController
         
         $candidateName = $data['full_name'] ?? 'Unknown Candidate';
 
-        // If candidate_id is provided, do the linked checks
+        // Reuse the candidate record with the same email so the same person is not added twice
+        if (empty($data['candidate_id'])) {
+            $sameEmail = $candidateModel->where('email', $data['email'])->first();
+            if ($sameEmail) {
+                $data['candidate_id'] = $sameEmail['id'];
+            }
+        }
+
         if (!empty($data['candidate_id'])) {
-            // Fetch job_id from candidate table based on selected candidate_id
-            $candidate = $candidateModel->select('id,job_id,email,candidate_name')->where('id', $data['candidate_id'])->first();
+            $candidate = $candidateModel->find($data['candidate_id']);
 
             if (!$candidate) {
                 return $this->respond([
@@ -108,34 +126,42 @@ class InterviewController extends ResourceController
                     'message' => 'Invalid Candidate ID'
                 ], 400);
             }
+
+            if (empty($data['job_id'])) {
+                $data['job_id'] = $candidate['job_id'] ?: 0;
+            }
+
             $existingInterview = $this->interviewModel->where('candidate_id', $data['candidate_id'])
-                ->where('job_id', $candidate['job_id'])
-                ->whereIn('status', ['scheduled', 'completed']) // Check both statuses
+                ->where('job_id', $data['job_id'])
+                ->whereIn('status', ['scheduled', 'completed'])
                 ->first();
 
             if ($existingInterview) {
                 return $this->respond([
                     'status'  => 'error',
-                    'message' => 'This candidate is already scheduled for an interview.'
-                ], 400);
-            }
-            $userInfo = $userInfoModel->where('email', $candidate['email'])->first();
-            if (!$userInfo) {
-                return $this->respond([
-                    'status'  => 'error',
-                    'message' => 'No matching user found in userinfo table'
+                    'message' => 'This candidate is already scheduled for an interview for this position.'
                 ], 400);
             }
 
-            $data['job_id'] = $candidate['job_id']; // Automatically set job_id
-            $candidateName = $candidate['candidate_name'];
+            $userInfo = $userInfoModel->where('email', $candidate['email'])->first() ?: null;
+            $this->syncCandidate((int) $data['candidate_id'], $data);
         } else {
-            // Create a new candidate if none was selected
             $newCandidateId = $candidateModel->insert([
-                'candidate_name' => $data['full_name'],
-                'email'          => $data['email'],
-                'phone_number'   => $data['mobile_number']
+                'candidate_name'  => $data['full_name'],
+                'email'           => $data['email'],
+                'phone_number'    => $data['mobile_number'],
+                'job_id'          => $data['job_id'] ?: 0,
+                'job_date'        => date('Y-m-d'),
+                'current_address' => $data['current_address'] ?? null,
+                'status'          => 'applied',
+                'created_by'      => $user->sub,
             ]);
+            if (!$newCandidateId) {
+                return $this->respond([
+                    'status'  => 'error',
+                    'message' => 'Failed to create candidate record'
+                ], ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
+            }
             $data['candidate_id'] = $newCandidateId;
         }
 
@@ -152,18 +178,8 @@ class InterviewController extends ResourceController
         // Insert the interview entry
         if ($this->interviewModel->insert($data)) {
 
-            if (!empty($data['candidate_id']) && isset($userInfo)) {
-                $updated = $userInfoModel
-                    ->where('id', $userInfo['id']) // Match the userinfo ID
-                    ->set(['status' => 'scheduled'])
-                    ->update();
-
-                if (!$updated) {
-                    return $this->respond([
-                        'status'  => 'error',
-                        'message' => 'Failed to update userinfo status to scheduled'
-                    ], ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
-                }
+            if (!empty($userInfo) && ($userInfo['status'] ?? '') === 'candidate') {
+                $userInfoModel->update($userInfo['id'], ['status' => 'scheduled']);
             }
 
             // Save Educations
@@ -252,7 +268,7 @@ class InterviewController extends ResourceController
             return $this->failForbidden('Forbidden: You do not have access to this resource');
         }
         // Retrieve onboarding entries
-        $interviews = $this->interviewModel->select('interviews.id, COALESCE(jobs.job_title, interviews.position_applied_for) as job_title, interviews.status, interviews.selection_status, interviews.schedule_date , COALESCE(candidate.candidate_name, interviews.full_name) as candidate_name, interviews.convert_to_employee')
+        $interviews = $this->interviewModel->select('interviews.id, COALESCE(jobs.job_title, interviews.position_applied_for) as job_title, interviews.status, interviews.selection_status, interviews.schedule_date , COALESCE(candidate.candidate_name, interviews.full_name) as candidate_name, interviews.convert_to_employee, interviews.candidate_id, (SELECT MAX(ia.id) FROM interview_assessments ia WHERE ia.interview_id = interviews.id) as assessment_id', false)
             ->join('candidate', 'interviews.candidate_id = candidate.id', 'left')
             ->join('jobs', 'interviews.job_id = jobs.id', 'left')
             ->orderBy('interviews.created_at', 'DESC')
@@ -268,25 +284,144 @@ class InterviewController extends ResourceController
             return $this->failUnauthorized('Unauthorized: Token missing or invalid');
         }
 
-        $record = $this->interviewModel->find($id);
+        $record = $this->getInterviewDetail($id);
         if ($record) {
-            if (!empty($record['candidate_id'])) {
-                $eduModel = new \App\Models\CandidateEducationModel();
-                $expModel = new \App\Models\CandidateExperienceModel();
-                $record['educations'] = $eduModel->where('candidate_id', $record['candidate_id'])->findAll();
-                $record['experiences'] = $expModel->where('candidate_id', $record['candidate_id'])->findAll();
-            } else {
-                $record['educations'] = [];
-                $record['experiences'] = [];
-            }
-            
-            $roundModel = new \App\Models\InterviewRoundModel();
-            $record['rounds'] = $roundModel->where('interview_id', $record['id'])->findAll();
-
             return $this->respond(['status' => 'success', 'data' => $record]);
         }
 
         return $this->respond(['status' => 'error', 'message' => 'interview not found'], ResponseInterface::HTTP_NOT_FOUND);
+    }
+
+    private function getInterviewDetail($id): ?array
+    {
+        $record = $this->interviewModel->find($id);
+        if (!$record) {
+            return null;
+        }
+
+        if (!empty($record['candidate_id'])) {
+            $eduModel = new \App\Models\CandidateEducationModel();
+            $expModel = new \App\Models\CandidateExperienceModel();
+            $record['educations'] = $eduModel->where('candidate_id', $record['candidate_id'])->findAll();
+            $record['experiences'] = $expModel->where('candidate_id', $record['candidate_id'])->findAll();
+        } else {
+            $record['educations'] = [];
+            $record['experiences'] = [];
+        }
+
+        $roundModel = new \App\Models\InterviewRoundModel();
+        $record['rounds'] = $roundModel->where('interview_id', $record['id'])->findAll();
+
+        $db = \Config\Database::connect();
+        $candidateRow = !empty($record['candidate_id']) ? $db->table('candidate')->select('candidate_name')->where('id', $record['candidate_id'])->get()->getRowArray() : null;
+        $jobRow = !empty($record['job_id']) ? $db->table('jobs')->select('job_title')->where('id', $record['job_id'])->get()->getRowArray() : null;
+        $departmentRow = !empty($record['department_id']) ? $db->table('department')->select('department_name')->where('id', $record['department_id'])->get()->getRowArray() : null;
+        $interviewerId = $record['interviewer_id'] ?: ($record['rounds'][0]['interviewer_id'] ?? null);
+        $interviewerRow = $interviewerId ? $db->table('users')->select('username')->where('id', $interviewerId)->get()->getRowArray() : null;
+
+        $record['candidate_name'] = $record['full_name'] ?: ($candidateRow['candidate_name'] ?? null);
+        $record['job_title'] = $record['position_applied_for'] ?: ($jobRow['job_title'] ?? null);
+        $record['department_name'] = $departmentRow['department_name'] ?? null;
+        $record['interviewer_name'] = $interviewerRow['username'] ?? null;
+
+        return $record;
+    }
+
+    public function pdf($id = null)
+    {
+        $user = $this->authService->check();
+        if (!$user) {
+            return redirect()->to('/login');
+        }
+        if (!in_array($user->role, ['admin', 'hr'])) {
+            return $this->response->setStatusCode(403)->setBody('Forbidden');
+        }
+
+        $record = $this->getInterviewDetail($id);
+        if (!$record) {
+            return $this->response->setStatusCode(404)->setBody('Interview not found');
+        }
+
+        $edu = $record['educations'][0] ?? [];
+        $exp = $record['experiences'][0] ?? [];
+        $round = $record['rounds'][0] ?? [];
+        $pick = static fn ($primary, $fallback = null) => ($primary !== null && trim((string) $primary) !== '') ? $primary : $fallback;
+        $date = static function ($value, bool $withTime = false) {
+            if (empty($value) || strpos((string) $value, '0000-00-00') === 0) {
+                return '';
+            }
+            $ts = strtotime($value);
+            if ($ts === false) {
+                return (string) $value;
+            }
+            return ($withTime && date('H:i', $ts) !== '00:00') ? date('d M Y, h:i A', $ts) : date('d M Y', $ts);
+        };
+
+        $sections = [
+            'POSITION DETAILS' => [
+                ['Position Applied For', $record['job_title']],
+                ['Date of Interview', $date($record['schedule_date'], true) ?: $date($record['interview_date'])],
+                ['Department', $record['department_name']],
+                ['Interviewer Name', $record['interviewer_name']],
+                ['Source of Application', $record['source_of_application'] ?? null],
+                ['Interview Round', $pick($record['interview_round'], $round['interview_round'] ?? null)],
+            ],
+            'CANDIDATE DETAILS' => [
+                ['Candidate Name', $record['candidate_name']],
+                ['Contact Number', $record['mobile_number']],
+                ['Email Address', $record['email'], true],
+                ['Current Address', $record['current_address'], true],
+            ],
+            'EDUCATION & EXPERIENCE' => [
+                ['Highest Qualification', $pick($record['highest_qualification'], $edu['degree'] ?? null)],
+                ['Institute / University', $pick($record['college_university'], $edu['university'] ?? null)],
+                ['Total Experience', $pick($record['total_experience'], $exp['total_experience'] ?? null)],
+                ['Relevant Experience', $record['relevant_experience']],
+                ['Current / Last Employer', $pick($record['previous_company'], $exp['company'] ?? null)],
+                ['Current Designation', $pick($record['previous_job_title'], $exp['role'] ?? null)],
+                ['Key Skills / Areas of Expertise', $record['technical_skills'], true],
+            ],
+            'COMPENSATION & AVAILABILITY' => [
+                ['Current CTC', $pick($record['previous_salary'], $exp['last_salary'] ?? null)],
+                ['Expected CTC', $record['expected_salary']],
+                ['Notice Period', $pick($record['notice_period'], $exp['notice_period'] ?? null)],
+                ['Earliest Joining Date', $date($record['joining_date'])],
+                ['Reason for Change / Leaving Current Role', $pick($record['reason_for_leaving'], $exp['reason_for_leaving'] ?? null), true],
+            ],
+        ];
+
+        $company = (new \App\Models\CompanyLogoModel())->first();
+        $logoSrc = '';
+        $logoFile = $company['pdf_logo'] ?? ($company['logo_img'] ?? '');
+        if ($logoFile && is_file(FCPATH . 'upload/' . $logoFile)) {
+            $path = FCPATH . 'upload/' . $logoFile;
+            $mime = mime_content_type($path) ?: 'image/png';
+            $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+        }
+
+        $html = view('interview/print_form', [
+            'sections'     => $sections,
+            'company_name' => $company['company_name'] ?? getCompanyName(),
+            'logo_src'     => $logoSrc,
+        ]);
+
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('defaultFont', 'Helvetica');
+
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $safeName = preg_replace('/[^A-Za-z0-9]+/', '_', (string) ($record['candidate_name'] ?: 'candidate'));
+        $filename = 'Interview_Form_' . trim($safeName, '_') . '_' . $record['id'] . '.pdf';
+        $disposition = $this->request->getGet('download') ? 'attachment' : 'inline';
+
+        return $this->response
+            ->setContentType('application/pdf')
+            ->setHeader('Content-Disposition', $disposition . '; filename="' . $filename . '"')
+            ->setBody($dompdf->output());
     }
 
 
@@ -307,15 +442,31 @@ class InterviewController extends ResourceController
             return $this->respond(['status' => 'error', 'message' => 'No data provided to update'], ResponseInterface::HTTP_BAD_REQUEST);
         }
 
+        $this->ensureColumns();
+        $this->normalizeSchedule($data);
+
+        $hasEducations = array_key_exists('education', $data);
+        $hasExperiences = array_key_exists('experience', $data);
+        $hasRounds = array_key_exists('rounds', $data);
         $educations = $data['education'] ?? [];
         $experiences = $data['experience'] ?? [];
         $rounds = $data['rounds'] ?? [];
-        $total_score = isset($data['total_score']) ? $data['total_score'] : 0;
-        $data['interview_score'] = $total_score;
+        if (array_key_exists('total_score', $data)) {
+            $data['interview_score'] = $data['total_score'];
+        }
         unset($data['education'], $data['experience'], $data['rounds'], $data['total_score']);
 
-        // Filter out empty values but keep 0
-        $data = array_filter($data, fn ($value) => $value !== '' && $value !== null);
+        // Blank inputs clear the stored value, except for required columns
+        foreach ($data as $key => $value) {
+            if ($value === '') {
+                $data[$key] = null;
+            }
+        }
+        foreach (['candidate_id', 'job_id', 'schedule_date', 'status', 'description', 'full_name', 'email', 'mobile_number'] as $required) {
+            if (array_key_exists($required, $data) && $data[$required] === null) {
+                unset($data[$required]);
+            }
+        }
 
         // Check if the Interview entry exists
         $entry = $this->interviewModel->find($id);
@@ -326,8 +477,11 @@ class InterviewController extends ResourceController
         // Update the Interview entry
         if ($this->interviewModel->update($id, $data)) {
             $candidate_id = $data['candidate_id'] ?? $entry['candidate_id'];
-            
             if ($candidate_id) {
+                $this->syncCandidate((int) $candidate_id, $data);
+            }
+
+            if ($candidate_id && $hasEducations) {
                 $eduModel = new \App\Models\CandidateEducationModel();
                 $eduModel->where('candidate_id', $candidate_id)->delete();
                 foreach ($educations as $edu) {
@@ -336,7 +490,9 @@ class InterviewController extends ResourceController
                         $eduModel->insert($edu);
                     }
                 }
+            }
 
+            if ($candidate_id && $hasExperiences) {
                 $expModel = new \App\Models\CandidateExperienceModel();
                 $expModel->where('candidate_id', $candidate_id)->delete();
                 foreach ($experiences as $exp) {
@@ -347,12 +503,14 @@ class InterviewController extends ResourceController
                 }
             }
 
-            $roundModel = new \App\Models\InterviewRoundModel();
-            $roundModel->where('interview_id', $id)->delete();
-            foreach ($rounds as $round) {
-                if (!empty($round['interviewer_id'])) {
-                    $round['interview_id'] = $id;
-                    $roundModel->insert($round);
+            if ($hasRounds) {
+                $roundModel = new \App\Models\InterviewRoundModel();
+                $roundModel->where('interview_id', $id)->delete();
+                foreach ($rounds as $round) {
+                    if (!empty($round['interviewer_id'])) {
+                        $round['interview_id'] = $id;
+                        $roundModel->insert($round);
+                    }
                 }
             }
 
@@ -428,6 +586,58 @@ class InterviewController extends ResourceController
 
         return $this->respond(['status' => 'error', 'message' => 'Interview type not found'], 404);
     }
+    private function normalizeSchedule(array &$data): void
+    {
+        if (empty($data['schedule_date'])) {
+            return;
+        }
+        $timestamp = strtotime(str_replace('T', ' ', $data['schedule_date']));
+        if ($timestamp === false) {
+            unset($data['schedule_date']);
+            return;
+        }
+        $data['schedule_date'] = date('Y-m-d H:i:s', $timestamp);
+        $data['interview_date'] = date('Y-m-d', $timestamp);
+        $data['interview_time'] = date('H:i:s', $timestamp);
+    }
+
+    private function syncCandidate(int $candidateId, array $data): void
+    {
+        $map = [
+            'full_name'       => 'candidate_name',
+            'email'           => 'email',
+            'mobile_number'   => 'phone_number',
+            'current_address' => 'current_address',
+            'job_id'          => 'job_id',
+        ];
+        $update = [];
+        foreach ($map as $from => $to) {
+            if (!empty($data[$from])) {
+                $update[$to] = $data[$from];
+            }
+        }
+        if (empty($update)) {
+            return;
+        }
+        try {
+            (new CandidateModel())->update($candidateId, $update);
+        } catch (\Throwable $e) {
+            log_message('error', 'Candidate sync failed: ' . $e->getMessage());
+        }
+    }
+
+    private function ensureColumns(): void
+    {
+        try {
+            $db = \Config\Database::connect();
+            if (!$db->fieldExists('source_of_application', 'interviews')) {
+                $db->query("ALTER TABLE interviews ADD COLUMN source_of_application VARCHAR(100) NULL DEFAULT NULL AFTER interview_round");
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Interview column check failed: ' . $e->getMessage());
+        }
+    }
+
     public function creates($id = null)
     {
         $interviewModel = new \App\Models\InterviewModel();

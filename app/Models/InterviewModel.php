@@ -11,7 +11,7 @@ class InterviewModel extends Model
     protected $allowedFields = [
         'candidate_id', 'job_id', 'interviewer_id', 'description', 'status', 'schedule_date', 'created_by', 'interview_type', 'location',
         'full_name', 'mobile_number', 'email', 'date_of_birth', 'gender', 'current_address', 'city', 'state', 'pincode',
-        'position_applied_for', 'department_id', 'job_type', 'interview_date', 'interview_time', 'interview_round',
+        'position_applied_for', 'department_id', 'job_type', 'interview_date', 'interview_time', 'interview_round', 'source_of_application',
         'highest_qualification', 'degree_course', 'college_university', 'passing_year', 'percentage_cgpa',
         'experience_type', 'total_experience', 'previous_company', 'previous_job_title', 'previous_salary', 'expected_salary',
         'notice_period', 'reason_for_leaving', 'technical_skills', 'communication_skills', 'computer_skills', 'relevant_experience',

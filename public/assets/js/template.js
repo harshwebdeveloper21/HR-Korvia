@@ -27,6 +27,16 @@
 $(document).ready(function () {
   var currentPath = window.location.pathname.replace(/\/$/, '');
 
+  // Add/edit/detail pages that should highlight their list page in the sidebar
+  var subPageMap = {
+    '/departmentview': [/^\/department(\/|$)/],
+    '/branches': [/^\/branches\/(create|edit|assign)/],
+    '/jobview': [/^\/job(\/display\/\d+)?$/],
+    '/candidateview': [/^\/candidate(\/\d+)?$/],
+    '/addinterview': [/^\/interviews(\/\d+)?$/, /^\/interview\/display\/\d+$/, /^\/assessment(\/|$)/, /^\/candidate-documents(\/\d+)?$/],
+    '/onboardingview': [/^\/onboarding(\/\d+)?$/]
+  };
+
   $('.sidebar .nav-link').each(function () {
     var $this = $(this);
     var href = $this.attr('href');
@@ -37,12 +47,10 @@ $(document).ready(function () {
       var isMatch = (currentPath === hrefPath);
 
       // Smart UX active route matching for sub-pages / actions
-      if (!isMatch) {
-        if (hrefPath === '/departmentview' && (currentPath === '/department' || currentPath.indexOf('/department/') === 0)) {
-          isMatch = true;
-        } else if (hrefPath === '/branches' && (currentPath === '/branches/create' || currentPath.indexOf('/branches/edit') === 0 || currentPath.indexOf('/branches/assign') === 0)) {
-          isMatch = true;
-        }
+      if (!isMatch && subPageMap[hrefPath]) {
+        isMatch = subPageMap[hrefPath].some(function (pattern) {
+          return pattern.test(currentPath);
+        });
       }
 
       if (isMatch) {

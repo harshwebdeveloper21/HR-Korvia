@@ -203,6 +203,7 @@ $routes->get("api/applyjob", "api\JobController::applyget");
 
 $routes->get("/interviews", "api\InterviewController::creates");
 $routes->get("/interviews/(:num)", 'api\InterviewController::creates/$1');
+$routes->get("/interview/pdf/(:num)", 'api\InterviewController::pdf/$1');
 $routes->get("/addinterview", "api\InterviewController::display");
 
 $routes->get("/candidate", "api\CandidateController::create");
@@ -215,6 +216,7 @@ $routes->get("/assessment/edit/(:num)", "InterviewAssessments::edit/$1");
 $routes->post("/assessment/update/(:num)", "InterviewAssessments::update/$1");
 $routes->get("/assessment/delete/(:num)", "InterviewAssessments::delete/$1");
 $routes->get("/assessment/view/(:num)", "InterviewAssessments::show/$1");
+$routes->get("/assessment/pdf/(:num)", "InterviewAssessments::pdf/$1");
 
 $routes->get("/candidate-documents", "CandidateDocumentsController::index");
 $routes->post("/candidate-documents/upload", "CandidateDocumentsController::upload");
