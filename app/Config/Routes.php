@@ -195,6 +195,14 @@ $routes->get("/employee/details/(:num)", 'api\EmployeeController::details/$1');
 
 $routes->get("/empview", "api\EmployeeController::display");
 $routes->get("/organization-tree", "OrgTreeController::index");
+$routes->get("/employee/joining-form/(:num)", "JoiningFormController::pdf/$1");
+$routes->get("/employee/joining-form/(:num)/edit", "JoiningFormController::edit/$1");
+$routes->post("/employee/joining-form/(:num)/save", "JoiningFormController::save/$1");
+$routes->get("/employee/increment-letter/(:num)", "IncrementLetterController::pdf/$1");
+$routes->get("/employee/increment-letter/latest/(:num)", "IncrementLetterController::latest/$1");
+$routes->get("/increment-letter-template", "IncrementLetterController::template");
+$routes->post("/increment-letter-template/save", "IncrementLetterController::saveTemplate");
+$routes->post("/increment-letter-template/preview", "IncrementLetterController::previewTemplate");
 $routes->get("/employee-live-request", "api\EmployeeController::liveRequest");
 
 $routes->get("/job", "api\JobController::creates");

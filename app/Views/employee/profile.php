@@ -673,10 +673,11 @@
                                         <th>New Salary</th>
                                         <th>Effective Date</th>
                                         <th>Recorded On</th>
+                                        <th style="width: 60px;">Letter</th>
                                     </tr>
                                 </thead>
                                 <tbody id="incrementHistoryBody">
-                                    <tr><td colspan="6" class="text-center text-muted">Click the tab to load history.</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted">Click the tab to load history.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1396,7 +1397,8 @@
                                 <td>&#8377; ${parseFloat(r.previous_salary || 0).toLocaleString('en-IN')}</td>
                                 <td class="fw-bold text-dark">&#8377; ${parseFloat(r.new_salary || 0).toLocaleString('en-IN')}</td>
                                 <td><span class="text-dark">${effDate}</span></td>
-                                <td class="text-muted small">${createdAt}</td>
+                                <td class="text-muted small">${createdAt}${r.is_promotion ? `<br><span class="badge bg-info text-dark">Promoted${r.new_designation ? ' to ' + r.new_designation : ''}</span>` : ''}</td>
+                                <td>${r.letter_url ? `<a href="${r.letter_url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-dark py-0 px-2" title="Print Increment / Promotion Letter"><i class="mdi mdi-printer"></i></a>` : '-'}</td>
                             </tr>`;
                         });
                         $tbody.html(rows);

@@ -216,7 +216,11 @@ class EmployeeController extends ResourceController
 
     public function display()
     {
-        return view('employee/view');
+        $db = \Config\Database::connect();
+        return view('employee/view', [
+            'designations' => $db->table('designation')->select('id, designation_name, department_id')->orderBy('designation_name', 'ASC')->get()->getResultArray(),
+            'departments'  => $db->table('department')->select('id, department_name')->orderBy('department_name', 'ASC')->get()->getResultArray(),
+        ]);
     }
 
     public function liveRequest()
@@ -1675,12 +1679,21 @@ class EmployeeController extends ResourceController
                            || $this->request->getPost('is_history_only') === '1'
                            || $this->request->getPost('is_history_only') === 1;
         $customPrevSalary = $this->request->getPost('previous_salary');
+        $newDesignationId = (int) $this->request->getPost('new_designation_id');
+        $newDepartmentId  = (int) $this->request->getPost('new_department_id');
+        $reportingManager = trim((string) $this->request->getPost('reporting_manager'));
 
-        if (!$userId || !$incrementAmount || (float)$incrementAmount <= 0 || !$incrementDate) {
-            return $this->failValidationErrors('Invalid increment data provided.');
+        $userInfo = $userId ? $this->userInfoModel->where('user_id', $userId)->first() : null;
+        $prevDesignationId = (int) ($userInfo['designation_id'] ?? 0);
+        $prevDepartmentId  = (int) ($userInfo['department_id'] ?? 0);
+        $isPromotion = ($newDesignationId && $newDesignationId !== $prevDesignationId)
+            || ($newDepartmentId && $newDepartmentId !== $prevDepartmentId);
+        $incrementAmount = (float) $incrementAmount;
+
+        if (!$userId || !$incrementDate || $incrementAmount < 0 || ($incrementAmount <= 0 && !$isPromotion)) {
+            return $this->failValidationErrors('Enter an increment amount greater than 0, or choose a new designation/department for a promotion.');
         }
 
-        $userInfo = $this->userInfoModel->where('user_id', $userId)->first();
         if (!$userInfo) {
             return $this->failNotFound('Employee info not found');
         }
@@ -1768,8 +1781,20 @@ class EmployeeController extends ResourceController
             }
         }
 
+        if (!$isHistoryOnly && $isPromotion) {
+            $jobUpdate = [];
+            if ($newDesignationId) {
+                $jobUpdate['designation_id'] = $newDesignationId;
+            }
+            if ($newDepartmentId) {
+                $jobUpdate['department_id'] = $newDepartmentId;
+                $db->table('users')->where('id', $userId)->update(['department_id' => $newDepartmentId]);
+            }
+            $this->userInfoModel->where('user_id', $userId)->set($jobUpdate)->update();
+        }
+
         // Always insert into relational history table for records and display
-        $db->table('salary_increment_history')->insert([
+        $historyRow = [
             'employee_id'         => $userId,
             'increment_amount'    => (float)$incrementAmount,
             'previous_salary'     => $previousSalary,
@@ -1777,7 +1802,18 @@ class EmployeeController extends ResourceController
             'effective_from_date' => $incrementDate,
             'updated_by'          => $user->sub,
             'created_at'          => $now,
-        ]);
+        ];
+        if ($db->fieldExists('new_designation_id', 'salary_increment_history')) {
+            $historyRow += [
+                'previous_designation_id' => $prevDesignationId ?: null,
+                'new_designation_id'      => $newDesignationId ?: ($prevDesignationId ?: null),
+                'previous_department_id'  => $prevDepartmentId ?: null,
+                'new_department_id'       => $newDepartmentId ?: ($prevDepartmentId ?: null),
+                'reporting_manager'       => $reportingManager !== '' ? $reportingManager : null,
+            ];
+        }
+        $db->table('salary_increment_history')->insert($historyRow);
+        $historyId = (int) $db->insertID();
 
         $db->transComplete();
 
@@ -1787,15 +1823,51 @@ class EmployeeController extends ResourceController
 
         if ($isHistoryOnly) {
             return $this->respond([
-                'status'  => 'success',
-                'message' => 'Salary increment history record added successfully! Current salary remains unchanged.'
+                'status'     => 'success',
+                'message'    => 'Salary increment history record added successfully! Current salary remains unchanged.',
+                'history_id' => $historyId,
             ]);
         }
 
         return $this->respond([
             'status'  => 'success',
-            'message' => 'Salary incremented successfully! New salary: ₹' . number_format($newSalary, 2)
+            'message' => $incrementAmount > 0
+                ? 'Salary incremented successfully! New salary: ₹' . number_format($newSalary, 2)
+                : 'Promotion recorded successfully!',
+            'history_id' => $historyId,
         ]);
+    }
+
+    /** Adds the letter link and any promotion details to salary_increment_history rows. */
+    private function withIncrementLetterInfo($db, array $records): array
+    {
+        if (!$records) {
+            return $records;
+        }
+        $promo = [];
+        if ($db->fieldExists('new_designation_id', 'salary_increment_history')) {
+            $rows = $db->table('salary_increment_history h')
+                ->select('h.id, h.previous_designation_id, h.new_designation_id, h.previous_department_id, h.new_department_id, nd.designation_name AS new_designation_name, ndep.department_name AS new_department_name')
+                ->join('designation nd', 'nd.id = h.new_designation_id', 'left')
+                ->join('department ndep', 'ndep.id = h.new_department_id', 'left')
+                ->whereIn('h.id', array_column($records, 'id'))
+                ->get()->getResultArray();
+            foreach ($rows as $r) {
+                $promo[(int) $r['id']] = $r;
+            }
+        }
+        foreach ($records as &$rec) {
+            $p = $promo[(int) $rec['id']] ?? null;
+            $rec['is_promotion'] = $p && (
+                ((int) $p['new_designation_id'] && (int) $p['new_designation_id'] !== (int) $p['previous_designation_id'])
+                || ((int) $p['new_department_id'] && (int) $p['new_department_id'] !== (int) $p['previous_department_id'])
+            );
+            $rec['new_designation'] = $rec['is_promotion'] ? ($p['new_designation_name'] ?? '') : '';
+            $rec['new_department']  = $rec['is_promotion'] ? ($p['new_department_name'] ?? '') : '';
+            $rec['letter_url'] = '/employee/increment-letter/' . (int) $rec['id'];
+        }
+        unset($rec);
+        return $records;
     }
 
     public function getIncrementHistory($userInfoId = null)
@@ -1826,6 +1898,7 @@ class EmployeeController extends ResourceController
             ->orderBy('h.id', 'DESC')
             ->get()
             ->getResultArray();
+        $records = $this->withIncrementLetterInfo($db, $records);
 
         // Fallback: if relational table has no rows, parse JSON from user_info.last_increment_date
         if (empty($records) && !empty($userInfo['last_increment_date'])) {
@@ -1894,6 +1967,7 @@ class EmployeeController extends ResourceController
             ->orderBy('h.id', 'DESC')
             ->get()
             ->getResultArray();
+        $records = $this->withIncrementLetterInfo($db, $records);
 
         // Fallback: if relational table has no rows, parse JSON from user_info.last_increment_date
         if (empty($records) && !empty($userInfo['last_increment_date'])) {

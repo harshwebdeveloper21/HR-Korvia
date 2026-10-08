@@ -648,6 +648,7 @@ $isEmployee = ($role === 'employee');
                 <ul class="nav flex-column sub-menu">
                   <li class="nav-item"> <a class="nav-link" href="/exprience-templates-view">Experience Template</a></li>
                   <li class="nav-item"> <a class="nav-link" href="/generate-letter">Generate Letter</a></li>
+                  <li class="nav-item"> <a class="nav-link" href="/increment-letter-template">Increment / Promotion Template</a></li>
                 </ul>
               </div>
             </li>

@@ -554,12 +554,44 @@
                     <input type="text" class="form-control" id="last_increment_date" readonly style="background:#e9ecef;">
                 </div>
                 <div class="mb-3">
-                    <label for="increment_amount" class="form-label fw-bold" id="view_inc_amount_label">Increment Amount (&#8377;) <span class="text-danger">*</span></label>
-                    <input type="number" step="0.01" class="form-control" id="increment_amount" placeholder="e.g. 5000" required>
+                    <label for="increment_amount" class="form-label fw-bold" id="view_inc_amount_label">Monthly Increment Amount (&#8377;)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="increment_amount" placeholder="e.g. 5000">
+                    <div class="form-text small text-muted">Leave blank or 0 for a promotion without a salary change.</div>
                 </div>
                 <div class="mb-3">
                     <label for="increment_date" class="form-label fw-bold">Effective Date <span class="text-danger">*</span></label>
                     <input type="date" class="form-control" id="increment_date" value="<?= date('Y-m-d') ?>" required>
+                </div>
+
+                <div class="border rounded p-2" style="background:#f8f9fa;">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="inc_is_promotion" role="switch" style="cursor:pointer;">
+                        <label class="form-check-label fw-semibold small" for="inc_is_promotion" style="cursor:pointer;">Also a promotion (change designation / department)</label>
+                    </div>
+                    <div id="inc_promotion_fields" class="mt-2" style="display:none;">
+                        <div class="mb-2">
+                            <label for="inc_new_designation" class="form-label small fw-bold mb-1">New Designation</label>
+                            <select class="form-select form-select-sm" id="inc_new_designation">
+                                <option value="">No change</option>
+                                <?php foreach (($designations ?? []) as $d): ?>
+                                    <option value="<?= (int) $d['id'] ?>"><?= esc($d['designation_name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label for="inc_new_department" class="form-label small fw-bold mb-1">New Department</label>
+                            <select class="form-select form-select-sm" id="inc_new_department">
+                                <option value="">No change</option>
+                                <?php foreach (($departments ?? []) as $d): ?>
+                                    <option value="<?= (int) $d['id'] ?>"><?= esc($d['department_name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="inc_reporting_manager" class="form-label small fw-bold mb-1">Reporting Manager</label>
+                            <input type="text" class="form-control form-control-sm" id="inc_reporting_manager" placeholder="Optional - shown in the letter">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer border-top-0" style="background:#f8f9fa;">
@@ -615,6 +647,7 @@
                                 <th>Effective Date</th>
                                 <th>Updated At</th>
                                 <th>Remarks</th>
+                                <th>Letter</th>
                             </tr>
                         </thead>
                         <tbody id="ih-tbody"></tbody>
@@ -816,6 +849,11 @@
                                                             </a>
                                                         </li>
                                                         <li>
+                                                            <a href="/employee/increment-letter/latest/${employee.user.id}" target="_blank" rel="noopener" class="dropdown-item py-2">
+                                                                <i class="mdi mdi-file-certificate-outline text-secondary me-2 fs-6"></i> Increment / Promotion Letter
+                                                            </a>
+                                                        </li>
+                                                        <li>
                                                             <a href="#" data-id="${employee.user.id}" data-name="${empName}" class="dropdown-item py-2 open-leave-history">
                                                                 <i class="mdi mdi-calendar-clock text-success me-2 fs-6"></i> Leave History
                                                             </a>
@@ -839,6 +877,16 @@
                                                             </a>
                                                         </li>
                                                         ` : ''}
+                                                        <li>
+                                                            <a href="/employee/joining-form/${employee.user.id}" target="_blank" rel="noopener" class="dropdown-item py-2">
+                                                                <i class="mdi mdi-file-account-outline text-secondary me-2 fs-6"></i> Print Joining Form
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a href="/employee/joining-form/${employee.user.id}/edit" class="dropdown-item py-2">
+                                                                <i class="mdi mdi-file-edit-outline text-secondary me-2 fs-6"></i> Edit Joining Form
+                                                            </a>
+                                                        </li>
                                                         <li>
                                                             <a href="/employee-documents/${employee.user.id}" class="dropdown-item py-2">
                                                                 <i class="mdi mdi-file-document-multiple-outline text-warning me-2 fs-6"></i> ${employee.recruitment?.interview_id ? 'Candidate Documents' : 'Documents'}
@@ -1390,6 +1438,7 @@
         $('#last_increment_date').val(formattedDate);
         $('#increment_amount').val('');
         $('#increment_date').val(new Date().toISOString().split('T')[0]);
+        resetPromotionFields();
 
         setViewIncrementModalMode(isHistoryOnly);
 
@@ -1401,21 +1450,50 @@
         setViewIncrementModalMode($(this).is(':checked'));
     });
 
+    function resetPromotionFields() {
+        $('#inc_is_promotion').prop('checked', false);
+        $('#inc_promotion_fields').hide();
+        $('#inc_new_designation, #inc_new_department, #inc_reporting_manager').val('');
+    }
+
+    $('#inc_is_promotion').on('change', function () {
+        $('#inc_promotion_fields').toggle(this.checked);
+    });
+
+    function showLetterPrompt(historyId, message) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Saved',
+            text: message,
+            showCancelButton: true,
+            confirmButtonText: '<i class="mdi mdi-printer"></i> Print Letter',
+            cancelButtonText: 'Close',
+            buttonsStyling: false,
+            customClass: { confirmButton: 'btn hr-btnbg me-2', cancelButton: 'btn btn-light border' }
+        }).then(function (r) {
+            if (r.isConfirmed) window.open('/employee/increment-letter/' + historyId, '_blank');
+        });
+    }
+
     // Use .off().on() to prevent duplicate event stacking on modal reuse
     $('#btnSaveIncrement').off('click').on('click', function () {
         const $btn            = $(this);
         const userId          = $('#increment_user_id').val();
-        const incrementAmount = parseFloat($('#increment_amount').val());
+        const incrementAmount = parseFloat($('#increment_amount').val()) || 0;
         const incrementDate   = $('#increment_date').val() || new Date().toISOString().split('T')[0];
         const isHistoryOnly   = $('#view_inc_history_only').is(':checked');
+        const isPromotion     = $('#inc_is_promotion').is(':checked');
+        const newDesignation  = isPromotion ? $('#inc_new_designation').val() : '';
+        const newDepartment   = isPromotion ? $('#inc_new_department').val() : '';
+        const reportingMgr    = isPromotion ? $.trim($('#inc_reporting_manager').val()) : '';
         const token           = localStorage.getItem('token');
         const rawSalary       = $('#current_salary').val() || '0';
         const previousSalary  = isHistoryOnly
             ? parseFloat(rawSalary.toString().replace(/,/g, ''))
             : parseFloat($('#current_salary').data('raw-salary') || 0);
 
-        if (!incrementAmount || incrementAmount <= 0) {
-            Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please enter a valid increment amount greater than 0.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+        if (incrementAmount < 0 || (incrementAmount === 0 && !(newDesignation || newDepartment))) {
+            Swal.fire({ icon: 'warning', title: 'Nothing to save', text: 'Enter an increment amount, or turn on promotion and choose a new designation/department.', toast: true, position: 'top-end', timer: 3500, showConfirmButton: false });
             return;
         }
 
@@ -1441,11 +1519,18 @@
                 increment_amount: incrementAmount,
                 increment_date: incrementDate,
                 is_history_only: isHistoryOnly ? 1 : 0,
-                previous_salary: previousSalary
+                previous_salary: previousSalary,
+                new_designation_id: newDesignation,
+                new_department_id: newDepartment,
+                reporting_manager: reportingMgr
             },
             success: function (response) {
                 $btn.prop('disabled', false).html('<i class="mdi mdi-check me-1"></i> <span id="btnSaveIncrementText">' + (isHistoryOnly ? 'Save History Record' : 'Update Salary') + '</span>');
-                if (response.status === 'success') {
+                if (response.status === 'success' && response.history_id) {
+                    bootstrap.Modal.getInstance(document.getElementById('incrementModal')).hide();
+                    fetchEmployees($('#departmentFilter').val());
+                    showLetterPrompt(response.history_id, response.message || 'Saved successfully.');
+                } else if (response.status === 'success') {
                     Swal.fire({
                         icon: 'success',
                         title: isHistoryOnly ? 'History Saved!' : 'Success',
@@ -1535,7 +1620,8 @@
                             <td class="fw-bold" style="color:#E66136;">&#8377;${fmtMoney(item.new_salary)}</td>
                             <td>${fmtDate(item.effective_from_date)}</td>
                             <td class="text-muted">${fmtDate(item.created_at)}</td>
-                            <td class="text-muted fst-italic">${item.remarks || '-'}</td>
+                            <td class="text-muted fst-italic">${item.is_promotion ? `<span class="badge bg-info text-dark">Promoted${item.new_designation ? ' to ' + item.new_designation : ''}</span>` : (item.remarks || '-')}</td>
+                            <td>${item.letter_url ? `<a href="${item.letter_url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-dark py-0 px-2" title="Print Letter" data-no-action-menu><i class="mdi mdi-printer"></i></a>` : '-'}</td>
                         </tr>`;
                 });
 
@@ -1566,6 +1652,7 @@
         $('#last_increment_date').val('-');
         $('#increment_amount').val('');
         $('#increment_date').val(new Date().toISOString().split('T')[0]);
+        resetPromotionFields();
 
         setViewIncrementModalMode(true);
 
