@@ -3559,7 +3559,7 @@ class AttendanceController extends ResourceController
         $spreadsheet->setActiveSheetIndex(0);
         // Ensure the sheet opens at the top-left so both scrollbars are fully accessible
         $spreadsheet->getActiveSheet()->setSelectedCell('A1');
-        $spreadsheet->getActiveSheet()->getSheetView()->setTopLeftCell('A1');
+        $spreadsheet->getActiveSheet()->setTopLeftCell('A1');
         $filename = "Attendance_Detail_{$monthNameStr}_{$year}.xlsx";
         $writer   = new Xlsx($spreadsheet);
 
