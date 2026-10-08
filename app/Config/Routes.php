@@ -867,6 +867,8 @@ $routes->group(
 
         $routes->post("attendance/checkin", "AttendanceController::checkIn");
         $routes->post("attendance/checkout", "AttendanceController::checkOut");
+        $routes->post("attendance/lunch-start", "AttendanceController::lunchStart");
+        $routes->post("attendance/lunch-end", "AttendanceController::lunchEnd");
         $routes->get("attendance/status", "AttendanceController::getStatus");
         $routes->post("geofence/ping", "GeofenceController::pingLocation");
 
