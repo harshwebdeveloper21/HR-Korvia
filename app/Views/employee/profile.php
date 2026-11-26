@@ -893,8 +893,8 @@
                             .text(empStatus);
 
                         const displayEmpId = user.employee_id && user.employee_id !== '0'
-                            ? (String(user.employee_id).startsWith('EMP-') || String(user.employee_id).startsWith('EMP#') ? user.employee_id : 'EMP-' + String(user.employee_id).padStart(3, '0'))
-                            : ('EMP-' + (user.user_id || '001'));
+                            ? (String(user.employee_id).startsWith('K-') || String(user.employee_id).startsWith('EMP-') || String(user.employee_id).startsWith('EMP#') ? user.employee_id : 'K-' + String(user.employee_id).padStart(4, '0'))
+                            : ('K-' + String(user.user_id || '1').padStart(4, '0'));
                         setText('#user_info-employee_id', displayEmpId);
                         setText('#user_info-joining_date', user.joining_date);
                         setText('#user_info-working_location', user.working_location);
@@ -1266,8 +1266,8 @@
                         $('#job-salary').val(user.salary);
                         $('#job-role').val(user.role);
                         const cleanEmpId = user.employee_id && user.employee_id !== '0'
-                            ? (String(user.employee_id).startsWith('EMP-') || String(user.employee_id).startsWith('EMP#') ? user.employee_id : 'EMP-' + String(user.employee_id).padStart(3, '0'))
-                            : ('EMP-' + (user.user_id || '001'));
+                            ? (String(user.employee_id).startsWith('K-') || String(user.employee_id).startsWith('EMP-') || String(user.employee_id).startsWith('EMP#') ? user.employee_id : 'K-' + String(user.employee_id).padStart(4, '0'))
+                            : ('K-' + String(user.user_id || '1').padStart(4, '0'));
                         $('#job-employee-id').val(cleanEmpId);
 
                         populateSelectOptionsjob('#job-department', departments, user.department_id);
