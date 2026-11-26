@@ -192,6 +192,7 @@ $isEmployee = ($role === 'employee');
             <li class="nav-item"> <a class="nav-link" href="/payrollview">Manage Payroll</a></li>
             <li class="nav-item"> <a class="nav-link" href="/payroll">Add Payroll</a></li>
             <li class="nav-item"> <a class="nav-link" href="/account-detail-view">Manage Account Detail</a></li>
+            <li class="nav-item"> <a class="nav-link" href="/manageIncentive">Manage Incentive</a></li>
           </ul>
         </div>
       </li>
