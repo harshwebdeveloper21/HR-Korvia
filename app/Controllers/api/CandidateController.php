@@ -150,21 +150,7 @@ class CandidateController extends ResourceController
         $data['created_by'] = $user->sub;
 
         // Generate the next employee_id for the candidate
-        $userInfoModel = new \App\Models\UserInfoModel();
-        $lastEmployee = $userInfoModel->orderBy('employee_id', 'DESC')->first();
-        $newEmployeeId = 1000; // Default if no employees exist
-        if ($lastEmployee && !empty($lastEmployee['employee_id'])) {
-            $lastIdStr = (string)$lastEmployee['employee_id'];
-            if (is_numeric($lastIdStr)) {
-                $newEmployeeId = $lastIdStr + 1;
-            } elseif (preg_match('/(\d+)$/', $lastIdStr, $matches)) {
-                $num = (int)$matches[1] + 1;
-                $prefix = substr($lastIdStr, 0, -strlen($matches[1]));
-                $newEmployeeId = $prefix . sprintf('%0' . strlen($matches[1]) . 'd', $num);
-            } else {
-                $newEmployeeId = $lastIdStr . '-1';
-            }
-        }
+        $newEmployeeId = $this->getGuaranteedUniqueEmployeeId();
 
         $userData = [
             'username' => $data['candidate_name'],
@@ -670,18 +656,13 @@ class CandidateController extends ResourceController
 
             if (preg_match('/(\d+)/', $raw, $m)) {
                 $num = (int)$m[1];
+                $existing['k-' . str_pad($num, 4, '0', STR_PAD_LEFT)] = true;
+                $existing['k-' . $num] = true;
+                $existing['k' . $num] = true;
                 $existing['emp-' . str_pad($num, 3, '0', STR_PAD_LEFT)] = true;
                 $existing['emp-' . $num] = true;
                 $existing[(string)$num] = true;
             }
-        }
-
-        $userRows = $db->table('users')->select('id')->where('is_deleted', 0)->get()->getResultArray();
-        foreach ($userRows as $u) {
-            $uId = (int)$u['id'];
-            $existing['emp-' . str_pad($uId, 3, '0', STR_PAD_LEFT)] = true;
-            $existing['emp-' . $uId] = true;
-            $existing[(string)$uId] = true;
         }
 
         if (!empty($preferredId)) {
@@ -693,14 +674,15 @@ class CandidateController extends ResourceController
 
         $nextNum = 1;
         while (
-            isset($existing['emp-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT)]) ||
-            isset($existing['emp-' . $nextNum]) ||
+            isset($existing['k-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT)]) ||
+            isset($existing['k-' . $nextNum]) ||
+            isset($existing['k' . $nextNum]) ||
             isset($existing[(string)$nextNum])
         ) {
             $nextNum++;
         }
 
-        return 'EMP-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+        return 'K-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
     }
 
     /**

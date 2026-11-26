@@ -286,6 +286,12 @@ $routes->get(
 );
 $routes->get("/payroll/details/(:num)", 'api\PayrollController::getProfile/$1');
 
+// Employee Incentives (Web Pages)
+$routes->get("/addIncentive", "api\IncentiveController::addPage");
+$routes->get("/manageIncentive", "api\IncentiveController::managePage");
+$routes->get("/editIncentive/(:num)", 'api\IncentiveController::editPage/$1');
+$routes->get("api/incentives/export", "api\IncentiveController::exportExcel");
+
 $routes->get("/city", "api\CityController::creates");
 $routes->get("/cityview", "api\CityController::display");
 
@@ -1055,6 +1061,14 @@ $routes->group(
 
         $routes->post("payroll/save", "PayrollController::savedata"); // For single save
         $routes->post("payroll/saveAll", "PayrollController::saveAll"); // For bulk save
+
+        // Employee Incentives (API)
+        $routes->get("incentives/employees", "IncentiveController::getEmployees");
+        $routes->get("incentives/base-salary", "IncentiveController::getBaseSalary");
+        $routes->get("incentives/list", "IncentiveController::list");
+        $routes->post("incentives/create", "IncentiveController::create");
+        $routes->post("incentives/update/(:num)", 'IncentiveController::update/$1');
+        $routes->delete("incentives/delete/(:num)", 'IncentiveController::delete/$1');
     
         //calculate salary
         $routes->post(

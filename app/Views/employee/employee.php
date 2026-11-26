@@ -675,7 +675,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="mdi mdi-badge-account-outline fs-5"></i></span>
                                         </div>
-                                        <input type="text" class="form-control" name="employee_id" id="employee_id" placeholder="Enter Employee ID (e.g. EMP-101)" required />
+                                        <input type="text" class="form-control" name="employee_id" id="employee_id" placeholder="Enter Employee ID (e.g. K-0001)" required />
                                     </div>
                                     <div class="error text-danger mt-1" id="employee_id-Error"></div>
 
@@ -1398,7 +1398,7 @@
                         $('#branch_id').val(user.branch_id);
                         $('#emergency_contact').val(userInfo.emergency_contact);
 
-                        const empIdVal = userInfo.employee_id || ('EMP-' + String(user.id).padStart(3, '0'));
+                        const empIdVal = userInfo.employee_id || ('K-' + String(user.id).padStart(4, '0'));
                         $('#employee_id').val(empIdVal);
                         $('#employee_id_display').val(empIdVal);
 
@@ -1467,7 +1467,7 @@
                 },
                 success: function (response) {
                     if (response.status) {
-                        let formattedId = response.formatted_id || (response.next_employee_id ? `EMP-${String(response.next_employee_id).padStart(3, '0')}` : 'EMP-001');
+                        let formattedId = response.formatted_id || (response.next_employee_id ? `K-${String(response.next_employee_id).padStart(4, '0')}` : 'K-0001');
 
                         if (!$('#employee_id').val() || $('#employee_id').val().trim() === '') {
                             $('#employee_id').val(formattedId);
