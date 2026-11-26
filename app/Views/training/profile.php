@@ -140,7 +140,7 @@
                     $("#department").text(data.department_name ?? 'N/A');
                     $("#employeeEmail").text(data.email ?? 'N/A');
                     let empIdDisplay = data.employee_id && data.employee_id !== '0' 
-                        ? (String(data.employee_id).startsWith('K-') || String(data.employee_id).startsWith('EMP-') || String(data.employee_id).startsWith('EMP#') ? data.employee_id : 'K-' + String(data.employee_id).padStart(4, '0'))
+                        ? (String(data.employee_id).startsWith('EMP-') || String(data.employee_id).startsWith('EMP#') ? data.employee_id : 'EMP-' + String(data.employee_id).padStart(3, '0'))
                         : 'N/A';
                     $("#employee_id").text(empIdDisplay);
                     $("#employeeDesignation").text(data.designation_name ?? 'N/A');

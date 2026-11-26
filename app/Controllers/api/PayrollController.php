@@ -19,7 +19,6 @@ use App\Models\HolidayCalendarModel;
 use App\Services\AuthService;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\EmployeeLeaveModel;
-use App\Models\EmployeeIncentiveModel;
 use App\Traits\CompanyRuleTrait;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -44,34 +43,29 @@ class PayrollController extends ResourceController
     public function page()
     {
         $userModel = new \App\Models\UserModel();
-        $role = session()->get("role");
+        $role = session()->get("role"); // Assuming the user's role is stored in the session
+
+        $employees = $userModel
+            ->where("is_deleted", 0)
+            ->where("role", "employee")
+            ->findAll();
 
         if ($role === "admin") {
-            $allowedRoles = ["hr", "branch_admin", "department_manager", "employee"];
-        } elseif ($role === "hr") {
-            $allowedRoles = ["branch_admin", "department_manager", "employee"];
-        } else {
-            $allowedRoles = [];
-        }
-
-        $reviewers = [];
-        if (!empty($allowedRoles)) {
             $reviewers = $userModel
-                ->select("users.*, user_info.employee_id as emp_code")
-                ->join("user_info", "user_info.user_id = users.id", "left")
-                ->where("users.is_deleted", 0)
-                ->whereIn("users.role", $allowedRoles)
-                ->where("(LOWER(user_info.status) NOT IN ('inactive', 'resigned', 'fired', 'removed') OR user_info.status IS NULL)")
-                ->orderBy("user_info.employee_id", "ASC")
-                ->orderBy("users.username", "ASC")
+                ->where("is_deleted", 0)
+                ->whereIn("role", ["hr", "employee"])
                 ->findAll();
+        } elseif ($role === "hr") {
+            $reviewers = $employees;
+        } else {
+            $reviewers = [];
         }
         $leaveTypeModel = new LeaveTypeModel();
 
         $leaveTypes = $leaveTypeModel->findAll();
         return view("payroll/payroll", [
             "employees" => $reviewers,
-            "leaveTypes" => $leaveTypes,
+            "leaveTypes" => $leaveTypes, // Pass the filtered reviewers array
         ]);
     }
 
@@ -101,7 +95,7 @@ class PayrollController extends ResourceController
 
         $user = $userModel->where("user_id", $userId)->first();
         $account = $accountModel->where("user_id", $userId)->first();
-        $company_rules = $this->resolveRulesForUser((int) $userId);
+        $company_rules = $companyRulesModel->first();
 
         // Determine which salary was active for the given month
         $effectiveSalary = (float)($user["salary"] ?? 0);
@@ -121,21 +115,16 @@ class PayrollController extends ResourceController
             if (!empty($incrementHistory)) {
                 // Find the most recent increment whose effective_from_date <= last day of payroll month
                 $salaryForMonth = null;
-                $matchedLatest = false;
-                foreach ($incrementHistory as $idx => $record) {
+                foreach ($incrementHistory as $record) {
                     if ($record['effective_from_date'] <= $payrollMonthEnd) {
                         $salaryForMonth = (float)$record['new_salary'];
-                        $matchedLatest = ($idx === 0);
                         break;
                     }
                 }
 
                 if ($salaryForMonth !== null) {
-                    // If the latest increment is active for this month, prefer user_info.salary
-                    // when the employee's salary was edited directly after the increment.
-                    if (!($matchedLatest && $effectiveSalary > 0 && abs($effectiveSalary - $salaryForMonth) > 0.001)) {
-                        $effectiveSalary = $salaryForMonth;
-                    }
+                    // An increment was active during this payroll month
+                    $effectiveSalary = $salaryForMonth;
                 } else {
                     // All increments are after this payroll month — use the oldest previous_salary
                     $oldest = end($incrementHistory);
@@ -144,13 +133,8 @@ class PayrollController extends ResourceController
             }
         }
 
-        $incentiveAmount = !empty($monthYear)
-            ? $this->getEmployeeMonthlyIncentive((int) $userId, (string) $monthYear)
-            : 0.0;
-
         return $this->response->setJSON([
             "salary"           => $effectiveSalary,
-            "incentive_amount" => round($incentiveAmount, 2),
             "tax"              => $company_rules["tax"] ?? 0,
             "salary_above_tax" => $company_rules["salary_above_tax"] ?? 0,
             "acc_number"       => $account["acc_number"] ?? "",
@@ -259,14 +243,6 @@ class PayrollController extends ResourceController
         }
         $data["created_by"] = $user->sub;
         $data["total_half_day"] = $data["total_halfday_leaves"] ?? 0;
-
-        $monthlyIncentive = $this->getEmployeeMonthlyIncentive((int) $data["user_id"], (string) $data["month_year"]);
-        if (!isset($data["incentive_amount"]) || $data["incentive_amount"] === "") {
-            $data["incentive_amount"] = $monthlyIncentive;
-            $data["net_salary"] = round((float) $data["net_salary"] + $monthlyIncentive, 2);
-        } else {
-            $data["incentive_amount"] = round((float) $data["incentive_amount"], 2);
-        }
 
         if ($this->payrollModel->insert($data)) {
             $payrollId = $this->payrollModel->insertID(); // ✅ Get the last inserted ID
@@ -604,7 +580,7 @@ class PayrollController extends ResourceController
     {
         $user = $this->authService->check();
         $companyRulesModel = new CompanyRulesModel();
-        $company_rules = $companyRulesModel->first() ?? [];
+        $company_rules = $companyRulesModel->first();
 
         $salary_above_tax = $company_rules["salary_above_tax"] ?? 0;
         $tax = $company_rules["tax"] ?? 0;
@@ -700,7 +676,7 @@ class PayrollController extends ResourceController
         $companyRulesModel = new CompanyRulesModel();
         $leaveModel = new LeaveModel();
 
-        $rules = $this->resolveRulesForUser((int) $userId);
+        $rules = $companyRulesModel->first();
 
         $holidayCalendarModel = new HolidayCalendarModel();
         $holidayRows = $holidayCalendarModel
@@ -805,7 +781,7 @@ class PayrollController extends ResourceController
 
         $companyRulesModel = new CompanyRulesModel();
         $holidayCalendarModel = new HolidayCalendarModel();
-        $rules = $this->resolveRulesForUser(null);
+        $rules = $companyRulesModel->first();
 
         $startOfMonth = sprintf("%04d-%02d-01", $year, $month);
         $endOfMonth = date("Y-m-t", strtotime($startOfMonth));
@@ -845,7 +821,7 @@ class PayrollController extends ResourceController
         $leaveModel = new LeaveModel();
         $holidayCalendarModel = new HolidayCalendarModel();
 
-        $rules = $this->resolveRulesForUser((int) $userId);
+        $rules = $companyRulesModel->first();
 
         $startOfMonth =
             "$year-" . str_pad($month, 2, "0", STR_PAD_LEFT) . "-01";
@@ -1069,14 +1045,8 @@ class PayrollController extends ResourceController
             }
         }
 
-        $incentiveAmount = (new EmployeeIncentiveModel())->getMonthlyTotalForEmployee(
-            (int) $userId,
-            (int) $month,
-            (int) $year
-        );
-
         $netSalary = max(
-            $baseSalary - $deduction - $taxDeduction + $incentiveAmount,
+            $baseSalary - $deduction - $taxDeduction,
             0,
         );
 
@@ -1104,7 +1074,6 @@ class PayrollController extends ResourceController
                 "late_deduction" => round($lateDeduction, 2),
                 "salary_deduction" => round($deduction, 2),
                 "tax_deduction" => round($taxDeduction, 2),
-                "incentive_amount" => round($incentiveAmount, 2),
                 "net_salary" => round($netSalary, 2),
                 "pattern" => $rules["saturday_off_pattern"],
             ],
@@ -1502,7 +1471,7 @@ class PayrollController extends ResourceController
                 $monthYear = $payroll["month_year"];
                 [$year, $monthNum] = explode("-", $monthYear);
 
-                $rules = $this->resolveRulesForUser((int) $payroll["user_id"]);
+                $rules = $companyRulesModel->first();
 
                 // Get working days data
                 $workingDaysData = $this->getWorkingDaysData(
@@ -1550,17 +1519,13 @@ class PayrollController extends ResourceController
                 $baseSalary = $payroll["salary_amount"] ?? 0;
                 $overtimePay = $payroll["overtime_pay"] ?? 0;
                 $bonuses = $payroll["bonuses"] ?? 0;
-                $incentiveAmount = (float) ($payroll["incentive_amount"] ?? 0);
-                if ($incentiveAmount <= 0 && !empty($payroll["month_year"])) {
-                    $incentiveAmount = $this->getEmployeeMonthlyIncentive((int) $payroll["user_id"], (string) $payroll["month_year"]);
-                }
                 $taxDeduction = $payroll["tax_deduction"] ?? 0;
                 $salaryDeduction = $payroll["salary_deduction"] ?? 0;
                 $totalLeaves = $payroll["total_leaves"] ?? 0;
                 $usedPaidLeaves = $payroll["used_paid_leaves"] ?? 0;
 
-                // Calculate total earnings (base + overtime + bonuses + incentive)
-                $totalEarnings = $baseSalary + $overtimePay + $bonuses + $incentiveAmount;
+                // Calculate total earnings (base + overtime + bonuses)
+                $totalEarnings = $baseSalary + $overtimePay + $bonuses;
 
                 // Calculate total deductions
                 $totalDeductions = $salaryDeduction + $taxDeduction;
@@ -1577,7 +1542,6 @@ class PayrollController extends ResourceController
                     "worked_hours" => $payroll["worked_hours"] ?? 0,
                     "total_overtime_hours" =>
                         $payroll["total_overtime_hours"] ?? 0,
-                    "incentive_amount" => $incentiveAmount,
                     "total_earnings" => $totalEarnings,
                     "salary_deduction" => $salaryDeduction,
                     "total_deductions" => $totalDeductions,
@@ -1748,7 +1712,7 @@ class PayrollController extends ResourceController
         $monthYear = $payroll["month_year"]; // Format: YYYY-MM
         [$year, $month] = explode("-", $monthYear);
 
-        $rules = $this->resolveRulesForUser((int) $payroll["user_id"]);
+        $rules = $companyRulesModel->first();
 
         $holidayCalendarModel = new HolidayCalendarModel();
         $startOfMonth =
@@ -1802,15 +1766,11 @@ class PayrollController extends ResourceController
         $baseSalary = $payroll["salary_amount"] ?? 0;
         $overtimePay = $payroll["overtime_pay"] ?? 0;
         $bonuses = $payroll["bonuses"] ?? 0;
-        $incentiveAmount = (float) ($payroll["incentive_amount"] ?? 0);
-        if ($incentiveAmount <= 0 && !empty($payroll["month_year"])) {
-            $incentiveAmount = $this->getEmployeeMonthlyIncentive((int) $payroll["user_id"], (string) $payroll["month_year"]);
-        }
         $taxDeduction = $payroll["tax_deduction"] ?? 0;
         $salaryDeduction = $payroll["salary_deduction"] ?? 0;
 
-        // Calculate total earnings (base + overtime + bonuses + incentive)
-        $totalEarnings = $baseSalary + $overtimePay + $bonuses + $incentiveAmount;
+        // Calculate total earnings (base + overtime + bonuses)
+        $totalEarnings = $baseSalary + $overtimePay + $bonuses;
 
         // Calculate total deductions
         $totalDeductions = $salaryDeduction + $taxDeduction;
@@ -1826,7 +1786,6 @@ class PayrollController extends ResourceController
             "half_days" => isset($payroll["total_half_day"]) ? $payroll["total_half_day"] : $halfDays,
             "worked_hours" => $payroll["worked_hours"] ?? 0,
             "total_overtime_hours" => $payroll["total_overtime_hours"] ?? 0,
-            "incentive_amount" => $incentiveAmount,
             "total_earnings" => $totalEarnings,
             "salary_deduction" => $salaryDeduction,
             "total_deductions" => $totalDeductions,
@@ -1999,7 +1958,7 @@ class PayrollController extends ResourceController
         $attendanceModel = new \App\Models\AttendanceModel();
         $holidayCalendarModel = new HolidayCalendarModel();
 
-        $rules = $this->resolveRulesForUser(null);
+        $rules = $companyRulesModel->first() ?? [];
 
         $holidayRows = $holidayCalendarModel
             ->where("holiday_date >=", $startOfMonth)
@@ -2105,18 +2064,14 @@ class PayrollController extends ResourceController
             $effectiveSalary = (float)($emp["salary"] ?? 0);
             if (!empty($incrementHistory)) {
                 $salaryForMonth = null;
-                $matchedLatest = false;
-                foreach ($incrementHistory as $idx => $record) {
+                foreach ($incrementHistory as $record) {
                     if ($record['effective_from_date'] <= $payrollMonthEnd) {
                         $salaryForMonth = (float)$record['new_salary'];
-                        $matchedLatest = ($idx === 0);
                         break;
                     }
                 }
                 if ($salaryForMonth !== null) {
-                    if (!($matchedLatest && $effectiveSalary > 0 && abs($effectiveSalary - $salaryForMonth) > 0.001)) {
-                        $effectiveSalary = $salaryForMonth;
-                    }
+                    $effectiveSalary = $salaryForMonth;
                 } else {
                     $oldest = end($incrementHistory);
                     $effectiveSalary = (float)($oldest['previous_salary'] ?? $effectiveSalary);
@@ -2134,8 +2089,7 @@ class PayrollController extends ResourceController
             $emp["per_day"] = round($emp["salary"] / $workingDays, 2);
             $emp["per_hour"] = round($emp["salary"] / ($workingDays * $workingHoursPerDay), 2);
 
-            $empRules = $this->resolveRulesForUser((int) $emp["user_id"]);
-            $ruleTaxAmount = $this->calculateTaxForSalary((float) $emp["salary"], $empRules);
+            $ruleTaxAmount = $this->calculateTaxForSalary((float) $emp["salary"], $rules);
             $emp["tax_amount"] = $ruleTaxAmount;
             $emp["tax_deduction"] = $ruleTaxAmount;
             $emp["tax"] =
@@ -2279,23 +2233,12 @@ class PayrollController extends ResourceController
                 $savedOvertime = (float) ($payroll["overtime_pay"] ?? 0);
                 $savedNetSalary = round((float) ($payroll["net_salary"] ?? 0), 2);
 
-                $incSummary = $this->getEmployeeMonthlyIncentiveSummary((int) $emp["user_id"], sprintf("%04d-%02d", $year, $monthNum));
-                $savedIncentive = (float) ($payroll["incentive_amount"] ?? 0);
-                if ($savedIncentive <= 0) {
-                    $savedIncentive = $incSummary['amount'];
-                }
-                $emp["incentive_amount"] = $savedIncentive;
-                $emp["incentive_percentage"] = $incSummary['percentage'] > 0
-                    ? $incSummary['percentage']
-                    : (($emp["salary"] > 0 && $savedIncentive > 0) ? round(($savedIncentive / $emp["salary"]) * 100, 2) : 0.0);
-
                 // Baseline net salary of the saved record at the time it was saved
                 $savedBaseNetSalary = round(
                     $savedSalary
                     - $savedSalaryDed
                     - $savedTax
-                    + $savedOvertime
-                    + $savedIncentive,
+                    + $savedOvertime,
                     2
                 );
 
@@ -2305,13 +2248,12 @@ class PayrollController extends ResourceController
                     $savedExtraDayPay = round($savedNetSalary - $savedBaseNetSalary, 2);
                 }
 
-                // Current base net salary using current salary, current salary_deduction, rule tax, overtime, and incentive
+                // Current base net salary using current salary, current salary_deduction, rule tax, and overtime
                 $baseNetSalary = round(
                     $emp["salary"]
                     - $emp["salary_deduction"]
                     - $emp["tax_deduction"]
-                    + ($emp["overtime_pay"] ?? 0)
-                    + $savedIncentive,
+                    + ($emp["overtime_pay"] ?? 0),
                     2
                 );
 
@@ -2425,18 +2367,11 @@ class PayrollController extends ResourceController
                 $emp["total_overtime_hours"] = round($overtimeSeconds / 3600, 2);
                 $emp["salary_deduction"] = round($leaveHalfDeduction, 2);
                 $emp["tax_deduction"] = $emp["tax_amount"];
-                $incSummary = $this->getEmployeeMonthlyIncentiveSummary(
-                    (int) $emp["user_id"],
-                    sprintf("%04d-%02d", $year, $monthNum)
-                );
-                $emp["incentive_amount"] = $incSummary['amount'];
-                $emp["incentive_percentage"] = $incSummary['percentage'];
                 $emp["net_salary"] = round(
                     $emp["salary"]
                     - $emp["salary_deduction"]
                     - $emp["tax_deduction"]
-                    + ($emp["overtime_pay"] ?? 0)
-                    + $emp["incentive_amount"],
+                    + ($emp["overtime_pay"] ?? 0),
                     2,
                 );
             }
@@ -2495,7 +2430,7 @@ class PayrollController extends ResourceController
         $payrollModel = new \App\Models\PayrollModel();
         $employeeLeaveModel = new EmployeeLeaveModel();
         $companyRulesModel = new \App\Models\CompanyRulesModel();
-        $rules = $this->resolveRulesForUser(null);
+        $rules = $companyRulesModel->first();
         $db = \Config\Database::connect();
 
         $db->transBegin();
@@ -2519,10 +2454,8 @@ class PayrollController extends ResourceController
                     $existing
                 );
 
-                // Determine tax deduction based on branch/company rules
-                $empRules = $this->resolveRulesForUser((int) $empId);
-                $taxDeduction = $this->calculateTaxForSalary((float) $salaries[$index], $empRules);
-                $incentiveAmt = $this->getEmployeeMonthlyIncentive((int) $empId, (string) $month);
+                // Determine tax deduction based on company rules
+                $taxDeduction = $this->calculateTaxForSalary((float) $salaries[$index], $rules);
 
                 $data = [
                     "user_id" => $empId,
@@ -2536,7 +2469,6 @@ class PayrollController extends ResourceController
                     "remaining_sick_leaves" => $remainingLeaves["casual_leave"],
                     "salary_deduction" => $deductions[$index],
                     "tax_deduction" => $taxDeduction,
-                    "incentive_amount" => $incentiveAmt,
                     "net_salary" => $netSalaries[$index],
                     "overtime_pay" => isset($overtime_pay[$index]) ? (float) $overtime_pay[$index] : 0,
                     "total_overtime_hours" => isset($total_overtime_hours[$index]) ? (float) $total_overtime_hours[$index] : 0,
@@ -2600,7 +2532,7 @@ class PayrollController extends ResourceController
         $leaveModel = new LeaveModel();
         $companyRulesModel = new CompanyRulesModel();
         $holidayCalendarModel = new HolidayCalendarModel();
-        $rules = $this->resolveRulesForUser(null);
+        $rules = $companyRulesModel->first();
         $workingHoursPerDay = (float) ($rules["working_hours_per_day"] ?? 8);
 
         $holidayRows = $holidayCalendarModel
@@ -2929,7 +2861,7 @@ class PayrollController extends ResourceController
         $holidayCalendarModel = new HolidayCalendarModel();
         $userInfoModel        = new UserInfoModel();
 
-        $rules = $this->resolveRulesForUser((int) $userId);
+        $rules = $companyRulesModel->first();
 
         // Build holiday lookup for this month
         $holidayRows  = $holidayCalendarModel
@@ -3096,7 +3028,7 @@ class PayrollController extends ResourceController
         $payrollModel = new PayrollModel();
         $employeeLeaveModel = new EmployeeLeaveModel();
         $companyRulesModel = new \App\Models\CompanyRulesModel();
-        $rules = $this->resolveRulesForUser((int) $userId);
+        $rules = $companyRulesModel->first();
         $taxDeduction = $this->calculateTaxForSalary((float) $salary, $rules);
 
         $totalHalfDays = (float) ($this->request->getPost("half_day") ?? 0);
@@ -3133,7 +3065,6 @@ class PayrollController extends ResourceController
                 "remaining_sick_leaves" => $remainingLeaves["casual_leave"],
                 "salary_deduction" => $this->request->getPost("deduction"),
                 "tax_deduction" => $taxDeduction,
-                "incentive_amount" => $this->getEmployeeMonthlyIncentive((int) $userId, (string) $month),
                 "net_salary" => $this->request->getPost("net_salary"),
                 "overtime_pay" => (float) ($this->request->getPost("overtime_pay") ?? 0),
                 "total_overtime_hours" => (float) ($this->request->getPost("total_overtime_hours") ?? 0),
@@ -3282,7 +3213,7 @@ class PayrollController extends ResourceController
 
                 $monthYear = $payroll["month_year"];
                 [$year, $monthNum] = explode("-", $monthYear);
-                $rules = $this->resolveRulesForUser((int) $payroll["user_id"]);
+                $rules = $companyRulesModel->first();
 
                 $workingDaysData = $this->getWorkingDaysData((int) $monthNum, (int) $year, $rules, []);
                 $workingDays = $workingDaysData["working_days"];
@@ -3309,11 +3240,7 @@ class PayrollController extends ResourceController
                 }
 
                 $baseSalary = floatval($payroll["salary_amount"]);
-                $incentiveAmount = (float) ($payroll["incentive_amount"] ?? 0);
-                if ($incentiveAmount <= 0 && !empty($payroll["month_year"])) {
-                    $incentiveAmount = $this->getEmployeeMonthlyIncentive((int) $payroll["user_id"], (string) $payroll["month_year"]);
-                }
-                $totalEarnings = $baseSalary + floatval($payroll["overtime_pay"] ?? 0) + floatval($payroll["bonuses"] ?? 0) + $incentiveAmount;
+                $totalEarnings = $baseSalary + floatval($payroll["overtime_pay"] ?? 0) + floatval($payroll["bonuses"] ?? 0);
                 $totalDeductions = floatval($payroll["salary_deduction"] ?? 0) + floatval($payroll["tax_deduction"] ?? 0);
 
                 $calculatedData = [
@@ -3326,7 +3253,6 @@ class PayrollController extends ResourceController
                     "half_days" => isset($payroll["total_half_day"]) ? $payroll["total_half_day"] : $halfDays,
                     "worked_hours" => $payroll["worked_hours"] ?? 0,
                     "total_overtime_hours" => $payroll["total_overtime_hours"] ?? 0,
-                    "incentive_amount" => $incentiveAmount,
                     "total_earnings" => $totalEarnings,
                     "total_deductions" => $totalDeductions,
                     "salary_deduction" => $payroll["salary_deduction"] ?? 0,
@@ -3366,68 +3292,6 @@ class PayrollController extends ResourceController
             log_message("error", "PDF generation failed: " . $e->getMessage());
             return null;
         }
-    }
-
-    /**
-     * Resolve branch/company rules for a user (falls back to global branch_rules / company_rules).
-     */
-    private function resolveRulesForUser(?int $userId = null): array
-    {
-        $branchRulesModel = new \App\Models\BranchRulesModel();
-        if ($userId !== null && $userId > 0) {
-            $rules = $branchRulesModel->getRulesForUser($userId);
-            if (!empty($rules)) {
-                return $rules;
-            }
-        }
-
-        $branchId = $this->authService ? $this->authService->getBranchId() : null;
-        if ($branchId !== null) {
-            $rules = $branchRulesModel->getRulesForBranch((int) $branchId);
-            if (!empty($rules)) {
-                return $rules;
-            }
-        }
-
-        $firstBranchRule = $branchRulesModel->orderBy('id', 'ASC')->first();
-        if (!empty($firstBranchRule)) {
-            return $firstBranchRule;
-        }
-
-        $companyRulesModel = new CompanyRulesModel();
-        return $companyRulesModel->first() ?? $branchRulesModel->getDefaultRules();
-    }
-
-    /**
-     * Sum monthly incentive amount and percentage for an employee from employee_incentives.
-     */
-    private function getEmployeeMonthlyIncentiveSummary(int $userId, string $monthYear): array
-    {
-        if ($userId <= 0 || !preg_match('/^(\d{4})-(\d{1,2})$/', trim($monthYear), $m)) {
-            return ['amount' => 0.0, 'percentage' => 0.0];
-        }
-        $items = (new EmployeeIncentiveModel())->getMonthlyItemsForEmployee($userId, (int) $m[2], (int) $m[1]);
-        $amount = 0.0;
-        $percentage = 0.0;
-        foreach ($items as $item) {
-            $amount += (float) ($item['incentive_amount'] ?? 0);
-            $percentage += (float) ($item['percentage'] ?? 0);
-        }
-        return [
-            'amount'     => round($amount, 2),
-            'percentage' => round($percentage, 2),
-        ];
-    }
-
-    /**
-     * Sum monthly incentive amount for an employee from employee_incentives.
-     */
-    private function getEmployeeMonthlyIncentive(int $userId, string $monthYear): float
-    {
-        if ($userId <= 0 || !preg_match('/^(\d{4})-(\d{1,2})$/', trim($monthYear), $m)) {
-            return 0.0;
-        }
-        return (new EmployeeIncentiveModel())->getMonthlyTotalForEmployee($userId, (int) $m[2], (int) $m[1]);
     }
 
     public function getEmployees()

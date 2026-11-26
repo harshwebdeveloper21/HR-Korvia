@@ -176,10 +176,6 @@ if (!empty($payroll['month_year'])) {
         if (!empty($payroll['bonuses']) && $payroll['bonuses'] > 0) {
             $incomes[] = ['label' => 'Bonus', 'amount' => $payroll['bonuses']];
         }
-        $incentiveAmount = (float) ($calculatedData['incentive_amount'] ?? $payroll['incentive_amount'] ?? 0);
-        if ($incentiveAmount > 0) {
-            $incomes[] = ['label' => 'Incentive', 'amount' => $incentiveAmount];
-        }
 
         $deductions = [
             ['label' => 'Leave Amount', 'amount' => $calculatedData['salary_deduction'] ?? 0],

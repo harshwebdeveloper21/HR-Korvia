@@ -165,13 +165,19 @@ class EmployeeController extends ResourceController
             // Match digits
             if (preg_match('/(\d+)/', $raw, $m)) {
                 $num = (int)$m[1];
-                $existing['k-' . str_pad($num, 4, '0', STR_PAD_LEFT)] = true;
-                $existing['k-' . $num] = true;
-                $existing['k' . $num] = true;
                 $existing['emp-' . str_pad($num, 3, '0', STR_PAD_LEFT)] = true;
                 $existing['emp-' . $num] = true;
                 $existing[(string)$num] = true;
             }
+        }
+
+        // Also add users.id of active users so fallback IDs don't collide
+        $userRows = $db->table('users')->select('id')->where('is_deleted', 0)->get()->getResultArray();
+        foreach ($userRows as $u) {
+            $uId = (int)$u['id'];
+            $existing['emp-' . str_pad($uId, 3, '0', STR_PAD_LEFT)] = true;
+            $existing['emp-' . $uId] = true;
+            $existing[(string)$uId] = true;
         }
 
         if (!empty($preferredId)) {
@@ -184,15 +190,14 @@ class EmployeeController extends ResourceController
         // Find the lowest positive integer sequence available
         $nextNum = 1;
         while (
-            isset($existing['k-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT)]) ||
-            isset($existing['k-' . $nextNum]) ||
-            isset($existing['k' . $nextNum]) ||
+            isset($existing['emp-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT)]) ||
+            isset($existing['emp-' . $nextNum]) ||
             isset($existing[(string)$nextNum])
         ) {
             $nextNum++;
         }
 
-        return 'K-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        return 'EMP-' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
     }
 
     public function lastEmployeeId()
@@ -972,7 +977,7 @@ class EmployeeController extends ResourceController
         $employees = [];
 
         foreach ($results as $row) {
-            $empIdDisplay = !empty($row['employee_id']) ? $row['employee_id'] : ('K-' . sprintf('%04d', $row['id']));
+            $empIdDisplay = !empty($row['employee_id']) ? $row['employee_id'] : ('EMP-' . sprintf('%03d', $row['id']));
             $rawStatus = trim($row['status'] ?? '');
             $statusNormalized = (!empty($rawStatus) && strtolower($rawStatus) !== 'null') ? ucfirst(strtolower($rawStatus)) : 'Active';
             $lastWorkingDay = (strtolower($statusNormalized) === 'active') ? null : $row['last_working_day'];
@@ -1032,7 +1037,7 @@ class EmployeeController extends ResourceController
         $userInfo = $this->userInfoModel->where('user_id', $id)->first();
         if ($userInfo) {
             if (empty($userInfo['employee_id'])) {
-                $userInfo['employee_id'] = 'K-' . sprintf('%04d', $user['id']);
+                $userInfo['employee_id'] = 'EMP-' . sprintf('%03d', $user['id']);
             }
         }
 
@@ -2324,7 +2329,7 @@ class EmployeeController extends ResourceController
         $sno = 1;
 
         foreach ($employees as $emp) {
-            $empIdCode = !empty($emp['employee_id']) ? $emp['employee_id'] : ('K-' . sprintf('%04d', $emp['user_table_id']));
+            $empIdCode = !empty($emp['employee_id']) ? $emp['employee_id'] : ('EMP-' . sprintf('%03d', $emp['user_table_id']));
             $fullName  = trim(($emp['firstname'] ?? '') . ' ' . ($emp['lastname'] ?? ''));
             $status    = !empty($emp['status']) ? $emp['status'] : 'Active';
 
