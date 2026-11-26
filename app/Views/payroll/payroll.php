@@ -114,7 +114,12 @@
                                 <select class="form-select" name="user_id" id="user_id">
                                     <option value="" disabled selected>Select Employee</option>
                                     <?php foreach ($employees as $employee): ?>
-                                        <option value="<?= $employee["id"] ?>"><?= esc($employee["username"], "html") ?>
+                                        <?php
+                                            $empCode = !empty($employee["emp_code"])
+                                                ? $employee["emp_code"]
+                                                : ("K-" . str_pad((string) $employee["id"], 4, "0", STR_PAD_LEFT));
+                                        ?>
+                                        <option value="<?= $employee["id"] ?>"><?= esc($empCode . " - " . $employee["username"], "html") ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -354,6 +359,16 @@
                                 <input type="number" class="form-control" name="bonuses" id="bonuses" value="0" />
                             </div>
                         </div> -->
+
+                        <div class="col-md-6 form-group">
+                            <label class="form-label">Incentive</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="mdi mdi-currency-inr fs-5"></i></span>
+                                </div>
+                                <input type="number" class="form-control bg-light" name="incentive_amount" id="incentive_amount" value="0" readonly />
+                            </div>
+                        </div>
 
                         <div class="col-md-6 form-group">
                             <label class="form-label">Net Salary</label>
@@ -670,6 +685,7 @@
                         $('#tax_deduction').val(payroll.tax_deduction || 0);
                         $('#salary_deduction').val(payroll.salary_deduction || 0);
                         $('#bonuses').val(payroll.bonuses || 0);
+                        $('#incentive_amount').val(payroll.incentive_amount || 0);
                         $('#net_salary').val(payroll.net_salary || 0);
                         $('#payment_date').val(payroll.payment_date || '');
                         $('#payment_status').val(payroll.payment_status || 'Paid');
@@ -855,6 +871,7 @@
                     // In edit mode, don't overwrite saved salary_amount
                     if (!isEditMode) {
                         $('#salary_amount').val(data.salary ?? '');
+                        $('#incentive_amount').val((parseFloat(data.incentive_amount) || 0).toFixed(2));
                     }
 
                     // Set tax deduction (can be updated in edit mode)
@@ -862,18 +879,19 @@
                     $('#salary_above_tax').val(data.salary_above_tax ?? 12000);
 
                     // Store company rules in hidden fields
-                    $('#payroll_type').val(data.company_rules.payroll_type ?? 'monthly');
-                    $('#enable_payroll').val(data.company_rules.enable_payroll ?? 1);
-                    $('#working_hours_per_day').val(data.company_rules.working_hours_per_day ?? 8);
-                    $('#half_day_hours').val(data.company_rules.half_day_hours ?? 4);
-                    $('#sunday_off').val(data.company_rules.sunday_off ?? 1);
-                    $('#sunday_pay_type').val(data.company_rules.sunday_pay_type ?? 'unpaid');
-                    $('#saturday_off_enabled').val(data.company_rules.saturday_off_enabled ?? 0);
-                    $('#saturday_off_type').val(data.company_rules.saturday_off_type ?? 'all');
-                    $('#saturday_off_pattern').val(data.company_rules.saturday_off_pattern ?? '');
-                    $('#saturday_pay_type').val(data.company_rules.saturday_pay_type ?? 'unpaid');
-                    $('#enable_tax').val(data.company_rules.enable_tax ?? 1);
-                    $('#tax_type').val(data.company_rules.tax_type ?? 'percentage');
+                    const companyRules = data.company_rules || {};
+                    $('#payroll_type').val(companyRules.payroll_type ?? 'monthly');
+                    $('#enable_payroll').val(companyRules.enable_payroll ?? 1);
+                    $('#working_hours_per_day').val(companyRules.working_hours_per_day ?? 8);
+                    $('#half_day_hours').val(companyRules.half_day_hours ?? 4);
+                    $('#sunday_off').val(companyRules.sunday_off ?? 1);
+                    $('#sunday_pay_type').val(companyRules.sunday_pay_type ?? 'unpaid');
+                    $('#saturday_off_enabled').val(companyRules.saturday_off_enabled ?? 0);
+                    $('#saturday_off_type').val(companyRules.saturday_off_type ?? 'all');
+                    $('#saturday_off_pattern').val(companyRules.saturday_off_pattern ?? '');
+                    $('#saturday_pay_type').val(companyRules.saturday_pay_type ?? 'unpaid');
+                    $('#enable_tax').val(companyRules.enable_tax ?? 1);
+                    $('#tax_type').val(companyRules.tax_type ?? 'percentage');
 
                     // Trigger month change to load attendance data (only if not in edit mode to avoid overwriting)
                     if ($('#month_year').val() && !isEditMode) {
@@ -925,6 +943,7 @@
                     .then(response => response.json())
                     .then(data => {
                         $('#salary_amount').val(data.salary ?? '');
+                        $('#incentive_amount').val((parseFloat(data.incentive_amount) || 0).toFixed(2));
                     });
             }
 
@@ -1011,6 +1030,7 @@
             const monthYear = $('#month_year').val();
             const baseSalary = parseFloat($('#salary_amount').val()) || 0;
             const bonuses = parseFloat($('#bonuses').val()) || 0;
+            const incentiveAmt = parseFloat($('#incentive_amount').val()) || 0;
             const payrollType = $('#payroll_type').val() || 'monthly';
             const usedPaidLeaves = parseFloat($('#used_paid_leaves').val()) || 0;
             if (!userId || !monthYear || baseSalary === 0) return;
@@ -1037,6 +1057,9 @@
                     const calculatedTax = parseFloat(data.tax_deduction);
                     const finalTax = isNaN(calculatedTax) ? 0 : calculatedTax;
                     $('#tax_deduction').val(finalTax);
+
+                    const incentiveAmt = parseFloat(data.incentive_amount) || 0;
+                    $('#incentive_amount').val(incentiveAmt.toFixed(2));
 
                     $('#working_days_display').val(data.working_days || 0);
                     $('#unpaid_leaves_display').val(data.unpaid_leaves || 0);
@@ -1118,9 +1141,10 @@
 
                             $('#salary_deduction').val(salaryDeduction.toFixed(2));
 
-                            // Net salary: base + overtime - adjusted_deduction - tax + bonuses
+                            // Net salary: base + overtime - adjusted_deduction - tax + bonuses + incentive
                             const tax = parseFloat($('#tax_deduction').val()) || 200;
-                            const netSalary = baseSalary + overtimePay - salaryDeduction - tax + bonuses;
+                            const incentiveAmt = parseFloat($('#incentive_amount').val()) || 0;
+                            const netSalary = baseSalary + overtimePay - salaryDeduction - tax + bonuses + incentiveAmt;
                             $('#net_salary').val(netSalary.toFixed(2));
                         }
                     });
@@ -1138,6 +1162,7 @@
         function simpleCalculateNetSalary() {
             const salaryAmount = parseFloat($('#salary_amount').val()) || 0;
             const bonuses = parseFloat($('#bonuses').val()) || 0;
+            const incentiveAmt = parseFloat($('#incentive_amount').val()) || 0;
             const usedPaidLeaves = parseFloat($('#used_paid_leaves').val()) || 0;
             const allowedPaidLeaves = parseFloat($('#total_leaves').val()) || 0;
             const halfDays = parseFloat($('#total_halfday_leaves').val()) || 0;
@@ -1167,7 +1192,7 @@
             $('#salary_deduction').val(totalDeduction.toFixed(2));
             $('#unpaid_leaves_display').val(unpaidFullDays);
             $('#working_days_display').val(daysInMonth);
-            let netSalary = salaryAmount - taxDeduction - totalDeduction + bonuses;
+            let netSalary = salaryAmount - taxDeduction - totalDeduction + bonuses + incentiveAmt;
             // Overtime is disabled
             const overtimePay = 0;
             const totalOvertimeHours = 0;

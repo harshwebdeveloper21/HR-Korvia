@@ -234,7 +234,7 @@
               <label for="convert_employee_id" class="form-label fw-bold">
                 Employee ID <span class="text-danger">*</span>
               </label>
-              <input type="text" class="form-control" id="convert_employee_id" name="employee_id" required placeholder="EMP-001">
+              <input type="text" class="form-control" id="convert_employee_id" name="employee_id" required placeholder="K-0001">
               <small class="text-muted">Auto-suggested unique ID.</small>
             </div>
 

@@ -1156,8 +1156,8 @@ class LeaveController extends ResourceController
 
             $rawCode = (string)($item['emp_code'] ?? '');
             $empCode = !empty($rawCode) && $rawCode !== '0'
-                ? (str_starts_with($rawCode, 'EMP-') || str_starts_with($rawCode, 'EMP#') ? $rawCode : 'EMP-' . str_pad($rawCode, 3, '0', STR_PAD_LEFT))
-                : ('EMP-' . ($item['user_id'] ?? ''));
+                ? (str_starts_with($rawCode, 'K-') || str_starts_with($rawCode, 'EMP-') || str_starts_with($rawCode, 'EMP#') ? $rawCode : 'K-' . str_pad($rawCode, 4, '0', STR_PAD_LEFT))
+                : ('K-' . str_pad($item['user_id'] ?? '1', 4, '0', STR_PAD_LEFT));
 
             $halfDay = !empty($item['half_day_type']) ? ucfirst($item['half_day_type']) : '-';
             $statusVal = ucfirst(strtolower($item['status'] ?? 'Pending'));

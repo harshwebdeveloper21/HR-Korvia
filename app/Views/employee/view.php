@@ -709,7 +709,7 @@
                                     return;
                                 }
 
-                                const empIdCode = employee.user_info.employee_id || ('EMP-' + String(employee.user.id).padStart(3, '0'));
+                                const empIdCode = employee.user_info.employee_id || ('K-' + String(employee.user.id).padStart(4, '0'));
                                 const empName = `${capitalizeFirstLetter(employee.user_info.firstname || 'N/A')} ${capitalizeFirstLetter(employee.user_info.lastname || '')}`;
                                 const empEmail = employee.user?.email || 'N/A';
                                 const empDept = employee.user_info?.department_name || 'N/A';

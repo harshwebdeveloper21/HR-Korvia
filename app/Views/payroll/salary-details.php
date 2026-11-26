@@ -187,6 +187,7 @@
                   <th>Extra Day</th>
                   <th>Tax</th>
                   <th>Salary<br>Deduction</th>
+                  <th>Incentive</th>
                   <th>Net Salary</th>
                   <th>Action</th>
                 </tr>
@@ -194,6 +195,7 @@
               <tbody>
                 <?php foreach ($employees as $index => $emp): ?>
                   <tr data-overtime-pay="<?= esc($emp['overtime_pay'] ?? 0) ?>"
+                    data-incentive="<?= esc($emp['incentive_amount'] ?? 0) ?>"
                     data-late-deduction="<?= esc($emp['late_deduction'] ?? 0) ?>"
                     data-base-deduction="<?= esc($emp['base_deduction'] ?? $emp['salary_deduction']) ?>"
                     data-per-day="<?= esc($emp['per_day']) ?>">
@@ -306,6 +308,10 @@
                         <i class="mdi mdi-information-outline text-primary" style="font-size:1.1rem;"></i>
                       </button>
                     </td>
+                    <td class="incentive-cell">
+                      ₹<?= number_format($emp["incentive_amount"] ?? 0, 2) ?><br>
+                      <small class="text-muted"><?= number_format($emp["incentive_percentage"] ?? 0, 2) ?>%</small>
+                    </td>
                     <td class="net-salary-cell">₹<?= number_format(
                       $emp["net_salary"],
                       2,
@@ -329,7 +335,7 @@
                       value="<?= $emp["total_overtime_hours"] ?? 0 ?>">
                     <?php 
                       // Calculate base net salary to see if extra_day_pay is included in the saved net_salary
-                      $baseNetSal = round($emp['salary'] - $emp['salary_deduction'] - $emp['tax_deduction'] + ($emp['overtime_pay'] ?? 0), 2);
+                      $baseNetSal = round($emp['salary'] - $emp['salary_deduction'] - $emp['tax_deduction'] + ($emp['overtime_pay'] ?? 0) + ($emp['incentive_amount'] ?? 0), 2);
                       $isExtraAdded = (isset($emp['net_salary']) && round($emp['net_salary'], 2) > $baseNetSal);
                     ?>
                     <input type="hidden" name="extra_day_pay[]" class="extra-day-pay-input"
@@ -516,8 +522,9 @@
     const paidLeaveCredit = (usedPaidLeaves + usedSickLeaves) * perDay;
     const salaryDeduction = Math.max(baseDeduction - paidLeaveCredit, 0);
     const overtimePay = parseFloat(row.dataset.overtimePay) || 0;
+    const incentiveAmt = parseFloat(row.dataset.incentive) || 0;
     const extraDayPay = parseFloat(row.querySelector('.extra-day-pay-input')?.value) || 0;
-    const totalAdjustment = overtimePay + extraDayPay - salaryDeduction - tax;
+    const totalAdjustment = overtimePay + extraDayPay + incentiveAmt - salaryDeduction - tax;
     const netSalary = salary + totalAdjustment;
 
     // Update Remaining Balances and Validation
@@ -592,18 +599,22 @@
 
   // Helper: perform the actual save API call
   function doSavePayroll(row, saveBtn, adjustmentAmount, adjustmentRemark) {
-    const employeeId = saveBtn.dataset.id;
-    const salary = row.querySelector('input[name="salary[]"]').value;
-    const leaves = row.querySelector('.leave-input').value;
-    const halfDay = row.querySelector('.half_day-input').value;
-    const paidLeave = row.querySelector('.paid-leave-input').value || 0;
-    const sickLeave = row.querySelector('.sick-leave-input').value || 0;
-    const deduction = row.querySelector('.deduction-input').value;
-    const netSalary = (parseFloat(row.querySelector('.net-salary-input').value) + parseFloat(adjustmentAmount || 0)).toFixed(2);
+    if (!row) return;
+    const employeeId = (saveBtn && saveBtn.dataset && saveBtn.dataset.id)
+      || document.getElementById('modal_employee_id')?.value
+      || row.querySelector('.single-employee-id')?.value;
+    const salary = row.querySelector('input[name="salary[]"]')?.value || 0;
+    const leaves = row.querySelector('.leave-input')?.value || 0;
+    const halfDay = row.querySelector('.half_day-input')?.value || 0;
+    const paidLeave = row.querySelector('.paid-leave-input')?.value || 0;
+    const sickLeave = row.querySelector('.sick-leave-input')?.value || 0;
+    const deduction = row.querySelector('.deduction-input')?.value || 0;
+    const baseNet = parseFloat(row.querySelector('.net-salary-input')?.value || 0);
+    const netSalary = (baseNet + parseFloat(adjustmentAmount || 0)).toFixed(2);
     const overtimePay = (row.querySelector('.overtime-pay-input') && row.querySelector('.overtime-pay-input').value) || 0;
     const extraDayPay = (row.querySelector('.extra-day-pay-input') && row.querySelector('.extra-day-pay-input').value) || 0;
     const totalOvertimeHours = (row.querySelector('.total-overtime-hours-input') && row.querySelector('.total-overtime-hours-input').value) || 0;
-    const month = row.querySelector('.single-month').value;
+    const month = row.querySelector('.single-month')?.value || '<?= esc($month) ?>';
 
     fetch("<?= base_url("/api/payroll/save") ?>", {
       method: "POST",
@@ -637,15 +648,18 @@
           const modalInstance = bootstrap.Modal.getInstance(modalElement);
           if (modalInstance) modalInstance.hide();
 
-          const badge = document.createElement('span');
-          badge.className = 'badge bg-success btn-sm rounded';
-          badge.textContent = 'Saved';
-          if (saveBtn.parentNode) {
+          if (saveBtn && saveBtn.parentNode) {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-success btn-sm rounded';
+            badge.textContent = 'Saved';
             saveBtn.parentNode.replaceChild(badge, saveBtn);
           }
 
           // Update the UI net salary cell to reflect adjustment
-          row.querySelector('.net-salary-cell').textContent = '₹' + netSalary;
+          const netCell = row.querySelector('.net-salary-cell');
+          if (netCell) {
+            netCell.textContent = '₹' + netSalary;
+          }
 
           Swal.fire({
             icon: 'success',
@@ -705,33 +719,39 @@
     });
   });
 
-  // Remark button: opens the modal for adjustment & remark
-  document.querySelectorAll('.btn-open-remark').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const row = this.closest('tr');
-      const employeeId = this.dataset.id;
-      const employeeName = row.querySelector('.capitalize-text')?.textContent || 'Employee';
-      const monthYear = row.querySelector('.single-month').value;
+  // Remark button: opens the modal for adjustment & remark (supports DataTables responsive child rows)
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-open-remark');
+    if (!btn) return;
 
-      currentSavingRow = row;
-      // Point to the Save button (sibling) for saving after modal confirm
-      currentSavingBtn = row.querySelector('.btn-save-single');
+    let row = btn.closest('tr');
+    if (row && row.classList.contains('child')) {
+      row = row.previousElementSibling;
+    }
+    if (!row) return;
 
-      // Populate Modal
-      document.getElementById('modal_employee_id').value = employeeId;
-      document.getElementById('modal_employee_name').textContent = employeeName;
-      document.getElementById('modal_month_year').textContent = monthYear;
-      document.getElementById('adjustment_amount').value = '';
-      document.getElementById('adjustment_remark').value = '';
+    const employeeId = btn.dataset.id;
+    const employeeName = row.querySelector('.capitalize-text')?.textContent?.trim() || 'Employee';
+    const monthYear = row.querySelector('.single-month')?.value || '<?= esc($month) ?>';
 
-      const remarkModal = new bootstrap.Modal(document.getElementById('remarkModal'));
-      remarkModal.show();
-    });
+    currentSavingRow = row;
+    // Point to the Save button (sibling) for saving after modal confirm
+    currentSavingBtn = row.querySelector('.btn-save-single');
+
+    // Populate Modal
+    document.getElementById('modal_employee_id').value = employeeId;
+    document.getElementById('modal_employee_name').textContent = employeeName;
+    document.getElementById('modal_month_year').textContent = monthYear;
+    document.getElementById('adjustment_amount').value = '';
+    document.getElementById('adjustment_remark').value = '';
+
+    const remarkModal = new bootstrap.Modal(document.getElementById('remarkModal'));
+    remarkModal.show();
   });
 
   // Modal "Save Salary" button: saves with adjustment & remark from modal
   document.getElementById('btnConfirmSaveSalary').addEventListener('click', function () {
-    if (!currentSavingRow || !currentSavingBtn) return;
+    if (!currentSavingRow) return;
 
     const adjustmentAmount = parseFloat(document.getElementById('adjustment_amount').value) || 0;
     const adjustmentRemark = document.getElementById('adjustment_remark').value;
